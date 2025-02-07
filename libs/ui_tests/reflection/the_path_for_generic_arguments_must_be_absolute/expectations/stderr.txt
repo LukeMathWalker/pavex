@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `String` is not a fully-qualified import path.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mreflection/the_path_for_generic_arguments_must_be_absolute/src/lib.rs[0m:15:1]

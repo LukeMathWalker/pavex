@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m A type must be clonable if you set its cloning strategy to
   [31m│[0m `CloneIfNecessary`.
   [31m│[0m The cloning strategy for `app::singleton` is `CloneIfNecessary`,
@@ -15,7 +15,7 @@
   [31m│[0m [36m  help: [0mEither set the cloning strategy to `NeverClone` or implement `Clone`
   [31m│[0m         for `app::A`
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m A type must be clonable if you set its cloning strategy to
   [31m│[0m `CloneIfNecessary`.
   [31m│[0m The cloning strategy for `app::request_scoped` is
@@ -32,7 +32,7 @@
   [31m│[0m [36m  help: [0mEither set the cloning strategy to `NeverClone` or implement `Clone`
   [31m│[0m         for `app::B`
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m A type must be clonable if you set its cloning strategy to
   [31m│[0m `CloneIfNecessary`.
   [31m│[0m The cloning strategy for `app::C`, a prebuilt type, is

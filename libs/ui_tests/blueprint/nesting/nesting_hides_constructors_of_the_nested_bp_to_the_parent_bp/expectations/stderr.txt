@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `u64`.
   [31m│[0m I need an instance of `u64` to invoke your request handler,
   [31m│[0m `app::handler`.
@@ -11,7 +11,7 @@
   [31m│[0m  [2m10[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ 
+  [31m│[0m  [2m24[0m │
   [31m│[0m  [2m25[0m │ pub fn handler(_x: u64, _y: u32, _z: u16) -> StatusCode {
   [31m│[0m     · [35;1m               ───┬───[0m
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
@@ -22,7 +22,7 @@
   [31m│[0m         new input parameter of type `u64` to the (generated)
   [31m│[0m         `build_application_state`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `u32`.
   [31m│[0m I need an instance of `u32` to invoke your request handler,
   [31m│[0m `app::handler`.
@@ -35,7 +35,7 @@
   [31m│[0m  [2m10[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ 
+  [31m│[0m  [2m24[0m │
   [31m│[0m  [2m25[0m │ pub fn handler(_x: u64, _y: u32, _z: u16) -> StatusCode {
   [31m│[0m     · [35;1m                        ───┬───[0m
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
@@ -46,7 +46,7 @@
   [31m│[0m         new input parameter of type `u32` to the (generated)
   [31m│[0m         `build_application_state`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `u16`.
   [31m│[0m I need an instance of `u16` to invoke your request handler,
   [31m│[0m `app::handler`.
@@ -59,7 +59,7 @@
   [31m│[0m  [2m10[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ 
+  [31m│[0m  [2m24[0m │
   [31m│[0m  [2m25[0m │ pub fn handler(_x: u64, _y: u32, _z: u16) -> StatusCode {
   [31m│[0m     · [35;1m                                 ───┬───[0m
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m

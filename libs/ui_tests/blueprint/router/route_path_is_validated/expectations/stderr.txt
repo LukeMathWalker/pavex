@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Route paths must either be empty or begin with a forward slash, `/`.
   [31m│[0m `api` is not empty and it doesn't begin with a `/`.
   [31m│[0m

@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 
+/// Convert an `anyhow::Error` into a `miette::Error`.
 pub fn anyhow2miette(err: anyhow::Error) -> miette::Error {
     #[derive(Debug, miette::Diagnostic)]
     struct InteropError(anyhow::Error);

@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `handler` is not a fully-qualified import path.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mreflection/local_callable_paths_must_be_prefixed_with_crate/src/lib.rs[0m:9:1]

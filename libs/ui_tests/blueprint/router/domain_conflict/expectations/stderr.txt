@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m There is an overlap between two of the domain constraints you registered,
   [31m│[0m `{*any}.company.com` and `{sub}.company.com`.
   [31m│[0m I wouldn't know where to route a request that matches both of them, since

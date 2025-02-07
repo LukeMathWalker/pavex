@@ -1,10 +1,10 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint:
   [31m│[0m - `app::handler` wants to consume `app::C<'_>`
   [31m│[0m - `app::C<'_>` captures a reference to `app::A`
   [31m│[0m - But, earlier on, `app::b` consumed `app::A` by value
-  [31m│[0m 
+  [31m│[0m
   [31m│[0m Since I'm not allowed to clone `app::A`, I can't resolve this
   [31m│[0m conflict.
   [31m│[0m

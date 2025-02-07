@@ -46,7 +46,7 @@ pub enum IfAutoinstallable {
 pub fn verify_installation<D: Dependency>(
     dep: D,
     if_autoinstallable: IfAutoinstallable,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), VerifyInstallationError> {
     let name = dep.name();
     SHELL.status("Checking", format!("if {name} is installed"));
     if let Err(mut e) = dep.is_installed() {
@@ -56,6 +56,7 @@ pub fn verify_installation<D: Dependency>(
             &style::ERROR,
         );
         let mut installed = false;
+        let mut attempted_auto_install = false;
         if dep.is_auto_installable() {
             let auto_install = match if_autoinstallable {
                 IfAutoinstallable::PromptForConfirmation => {
@@ -74,21 +75,58 @@ pub fn verify_installation<D: Dependency>(
             };
             if auto_install {
                 if let Err(inner) = dep.auto_install() {
+                    attempted_auto_install = true;
                     e = inner;
-                    SHELL.status_with_color("Failed", format!("to install {name}"), &style::ERROR);
                 } else {
                     installed = true;
                 }
             }
         }
         if !installed {
-            SHELL.note(dep.installation_instructions());
-            return Err(e);
+            return Err(VerifyInstallationError {
+                name: name.into_owned(),
+                attempted_auto_install,
+                instructions: dep.installation_instructions().into_owned(),
+                source: e,
+            });
         }
     }
 
     SHELL.status("Success", format!("{name} is installed"));
     Ok(())
+}
+
+#[derive(Debug, miette::Diagnostic)]
+pub struct VerifyInstallationError {
+    name: String,
+    attempted_auto_install: bool,
+    #[help]
+    pub instructions: String,
+    source: Error,
+}
+
+impl std::fmt::Display for VerifyInstallationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "`{} must be installed for Pavex to work as expected.",
+            &self.name
+        )?;
+        if self.attempted_auto_install {
+            write!(
+                f,
+                " I tried to install it for you, but I didn't succeed. \
+                Try installing it manually by following the instructions below."
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for VerifyInstallationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.source.as_ref())
+    }
 }
 
 /// The `rust-docs-json` component of a Rust toolchain.

@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Wrapping middlewares can't take more than one instance of
   [31m│[0m `pavex::middleware::Next<_>` as input parameter.
   [31m│[0m This middleware does.

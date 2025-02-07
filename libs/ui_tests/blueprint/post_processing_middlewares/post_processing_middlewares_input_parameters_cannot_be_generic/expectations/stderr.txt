@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::generic`.
   [31m│[0m There should no unassigned generic parameters in post-processing
@@ -12,7 +12,7 @@
   [31m│[0m  [2m35[0m │     bp.post_process(f!(crate::doubly_generic));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/post_processing_middlewares/post_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:6:1]
-  [31m│[0m  [2m6[0m │ 
+  [31m│[0m  [2m6[0m │
   [31m│[0m  [2m7[0m │ pub fn generic<T>(_response: Response, _generic_input: GenericType<T>) -> Response {
   [31m│[0m    · [35;1m               ┬[0m
   [31m│[0m    ·                [35;1m╰── The generic parameter without a concrete type[0m
@@ -24,7 +24,7 @@
   [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
   [31m│[0m         |  )
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::doubly_generic`.
   [31m│[0m There should no unassigned generic parameters in post-processing
@@ -39,7 +39,7 @@
   [31m│[0m  [2m36[0m │     bp.post_process(f!(crate::triply_generic));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/post_processing_middlewares/post_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:10:1]
-  [31m│[0m  [2m10[0m │ 
+  [31m│[0m  [2m10[0m │
   [31m│[0m  [2m11[0m │ pub fn doubly_generic<T, S>(
   [31m│[0m     · [35;1m                      ┬[0m[33;1m  ┬[0m
   [31m│[0m     ·                       [35;1m│[0m  [33;1m╰── The generic parameter without a concrete type[0m
@@ -52,7 +52,7 @@
   [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
   [31m│[0m         |  )
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::triply_generic`.
   [31m│[0m There should no unassigned generic parameters in post-processing
@@ -67,7 +67,7 @@
   [31m│[0m  [2m37[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/post_processing_middlewares/post_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:18:1]
-  [31m│[0m  [2m18[0m │ 
+  [31m│[0m  [2m18[0m │
   [31m│[0m  [2m19[0m │ pub fn triply_generic<T, S, U>(
   [31m│[0m     · [35;1m                      ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
   [31m│[0m     ·                       [35;1m│[0m  [33;1m│[0m  [32;1mThe generic parameter without a concrete type[0m

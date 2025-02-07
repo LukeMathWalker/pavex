@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
@@ -17,7 +17,7 @@
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
@@ -36,7 +36,7 @@
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
@@ -55,7 +55,7 @@
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
@@ -74,7 +74,7 @@
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
@@ -93,7 +93,7 @@
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
@@ -113,7 +113,7 @@
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.

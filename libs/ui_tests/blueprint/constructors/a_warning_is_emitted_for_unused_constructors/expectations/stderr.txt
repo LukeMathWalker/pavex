@@ -1,4 +1,4 @@
-[33m[1mWARNING[0m[39m: 
+[33;1mWARNING[0m:
   [33m⚠[0m You registered a constructor for `app::Unused`, but it's never
   [33m│[0m used.
   [33m│[0m `app::Unused::new` is never invoked since no component is asking

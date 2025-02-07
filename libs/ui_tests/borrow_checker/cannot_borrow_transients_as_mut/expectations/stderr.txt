@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't inject a mutable reference to a transient type (`&mut
   [31m│[0m app::A`) as an input parameter to `app::handler`.
   [31m│[0m Transient constructors are invoked every time their output is needed—
@@ -13,7 +13,7 @@
   [31m│[0m  [2m20[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mborrow_checker/cannot_borrow_transients_as_mut/src/lib.rs[0m:11:1]
-  [31m│[0m  [2m11[0m │ 
+  [31m│[0m  [2m11[0m │
   [31m│[0m  [2m12[0m │ pub fn handler(_a: &mut A) -> Response {
   [31m│[0m     · [35;1m               ─────┬────[0m
   [31m│[0m     ·                     [35;1m╰── The &mut transient[0m

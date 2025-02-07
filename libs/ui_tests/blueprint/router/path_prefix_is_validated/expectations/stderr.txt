@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path prefixes can't end with a trailing slash, `/`. `/api/` does.
   [31m│[0m Trailing slashes in path prefixes increase the likelihood of having
   [31m│[0m consecutive slashes in the final route path, which is rarely desireable.
@@ -16,7 +16,7 @@
   [31m│[0m [36m  help: [0mRemove the '/' at the end of the path prefix to fix this error: use
   [31m│[0m         `/api` instead of `/api/`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path prefixes must begin with a forward slash, `/`.
   [31m│[0m `api` doesn't.
   [31m│[0m
@@ -30,7 +30,7 @@
   [31m│[0m [36m  help: [0mAdd a '/' at the beginning of the path prefix to fix this error: use
   [31m│[0m         `/api` instead of `api`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path prefixes cannot be empty.
   [31m│[0m
   [31m│[0m    ╭─[[36;1;4mblueprint/router/path_prefix_is_validated/src/lib.rs[0m:5:1]
@@ -43,7 +43,7 @@
   [31m│[0m [36m  help: [0mIf you don't want to add a common prefix to all routes in the nested
   [31m│[0m         blueprint, use the `nest` method directly.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Path prefixes must begin with a forward slash, `/`.
   [31m│[0m `` doesn't.
   [31m│[0m

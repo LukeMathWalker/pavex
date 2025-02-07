@@ -22,6 +22,7 @@ debug_assertions = []
 pavex = { path = "../pavex", version = "0.1.71" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.71" }
 pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.71" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.71" }
 rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.71", package = "pavexc_rustdoc_types" }
 cargo-like-utils = { workspace = true }
 tracing_log_error = { workspace = true }

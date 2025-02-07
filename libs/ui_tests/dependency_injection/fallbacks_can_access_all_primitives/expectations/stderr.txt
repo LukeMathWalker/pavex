@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::Error`.
   [31m│[0m `pavex::Error` can only be used as the error type of your fallible
   [31m│[0m components.
@@ -11,7 +11,7 @@
   [31m│[0m  [2m88[0m │         bp.request_scoped(f!(crate::response_ref));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::Response`.
   [31m│[0m You can only return a response from request handlers, middlewares or error
   [31m│[0m handlers.
@@ -24,7 +24,7 @@
   [31m│[0m  [2m89[0m │         bp.request_scoped(f!(crate::request_head_ref));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::request::RequestHead`.
   [31m│[0m `pavex::request::RequestHead` is a framework primitive, you can't override
   [31m│[0m the way it's built by Pavex.
@@ -37,7 +37,7 @@
   [31m│[0m  [2m90[0m │         bp.request_scoped(f!(crate::allowed_methods_ref));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::router::AllowedMethods`.
   [31m│[0m `pavex::router::AllowedMethods` is a framework primitive, you can't
   [31m│[0m override the way it's built by Pavex.
@@ -50,7 +50,7 @@
   [31m│[0m  [2m91[0m │         bp.request_scoped(f!(crate::raw_incoming_body_ref));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for
   [31m│[0m `pavex::request::body::RawIncomingBody`.
   [31m│[0m `pavex::request::body::RawIncomingBody` is a framework primitive, you
@@ -64,7 +64,7 @@
   [31m│[0m  [2m92[0m │         bp.request_scoped(f!(crate::matched_path_pattern_ref));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for
   [31m│[0m `pavex::request::path::MatchedPathPattern`.
   [31m│[0m `pavex::request::path::MatchedPathPattern` is a framework primitive, you
@@ -78,7 +78,7 @@
   [31m│[0m  [2m93[0m │         bp.request_scoped(f!(crate::raw_path_params_ref));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for
   [31m│[0m `pavex::request::path::RawPathParams<'server, 'request>`.
   [31m│[0m `pavex::request::path::RawPathParams<'server, 'request>` is a framework
@@ -92,7 +92,7 @@
   [31m│[0m  [2m94[0m │         bp
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::Error`.
   [31m│[0m `pavex::Error` can only be used as the error type of your fallible
   [31m│[0m components.
@@ -105,7 +105,7 @@
   [31m│[0m  [2m76[0m │         bp.request_scoped(f!(crate::response));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::Response`.
   [31m│[0m You can only return a response from request handlers, middlewares or error
   [31m│[0m handlers.
@@ -118,7 +118,7 @@
   [31m│[0m  [2m77[0m │         bp.request_scoped(f!(crate::request_head));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::request::RequestHead`.
   [31m│[0m `pavex::request::RequestHead` is a framework primitive, you can't override
   [31m│[0m the way it's built by Pavex.
@@ -131,7 +131,7 @@
   [31m│[0m  [2m78[0m │         bp.request_scoped(f!(crate::allowed_methods));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::router::AllowedMethods`.
   [31m│[0m `pavex::router::AllowedMethods` is a framework primitive, you can't
   [31m│[0m override the way it's built by Pavex.
@@ -144,7 +144,7 @@
   [31m│[0m  [2m79[0m │         bp.request_scoped(f!(crate::raw_incoming_body));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for
   [31m│[0m `pavex::request::body::RawIncomingBody`.
   [31m│[0m `pavex::request::body::RawIncomingBody` is a framework primitive, you
@@ -158,7 +158,7 @@
   [31m│[0m  [2m80[0m │         bp.request_scoped(f!(crate::matched_path_pattern));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for
   [31m│[0m `pavex::request::path::MatchedPathPattern`.
   [31m│[0m `pavex::request::path::MatchedPathPattern` is a framework primitive, you
@@ -172,7 +172,7 @@
   [31m│[0m  [2m81[0m │         bp.request_scoped(f!(crate::raw_path_params));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for
   [31m│[0m `pavex::request::path::RawPathParams<'server, 'request>`.
   [31m│[0m `pavex::request::path::RawPathParams<'server, 'request>` is a framework
@@ -186,7 +186,7 @@
   [31m│[0m  [2m82[0m │         bp.request_scoped(f!(crate::connection_info));
   [31m│[0m     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register a constructor for `pavex::connection::ConnectionInfo`.
   [31m│[0m `pavex::connection::ConnectionInfo` is a framework primitive, you can't
   [31m│[0m override the way it's built by Pavex.

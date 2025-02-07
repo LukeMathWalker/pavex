@@ -2,6 +2,10 @@ use std::fmt::Display;
 
 use miette::{Diagnostic, LabeledSpan, NamedSource, Severity, SourceCode};
 
+mod utils;
+
+pub use utils::anyhow2miette;
+
 /// A builder for a [`CompilerDiagnostic`].
 pub struct CompilerDiagnosticBuilder {
     severity: Severity,

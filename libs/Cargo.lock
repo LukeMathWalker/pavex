@@ -2430,6 +2430,7 @@ version = "0.1.71"
 dependencies = [
  "anstyle",
  "anyhow",
+ "async-trait",
  "bytes",
  "cargo-like-utils",
  "clap",
@@ -2438,11 +2439,13 @@ dependencies = [
  "fs-err",
  "guppy",
  "hex",
+ "http",
  "jsonwebtoken",
  "libc",
  "miette",
  "owo-colors",
  "pavex_cli_deps",
+ "pavex_cli_diagnostic",
  "pavex_cli_flock",
  "pavex_cli_shell",
  "pavex_miette",
@@ -2498,8 +2501,20 @@ version = "0.1.71"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
+ "miette",
  "pavex_cli_shell",
  "px_workspace_hack",
+ "thiserror 2.0.11",
+]
+
+[[package]]
+name = "pavex_cli_diagnostic"
+version = "0.1.71"
+dependencies = [
+ "anyhow",
+ "miette",
+ "px_workspace_hack",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -2679,6 +2694,7 @@ dependencies = [
  "once_cell",
  "pavex",
  "pavex_bp_schema",
+ "pavex_cli_diagnostic",
  "pavex_cli_shell",
  "pavexc_rustdoc_types",
  "persist_if_changed",
@@ -2726,6 +2742,7 @@ dependencies = [
  "owo-colors",
  "path-absolutize",
  "pavex_cli_deps",
+ "pavex_cli_diagnostic",
  "pavex_cli_shell",
  "pavex_miette",
  "pavexc",

@@ -35,11 +35,9 @@ impl SnapshotTest {
                 outcome.expect("Failed to load the expected value for a snapshot test")
             }
         };
-        let trimmed_expected = expected.trim();
-        let actual = actual.trim();
 
         // Replace all line endings with `\n` to make sure that the snapshots are cross-platform.
-        let trimmed_expected = trimmed_expected.replace("\r\n", "\n");
+        let expected = expected.replace("\r\n", "\n");
         let actual = actual.replace("\r\n", "\n");
 
         // Path normalization for Windows, which uses `\` instead of `/` as path separator.
@@ -51,8 +49,32 @@ impl SnapshotTest {
             let path = c.name("path").unwrap().as_str().replace("\\", "/");
             format!("{prefix}{path}",)
         };
-        let trimmed_expected = RE.replace_all(&trimmed_expected, normalizer);
+        let expected = RE.replace_all(&expected, normalizer);
         let actual = RE.replace_all(&actual, normalizer);
+
+        // Replace trailing whitespace on each line with a single newline.
+        let expected = expected
+            .lines()
+            .filter_map(|l| {
+                if l.trim().is_empty() {
+                    None
+                } else {
+                    Some(l.trim_end())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let actual = actual
+            .lines()
+            .filter_map(|l| {
+                if l.trim().is_empty() {
+                    None
+                } else {
+                    Some(l.trim_end())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
 
         let expectation_directory = self.expectation_path.parent().unwrap();
         let last_snapshot_path = expectation_directory.join(format!(
@@ -60,9 +82,9 @@ impl SnapshotTest {
             self.expectation_path.file_name().unwrap().to_string_lossy()
         ));
 
-        if trimmed_expected != actual {
-            print_changeset(&trimmed_expected, &actual);
-            fs_err::write(last_snapshot_path, actual.as_ref())
+        if expected != actual {
+            print_changeset(&expected, &actual);
+            fs_err::write(last_snapshot_path, actual)
                 .expect("Failed to save the actual value for a failed snapshot test");
             Err(())
         } else {

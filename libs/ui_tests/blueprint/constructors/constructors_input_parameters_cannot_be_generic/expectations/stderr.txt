@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::generic_constructor`.
   [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
@@ -13,7 +13,7 @@
   [31m│[0m  [2m29[0m │     bp.request_scoped(f!(crate::doubly_generic_constructor));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:5:1]
-  [31m│[0m  [2m5[0m │ 
+  [31m│[0m  [2m5[0m │
   [31m│[0m  [2m6[0m │ pub fn generic_constructor<T>(_generic_input: GenericType<T>) -> u8 {
   [31m│[0m    · [35;1m                           ┬[0m[33;1m                                     ─┬[0m
   [31m│[0m    ·                            [35;1m│[0m      [33;1m..because it is not used here ──╯[0m
@@ -27,7 +27,7 @@
   [31m│[0m         |    ..
   [31m│[0m         |  )
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::doubly_generic_constructor`.
   [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
@@ -42,7 +42,7 @@
   [31m│[0m  [2m30[0m │     bp.request_scoped(f!(crate::triply_generic_constructor));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:9:1]
-  [31m│[0m  [2m 9[0m │ 
+  [31m│[0m  [2m 9[0m │
   [31m│[0m  [2m10[0m │ pub fn doubly_generic_constructor<T, S>(_i1: GenericType<T>, _i2: GenericType<S>) -> u16 {
   [31m│[0m     · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m                                               ─┬─[0m
   [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m             [32;1m..because they are not used here ──╯[0m
@@ -57,7 +57,7 @@
   [31m│[0m         |    ..
   [31m│[0m         |  )
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::triply_generic_constructor`.
   [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
@@ -72,7 +72,7 @@
   [31m│[0m  [2m31[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:13:1]
-  [31m│[0m  [2m13[0m │ 
+  [31m│[0m  [2m13[0m │
   [31m│[0m  [2m14[0m │ pub fn triply_generic_constructor<T, S, U>(
   [31m│[0m     · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
   [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m

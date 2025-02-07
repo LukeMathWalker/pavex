@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
   [31m│[0m `app::handler` consumes `app::A` by value,
@@ -19,7 +19,7 @@
   [31m│[0m [36m  help: [0mSet the cloning strategy for `app::A` to
   [31m│[0m         `CloneIfNecessary`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
   [31m│[0m `app::handler` consumes `app::B` by value,
@@ -40,7 +40,7 @@
   [31m│[0m [36m  help: [0mSet the cloning strategy for `app::B` to
   [31m│[0m         `CloneIfNecessary`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
   [31m│[0m `app::handler` consumes `app::C` by value,

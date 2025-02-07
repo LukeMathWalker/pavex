@@ -1,19 +1,17 @@
 use crate::activation::token_cache::CliTokenDiskCache;
+use crate::activation::HTTP_CLIENT;
 use crate::activation::{CliTokenError, InvalidActivationKey};
 use anyhow::Context;
 use jsonwebtoken::jwk::{JwkSet, KeyAlgorithm};
 use jsonwebtoken::{decode_header, Algorithm, DecodingKey, TokenData};
 use redact::Secret;
-use reqwest_retry::policies::ExponentialBackoff;
-use reqwest_retry::RetryTransientMiddleware;
-use reqwest_tracing::TracingMiddleware;
 use std::collections::HashSet;
 
 /// A token obtained from Pavex's API using a valid activation key.
 ///
 /// `CliToken` doesn't guarantee that the token is valid!
 /// Use [`CliToken::validate`] to obtain a validation proof.
-pub struct CliToken(Secret<String>);
+pub struct CliToken(pub(super) Secret<String>);
 
 impl CliToken {
     /// Retrieve a CLI token from the disk cache if it contains one.
@@ -34,18 +32,8 @@ impl CliToken {
             jwt: Secret<String>,
         }
 
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
-        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
-            .with(TracingMiddleware::default())
-            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-            .build();
-
-        let user_agent = format!("pavex-cli/{}", env!("CARGO_PKG_VERSION"));
-        let response = client
+        let response = HTTP_CLIENT
             .post("https://api.pavex.dev/v1/cli/login")
-            .header("User-Agent", &user_agent)
-            // Workaround for https://github.com/TrueLayer/reqwest-middleware/pull/148
-            .header("User_Agent", &user_agent)
             .json(&Request { activation_key })
             .send()
             .await
@@ -60,7 +48,7 @@ impl CliToken {
             }
             Err(e) => {
                 if let Some(status) = e.status() {
-                    if status == reqwest::StatusCode::FORBIDDEN {
+                    if status == reqwest::StatusCode::UNAUTHORIZED {
                         return Err(InvalidActivationKey.into());
                     }
                 }
@@ -96,6 +84,12 @@ impl CliToken {
 
     pub fn raw(&self) -> &Secret<String> {
         &self.0
+    }
+}
+
+impl From<CliToken> for Secret<String> {
+    fn from(val: CliToken) -> Self {
+        val.0
     }
 }
 

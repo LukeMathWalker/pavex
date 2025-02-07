@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `app::user_agent::UserAgent`.
   [31m│[0m I need an instance of `app::user_agent::UserAgent` to invoke your request
   [31m│[0m handler, `app::routes::greet::get`.

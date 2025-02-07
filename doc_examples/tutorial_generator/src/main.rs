@@ -340,7 +340,7 @@ fn generate_tutorial(
                 StepCommandOutcome::Success => script_outcome.output,
                 StepCommandOutcome::Failure => {
                     // Let's strip all output until the first error message
-                    let error_beginning_sequence = "[31m[1mERROR";
+                    let error_beginning_sequence = "[31;1mERROR[0m:";
                     let output = script_outcome
                         .error
                         .lines()

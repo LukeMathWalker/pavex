@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
   [31m│[0m `app::A` has a named lifetime parameter, `'a`, that you haven't
   [31m│[0m constrained to be 'static.
@@ -14,7 +14,7 @@
   [31m│[0m         as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for
   [31m│[0m         `struct MyType<'a>(&'a str)`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::B` has a generic type parameter, `T`, that you haven't
   [31m│[0m assigned a concrete type to.
@@ -30,7 +30,7 @@
   [31m│[0m         registering the type as prebuilt. E.g. `bp.prebuilt(f!
   [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
   [31m│[0m `app::C` has 3 named lifetime parameters that you haven't
   [31m│[0m constrained to be 'static: `'a`, `'b` and `'c`.
@@ -46,7 +46,7 @@
   [31m│[0m         as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for
   [31m│[0m         `struct MyType<'a>(&'a str)`.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::D` has 3 generic type parameters that you haven't assigned
   [31m│[0m concrete types to: `T`, `S` and `Z`.

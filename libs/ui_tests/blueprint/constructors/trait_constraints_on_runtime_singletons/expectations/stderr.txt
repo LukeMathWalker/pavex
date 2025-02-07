@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `app::NonSendSingleton` doesn't implement the
   [31m│[0m `core::marker::Send` trait.
   [31m│[0m
@@ -13,7 +13,7 @@
   [31m│[0m         Pavex runs on a multi-threaded HTTP server and the application state
   [31m│[0m         is shared across all worker threads.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `app::NonSendSingleton` doesn't implement the
   [31m│[0m `core::marker::Sync` trait.
   [31m│[0m
@@ -28,7 +28,7 @@
   [31m│[0m         Pavex runs on a multi-threaded HTTP server and the application state
   [31m│[0m         is shared across all worker threads.
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `app::NonSyncSingleton` doesn't implement the
   [31m│[0m `core::marker::Sync` trait.
   [31m│[0m

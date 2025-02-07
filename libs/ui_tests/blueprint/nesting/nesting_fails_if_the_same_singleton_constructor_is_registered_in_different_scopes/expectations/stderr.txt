@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m The constructor for a singleton must be registered once.
   [31m│[0m You registered the same constructor for `u64` against 2 different nested
   [31m│[0m blueprints.
