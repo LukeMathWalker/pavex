@@ -174,6 +174,17 @@ pub enum SelfCommands {
         /// to activate your Pavex installation.
         #[clap(short = 'w', long, value_parser)]
         wizard_key: Option<Secret<String>>,
+        #[clap(long, value_parser)]
+        /// When this flag is set, Pavex will just install the required dependencies,
+        /// skipping the activation step.
+        ///
+        /// This option is useful for CI/CD pipelines, where you'll be
+        /// invoking `pavex generate --check` to verify that the generated code
+        /// that's been committed is up to date.
+        /// Since activation is not required for verifying the generated code,
+        /// you can use this flag to avoid storing an activation key
+        /// in your CI/CD system.
+        skip_activation: bool,
     },
     /// Uninstall Pavex CLI and remove all its dependencies and artifacts.
     Uninstall {
@@ -182,6 +193,9 @@ pub enum SelfCommands {
         y: bool,
     },
     /// Activate your Pavex installation.
+    ///
+    /// In most cases, you are better off using the `pavex self setup` command
+    /// to activate your Pavex installation *and* install all the required dependencies.
     Activate {
         /// The activation key for Pavex.
         /// You can find the activation key for the beta program in Pavex's Discord server,
