@@ -94,9 +94,11 @@ fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
                     activate(cli.color, &locator, key.map(|k| k.into_inner()), &key_set)
                         .map_err(anyhow2miette)
                 }
-                SelfCommands::Setup { wizard_key } => {
-                    setup(cli.color, &locator, &key_set, wizard_key).map(|_| ExitCode::SUCCESS)
-                }
+                SelfCommands::Setup {
+                    wizard_key,
+                    skip_activation,
+                } => setup(cli.color, &locator, &key_set, wizard_key, skip_activation)
+                    .map(|_| ExitCode::SUCCESS),
             }
         }
     }
@@ -279,32 +281,37 @@ fn setup(
     locator: &PavexLocator,
     key_set: &JwkSet,
     wizard_key: Option<Secret<String>>,
+    skip_activation: bool,
 ) -> Result<(), miette::Error> {
-    SHELL.status("Checking", "if Pavex has been activated on your machine");
-    let must_activate = match get_activation_key(locator) {
-        Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
-        Err(_) => true,
-    };
-    if must_activate {
-        match wizard_key {
-            Some(key) => {
-                exchange_wizard_key(locator, key)?;
-                SHELL.status("Success", "Pavex has been activated on your machine");
-            }
-            None => {
-                SHELL.status_with_color(
-                    "Inactive",
-                    "Pavex has not been activated yet",
-                    &cargo_like_utils::shell::style::ERROR,
-                );
-                activate(color, locator, None, key_set).map_err(anyhow2miette)?;
-            }
-        }
+    if skip_activation {
+        SHELL.status("Skipping", "Pavex activation");
     } else {
-        SHELL.status(
-            "Success",
-            "Pavex has already been activated on your machine",
-        );
+        SHELL.status("Checking", "if Pavex has been activated on your machine");
+        let must_activate = match get_activation_key(locator) {
+            Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
+            Err(_) => true,
+        };
+        if must_activate {
+            match wizard_key {
+                Some(key) => {
+                    exchange_wizard_key(locator, key)?;
+                    SHELL.status("Success", "Pavex has been activated on your machine");
+                }
+                None => {
+                    SHELL.status_with_color(
+                        "Inactive",
+                        "Pavex has not been activated yet",
+                        &cargo_like_utils::shell::style::ERROR,
+                    );
+                    activate(color, locator, None, key_set).map_err(anyhow2miette)?;
+                }
+            }
+        } else {
+            SHELL.status(
+                "Success",
+                "Pavex has already been activated on your machine",
+            );
+        }
     }
 
     let options = IfAutoinstallable::PromptForConfirmation;
