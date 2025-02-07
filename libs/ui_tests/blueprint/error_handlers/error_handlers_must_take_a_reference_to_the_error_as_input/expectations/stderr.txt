@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Error handlers associated with a fallible operation must take a reference
   [31m│[0m to the operation's error type as input.
   [31m│[0m This error handler is associated with

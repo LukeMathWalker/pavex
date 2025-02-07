@@ -18,6 +18,7 @@ pavexc = { path = "../pavexc", version = "0.1.71" }
 pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.71" }
 pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.71" }
 pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.71" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.1.71" }
 tracing_log_error = { workspace = true }
 cargo-like-utils = { workspace = true }
 pavex_miette = { path = "../pavex_miette", version = "0.1.71" }

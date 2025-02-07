@@ -10,5 +10,4 @@ pub mod prebuilt;
 pub mod state;
 pub mod toolchain;
 pub mod user_input;
-pub mod utils;
 pub mod version;

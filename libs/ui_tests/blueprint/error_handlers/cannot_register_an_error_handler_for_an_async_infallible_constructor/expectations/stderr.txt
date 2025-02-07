@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You registered an error handler for a constructor that doesn't return
   [31m│[0m a `Result`.
   [31m│[0m

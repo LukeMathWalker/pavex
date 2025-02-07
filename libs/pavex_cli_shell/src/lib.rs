@@ -28,6 +28,7 @@ pub trait ShellExt {
         U: Display;
     fn note<T: Display>(&self, message: T);
     fn warn<T: Display>(&self, message: T);
+    fn error<T: Display>(&self, message: T);
 }
 
 impl ShellExt for OnceLock<Arc<Mutex<Shell>>> {
@@ -36,7 +37,9 @@ impl ShellExt for OnceLock<Arc<Mutex<Shell>>> {
         T: Display,
         U: Display,
     {
-        if let Some(s) = self.get() { let _ = s.lock().unwrap().status(status, message); }
+        if let Some(s) = self.get() {
+            let _ = s.lock().unwrap().status(status, message);
+        }
     }
 
     fn status_with_color<T, U>(&self, status: T, message: U, color: &style::Style)
@@ -44,14 +47,26 @@ impl ShellExt for OnceLock<Arc<Mutex<Shell>>> {
         T: Display,
         U: Display,
     {
-        if let Some(s) = self.get() { let _ = s.lock().unwrap().status_with_color(status, message, color); }
+        if let Some(s) = self.get() {
+            let _ = s.lock().unwrap().status_with_color(status, message, color);
+        }
     }
 
     fn note<T: Display>(&self, message: T) {
-        if let Some(s) = self.get() { let _ = s.lock().unwrap().note(message); }
+        if let Some(s) = self.get() {
+            let _ = s.lock().unwrap().note(message);
+        }
     }
 
     fn warn<T: Display>(&self, message: T) {
-        if let Some(s) = self.get() { let _ = s.lock().unwrap().warn(message); }
+        if let Some(s) = self.get() {
+            let _ = s.lock().unwrap().warn(message);
+        }
+    }
+
+    fn error<T: Display>(&self, message: T) {
+        if let Some(s) = self.get() {
+            let _ = s.lock().unwrap().error(message);
+        }
     }
 }

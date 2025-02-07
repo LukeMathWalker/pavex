@@ -10,7 +10,7 @@ use clap::Parser;
 use jsonwebtoken::jwk::JwkSet;
 use owo_colors::OwoColorize;
 use pavex_cli::activation::{
-    background_token_refresh, check_activation, get_activation_key,
+    background_token_refresh, check_activation, exchange_wizard_key, get_activation_key,
     get_activation_key_if_necessary, CliTokenError,
 };
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
@@ -22,9 +22,9 @@ use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
 use pavex_cli::prebuilt::download_prebuilt;
 use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
-use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
 use pavex_cli_deps::{verify_installation, CargoPx, IfAutoinstallable, Rustup};
+use pavex_cli_diagnostic::anyhow2miette;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::commands::new::TemplateName;
@@ -44,7 +44,17 @@ fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     init_miette_hook(&cli);
     let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
-    init_shell(cli.color).map_err(utils::anyhow2miette)?;
+    match _main(cli) {
+        Ok(code) => Ok(code),
+        Err(e) => {
+            eprintln!("{e:?}");
+            Ok(ExitCode::FAILURE)
+        }
+    }
+}
+
+fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
+    init_shell(cli.color).map_err(anyhow2miette)?;
 
     let client = pavexc_client(&cli);
     let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
@@ -55,11 +65,11 @@ fn main() -> Result<ExitCode, miette::Error> {
         serde_json::from_str(PAVEX_CACHED_KEYSET).expect("Failed to parse the cached JWKS");
 
     if let Some(activation_key) =
-        get_activation_key_if_necessary(&cli.command, &locator).map_err(utils::anyhow2miette)?
+        get_activation_key_if_necessary(&cli.command, &locator).map_err(anyhow2miette)?
     {
         let claims = check_activation(&locator, activation_key.clone(), &key_set)
             .context("Failed to check Pavex activation")
-            .map_err(utils::anyhow2miette)?;
+            .map_err(anyhow2miette)?;
         background_token_refresh(&claims, &key_set, activation_key, &locator);
     }
     match cli.command {
@@ -68,22 +78,28 @@ fn main() -> Result<ExitCode, miette::Error> {
             diagnostics,
             check,
             output,
-        } => generate(client, &locator, blueprint, diagnostics, output, check),
-        Command::New { path, template } => scaffold_project(client, &locator, path, template),
+        } => {
+            generate(client, &locator, blueprint, diagnostics, output, check).map_err(anyhow2miette)
+        }
+        Command::New { path, template } => {
+            scaffold_project(client, &locator, path, template).map_err(anyhow2miette)
+        }
         Command::Self_ { command } => {
             // You should always be able to run `self` commands, even if Pavex has
             // not been activated yet.
             match command {
-                SelfCommands::Update => update(),
-                SelfCommands::Uninstall { y } => uninstall(!y, locator),
+                SelfCommands::Update => update().map_err(anyhow2miette),
+                SelfCommands::Uninstall { y } => uninstall(!y, locator).map_err(anyhow2miette),
                 SelfCommands::Activate { key } => {
                     activate(cli.color, &locator, key.map(|k| k.into_inner()), &key_set)
+                        .map_err(anyhow2miette)
                 }
-                SelfCommands::Setup => setup(cli.debug, cli.color, &locator, &key_set),
+                SelfCommands::Setup { wizard_key } => {
+                    setup(cli.color, &locator, &key_set, wizard_key).map(|_| ExitCode::SUCCESS)
+                }
             }
         }
     }
-    .map_err(utils::anyhow2miette)
 }
 
 fn init_shell(color: Color) -> Result<(), anyhow::Error> {
@@ -259,57 +275,43 @@ fn update() -> Result<ExitCode, anyhow::Error> {
 
 #[tracing::instrument("Setup Pavex", skip_all)]
 fn setup(
-    debug: bool,
     color: Color,
     locator: &PavexLocator,
     key_set: &JwkSet,
-) -> Result<ExitCode, anyhow::Error> {
-    fn _setup(color: Color, locator: &PavexLocator, key_set: &JwkSet) -> Result<(), anyhow::Error> {
-        let options = IfAutoinstallable::PromptForConfirmation;
-        verify_installation(Rustup, options)?;
-        verify_installation(CargoPx, options)?;
-
-        SHELL.status("Checking", "if Pavex has been activated");
-        let must_activate = match get_activation_key(locator) {
-            Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
-            Err(_) => true,
-        };
-        if must_activate {
-            SHELL.status_with_color(
-                "Inactive",
-                "Pavex has not been activated yet",
-                &cargo_like_utils::shell::style::ERROR,
-            );
-            if std::io::stdout().is_terminal() {
-                activate(color, locator, None, key_set)?;
-            } else {
-                SHELL.note(
-                    "Invoke\n\n    \
-                    pavex self activate\n\n\
-                    to activate your Pavex installation.",
-                );
+    wizard_key: Option<Secret<String>>,
+) -> Result<(), miette::Error> {
+    SHELL.status("Checking", "if Pavex has been activated on your machine");
+    let must_activate = match get_activation_key(locator) {
+        Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
+        Err(_) => true,
+    };
+    if must_activate {
+        match wizard_key {
+            Some(key) => {
+                exchange_wizard_key(locator, key)?;
+                SHELL.status("Success", "Pavex has been activated on your machine");
             }
-        } else {
-            SHELL.status("Success", "Pavex has already been activated");
-        }
-
-        Ok(())
-    }
-
-    match _setup(color, locator, key_set) {
-        Ok(()) => Ok(ExitCode::SUCCESS),
-        Err(e) => {
-            if debug {
-                Err(e)
-            } else {
-                SHELL.note(
-                    "Once you've installed what's missing, re-run `pavex self setup` \
-                    to verify everything is working as expected.",
+            None => {
+                SHELL.status_with_color(
+                    "Inactive",
+                    "Pavex has not been activated yet",
+                    &cargo_like_utils::shell::style::ERROR,
                 );
-                Ok(ExitCode::FAILURE)
+                activate(color, locator, None, key_set).map_err(anyhow2miette)?;
             }
         }
+    } else {
+        SHELL.status(
+            "Success",
+            "Pavex has already been activated on your machine",
+        );
     }
+
+    let options = IfAutoinstallable::PromptForConfirmation;
+    verify_installation(Rustup, options)?;
+    verify_installation(CargoPx, options)?;
+
+    Ok(())
 }
 
 #[tracing::instrument("Activate Pavex", skip_all)]
@@ -343,32 +345,24 @@ fn activate(
             }
 
             println!();
-            let mut k: Option<Secret<String>> = None;
-            'outer: while k.is_none() {
+            let k: Secret<String> = 'outer: loop {
                 let question = if use_color_on_stdout(color) {
                     format!(
                         "Welcome to Pavex's beta program! Please enter your {}.\n{}",
                         "activation key".bold().green(),
-                        "You can find the activation key for the beta program in the #activation \
-                        channel of Pavex's Discord server.\n\
-                        You can join the beta program by visiting https://pavex.dev\n"
+                        "You can provision an activation key at https://console.pavex.dev\n"
                             .dimmed()
                     )
                 } else {
                     "Welcome to Pavex's beta program! Please enter your activation key.\n\
-                        You can find the activation key for the beta program in the #activation \
-                        channel of Pavex's Discord server.\n\
-                        You can join the beta program by visiting https://pavex.dev\n"
+                    You can provision an activation key at https://console.pavex.dev\n"
                         .to_string()
                 };
                 let attempt = Secret::new(
                     mandatory_question(&question).context("Failed to read activation key")?,
                 );
                 match check_activation(locator, attempt.clone(), key_set) {
-                    Ok(_) => {
-                        k = Some(attempt);
-                        break 'outer;
-                    }
+                    Ok(_) => break 'outer attempt,
                     Err(e) => match e {
                         CliTokenError::ActivationKey(_) => {
                             print_error(
@@ -388,8 +382,8 @@ fn activate(
                     },
                 }
                 eprintln!();
-            }
-            k.unwrap()
+            };
+            k
         }
         Some(k) => {
             if check_activation(locator, k.clone(), key_set).is_err() {

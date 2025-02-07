@@ -1,16 +1,24 @@
-use crate::activation::token::{CliToken, ValidatedClaims};
+use crate::activation::token::ValidatedClaims;
 use crate::command::Command;
 use crate::locator::PavexLocator;
 use crate::state::State;
 use anyhow::Context;
 use jsonwebtoken::jwk::JwkSet;
+use pavex_cli_diagnostic::anyhow2miette;
 use redact::Secret;
 use time::Duration;
 use token_cache::CliTokenDiskCache;
 use tracing_log_error::log_error;
 
+pub use http_client::HTTP_CLIENT;
+pub use token::CliToken;
+pub use wizard_key::WizardKey;
+
+mod http_client;
+mod json_api;
 mod token;
 mod token_cache;
+mod wizard_key;
 
 /// If the command requires it, retrieve Pavex's activation key from the state.
 pub fn get_activation_key_if_necessary(
@@ -31,6 +39,33 @@ pub fn get_activation_key(locator: &PavexLocator) -> Result<Secret<String>, anyh
         return Err(PavexMustBeActivated.into());
     };
     Ok(key)
+}
+
+/// Exchange a wizard key for a CLI token and an activation key.
+///
+/// Then store both on disk for future use.
+pub fn exchange_wizard_key(
+    locator: &PavexLocator,
+    wizard_key: Secret<String>,
+) -> Result<(), miette::Error> {
+    let wizard_key = WizardKey::new(wizard_key);
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    rt.block_on(async move {
+        let (activation_key, cli_token) = wizard_key.exchange().await?;
+        let state = State::new(locator);
+        state
+            .set_activation_key(activation_key)
+            .map_err(anyhow2miette)?;
+        let cache = CliTokenDiskCache::new(locator.auth());
+        cache
+            .upsert_token(cli_token.into())
+            .await
+            .map_err(anyhow2miette)?;
+        Ok(())
+    })
 }
 
 pub fn background_token_refresh(
@@ -159,4 +194,34 @@ pub enum CliTokenError {
     ActivationKey(#[from] InvalidActivationKey),
     #[error("Failed to exchange your activation key for a CLI token with api.pavex.dev")]
     RpcError(#[source] anyhow::Error),
+}
+
+#[derive(thiserror::Error, miette::Diagnostic, Debug)]
+#[error(
+    "The wizard key you provided is malformed. {details}",
+    details = .details.as_deref().unwrap_or_default()
+)]
+#[diagnostic(help("Try copying the key again from the browser (https://console.pavex.dev/wizard/setup). Perhaps you lost a piece along the way?"))]
+pub struct MalformedWizardKey {
+    details: Option<String>,
+}
+
+#[derive(thiserror::Error, miette::Diagnostic, Debug)]
+#[error("The wizard key you provided is either invalid or expired.")]
+#[diagnostic(help("Refresh the setup page (https://console.pavex.dev/wizard/setup) in the browser to generate a new key."))]
+pub struct InvalidWizardKey;
+
+#[derive(thiserror::Error, miette::Diagnostic, Debug)]
+pub enum WizardKeyError {
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    MalformedKey(#[from] MalformedWizardKey),
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    InvalidKey(#[from] InvalidWizardKey),
+    #[error(
+        "Something went wrong when trying to exchange your wizard key for an activation token."
+    )]
+    #[diagnostic(help("Please try again! If the problem persists, send us a message in the #get-help channel on Discord."))]
+    UnexpectedError(#[source] anyhow::Error),
 }

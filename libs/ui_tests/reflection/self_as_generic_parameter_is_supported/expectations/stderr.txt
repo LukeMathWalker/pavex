@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::stream_file::<std::path::PathBuf>`.
   [31m│[0m There should no unassigned generic parameters in request handlers, but `T`
@@ -11,7 +11,7 @@
   [31m│[0m     ·                                                  [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m10[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
+  [31m│[0m   [31m×[0m
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
   [31m│[0m    · [35;1m                   ┬[0m

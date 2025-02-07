@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can work with functions and methods, but `app::Streamer` is
   [31m│[0m neither.
   [31m│[0m It is a struct and I don't know how to use it as a request handler.

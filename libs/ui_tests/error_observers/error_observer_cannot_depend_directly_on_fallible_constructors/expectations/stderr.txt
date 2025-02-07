@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Error observers can't depend on a type with a fallible constructor, either
   [31m│[0m directly or transitively.
   [31m│[0m `app::error_observer` violates this constraints! It depends

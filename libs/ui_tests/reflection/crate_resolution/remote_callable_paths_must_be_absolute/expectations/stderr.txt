@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `new_logger` is not a fully-qualified import path.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mreflection/crate_resolution/remote_callable_paths_must_be_absolute/src/lib.rs[0m:10:1]

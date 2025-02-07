@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You can't register multiple constructors for the same singleton type,
   [31m│[0m `u64`.
   [31m│[0m There must be at most one live instance for each singleton type. If you

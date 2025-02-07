@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m `s{.com` is not a valid domain. It contains an unclosed domain parameter
   [31m│[0m in one of its DNS labels, `s{`. Domain parameters must be enclosed in
   [31m│[0m curly braces (`{` and `}`), but `{` is missing a closing brace (`}`).

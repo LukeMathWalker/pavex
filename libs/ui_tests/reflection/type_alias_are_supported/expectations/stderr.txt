@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   × One of the input parameters for `app::handler_with_input_tuple` has a type
   │ that I cannot handle.
     ╭─[src/lib.rs:18:1]
@@ -9,17 +9,17 @@
  20 │     bp
     ╰────
 
-Error: 
-  × 
+Error:
+  ×
     ╭─[src/lib.rs:8:1]
-  8 │ 
+  8 │
   9 │ pub fn handler_with_input_tuple(input: (usize, isize)) -> pavex_runtime::response::Response {
     ·                                        ───────┬──────
     ·                                               ╰── I do not know how handle this parameter
  10 │     todo!()
     ╰────
 
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   × One of the input parameters for `app::constructor_with_input_tuple` has a
   │ type that I cannot handle.
     ╭─[src/lib.rs:15:1]
@@ -30,10 +30,10 @@ Error:
  17 │         Lifecycle::Singleton,
     ╰────
 
-Error: 
-  × 
+Error:
+  ×
    ╭─[src/lib.rs:4:1]
- 4 │ 
+ 4 │
  5 │ pub fn constructor_with_input_tuple(input: (usize, isize)) -> Logger {
    ·                                            ───────┬──────
    ·                                                   ╰── I do not know how handle this parameter

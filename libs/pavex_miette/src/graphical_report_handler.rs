@@ -208,6 +208,13 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
+        } else {
+            let prefix = match diagnostic.severity() {
+                Some(Severity::Error) | None => "ERROR",
+                Some(Severity::Warning) => "WARNING",
+                Some(Severity::Advice) => "ADVICE",
+            };
+            write!(f, "{}:", prefix.style(severity_style.bold()))?;
         }
         Ok(())
     }
@@ -773,7 +780,6 @@ impl GraphicalReportHandler {
                 };
                 let available_centered_space =
                     max_allowed_width.saturating_sub(if label_index != 0 {
-                        
                         vbar_offsets[label_index - 1].1
                     } else {
                         0

@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m When registering request handlers, you must make a choice: either all
   [31m│[0m handlers have a domain constraint, or none do.
   [31m│[0m Your application violates this rule: there are both domain-specific and

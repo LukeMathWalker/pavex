@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Error observers must take a reference to Pavex's common error type as
   [31m│[0m input (`&pavex::Error`).
   [31m│[0m `app::error_observer` doesn't.

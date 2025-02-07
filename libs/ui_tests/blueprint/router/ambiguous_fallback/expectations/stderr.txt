@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m Routing logic can't be ambiguous.
   [31m│[0m You registered `app::fallback1` as the fallback handler for all
   [31m│[0m unmatched incoming requests with a path that begins in `/users`.

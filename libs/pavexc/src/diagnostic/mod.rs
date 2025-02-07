@@ -1,10 +1,10 @@
 //! A toolkit to assemble and report errors and warnings to the user.
 use std::fmt::{Display, Formatter};
 
-pub(crate) use compiler_diagnostic::{
+pub(crate) use ordinals::ZeroBasedOrdinal;
+pub(crate) use pavex_cli_diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, CompilerDiagnosticBuilder, HelpWithSnippet,
 };
-pub(crate) use ordinals::ZeroBasedOrdinal;
 pub(crate) use proc_macro_utils::ProcMacroSpanExt;
 pub(crate) use registration_locations::{
     get_bp_new_span, get_domain_span, get_f_macro_invocation_span, get_nest_blueprint_span,
@@ -18,7 +18,6 @@ pub(crate) use self::miette::{
 pub(crate) use callable_definition::CallableDefinition;
 
 mod callable_definition;
-mod compiler_diagnostic;
 mod miette;
 mod ordinals;
 mod proc_macro_utils;

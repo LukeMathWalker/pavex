@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m You registered a constructor that returns a `Result`, but you did not
   [31m│[0m register an error handler for it. If I don't have an error handler, I
   [31m│[0m don't know what to do with the error when the constructor fails!

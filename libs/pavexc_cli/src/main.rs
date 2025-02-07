@@ -15,8 +15,8 @@ use formatter::ReversedFull;
 use generate_from_path::GenerateArgs;
 use liquid_core::Value;
 use miette::Severity;
-use owo_colors::OwoColorize;
 use pavex_cli_deps::{verify_installation, IfAutoinstallable, RustdocJson, RustupToolchain};
+use pavex_cli_diagnostic::anyhow2miette;
 use pavex_cli_shell::try_init_shell;
 use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN};
 use pavexc_cli_client::commands::new::TemplateName;
@@ -248,7 +248,7 @@ fn init_shell(color: Color) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
+fn main() -> ExitCode {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
         let mut handler = pavex_miette::PavexMietteHandlerOpts::new();
@@ -276,12 +276,21 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         }
         Box::new(handler.build())
     }))
-    .unwrap();
+    .expect("Failed to set up our fancy error reporter! This should never happen.");
 
     better_panic::install();
     let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
+    match _main(cli) {
+        Ok(code) => code,
+        Err(e) => {
+            eprintln!("{e:?}");
+            ExitCode::FAILURE
+        }
+    }
+}
 
-    init_shell(cli.color)?;
+fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
+    init_shell(cli.color).map_err(anyhow2miette)?;
 
     tracing::trace!(cli = ?cli, "`pavexc` CLI options and flags");
     match cli.command {
@@ -302,8 +311,9 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             cache_workspace_packages,
             precomputed_metadata,
             check,
-        ),
-        Commands::New { path, template } => scaffold_project(path, template),
+        )
+        .map_err(anyhow2miette),
+        Commands::New { path, template } => scaffold_project(path, template).map_err(anyhow2miette),
         Commands::Self_ {
             command: SelfCommands::Setup { docs_toolchain },
         } => {
@@ -347,12 +357,12 @@ fn generate(
     cache_workspace_packages: bool,
     precomputed_metadata: Option<PathBuf>,
     check: bool,
-) -> Result<ExitCode, Box<dyn std::error::Error>> {
+) -> Result<ExitCode, anyhow::Error> {
     let blueprint = {
         let file = fs_err::OpenOptions::new().read(true).open(blueprint)?;
         ron::de::from_reader(&file)?
     };
-    let mut reporter = DiagnosticReporter::new(color_profile);
+    let mut reporter = DiagnosticReporter::new();
 
     let package_graph = package_graph::retrieve_or_compute_package_graph(precomputed_metadata)?;
     let (app, issues) = match App::build(
@@ -379,7 +389,8 @@ fn generate(
     };
     if let Some(diagnostic_path) = diagnostics {
         app.diagnostic_representation()
-            .persist_flat(&diagnostic_path)?;
+            .persist_flat(&diagnostic_path)
+            .context("Failed to persist diagnostic information to disk")?;
     }
     let generated_app = app.codegen()?;
     let mut writer = if check {
@@ -387,14 +398,18 @@ fn generate(
     } else {
         AppWriter::update_mode()
     };
-    generated_app.persist(&output, &mut writer)?;
+    generated_app
+        .persist(&output, &mut writer)
+        .context("Failed to persist the generated code to disk")?;
+
     if let Err(errors) = writer.verify() {
         for e in errors {
             reporter.print_report(&e);
         }
-        return Ok(ExitCode::FAILURE);
+        Ok(ExitCode::FAILURE)
+    } else {
+        Ok(ExitCode::SUCCESS)
     }
-    Ok(ExitCode::SUCCESS)
 }
 
 mod package_graph {
@@ -439,15 +454,12 @@ mod package_graph {
 /// (for a variety of reasons). We use this helper to dedup them.
 struct DiagnosticReporter {
     already_emitted: HashSet<String>,
-    use_color: bool,
 }
 
 impl DiagnosticReporter {
-    fn new(color_profile: Color) -> Self {
-        let use_color = use_color_on_stderr(color_profile);
+    fn new() -> Self {
         Self {
             already_emitted: Default::default(),
-            use_color,
         }
     }
     fn print_report(&mut self, e: &miette::Report) {
@@ -456,24 +468,7 @@ impl DiagnosticReporter {
             // Avoid printing the same diagnostic multiple times.
             return;
         }
-        let prefix = match e.severity() {
-            None | Some(Severity::Error) => {
-                let mut p = "ERROR".to_string();
-                if self.use_color {
-                    p = p.bold().red().to_string();
-                }
-                p
-            }
-            Some(Severity::Warning) => {
-                let mut p = "WARNING".to_string();
-                if self.use_color {
-                    p = p.bold().yellow().to_string();
-                }
-                p
-            }
-            _ => unreachable!(),
-        };
-        eprintln!("{prefix}: {formatted}");
+        eprintln!("{formatted}");
         self.already_emitted.insert(formatted);
     }
 }
@@ -491,7 +486,7 @@ static TEMPLATE_DIR: include_dir::Dir = include_dir::include_dir!("$CARGO_MANIFE
 fn scaffold_project(
     destination: PathBuf,
     template: TemplateName,
-) -> Result<ExitCode, Box<dyn std::error::Error>> {
+) -> Result<ExitCode, anyhow::Error> {
     let name = destination
         .file_name()
         .ok_or_else(|| {

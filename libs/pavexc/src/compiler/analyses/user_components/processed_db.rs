@@ -7,6 +7,7 @@ use syn::spanned::Spanned;
 use pavex_bp_schema::{
     Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawIdentifiers,
 };
+use pavex_cli_diagnostic::anyhow2miette;
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -22,7 +23,7 @@ use crate::diagnostic::{
 };
 use crate::language::ResolvedPath;
 use crate::rustdoc::CrateCollection;
-use crate::utils::{anyhow2miette, comma_separated_list};
+use crate::utils::comma_separated_list;
 use crate::{diagnostic, try_source};
 
 /// A database that contains all the user components that have been registered against the

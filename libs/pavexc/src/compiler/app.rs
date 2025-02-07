@@ -8,6 +8,7 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexMap;
 
 use pavex_bp_schema::Blueprint;
+use pavex_cli_diagnostic::anyhow2miette;
 
 use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
@@ -27,7 +28,6 @@ use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::{codegen, path_parameters};
 use crate::rustdoc::CrateCollection;
-use crate::utils::anyhow2miette;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 

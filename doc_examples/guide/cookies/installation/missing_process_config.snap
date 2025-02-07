@@ -1,4 +1,4 @@
-[31m[1mERROR[0m[39m: 
+[31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `biscotti::ProcessorConfig`.
   [31m│[0m I need an instance of `biscotti::ProcessorConfig` to
   [31m│[0m invoke your constructor, `<pavex::cookie::Processor as
