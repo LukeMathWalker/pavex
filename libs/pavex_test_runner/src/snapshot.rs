@@ -36,45 +36,8 @@ impl SnapshotTest {
             }
         };
 
-        // Replace all line endings with `\n` to make sure that the snapshots are cross-platform.
-        let expected = expected.replace("\r\n", "\n");
-        let actual = actual.replace("\r\n", "\n");
-
-        // Path normalization for Windows, which uses `\` instead of `/` as path separator.
-        static RE: once_cell::sync::Lazy<regex::Regex> = once_cell::sync::Lazy::new(|| {
-            regex::Regex::new(r#"(?<prefix>\[\[36;1;4m)(?<path>.*)"#).unwrap()
-        });
-        let normalizer = |c: &Captures| {
-            let prefix = c.name("prefix").unwrap().as_str();
-            let path = c.name("path").unwrap().as_str().replace("\\", "/");
-            format!("{prefix}{path}",)
-        };
-        let expected = RE.replace_all(&expected, normalizer);
-        let actual = RE.replace_all(&actual, normalizer);
-
-        // Replace trailing whitespace on each line with a single newline.
-        let expected = expected
-            .lines()
-            .filter_map(|l| {
-                if l.trim().is_empty() {
-                    None
-                } else {
-                    Some(l.trim_end())
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-        let actual = actual
-            .lines()
-            .filter_map(|l| {
-                if l.trim().is_empty() {
-                    None
-                } else {
-                    Some(l.trim_end())
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        let expected = Self::sanitize_output(&expected);
+        let actual = Self::sanitize_output(&actual);
 
         let expectation_directory = self.expectation_path.parent().unwrap();
         let last_snapshot_path = expectation_directory.join(format!(
@@ -91,6 +54,36 @@ impl SnapshotTest {
             let _ = fs_err::remove_file(last_snapshot_path);
             Ok(())
         }
+    }
+
+    fn sanitize_output(output: &str) -> String {
+        // Replace all line endings with `\n` to make sure that the snapshots are cross-platform.
+        let output = output.replace("\r\n", "\n");
+
+        // Path normalization for Windows, which uses `\` instead of `/` as path separator.
+        static RE: once_cell::sync::Lazy<regex::Regex> = once_cell::sync::Lazy::new(|| {
+            regex::Regex::new(r#"(?<prefix>\[\[36;1;4m)(?<path>.*)"#).unwrap()
+        });
+        let normalizer = |c: &Captures| {
+            let prefix = c.name("prefix").unwrap().as_str();
+            let path = c.name("path").unwrap().as_str().replace("\\", "/");
+            format!("{prefix}{path}",)
+        };
+        let output = RE.replace_all(&output, normalizer);
+
+        // Replace trailing whitespace on each line with a single newline.
+        // Remove constant noise from the output too.
+        output
+            .lines()
+            .filter_map(|l| {
+                if l.trim().is_empty() || l.starts_with("[1m[36mnote[0m[1m:[0m Rerun with `PAVEX_DEBUG=true` to display more error details") {
+                    None
+                } else {
+                    Some(l.trim_end())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
 

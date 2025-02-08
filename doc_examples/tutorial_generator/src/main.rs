@@ -347,7 +347,8 @@ fn generate_tutorial(
                         .skip_while(|line| !line.contains(error_beginning_sequence))
                         .filter(|l| {
                             l != &"The invocation of `pavex [...] generate [...]` exited with a non-zero status code: 1" &&
-                            !l.starts_with("error: Failed to run `bp`, the code generator for")
+                            !l.starts_with("error: Failed to run `bp`, the code generator for") &&
+                            !l.starts_with("[1m[36mnote[0m[1m:[0m Rerun with `PAVEX_DEBUG=true` to display more error details")
                         })
                         .collect::<Vec<_>>()
                         .join("\n");

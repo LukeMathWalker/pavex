@@ -40,17 +40,19 @@ use tracing_subscriber::EnvFilter;
 
 static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 
-fn main() -> Result<ExitCode, miette::Error> {
+fn main() -> ExitCode {
     let cli = Cli::parse();
     init_miette_hook(&cli);
     let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
-    match _main(cli) {
-        Ok(code) => Ok(code),
+    let code = match _main(cli) {
+        Ok(code) => code,
         Err(e) => {
             eprintln!("{e:?}");
-            Ok(ExitCode::FAILURE)
+            ExitCode::FAILURE
         }
-    }
+    };
+    SHELL.note("Rerun with `PAVEX_DEBUG=true` to display more error details.");
+    code
 }
 
 fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
