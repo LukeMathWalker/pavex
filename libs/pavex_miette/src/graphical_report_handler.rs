@@ -244,13 +244,14 @@ impl GraphicalReportHandler {
 
         let diagnostic_text = diagnostic.to_string();
         if !diagnostic_text.is_empty() {
-            writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+            writeln!(f, "{}", textwrap::fill(&diagnostic_text, opts))?;
         }
 
         if !self.with_cause_chain {
             return Ok(());
         }
 
+        let mut previous = diagnostic_text;
         if let Some(mut cause_iter) = diagnostic
             .diagnostic_source()
             .map(DiagnosticChain::from_diagnostic)
@@ -258,6 +259,10 @@ impl GraphicalReportHandler {
             .map(|it| it.peekable())
         {
             while let Some(error) = cause_iter.next() {
+                let error_msg = error.to_string();
+                if error_msg == previous {
+                    continue;
+                }
                 let is_last = cause_iter.peek().is_none();
                 let char = if !is_last {
                     self.theme.characters.lcross
@@ -284,6 +289,8 @@ impl GraphicalReportHandler {
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
                 writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
+
+                previous = error_msg;
             }
         }
 
