@@ -65,7 +65,7 @@ commit_parsers = [
     { body = ".*security", group = "<!-- 5 -->🛡️ Security" },
     { message = "^polish", group = "<!-- 6 -->🫧 Polishing" },
     { message = "^test", group = "<!-- 7 -->🧪 Testing" },
-    { message = "^.*", group = "other" },
+    { message = "^.*", skip = true },
 ]
 
 [[package]]
