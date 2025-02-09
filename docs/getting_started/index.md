@@ -20,7 +20,7 @@ Execute one of the following commands to install it:
 ## Activation and setup
 
 Before you can start using `pavex`, you need to activate it and install its dependencies.
-Visit [console.pavex.dev](https://console.pavex.dev) and follow the instructions there to complete the activation process.
+Log into [Pavex's console](https://console.pavex.dev/wizard/install) to complete the activation process.
 
 If there are no errors, you're ready to [embark on your Pavex journey](learning_paths.md)!
 
