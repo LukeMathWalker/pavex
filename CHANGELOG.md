@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.72](https://github.com/LukeMathWalker/pavex/compare/0.1.71...0.1.72) - 2025-02-09
+
+
+### ⛰️ Features
+- Nudge users towards PAVEX_DEBUG if they need to investigate errors further (by @LukeMathWalker) - #438
+- Add a '-w' option to 'pavex self setup' to streamline the onboard process. (by @LukeMathWalker) - #436
+- When printing an error chain, deduplicate identical errors to reduce visual noise (by @LukeMathWalker) - #438
+
+
+
+### 🐛 Bug Fixes
+- Add a '--skip-activation' flag to 'pavex self setup' to fix the CI/CD pipeline of the starter project (by @LukeMathWalker) - #437
+
+
+### Contributors
+
+* @LukeMathWalker
+
 ## [0.1.71](https://github.com/LukeMathWalker/pavex/compare/0.1.70...0.1.71) - 2025-02-01
 
 
