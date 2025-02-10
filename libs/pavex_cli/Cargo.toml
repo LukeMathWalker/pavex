@@ -41,7 +41,7 @@ guppy = { workspace = true }
 supports-color = { workspace = true }
 xdg-home = { workspace = true }
 sha2 = { workspace = true }
-zip = { workspace = true }
+zip = { workspace = true, features = ["deflate", "deflate64", "lzma"] }
 xz2 = { workspace = true }
 tar = { workspace = true }
 bytes = { workspace = true }
@@ -77,3 +77,4 @@ px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 pavex_test_runner = { path = "../pavex_test_runner" }
 # Enable more expensive debug assertions when building for testing purposes
 pavexc = { path = "../pavexc", features = ["debug_assertions"] }
+itertools = { workspace = true }
