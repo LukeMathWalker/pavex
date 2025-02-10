@@ -133,8 +133,11 @@ uuid = "1"
 walkdir = "2.5.0"
 windows-sys = "0.59.0"
 xdg-home = "1.3.0"
-xz2 = "0.1.7"
-zip = "2"
+# The `static` feature ensures that we won't accidentally link to the system
+# version of the library, thus requiring the user to have the library preinstalled
+# on their system at runtime.
+xz2 = { version = "0.1", features = ["static"] }
+zip = { version = "2", default-features = false }
 owo-colors = "4.1.0"
 async-trait = "0.1"
 humantime-serde = "1"
