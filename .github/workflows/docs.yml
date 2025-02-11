@@ -224,6 +224,7 @@ jobs:
         pavex new starter
         # Remove the git folder
         rm -rf starter/.git
+        rm starter/Cargo.lock
         # Check if any of the files changed
         git diff --exit-code starter || (echo "Starter project is not up to date. Regenerate it using 'pavex new'" && exit 1)
     - uses: ./.github/actions/finalize-check
