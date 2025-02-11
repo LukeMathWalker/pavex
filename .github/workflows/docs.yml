@@ -141,6 +141,8 @@ jobs:
   examples_linux:
     name: "Examples (linux)"
     runs-on: ubuntu-latest
+    needs:
+      - build_clis_linux
       
     permissions:
       pull-requests: write
