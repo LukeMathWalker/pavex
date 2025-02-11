@@ -15,7 +15,11 @@ impl TestApi {
         Self::init_telemetry();
         let config = Self::get_config();
 
+        {%- if greet_route -%}
         let application_state = build_application_state(config.app).await;
+        {%- else -%}
+        let application_state = build_application_state().await;
+        {%- endif -%}
 
         let tcp_listener = config
             .server
