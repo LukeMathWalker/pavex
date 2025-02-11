@@ -233,7 +233,7 @@ jobs:
         cargo px test
     - name: Check if any of the files changed
       run: |
-        git diff --exit-code examples/starter HEAD -- . ":(exclude)Cargo.lock" || (echo "Starter project is not up to date. Regenerate it using 'pavex new'" && exit 1)
+        git diff --exit-code HEAD -- examples/starter  ":(exclude)Cargo.lock" || (echo "Starter project is not up to date. Regenerate it using 'pavex new'" && exit 1)
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
