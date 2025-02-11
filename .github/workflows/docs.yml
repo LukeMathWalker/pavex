@@ -212,6 +212,8 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Check that starter compiles
+      env:
+        PAVEX_DEBUG: "true"
       run: |
         cd examples/starter
         cargo px test

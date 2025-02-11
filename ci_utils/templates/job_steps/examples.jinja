@@ -10,6 +10,8 @@
   run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
 <% include 'setup_pavex' %>
 - name: Check that starter compiles
+  env:
+    PAVEX_DEBUG: "true"
   run: |
     cd examples/starter
     cargo px test
