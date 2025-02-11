@@ -211,20 +211,24 @@ jobs:
       run: |
         pavex self activate
         pavexc self setup
-    - name: Check that starter compiles
+    - name: Check that starter is fresh
       env:
         PAVEX_DEBUG: "true"
         PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
       run: |
         cd examples/starter
-        cargo px test
-    - name: Check starter is up to date
+        cargo px verify-freshness
+    - name: Check starter compiles and it's up to date
+      env:
+        PAVEX_DEBUG: "true"
+        PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
       run: |
         cd examples
         rm -rf starter
         pavex new starter
         # Remove the git folder
         rm -rf starter/.git
+        cargo px test
         # Check if any of the files changed
         git diff --exit-code starter || (echo "Starter project is not up to date. Regenerate it using 'pavex new'" && exit 1)
     - uses: ./.github/actions/finalize-check
