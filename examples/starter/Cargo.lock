@@ -162,6 +162,7 @@ dependencies = [
  "pavex_tracing",
  "serde",
  "tracing",
+ "tracing_log_error",
  "workspace_hack",
 ]
 
@@ -1692,12 +1693,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pavex_matchit"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d673cfe628f1698f1e6c2e7a35ff15d23b5085e7017fd5ccada3711560e70a5c"
-
-[[package]]
 name = "pavex_reflection"
 version = "0.1.73"
 dependencies = [
@@ -2425,7 +2420,6 @@ dependencies = [
  "figment",
  "humantime-serde",
  "pavex",
- "pavex_tracing",
  "reqwest",
  "serde",
  "serde-aux",
@@ -2435,6 +2429,7 @@ dependencies = [
  "tracing-bunyan-formatter",
  "tracing-panic",
  "tracing-subscriber",
+ "tracing_log_error",
  "workspace_hack",
 ]
 
@@ -2445,10 +2440,10 @@ dependencies = [
  "app",
  "http",
  "hyper",
+ "matchit",
  "pavex",
- "pavex_matchit",
  "pavex_tracing",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -3785,6 +3780,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-core",
+ "tracing_log_error",
 ]
 
 [[package]]

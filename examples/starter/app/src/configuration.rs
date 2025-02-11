@@ -1,5 +1,6 @@
 use pavex::blueprint::Blueprint;
-use pavex::{f, t};
+use pavex::f;
+use pavex::t;
 
 pub fn register(bp: &mut Blueprint) {
     bp.prebuilt(t!(self::AppConfig));

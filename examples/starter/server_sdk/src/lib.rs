@@ -3,45 +3,64 @@
 //! All manual edits will be lost next time the code is generated.
 extern crate alloc;
 struct ServerState {
-    router: pavex_matchit::Router<u32>,
+    router: Router,
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::configuration::AppConfig,
+    pub app_config: app::configuration::AppConfig,
 }
 pub async fn build_application_state(
     v0: app::configuration::AppConfig,
 ) -> crate::ApplicationState {
-    crate::ApplicationState { s0: v0 }
+    crate::ApplicationState {
+        app_config: v0,
+    }
 }
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
 ) -> pavex::server::ServerHandle {
+    async fn handler(
+        request: http::Request<hyper::body::Incoming>,
+        connection_info: Option<pavex::connection::ConnectionInfo>,
+        server_state: std::sync::Arc<ServerState>,
+    ) -> pavex::response::Response {
+        let (router, state) = (&server_state.router, &server_state.application_state);
+        router.route(request, connection_info, state).await
+    }
+    let router = Router::new();
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router(),
+        router,
         application_state,
     });
-    server_builder.serve(route_request, server_state)
+    server_builder.serve(handler, server_state)
 }
-fn build_router() -> pavex_matchit::Router<u32> {
-    let mut router = pavex_matchit::Router::new();
-    router.insert("/api/hello/:name", 0u32).unwrap();
-    router.insert("/api/ping", 1u32).unwrap();
-    router
+struct Router {
+    router: matchit::Router<u32>,
 }
-async fn route_request(
-    request: http::Request<hyper::body::Incoming>,
-    _connection_info: Option<pavex::connection::ConnectionInfo>,
-    server_state: std::sync::Arc<ServerState>,
-) -> pavex::response::Response {
-    let (request_head, request_body) = request.into_parts();
-    #[allow(unused)]
-    let request_body = pavex::request::body::RawIncomingBody::from(request_body);
-    let request_head: pavex::request::RequestHead = request_head.into();
-    let matched_route = match server_state.router.at(&request_head.target.path()) {
-        Ok(m) => m,
-        Err(_) => {
+impl Router {
+    /// Create a new router instance.
+    ///
+    /// This method is invoked once, when the server starts.
+    pub fn new() -> Self {
+        Self { router: Self::router() }
+    }
+    fn router() -> matchit::Router<u32> {
+        let mut router = matchit::Router::new();
+        router.insert("/api/greet/{name}", 0u32).unwrap();
+        router.insert("/api/ping", 1u32).unwrap();
+        router
+    }
+    pub async fn route(
+        &self,
+        request: http::Request<hyper::body::Incoming>,
+        _connection_info: Option<pavex::connection::ConnectionInfo>,
+        #[allow(unused)]
+        state: &ApplicationState,
+    ) -> pavex::response::Response {
+        let (request_head, _) = request.into_parts();
+        let request_head: pavex::request::RequestHead = request_head.into();
+        let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
             let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
                     vec![],
                 )
@@ -55,65 +74,69 @@ async fn route_request(
                     &allowed_methods,
                 )
                 .await;
-        }
-    };
-    let route_id = matched_route.value;
-    #[allow(unused)]
-    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
-        .params
-        .into();
-    match route_id {
-        0u32 => {
-            let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                "/api/hello/:name",
-            );
-            match &request_head.method {
-                &pavex::http::Method::GET => {
-                    route_1::entrypoint(
-                            url_params,
-                            &request_head,
-                            matched_route_template,
-                            &server_state.application_state.s0,
-                        )
-                        .await
-                }
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                            pavex::http::Method::GET,
-                        ])
-                        .into();
-                    route_2::entrypoint(
-                            &request_head,
-                            matched_route_template,
-                            &allowed_methods,
-                        )
-                        .await
-                }
-            }
-        }
-        1u32 => {
-            let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                "/api/ping",
-            );
-            match &request_head.method {
-                &pavex::http::Method::GET => {
-                    route_0::entrypoint(matched_route_template, &request_head).await
-                }
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                            pavex::http::Method::GET,
-                        ])
-                        .into();
-                    route_2::entrypoint(
-                            &request_head,
-                            matched_route_template,
-                            &allowed_methods,
-                        )
-                        .await
+        };
+        let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
+            .params
+            .into();
+        match matched_route.value {
+            0u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => {
+                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                            "/api/greet/{name}",
+                        );
+                        route_1::entrypoint(
+                                url_params,
+                                &request_head,
+                                matched_route_template,
+                                &state.app_config,
+                            )
+                            .await
+                    }
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
+                            .into();
+                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                            "/api/greet/{name}",
+                        );
+                        route_2::entrypoint(
+                                &request_head,
+                                matched_route_template,
+                                &allowed_methods,
+                            )
+                            .await
+                    }
                 }
             }
+            1u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => {
+                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                            "/api/ping",
+                        );
+                        route_0::entrypoint(matched_route_template, &request_head).await
+                    }
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
+                            .into();
+                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                            "/api/ping",
+                        );
+                        route_2::entrypoint(
+                                &request_head,
+                                matched_route_template,
+                                &allowed_methods,
+                            )
+                            .await
+                    }
+                }
+            }
+            i => unreachable!("Unknown route id: {}", i),
         }
-        i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {
@@ -299,10 +322,8 @@ pub mod route_1 {
                 };
             }
         };
-        let v6 = {
-            let v5 = app::configuration::AppConfig::greet_config(v2);
-            app::routes::hello::get(v4, v5)
-        };
+        let v5 = app::configuration::AppConfig::greet_config(v2);
+        let v6 = app::routes::greet::get(v4, v5);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     async fn post_processing_0(

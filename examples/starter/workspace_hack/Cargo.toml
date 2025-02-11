@@ -5,6 +5,7 @@
 [package]
 name = "workspace_hack"
 version = "0.1.0"
+edition = "2021"
 description = "workspace_hack package, managed by hakari"
 # You can choose to publish this crate: see https://docs.rs/cargo-hakari/latest/cargo_hakari/publishing.
 publish = false
@@ -30,6 +31,7 @@ syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "vis
 tokio = { version = "1", features = ["full"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
+tracing_log_error = { version = "0.1" }
 
 [build-dependencies]
 futures-channel = { version = "0.3", features = ["sink"] }
@@ -48,5 +50,6 @@ syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "vis
 tokio = { version = "1", features = ["full"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
+tracing_log_error = { version = "0.1" }
 
 ### END HAKARI SECTION

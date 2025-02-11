@@ -1,4 +1,4 @@
-{%- if greet_route -%}   
+{%- if greet_route -%}
 pub mod greet;
 {%- endif -%}
 pub mod ping;
@@ -8,7 +8,7 @@ use pavex::f;
 
 pub fn register(bp: &mut Blueprint) {
     bp.route(GET, "/api/ping", f!(self::ping::get));
-    {%- if greet_route -%}   
-    bp.route(GET, "/api/greet/:name", f!(self::greet::get));
+    {%- if greet_route -%}
+    bp.route(GET, "/api/greet/{name}", f!(self::greet::get));
     {%- endif -%}
 }
