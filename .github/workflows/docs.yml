@@ -182,6 +182,10 @@ jobs:
       uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
       with:
         cache-workspaces: "./examples/starter -> ./target"
+    - name: Install cargo-binstall
+      uses: cargo-bins/cargo-binstall@main
+    - name: Install cargo-px
+      run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
     - name: Check that starter compiles
       run: |
         cd examples/starter
