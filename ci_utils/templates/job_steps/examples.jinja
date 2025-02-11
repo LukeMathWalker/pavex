@@ -1,0 +1,20 @@
+<% extends 'steps' %>
+<% block inner_steps %>
+- name: Install Rust
+  uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+  with:
+    cache-workspaces: "./examples/starter -> ./target"
+- name: Check that starter compiles
+  run: |
+    cd examples/starter
+    cargo px test
+- name: Check starter is up to date
+  run: |
+    cd examples
+    rm -rf starter
+    pavex new starter
+    # Remove the git folder
+    rm -rf starter/.git
+    # Check if any of the files changed
+    git diff --exit-code starter || (echo "Starter project is not up to date. Regenerate it using 'pavex new'" && exit 1)
+<%- endblock %>
