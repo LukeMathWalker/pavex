@@ -34,6 +34,13 @@ jobs:
       <% set job_name %>Lint (<<- target >>)<% endset %>
       <%- from 'lint_steps' import output -%>
       <<- output | indent(4) >>
+
+  examples_<<- target >>:
+    name: "Examples (<<- target >>)"
+    runs-on: << os >>
+      <% set job_name %>Examples (<<- target >>)<% endset %>
+      <%- from 'examples_steps' import output -%>
+      <<- output | indent(4) >>
   <%- endif %>
 
   tests_<<- target >>:
