@@ -8,6 +8,7 @@
   uses: cargo-bins/cargo-binstall@main
 - name: Install cargo-px
   run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
+<% include 'setup_pavex' %>
 - name: Check that starter compiles
   run: |
     cd examples/starter

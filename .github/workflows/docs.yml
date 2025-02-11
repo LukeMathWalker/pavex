@@ -188,6 +188,29 @@ jobs:
       uses: cargo-bins/cargo-binstall@main
     - name: Install cargo-px
       run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
+    - name: Download pavex CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavex_cli_linux
+        path: ~/.cargo/bin
+    - name: Download pavexc CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavexc_cli_linux
+        path: ~/.cargo/bin
+    - name: Mark pavex as executable
+      env:
+        PAVEX: /home/runner/.cargo/bin/pavex
+        PAVEXC: /home/runner/.cargo/bin/pavexc
+      run: |
+        chmod +x ${{ env.PAVEX }}
+        chmod +x ${{ env.PAVEXC }}
+    - name: Activate pavex
+      env:
+        PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+      run: |
+        pavex self activate
+        pavexc self setup
     - name: Check that starter compiles
       run: |
         cd examples/starter
