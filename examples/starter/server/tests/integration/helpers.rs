@@ -14,9 +14,7 @@ impl TestApi {
     pub async fn spawn() -> Self {
         Self::init_telemetry();
         let config = Self::get_config();
-
         let application_state = build_application_state(config.app).await;
-
         let tcp_listener = config
             .server
             .listener()
