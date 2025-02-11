@@ -13,3 +13,4 @@ pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.73" }
 cargo-like-utils = { workspace = true }
 thiserror = { workspace = true }
 miette = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
