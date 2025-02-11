@@ -10,6 +10,7 @@
 /examples/**/vendor
 /examples/**/target
 /examples/**/.cargo
+!/examples/.cargo
 /.cargo
 /vendor
 .DS_Store
