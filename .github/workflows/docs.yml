@@ -214,6 +214,7 @@ jobs:
     - name: Check that starter compiles
       env:
         PAVEX_DEBUG: "true"
+        PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
       run: |
         cd examples/starter
         cargo px test

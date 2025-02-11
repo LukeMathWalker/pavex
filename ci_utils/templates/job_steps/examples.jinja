@@ -12,6 +12,7 @@
 - name: Check that starter compiles
   env:
     PAVEX_DEBUG: "true"
+    PAVEX_PAVEXC: << pavexc_path(target) >>
   run: |
     cd examples/starter
     cargo px test
