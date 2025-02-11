@@ -19,11 +19,11 @@ anyhow = { workspace = true }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.72" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.72" }
-pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.72" }
-pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.72" }
-rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.72", package = "pavexc_rustdoc_types" }
+pavex = { path = "../pavex", version = "0.1.73" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.73" }
+pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.73" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.73" }
+rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.73", package = "pavexc_rustdoc_types" }
 cargo-like-utils = { workspace = true }
 tracing_log_error = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
@@ -54,7 +54,7 @@ once_cell = { workspace = true }
 toml = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.72" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.73" }
 matchit = { workspace = true }
 relative-path = { workspace = true }
 camino = { workspace = true }

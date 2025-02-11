@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.73](https://github.com/LukeMathWalker/pavex/compare/0.1.72...0.1.73) - 2025-02-11
+
+
+### ⛰️ Features
+- Don't require native libraries to decompress archives from GitHub. (by @LukeMathWalker) - #442
+
+
+### Contributors
+
+* @LukeMathWalker
+
 ## [0.1.72](https://github.com/LukeMathWalker/pavex/compare/0.1.71...0.1.72) - 2025-02-09
 
 
