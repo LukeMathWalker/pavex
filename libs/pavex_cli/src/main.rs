@@ -51,7 +51,9 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     };
-    SHELL.note("Rerun with `PAVEX_DEBUG=true` to display more error details.");
+    if code != ExitCode::SUCCESS {
+        SHELL.note("Rerun with `PAVEX_DEBUG=true` to display more error details.");
+    }
     code
 }
 
