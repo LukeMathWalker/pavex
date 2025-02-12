@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.74](https://github.com/LukeMathWalker/pavex/compare/0.1.73...0.1.74) - 2025-02-12
+
+
+### 🐛 Bug Fixes
+- Don't show the 'PAVEX_DEBUG' note if the exit code is successful (by @LukeMathWalker)
+- Quickstart template doesn't require an AppConfig instance as input to the application state (by @LukeMathWalker)
+- Ensure that the starter project compiles straight away (by @LukeMathWalker)
+
+
+### Contributors
+
+* @LukeMathWalker
+
 ## [0.1.73](https://github.com/LukeMathWalker/pavex/compare/0.1.72...0.1.73) - 2025-02-11
 
 
