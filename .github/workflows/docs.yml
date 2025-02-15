@@ -321,13 +321,16 @@ jobs:
       run: |
         pavex self activate
         pavexc self setup
+    - name: Formatting
+      run: |
+        cd examples/realworld
+        cargo fmt --check
     - name: Test example
       env:
         PAVEX_DEBUG: "true"
         PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
       run: |
         cd examples/realworld
-        cargo fmt --check
         cargo px test
     - name: Check if any of the files changed
       run: |

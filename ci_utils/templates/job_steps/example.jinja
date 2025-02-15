@@ -9,13 +9,16 @@
 - name: Install cargo-px
   run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
 <% include 'setup_pavex' %>
+- name: Formatting
+  run: |
+    cd examples/<< example >>
+    cargo fmt --check
 - name: Test example
   env:
     PAVEX_DEBUG: "true"
     PAVEX_PAVEXC: << pavexc_path(target) >>
   run: |
     cd examples/<< example >>
-    cargo fmt --check
     cargo px test
 - name: Check if any of the files changed
   run: |
