@@ -2,8 +2,8 @@
 - name: Install sqlx-cli
   run:
     cargo install sqlx-cli
-    --version=${{ env.SQLX_VERSION }}
-    --features ${{ env.SQLX_FEATURES }}
+    --version="~0.8"
+    --features="rustls,postgres"
     --no-default-features
     --locked
     # The --locked flag can be used to force Cargo to use the packaged Cargo.lock file if it is available.
