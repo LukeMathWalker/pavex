@@ -1,5 +1,5 @@
 [workspace]
-members = ["server", "server_sdk", "app"]
+members = ["server", "server_sdk", "app", "workspace_hack"]
 resolver = "2"
 
 # By setting `server` as the default member, `cargo run` will default to running the server binary

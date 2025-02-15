@@ -48,6 +48,7 @@ jsonwebtoken = "8"
 
 # Configuration
 serde-aux = "4"
+workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 jwt-simple = "0.11"

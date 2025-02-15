@@ -41,6 +41,9 @@ impl TestApi {
         let mut config =
             Config::load(Some(ApplicationProfile::Dev)).expect("Failed to load test configuration");
 
+        // We bind the server to a random port to avoid port conflicts when running tests in parallel.
+        config.server.port = 0;
+
         // We generate the key pair on the fly rather than hardcoding it in the
         // configuration file.
         let key_pair = jwt_simple::algorithms::Ed25519KeyPair::generate();

@@ -175,6 +175,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2813,6 +2814,7 @@ dependencies = [
  "tracing",
  "tracing-bunyan-formatter",
  "tracing-subscriber",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -4203,6 +4205,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3268f3d866458b787f390cf61f4bbb563b922d091359f9608842999eaee3943c"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "workspace_hack"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "bitflags",
+ "byteorder",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "form_urlencoded",
+ "futures-channel",
+ "futures-sink",
+ "futures-util",
+ "generic-array",
+ "indexmap",
+ "lazy_static",
+ "log",
+ "num-traits",
+ "proc-macro2",
+ "rand 0.8.5",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "sqlx",
+ "sqlx-postgres",
+ "stable_deref_trait",
+ "subtle",
+ "time",
+ "time-macros",
+ "tokio",
+ "tracing-core",
+ "uuid",
 ]
 
 [[package]]
