@@ -21,6 +21,10 @@
   env:
     PAVEX_DEBUG: "true"
     PAVEX_PAVEXC: << pavexc_path(target) >>
+    # Avoid spurious differences due to Pavex releases
+    CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC: "0.1"
+    CARGO_GENERATE_VALUE_PAVEX_TRACING_PACKAGE_SPEC: "0.1"
+    CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC: "0.1"
   run: |
     cd examples
     # Save the target folder before deleting, since it's warm
