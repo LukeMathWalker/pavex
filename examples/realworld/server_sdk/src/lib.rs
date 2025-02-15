@@ -44,9 +44,8 @@ pub async fn build_application_state(
         }
     };
     let v7 = app::configuration::ApplicationConfig::cookie_config(v0);
-    let v8 = <pavex::cookie::Processor as core::convert::From<
-        pavex::cookie::ProcessorConfig,
-    >>::from(v7);
+    let v8 =
+        <pavex::cookie::Processor as core::convert::From<pavex::cookie::ProcessorConfig>>::from(v7);
     let v9 = crate::ApplicationState {
         encoding_key: v3,
         pool: v6,
@@ -81,7 +80,9 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self { router: Self::router() }
+        Self {
+            router: Self::router(),
+        }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
@@ -90,7 +91,9 @@ impl Router {
         router.insert("/articles/feed", 2u32).unwrap();
         router.insert("/articles/{slug}", 3u32).unwrap();
         router.insert("/articles/{slug}/comments", 4u32).unwrap();
-        router.insert("/articles/{slug}/comments/{comment_id}", 5u32).unwrap();
+        router
+            .insert("/articles/{slug}/comments/{comment_id}", 5u32)
+            .unwrap();
         router.insert("/articles/{slug}/favorite", 6u32).unwrap();
         router.insert("/profiles/{username}", 7u32).unwrap();
         router.insert("/profiles/{username}/follow", 8u32).unwrap();
@@ -104,540 +107,458 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)]
-        state: &ApplicationState,
+        #[allow(unused)] state: &ApplicationState,
     ) -> pavex::response::Response {
         let (request_head, request_body) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let request_body = pavex::request::body::RawIncomingBody::from(request_body);
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
-                    vec![],
-                )
-                .into();
-            let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                "*",
-            );
+            let allowed_methods: pavex::router::AllowedMethods =
+                pavex::router::MethodAllowList::from_iter(vec![]).into();
+            let matched_route_template = pavex::request::path::MatchedPathPattern::new("*");
             return route_2::entrypoint(
-                    &allowed_methods,
-                    &request_head,
-                    matched_route_template,
-                    &state.processor,
-                )
-                .await;
+                &allowed_methods,
+                &request_head,
+                matched_route_template,
+                &state.processor,
+            )
+            .await;
         };
-        let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
-            .params
-            .into();
+        let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route.params.into();
         match matched_route.value {
-            0u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/api/ping",
-                        );
-                        route_0::entrypoint(
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
-                            .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/api/ping",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+            0u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/api/ping");
+                    route_0::entrypoint(&request_head, matched_route_template, &state.processor)
+                        .await
                 }
-            }
-            1u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles",
-                        );
-                        route_10::entrypoint(
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::POST => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles",
-                        );
-                        route_11::entrypoint(
-                                &request_head,
-                                request_body,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                                pavex::http::Method::POST,
-                            ])
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/api/ping");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            2u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/feed",
-                        );
-                        route_12::entrypoint(
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            1u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles");
+                    route_10::entrypoint(&request_head, matched_route_template, &state.processor)
+                        .await
+                }
+                &pavex::http::Method::POST => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles");
+                    route_11::entrypoint(
+                        &request_head,
+                        request_body,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+            },
+            2u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/feed");
+                    route_12::entrypoint(&request_head, matched_route_template, &state.processor)
+                        .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/feed",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/feed");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            3u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}",
-                        );
-                        route_13::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::DELETE => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}",
-                        );
-                        route_14::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::PUT => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}",
-                        );
-                        route_15::entrypoint(
-                                &request_head,
-                                request_body,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                                pavex::http::Method::DELETE,
-                                pavex::http::Method::PUT,
-                            ])
+            },
+            3u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}");
+                    route_13::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                &pavex::http::Method::DELETE => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}");
+                    route_14::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                &pavex::http::Method::PUT => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}");
+                    route_15::entrypoint(
+                        &request_head,
+                        request_body,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::DELETE,
+                            pavex::http::Method::PUT,
+                        ])
+                        .into();
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+            },
+            4u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}/comments");
+                    route_18::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                &pavex::http::Method::POST => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}/comments");
+                    route_19::entrypoint(
+                        &request_head,
+                        request_body,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}/comments");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+            },
+            5u32 => match &request_head.method {
+                &pavex::http::Method::DELETE => {
+                    let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                        "/articles/{slug}/comments/{comment_id}",
+                    );
+                    route_20::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::DELETE])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                        "/articles/{slug}/comments/{comment_id}",
+                    );
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            4u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/comments",
-                        );
-                        route_18::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::POST => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/comments",
-                        );
-                        route_19::entrypoint(
-                                &request_head,
-                                request_body,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                                pavex::http::Method::POST,
-                            ])
+            },
+            6u32 => match &request_head.method {
+                &pavex::http::Method::DELETE => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}/favorite");
+                    route_16::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                &pavex::http::Method::POST => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}/favorite");
+                    route_17::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::DELETE,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/articles/{slug}/favorite");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+            },
+            7u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/profiles/{username}");
+                    route_7::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/comments",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/profiles/{username}");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            5u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::DELETE => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/comments/{comment_id}",
-                        );
-                        route_20::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::DELETE,
-                            ])
+            },
+            8u32 => match &request_head.method {
+                &pavex::http::Method::POST => {
+                    let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                        "/profiles/{username}/follow",
+                    );
+                    route_8::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                &pavex::http::Method::DELETE => {
+                    let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                        "/profiles/{username}/follow",
+                    );
+                    route_9::entrypoint(
+                        &request_head,
+                        url_params,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::POST,
+                            pavex::http::Method::DELETE,
+                        ])
+                        .into();
+                    let matched_route_template = pavex::request::path::MatchedPathPattern::new(
+                        "/profiles/{username}/follow",
+                    );
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+            },
+            9u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/tags");
+                    route_1::entrypoint(&request_head, matched_route_template, &state.processor)
+                        .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/comments/{comment_id}",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/tags");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            6u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::DELETE => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/favorite",
-                        );
-                        route_16::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::POST => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/favorite",
-                        );
-                        route_17::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::DELETE,
-                                pavex::http::Method::POST,
-                            ])
+            },
+            10u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/user");
+                    route_5::entrypoint(&request_head, matched_route_template, &state.processor)
+                        .await
+                }
+                &pavex::http::Method::PUT => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/user");
+                    route_6::entrypoint(
+                        &request_head,
+                        request_body,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::PUT,
+                        ])
+                        .into();
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/user");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+            },
+            11u32 => match &request_head.method {
+                &pavex::http::Method::POST => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/users");
+                    route_3::entrypoint(
+                        &state.encoding_key,
+                        &request_head,
+                        &state.pool,
+                        request_body,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::POST])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/articles/{slug}/favorite",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/users");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            7u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/profiles/{username}",
-                        );
-                        route_7::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            12u32 => match &request_head.method {
+                &pavex::http::Method::POST => {
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/users/login");
+                    route_4::entrypoint(
+                        &state.encoding_key,
+                        &request_head,
+                        &state.pool,
+                        request_body,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::POST])
                             .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/profiles/{username}",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
+                    let matched_route_template =
+                        pavex::request::path::MatchedPathPattern::new("/users/login");
+                    route_2::entrypoint(
+                        &allowed_methods,
+                        &request_head,
+                        matched_route_template,
+                        &state.processor,
+                    )
+                    .await
                 }
-            }
-            8u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::POST => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/profiles/{username}/follow",
-                        );
-                        route_8::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::DELETE => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/profiles/{username}/follow",
-                        );
-                        route_9::entrypoint(
-                                &request_head,
-                                url_params,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::POST,
-                                pavex::http::Method::DELETE,
-                            ])
-                            .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/profiles/{username}/follow",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                }
-            }
-            9u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/tags",
-                        );
-                        route_1::entrypoint(
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
-                            .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/tags",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                }
-            }
-            10u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/user",
-                        );
-                        route_5::entrypoint(
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    &pavex::http::Method::PUT => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/user",
-                        );
-                        route_6::entrypoint(
-                                &request_head,
-                                request_body,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                                pavex::http::Method::PUT,
-                            ])
-                            .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/user",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                }
-            }
-            11u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::POST => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/users",
-                        );
-                        route_3::entrypoint(
-                                &state.encoding_key,
-                                &request_head,
-                                &state.pool,
-                                request_body,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::POST,
-                            ])
-                            .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/users",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                }
-            }
-            12u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::POST => {
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/users/login",
-                        );
-                        route_4::entrypoint(
-                                &state.encoding_key,
-                                &request_head,
-                                &state.pool,
-                                request_body,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::POST,
-                            ])
-                            .into();
-                        let matched_route_template = pavex::request::path::MatchedPathPattern::new(
-                            "/users/login",
-                        );
-                        route_2::entrypoint(
-                                &allowed_methods,
-                                &request_head,
-                                matched_route_template,
-                                &state.processor,
-                            )
-                            .await
-                    }
-                }
-            }
+            },
             i => unreachable!("Unknown route id: {}", i),
         }
     }
@@ -722,14 +643,10 @@ pub mod route_0 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -857,14 +774,10 @@ pub mod route_1 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -999,14 +912,10 @@ pub mod route_2 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1155,14 +1064,11 @@ pub mod route_3 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v7,
-                    );
+                    let v8 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v7);
                     let v9 = pavex::Error::new(v7);
                     app::telemetry::error_logger(&v9, v2).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
                 };
             }
         };
@@ -1171,14 +1077,11 @@ pub mod route_3 {
             Ok(ok) => ok,
             Err(v9) => {
                 return {
-                    let v10 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v9,
-                    );
+                    let v10 =
+                        pavex::request::body::errors::ExtractJsonBodyError::into_response(&v9);
                     let v11 = pavex::Error::new(v9);
                     app::telemetry::error_logger(&v11, v2).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v10,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v10)
                 };
             }
         };
@@ -1190,9 +1093,7 @@ pub mod route_3 {
                     let v12 = app::routes::users::SignupError::into_response(&v11);
                     let v13 = pavex::Error::new(v11);
                     app::telemetry::error_logger(&v13, v2).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v12,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
                 };
             }
         };
@@ -1216,14 +1117,10 @@ pub mod route_3 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1382,14 +1279,11 @@ pub mod route_4 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v7,
-                    );
+                    let v8 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v7);
                     let v9 = pavex::Error::new(v7);
                     app::telemetry::error_logger(&v9, v2).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
                 };
             }
         };
@@ -1398,14 +1292,11 @@ pub mod route_4 {
             Ok(ok) => ok,
             Err(v9) => {
                 return {
-                    let v10 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v9,
-                    );
+                    let v10 =
+                        pavex::request::body::errors::ExtractJsonBodyError::into_response(&v9);
                     let v11 = pavex::Error::new(v9);
                     app::telemetry::error_logger(&v11, v2).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v10,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v10)
                 };
             }
         };
@@ -1417,9 +1308,7 @@ pub mod route_4 {
                     let v12 = app::routes::users::LoginError::into_response(&v11);
                     let v13 = pavex::Error::new(v11);
                     app::telemetry::error_logger(&v13, v2).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v12,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
                 };
             }
         };
@@ -1443,14 +1332,10 @@ pub mod route_4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1595,14 +1480,10 @@ pub mod route_5 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1728,14 +1609,11 @@ pub mod route_6 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v5,
-                    );
+                    let v6 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1744,14 +1622,10 @@ pub mod route_6 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v7,
-                    );
+                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(&v7);
                     let v9 = pavex::Error::new(v7);
                     app::telemetry::error_logger(&v9, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
                 };
             }
         };
@@ -1776,14 +1650,10 @@ pub mod route_6 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1914,14 +1784,11 @@ pub mod route_7 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -1946,14 +1813,10 @@ pub mod route_7 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2082,14 +1945,11 @@ pub mod route_8 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -2114,14 +1974,10 @@ pub mod route_8 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2250,14 +2106,11 @@ pub mod route_9 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -2282,14 +2135,10 @@ pub mod route_9 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2413,14 +2262,11 @@ pub mod route_10 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::query::errors::ExtractQueryParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -2445,14 +2291,10 @@ pub mod route_10 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2583,14 +2425,11 @@ pub mod route_11 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v5,
-                    );
+                    let v6 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2599,14 +2438,10 @@ pub mod route_11 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v7,
-                    );
+                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(&v7);
                     let v9 = pavex::Error::new(v7);
                     app::telemetry::error_logger(&v9, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
                 };
             }
         };
@@ -2631,14 +2466,10 @@ pub mod route_11 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2764,14 +2595,11 @@ pub mod route_12 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::query::errors::ExtractQueryParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -2796,14 +2624,10 @@ pub mod route_12 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -2930,14 +2754,11 @@ pub mod route_13 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -2962,14 +2783,10 @@ pub mod route_13 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3098,14 +2915,11 @@ pub mod route_14 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -3130,14 +2944,10 @@ pub mod route_14 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3277,14 +3087,11 @@ pub mod route_15 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v5,
-                    );
+                    let v6 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3294,14 +3101,11 @@ pub mod route_15 {
             Ok(ok) => ok,
             Err(v8) => {
                 return {
-                    let v9 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v8,
-                    );
+                    let v9 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v8);
                     let v10 = pavex::Error::new(v8);
                     app::telemetry::error_logger(&v10, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v9,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v9)
                 };
             }
         };
@@ -3310,14 +3114,11 @@ pub mod route_15 {
             Ok(ok) => ok,
             Err(v10) => {
                 return {
-                    let v11 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v10,
-                    );
+                    let v11 =
+                        pavex::request::body::errors::ExtractJsonBodyError::into_response(&v10);
                     let v12 = pavex::Error::new(v10);
                     app::telemetry::error_logger(&v12, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v11,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
                 };
             }
         };
@@ -3342,14 +3143,10 @@ pub mod route_15 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3484,14 +3281,11 @@ pub mod route_16 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -3516,14 +3310,10 @@ pub mod route_16 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3652,14 +3442,11 @@ pub mod route_17 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -3684,14 +3471,10 @@ pub mod route_17 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3820,14 +3603,11 @@ pub mod route_18 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -3852,14 +3632,10 @@ pub mod route_18 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -3999,14 +3775,11 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v5,
-                    );
+                    let v6 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -4016,14 +3789,11 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v8) => {
                 return {
-                    let v9 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v8,
-                    );
+                    let v9 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v8);
                     let v10 = pavex::Error::new(v8);
                     app::telemetry::error_logger(&v10, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v9,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v9)
                 };
             }
         };
@@ -4032,14 +3802,11 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v10) => {
                 return {
-                    let v11 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v10,
-                    );
+                    let v11 =
+                        pavex::request::body::errors::ExtractJsonBodyError::into_response(&v10);
                     let v12 = pavex::Error::new(v10);
                     app::telemetry::error_logger(&v12, v0).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v11,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
                 };
             }
         };
@@ -4064,14 +3831,10 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -4206,14 +3969,11 @@ pub mod route_20 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v3,
-                    );
+                    let v4 =
+                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v3);
                     let v5 = pavex::Error::new(v3);
                     app::telemetry::error_logger(&v5, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
                 };
             }
         };
@@ -4238,14 +3998,10 @@ pub mod route_20 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v5,
-                    );
+                    let v6 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v5);
                     let v7 = pavex::Error::new(v5);
                     app::telemetry::error_logger(&v7, v1).await;
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
         };

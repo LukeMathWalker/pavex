@@ -1,2 +1,2 @@
-mod users;
 mod helpers;
+mod users;

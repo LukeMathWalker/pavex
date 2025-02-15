@@ -1,4 +1,4 @@
-//! This module contains the tools required to validate user-provided passwords 
+//! This module contains the tools required to validate user-provided passwords
 //! and store them securely in the database as PHC-encoded password hashes.
 use crate::telemetry::spawn_blocking_with_tracing;
 use anyhow::Context;
@@ -16,7 +16,7 @@ pub enum AuthError {
 }
 
 /// Compute the password hash using the Argon2id algorithm.
-/// 
+///
 /// The returned hash is in the PHC string format, which includes the salt and
 /// the algorithm parameters.
 pub fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>, anyhow::Error> {
@@ -34,18 +34,18 @@ pub fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>,
 #[tracing::instrument(name = "Validate credentials", skip_all)]
 /// Retrieve the stored password hash for the given email address and compare
 /// it with the given password.
-/// 
+///
 /// # Timing attacks
-/// 
+///
 /// We want this function to take a constant time to avoid user enumeration
 /// attacks—i.e. an attacker should not be able to guess whether a given
 /// email address is registered in our database or not by measuring the
 /// response time of the login endpoint.
-/// 
-/// To achieve this, we always perform a credential comparison using 
+///
+/// To achieve this, we always perform a credential comparison using
 /// a dummy password hash, even if the email address is not registered.
-/// 
-/// If you want to learn more about this topic, check out 
+///
+/// If you want to learn more about this topic, check out
 /// <https://www.lpalmieri.com/posts/password-authentication-in-rust/>
 pub async fn validate_credentials(
     email: &str,
@@ -60,21 +60,18 @@ pub async fn validate_credentials(
             .to_string(),
     );
 
-    if let Some((stored_user_id, stored_password_hash)) =
-        get_stored_credentials(&email, pool)
-            .await
-            .map_err(AuthError::UnexpectedError)?
+    if let Some((stored_user_id, stored_password_hash)) = get_stored_credentials(&email, pool)
+        .await
+        .map_err(AuthError::UnexpectedError)?
     {
         user_id = Some(stored_user_id);
         expected_password_hash = stored_password_hash;
     }
 
-    spawn_blocking_with_tracing(move || {
-        verify_password_hash(expected_password_hash, password)
-    })
-    .await
-    .context("Failed to spawn blocking task.")
-    .map_err(AuthError::UnexpectedError)??;
+    spawn_blocking_with_tracing(move || verify_password_hash(expected_password_hash, password))
+        .await
+        .context("Failed to spawn blocking task.")
+        .map_err(AuthError::UnexpectedError)??;
 
     user_id
         .ok_or_else(|| anyhow::anyhow!("Unknown username."))
