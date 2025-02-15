@@ -188,8 +188,6 @@ jobs:
       uses: cargo-bins/cargo-binstall@main
     - name: Install cargo-px
       run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
-    - name: Install cargo-edit
-      run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-edit
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -220,10 +218,6 @@ jobs:
       run: |
         cd examples/starter
         cargo fmt --check
-        # Even though the server SDK depends on the latest version of Pavex via a path dependency,
-        # it still mentions the version in the Cargo.toml. This is to ensure that the version is
-        # up to date to avoid a meaningless CI failure.
-        cargo upgrade -p pavex -p pavex_tracing
         cargo px verify-freshness
     - name: Check starter compiles and it's up to date
       env:
