@@ -321,7 +321,7 @@ jobs:
       run: |
         pavex self activate
         pavexc self setup
-    - name: Check that starter is fresh
+    - name: Test example
       env:
         PAVEX_DEBUG: "true"
         PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
