@@ -224,9 +224,7 @@ jobs:
         PAVEX_DEBUG: "true"
         PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
         # Avoid spurious differences due to Pavex releases
-        CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC: "version = \"0.1\""
-        CARGO_GENERATE_VALUE_PAVEX_TRACING_PACKAGE_SPEC: "version = \"0.1\""
-        CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC: "version = \"0.1\""
+        PAVEXC_TEMPLATE_VERSION_REQ: "0.1"
       run: |
         cd examples
         # Save the target folder before deleting, since it's warm

@@ -506,14 +506,17 @@ fn scaffold_project(
         .extract(&template_dir)
         .context("Failed to save Pavex's template to a temporary directory")?;
 
+    let default_version_req = std::env::var("PAVEXC_TEMPLATE_VERSION_REQ")
+        .unwrap_or_else(|_| env!("CARGO_PKG_VERSION").to_string());
+    let default_version_spec = || format!("version = \"{default_version_req}\"");
     let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
-        .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
+        .unwrap_or_else(|_| default_version_spec());
     let pavex_tracing_package_spec =
         std::env::var("CARGO_GENERATE_VALUE_PAVEX_TRACING_PACKAGE_SPEC")
-            .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
+            .unwrap_or_else(|_| default_version_spec());
     let pavex_cli_client_package_spec =
         std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC")
-            .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
+            .unwrap_or_else(|_| default_version_spec());
 
     let add_greet_route = template == TemplateName::Api;
 
