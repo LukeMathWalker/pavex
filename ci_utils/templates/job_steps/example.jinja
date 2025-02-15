@@ -1,0 +1,23 @@
+<% extends 'steps' %>
+<% block inner_steps %>
+- name: Install Rust
+  uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+  with:
+    cache-workspaces: "./examples/<< example >> -> ./target"
+- name: Install cargo-binstall
+  uses: cargo-bins/cargo-binstall@main
+- name: Install cargo-px
+  run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
+<% include 'setup_pavex' %>
+- name: Check that starter is fresh
+  env:
+    PAVEX_DEBUG: "true"
+    PAVEX_PAVEXC: << pavexc_path(target) >>
+  run: |
+    cd examples/<< example >>
+    cargo fmt --check
+    cargo px test
+- name: Check if any of the files changed
+  run: |
+    git diff --exit-code HEAD -- examples/<< example >>  ":(exclude)Cargo.lock" || (echo "Example project is not up to date. Regenerate it using 'cargo px check'" && exit 1)
+<%- endblock %>

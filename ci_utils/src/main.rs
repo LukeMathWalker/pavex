@@ -31,7 +31,8 @@ fn main() {
         ("build_docs_steps", "job_steps/build_docs.jinja"),
         ("lint_steps", "job_steps/lint.jinja"),
         ("build_clis_steps", "job_steps/build_clis.jinja"),
-        ("examples_steps", "job_steps/examples.jinja"),
+        ("starter_steps", "job_steps/starter_example.jinja"),
+        ("example_steps", "job_steps/example.jinja"),
         (
             "build_tutorial_generator_steps",
             "job_steps/build_tutorial_generator.jinja",
@@ -54,6 +55,24 @@ fn main() {
     }
     env.add_function("pavex_path", pavex_path);
     env.add_function("pavexc_path", pavexc_path);
+    let examples = {
+        let entries = std::fs::read_dir("../examples").expect("Failed to find the examples folder");
+        let mut examples = vec![];
+        for entry in entries {
+            let Ok(entry) = entry else {
+                continue;
+            };
+            let type_ = entry.file_type().expect("Failed to get file type");
+            if type_.is_dir() {
+                let name = entry.file_name().into_string().expect("Non UTF-8 dir name");
+                if name != "starter" && name != ".cargo" {
+                    examples.push(name)
+                }
+            }
+        }
+        examples
+    };
+    env.add_global("examples", examples);
     let output = env
         .get_template("ci")
         .unwrap()
