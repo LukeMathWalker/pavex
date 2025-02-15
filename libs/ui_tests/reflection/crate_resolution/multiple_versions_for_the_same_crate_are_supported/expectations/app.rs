@@ -16,7 +16,7 @@ pub fn run(
     application_state: ApplicationState,
 ) -> pavex::server::ServerHandle {
     async fn handler(
-        request: http_1_2_0::Request<hyper::body::Incoming>,
+        request: http_1::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
         server_state: std::sync::Arc<ServerState>,
     ) -> pavex::response::Response {
@@ -47,7 +47,7 @@ impl Router {
     }
     pub async fn route(
         &self,
-        request: http_1_2_0::Request<hyper::body::Incoming>,
+        request: http_1::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
         #[allow(unused)]
         state: &ApplicationState,

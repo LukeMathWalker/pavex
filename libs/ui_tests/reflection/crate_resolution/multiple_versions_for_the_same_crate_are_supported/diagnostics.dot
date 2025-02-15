@@ -9,9 +9,9 @@ digraph "GET / - 0" {
 }
 
 digraph "GET / - 1" {
-    0 [ label = "2| app_cb7427d1::handler(http_0_1_21::header::HeaderName, http_0_2_12::HeaderName) -> pavex::response::Response"]
-    1 [ label = "1| app_cb7427d1::header1() -> http_0_1_21::header::HeaderName"]
-    2 [ label = "0| app_cb7427d1::header2() -> http_0_2_12::HeaderName"]
+    0 [ label = "2| app_cb7427d1::handler(http_0_1::header::HeaderName, http_0_2::HeaderName) -> pavex::response::Response"]
+    1 [ label = "1| app_cb7427d1::header1() -> http_0_1::header::HeaderName"]
+    2 [ label = "0| app_cb7427d1::header2() -> http_0_2::HeaderName"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 0 [ ]
     1 -> 0 [ ]

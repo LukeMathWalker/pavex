@@ -334,7 +334,7 @@ where
             let metadata = package_graph.metadata(package_id).unwrap();
             let version = metadata.version();
             let mut dependency_details = DependencyDetail {
-                version: Some(version.to_string()),
+                version: Some(version_requirement(version)),
                 // We disable default features to avoid enabling by mistake
                 // features that were explicitly disabled in the app manifest.
                 // This is a conservative choice, but it's better to be safe than sorry.
@@ -399,10 +399,8 @@ where
             let dependency_name = if needs_rename {
                 // TODO: this won't be unique if there are multiple versions of the same crate that have the same
                 //   major/minor/patch version but differ in the pre-release version (e.g. `0.0.1-alpha` and `0.0.1-beta`).
-                format!(
-                    "{}_{}_{}_{}",
-                    name, version.major, version.minor, version.patch
-                )
+                let req = version_requirement(version).replace(".", "_");
+                format!("{name}_{req}")
             } else {
                 name.to_string()
             };
@@ -414,6 +412,18 @@ where
         }
     }
     (dependencies, package_ids2dependency_name)
+}
+
+/// Given a full version (e.g. `0.1.5`) returns the most succinct version requirement that
+/// matches the given version (e.g. `0.1`).
+fn version_requirement(v: &semver::Version) -> String {
+    if v.major != 0 {
+        v.major.to_string()
+    } else if v.minor != 0 {
+        format!("0.{}", v.minor)
+    } else {
+        v.to_string()
+    }
 }
 
 fn collect_package_ids<'a, I>(

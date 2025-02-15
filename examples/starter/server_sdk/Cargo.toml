@@ -16,10 +16,10 @@ verifier_args = ["--check"]
 clippy = { all = "allow" }
 
 [dependencies]
-app = { version = "0.1.0", path = "../app", default-features = false }
-http = { version = "1.2.0", default-features = false }
-hyper = { version = "1.6.0", default-features = false }
-matchit = { version = "0.8.6", default-features = false }
-pavex = { version = "0.1.73", path = "../../../libs/pavex", default-features = false }
-pavex_tracing = { version = "0.1.73", path = "../../../libs/pavex_tracing", default-features = false }
-thiserror = { version = "2.0.11", default-features = false }
+app = { version = "0.1", path = "../app", default-features = false }
+http = { version = "1", default-features = false }
+hyper = { version = "1", default-features = false }
+matchit = { version = "0.8", default-features = false }
+pavex = { version = "0.1", path = "../../../libs/pavex", default-features = false }
+pavex_tracing = { version = "0.1", path = "../../../libs/pavex_tracing", default-features = false }
+thiserror = { version = "2", default-features = false }
