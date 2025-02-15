@@ -10,7 +10,7 @@ fi
 if ! [ -x "$(command -v sqlx)" ]; then
   echo >&2 "Error: sqlx is not installed."
   echo >&2 "Use:"
-  echo >&2 "    cargo install sqlx-cli --no-default-features --features native-tls,postgres --version 0.7.0-alpha.3"
+  echo >&2 "    cargo install sqlx-cli --no-default-features --features native-tls,postgres --version 0.8.0"
   echo >&2 "to install it."
   exit 1
 fi
@@ -30,7 +30,7 @@ DB_HOST="${POSTGRES_HOST:=localhost}"
 if [[ -z "${SKIP_DOCKER}" ]]
 then
   # if a postgres container is running, print instructions to kill it and exit
-  RUNNING_POSTGRES_CONTAINER=$(docker ps --filter 'name=postgres' --format '{{.ID}}')
+  RUNNING_POSTGRES_CONTAINER=$(docker ps --filter 'name=conduit' --format '{{.ID}}')
   if [[ -n $RUNNING_POSTGRES_CONTAINER ]]; then
     echo >&2 "there is a postgres container already running, kill it with"
     echo >&2 "    docker kill ${RUNNING_POSTGRES_CONTAINER}"
@@ -43,7 +43,7 @@ then
       -e POSTGRES_DB=${DB_NAME} \
       -p "${DB_PORT}":5432 \
       -d \
-      --name "postgres_$(date '+%s')" \
+      --name "conduit_$(date '+%s')" \
       postgres -N 1000
       # ^ Increased maximum number of connections for testing purposes
 fi

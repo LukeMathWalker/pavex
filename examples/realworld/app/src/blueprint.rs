@@ -17,8 +17,8 @@ pub fn blueprint() -> Blueprint {
     ApplicationConfig::register(&mut bp);
     CookieKit::new().register(&mut bp);
 
-    bp.nest_at("/articles", articles_bp());
-    bp.nest_at("/profiles", profiles_bp());
+    bp.prefix("/articles").nest(articles_bp());
+    bp.prefix("/profiles").nest(profiles_bp());
     bp.nest(users_bp());
     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
     bp.route(GET, "/tags", f!(crate::routes::tags::get_tags));

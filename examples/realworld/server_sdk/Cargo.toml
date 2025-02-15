@@ -13,14 +13,14 @@ verifier_name = "bp"
 verifier_args = ["--check"]
 
 [dependencies]
-app = { version = "0.1.0", path = "../app" }
-biscotti = "0.3.4"
-http = "1.1.0"
-hyper = "1.2.0"
-jsonwebtoken = "8.3.0"
-pavex = { version = "0.1.46", path = "../../../libs/pavex" }
-pavex_matchit = "0.7.4"
-pavex_tracing = { version = "0.1.46", path = "../../../libs/pavex_tracing" }
-sqlx-core = "0.7.4"
-sqlx-postgres = "0.7.4"
-thiserror = "1.0.58"
+app = { version = "0.1", path = "../app", default-features = false }
+biscotti = { version = "0.3", default-features = false }
+http = { version = "1", default-features = false }
+hyper = { version = "1", default-features = false }
+jsonwebtoken = { version = "8", default-features = false }
+matchit = { version = "0.8", default-features = false }
+pavex = { version = "0.1", path = "../../../libs/pavex", default-features = false }
+pavex_tracing = { version = "0.1", path = "../../../libs/pavex_tracing", default-features = false }
+sqlx-core = { version = "0.8", default-features = false }
+sqlx-postgres = { version = "0.8", default-features = false }
+thiserror = { version = "2", default-features = false }
