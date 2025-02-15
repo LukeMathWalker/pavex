@@ -45,15 +45,16 @@ jobs:
       <<- output | indent(4) >>
 
   <% for example in examples %>
-  example_<<example>>_<<- target >>:
-    name: "Example << example >> (<<- target >>)"
+  example_<<example.name>>_<<- target >>:
+    name: "Example << example.name >> (<<- target >>)"
     runs-on: << os >>
     defaults:
       run:
-        working-directory: examples/<< example >>
+        working-directory: examples/<< example.name >>
+    << example.services | indent(4) >>
     needs:
       - build_clis_<<- target >>
-      <% set job_name %>Example << example >> (<<- target >>)<% endset %>
+      <% set job_name %>Example << example.name >> (<<- target >>)<% endset %>
       <%- from 'example_steps' import output -%>
       <<- output | indent(4) >>
   <% endfor %>

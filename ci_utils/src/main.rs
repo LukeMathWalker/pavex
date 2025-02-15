@@ -1,4 +1,11 @@
-use minijinja::{context, syntax::SyntaxConfig, Environment};
+use std::sync::Arc;
+
+use minijinja::{
+    context,
+    syntax::SyntaxConfig,
+    value::{Enumerator, Object},
+    Environment,
+};
 
 pub fn pavex_path(target: &str) -> String {
     match target {
@@ -63,12 +70,22 @@ fn main() {
                 continue;
             };
             let type_ = entry.file_type().expect("Failed to get file type");
-            if type_.is_dir() {
-                let name = entry.file_name().into_string().expect("Non UTF-8 dir name");
-                if name != "starter" && name != ".cargo" {
-                    examples.push(name)
-                }
+            if !type_.is_dir() {
+                continue;
             }
+            let name = entry.file_name().into_string().expect("Non UTF-8 dir name");
+            if name == "starter" || name == ".cargo" {
+                continue;
+            }
+            let services = entry.path().join(".github").join("services.yml");
+            let services = std::fs::read_to_string(services).ok();
+            let pre_steps = entry.path().join(".github").join("pre_steps.yml");
+            let pre_steps = std::fs::read_to_string(pre_steps).ok();
+            examples.push(minijinja::Value::from_object(Example {
+                name,
+                services,
+                pre_steps,
+            }))
         }
         examples
     };
@@ -79,4 +96,32 @@ fn main() {
         .render(context! {})
         .expect("Failed to and render template");
     println!("{output}");
+}
+
+#[derive(Debug, Clone)]
+pub struct Example {
+    pub name: String,
+    pub services: Option<String>,
+    pub pre_steps: Option<String>,
+}
+
+impl Object for Example {
+    fn get_value(self: &Arc<Self>, key: &minijinja::Value) -> Option<minijinja::Value> {
+        key.as_str().and_then(|key| match key {
+            "name" => Some(minijinja::Value::from_safe_string(self.name.clone())),
+            "services" => self
+                .services
+                .as_ref()
+                .map(|s| minijinja::Value::from_safe_string(s.clone())),
+            "pre_steps" => self
+                .pre_steps
+                .as_ref()
+                .map(|s| minijinja::Value::from_safe_string(s.clone())),
+            _ => None,
+        })
+    }
+
+    fn enumerate(self: &Arc<Self>) -> Enumerator {
+        Enumerator::Str(&["name", "services", "pre_steps"])
+    }
 }

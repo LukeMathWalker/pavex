@@ -1,0 +1,16 @@
+# Steps that must be ran before the tests can be executed
+- name: Install sqlx-cli
+  run:
+    cargo install sqlx-cli
+    --version=${{ env.SQLX_VERSION }}
+    --features ${{ env.SQLX_FEATURES }}
+    --no-default-features
+    --locked
+    # The --locked flag can be used to force Cargo to use the packaged Cargo.lock file if it is available.
+    # This may be useful for ensuring reproducible builds, to use the exact same set of dependencies that were available when the package was published.
+    # It may also be useful if a newer version of a dependency is published that no longer builds on your system, or has other problems
+- name: Migrate database
+  run: |
+    SKIP_DOCKER=1 ./scripts/init_db.sh
+- name: Check that queries are fresh
+  run: cargo sqlx prepare --workspace --check -- --all-targets

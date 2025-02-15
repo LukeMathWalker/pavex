@@ -254,6 +254,17 @@ jobs:
     defaults:
       run:
         working-directory: examples/realworld
+    # Extra services that must spun up before this example can be tested
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     needs:
       - build_clis_linux
       
@@ -324,6 +335,23 @@ jobs:
       run: |
         pavex self activate
         pavexc self setup
+    # Steps that must be ran before the tests can be executed
+    - name: Install sqlx-cli
+      run:
+        cargo install sqlx-cli
+        --version=${{ env.SQLX_VERSION }}
+        --features ${{ env.SQLX_FEATURES }}
+        --no-default-features
+        --locked
+        # The --locked flag can be used to force Cargo to use the packaged Cargo.lock file if it is available.
+        # This may be useful for ensuring reproducible builds, to use the exact same set of dependencies that were available when the package was published.
+        # It may also be useful if a newer version of a dependency is published that no longer builds on your system, or has other problems
+    - name: Migrate database
+      run: |
+        SKIP_DOCKER=1 ./scripts/init_db.sh
+    - name: Check that queries are fresh
+      run: cargo sqlx prepare --workspace --check -- --all-targets
+
     - name: Formatting
       run: |
         cargo fmt --check
