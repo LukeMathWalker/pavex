@@ -48,6 +48,9 @@ jobs:
   example_<<example>>_<<- target >>:
     name: "Example << example >> (<<- target >>)"
     runs-on: << os >>
+    defaults:
+      run:
+        working-directory: examples/<< example >>
     needs:
       - build_clis_<<- target >>
       <% set job_name %>Example << example >> (<<- target >>)<% endset %>

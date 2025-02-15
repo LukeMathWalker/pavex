@@ -251,6 +251,9 @@ jobs:
   example_realworld_linux:
     name: "Example realworld (linux)"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/realworld
     needs:
       - build_clis_linux
       
@@ -323,18 +326,16 @@ jobs:
         pavexc self setup
     - name: Formatting
       run: |
-        cd examples/realworld
         cargo fmt --check
     - name: Test example
       env:
         PAVEX_DEBUG: "true"
         PAVEX_PAVEXC: /home/runner/.cargo/bin/pavexc
       run: |
-        cd examples/realworld
         cargo px test
     - name: Check if any of the files changed
       run: |
-        git diff --exit-code HEAD -- examples/realworld  ":(exclude)Cargo.lock" || (echo "Example project is not up to date. Regenerate it using 'cargo px check'" && exit 1)
+        git diff --exit-code HEAD -- .  ":(exclude)Cargo.lock" || (echo "Example project is not up to date. Regenerate it using 'cargo px check'" && exit 1)
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
