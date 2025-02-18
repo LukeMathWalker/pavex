@@ -61,7 +61,7 @@ fs-err = { workspace = true }
 ron = { workspace = true }
 
 # Cookies
-biscotti = { workspace = true, optional = true }
+biscotti = { workspace = true, optional = true, features = ["serde"] }
 
 # Server request id
 uuid = { workspace = true, features = ["v7"], optional = true }

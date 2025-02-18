@@ -283,9 +283,9 @@ dependencies = [
 
 [[package]]
 name = "biscotti"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0b3298a722061d404d4f0efb3d9dc2d16601649e6032165696e9c7b25f11d41"
+checksum = "6cfaa05b389531c9029fc15a2a7067c09defa3e9a4ea2294b9343944391846b4"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
@@ -1219,6 +1219,29 @@ dependencies = [
  "bitflags 2.8.0",
  "ignore",
  "walkdir",
+]
+
+[[package]]
+name = "googletest"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dce026f84cdd339bf71be01b24fe67470ee634282f68c1c4b563d00a9f002b05"
+dependencies = [
+ "googletest_macro",
+ "num-traits",
+ "regex",
+ "rustversion",
+]
+
+[[package]]
+name = "googletest_macro"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5070fa86976044fe2b004d874c10af5d1aed6d8f6a72ff93a6eb29cc87048bc"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2544,8 +2567,11 @@ version = "0.1.74"
 dependencies = [
  "anyhow",
  "async-trait",
+ "googletest",
  "humantime-serde",
+ "itertools 0.14.0",
  "pavex",
+ "pavex_session_memory_store",
  "pavex_tracing",
  "px_workspace_hack",
  "serde",
