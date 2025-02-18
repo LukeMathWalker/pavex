@@ -39,7 +39,6 @@ pub struct SessionCookieConfig {
     ///
     /// By default, the attribute is set to [`SameSite::Lax`].
     #[serde(default = "default_session_cookie_same_site")]
-    #[serde(with = "same_site")]
     pub same_site: Option<SameSite>,
     /// The kind of session cookie to use.
     ///
@@ -101,71 +100,8 @@ pub enum SessionCookieKind {
     /// Each browser has its own concept of "browser session", e.g. the session
     /// doesn't necessarily end when the browser window or tab is closed.
     /// For example, both Firefox and Chrome automatically restore the session
-    /// when the browser is restarted, keeping all session cookies alive.   
+    /// when the browser is restarted, keeping all session cookies alive.
     /// Consider using [`SessionCookieKind::Persistent`]
     /// if you don't want to deal with the nuances of browser-specific behaviour.
     Session,
-}
-
-// Deserialization and serialization routines for `same_site` attribute.
-mod same_site {
-    use pavex::cookie::SameSite;
-    use serde::{de, Deserializer, Serializer};
-    use std::fmt;
-
-    pub fn serialize<S>(value: &Option<SameSite>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match value {
-            Some(same_site) => {
-                let same_site = match same_site {
-                    SameSite::Strict => "Strict",
-                    SameSite::Lax => "Lax",
-                    SameSite::None => "None",
-                };
-                serializer.serialize_some(same_site)
-            }
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<SameSite>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct SameSiteVisitor;
-
-        impl de::Visitor<'_> for SameSiteVisitor {
-            type Value = Option<SameSite>;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a string or null")
-            }
-
-            fn visit_str<E>(self, value: &str) -> Result<Option<SameSite>, E>
-            where
-                E: de::Error,
-            {
-                match value {
-                    "Strict" | "strict" => Ok(Some(SameSite::Strict)),
-                    "Lax" | "lax" => Ok(Some(SameSite::Lax)),
-                    "None" | "none" => Ok(Some(SameSite::None)),
-                    _ => Err(de::Error::unknown_variant(
-                        value,
-                        &["Strict", "Lax", "None"],
-                    )),
-                }
-            }
-
-            fn visit_none<E>(self) -> Result<Option<SameSite>, E>
-            where
-                E: de::Error,
-            {
-                Ok(None)
-            }
-        }
-
-        deserializer.deserialize_option(SameSiteVisitor)
-    }
 }

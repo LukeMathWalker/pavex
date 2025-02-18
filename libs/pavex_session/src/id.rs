@@ -1,12 +1,12 @@
 #[derive(
-    Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+    Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
 )]
 #[serde(transparent)]
 /// The identifier for a session.
 ///
 /// # Format stability
 ///
-/// The session ID is guaranteed to be a valid UUID.  
+/// The session ID is guaranteed to be a valid UUID.
 /// The format of the UUID is not guaranteed to be stable across different versions of this library.
 ///
 /// It is recommended to treat the session ID as an opaque value in your application.

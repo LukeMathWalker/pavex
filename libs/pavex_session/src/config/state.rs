@@ -24,7 +24,7 @@ pub struct SessionStateConfig {
     #[serde(default)]
     pub extend_ttl: TtlExtensionTrigger,
     /// The server will skip TTL extension if the remaining TTL
-    /// is greater than this threshold.  
+    /// is greater than this threshold.
     /// The threshold is a ratio between 0 and 1, interpreted as
     /// a percentage of the total TTL.
     ///
@@ -39,13 +39,13 @@ pub struct SessionStateConfig {
     ///
     /// # Default
     ///
-    /// By default, the threshold is set to 0.8—i.e. 80% of the total TTL.  
+    /// By default, the threshold is set to 0.8—i.e. 80% of the total TTL.
     ///
     /// # Example
     ///
-    /// Let's assume that the TTL for a new session is set to 24 hours.  
+    /// Let's assume that the TTL for a new session is set to 24 hours.
     /// With the default threshold of 0.8, the server will skip TTL extension requests
-    /// if the remaining session TTL is greater than 19.2 hours.  
+    /// if the remaining session TTL is greater than 19.2 hours.
     /// In other words, the server expects at most ~0.2 TTL extension requests per hour for
     /// each active session, regardless of the number of requests the server receives
     /// for that session.
@@ -54,6 +54,10 @@ pub struct SessionStateConfig {
     /// Determines when the storage backend should be asked to create a new session state record.
     #[serde(default)]
     pub server_state_creation: ServerStateCreation,
+    /// Determines what happens when there is no server-side state for a pre-existing session
+    /// (e.g. only the client-side state remains or was ever created).
+    #[serde(default)]
+    pub missing_server_state: MissingServerState,
 }
 
 impl Default for SessionStateConfig {
@@ -63,6 +67,7 @@ impl Default for SessionStateConfig {
             extend_ttl: Default::default(),
             ttl_extension_threshold: default_ttl_extension_threshold(),
             server_state_creation: Default::default(),
+            missing_server_state: Default::default(),
         }
     }
 }
@@ -107,7 +112,7 @@ pub enum TtlExtensionTrigger {
     ///
     /// [`OnStateChanges`] may reduce the number of requests to the storage backend
     /// compared to [`OnStateLoadsAndChanges`], as well as improve the latency of the requests served
-    /// by your server by removing a network request from the critical path.  
+    /// by your server by removing a network request from the critical path.
     /// It primarily depends on the
     /// [TTL extension threshold](SessionStateConfig::ttl_extension_threshold) you set, if any.
     ///
@@ -136,6 +141,21 @@ pub enum ServerStateCreation {
     /// This is the default policy.
     #[default]
     NeverSkip,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+/// Configure the expected behaviour when dealing with a pre-existing session (i.e. with
+/// a valid client-side cookie) that doesn't have a corresponding record in the session store.
+pub enum MissingServerState {
+    /// The session will be treated as valid.
+    ///
+    /// The server state will be treated as empty, if interacted with.
+    Allow,
+    /// The session will be marked as invalidated.
+    #[default]
+    Reject,
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]

@@ -14,7 +14,7 @@ use pavex_session::{
     SessionId,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 /// An in-memory session store.
 ///
 /// # Limitations
@@ -23,6 +23,13 @@ use pavex_session::{
 /// It also won't synchronize data between multiple server instances.
 /// It is primarily intended for testing and local development.
 pub struct InMemorySessionStore(Arc<Mutex<HashMap<SessionId, StoreRecord>>>);
+
+impl std::fmt::Debug for InMemorySessionStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InMemorySessionStore")
+            .finish_non_exhaustive()
+    }
+}
 
 #[doc(hidden)]
 // Here for backwards compatibility.
@@ -174,7 +181,7 @@ impl SessionStorageBackend for InMemorySessionStore {
     #[tracing::instrument(name = "Change id for server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn change_id(&self, old_id: &SessionId, new_id: &SessionId) -> Result<(), ChangeIdError> {
         let mut guard = self.0.lock().await;
-        if Self::get_mut_if_fresh(&mut guard, old_id).is_ok() {
+        if Self::get_mut_if_fresh(&mut guard, new_id).is_ok() {
             return Err(DuplicateIdError {
                 id: new_id.to_owned(),
             }

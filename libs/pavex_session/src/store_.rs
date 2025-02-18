@@ -274,17 +274,29 @@ pub mod errors {
     #[error("Something went wrong when deleting expired sessions")]
     pub struct DeleteExpiredError(#[from] anyhow::Error);
 
-    #[derive(Debug, thiserror::Error)]
+    #[derive(thiserror::Error)]
     #[error("There is no session with the given id")]
     /// There is no session with the given ID.
     pub struct UnknownIdError {
         pub id: SessionId,
     }
 
-    #[derive(Debug, thiserror::Error)]
+    impl std::fmt::Debug for UnknownIdError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("UnknownIdError")
+        }
+    }
+
+    #[derive(thiserror::Error)]
     #[error("A session with the same ID already exists.")]
     /// A session with the same ID already exists.
     pub struct DuplicateIdError {
         pub id: SessionId,
+    }
+
+    impl std::fmt::Debug for DuplicateIdError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("DuplicateIdError")
+        }
     }
 }
