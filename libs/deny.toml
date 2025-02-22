@@ -8,6 +8,10 @@ ignore = [
     # so no easy way to remove it until all intermediate crates get rid of it.
     # Since it isn't vulnerable, we'll ignore the advisory for now.
     "RUSTSEC-2024-0384",
+    # `*ring*` is unmaintained, but we depend on it transitively,
+    # so no easy way to remove it until all intermediate crates get rid of it.
+    # Since there are no known vulnerabilities, we'll ignore the advisory for now.
+    "RUSTSEC-2025-0007",
 ]
 
 [licenses]
