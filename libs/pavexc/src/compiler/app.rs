@@ -14,7 +14,9 @@ use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, ApplicationStateCallGraph,
 };
-use crate::compiler::analyses::cloning::clonables_can_be_cloned;
+use crate::compiler::analyses::cloning::{
+    clonables_can_be_cloned, never_clones_should_not_be_copyable,
+};
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
@@ -117,6 +119,13 @@ impl App {
             &mut diagnostics,
         );
         clonables_can_be_cloned(
+            &component_db,
+            &computation_db,
+            &package_graph,
+            &krate_collection,
+            &mut diagnostics,
+        );
+        never_clones_should_not_be_copyable(
             &component_db,
             &computation_db,
             &package_graph,
