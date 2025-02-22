@@ -89,7 +89,7 @@ END $$;"
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl SessionStorageBackend for PostgresSessionStore {
     /// Creates a new session record in the store using the provided ID.
     #[tracing::instrument(name = "Create server-side session record", level = tracing::Level::INFO, skip_all)]

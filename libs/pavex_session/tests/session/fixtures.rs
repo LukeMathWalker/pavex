@@ -134,7 +134,7 @@ pub struct CallInformation {
     oplog: Vec<String>,
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: SessionStorageBackend> SessionStorageBackend for SpyBackend<B> {
     async fn create(
         &self,
