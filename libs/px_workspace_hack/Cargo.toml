@@ -29,6 +29,7 @@ crypto-common = { version = "0.1", default-features = false, features = ["getran
 deranged = { version = "0.3", default-features = false, features = ["powerfmt", "serde", "std"] }
 digest = { version = "0.10", features = ["mac", "std"] }
 either = { version = "1", features = ["serde"] }
+fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-core = { version = "0.3" }
@@ -42,8 +43,9 @@ indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", default-features = false, features = ["i128", "std"] }
+num-traits = { version = "0.2", features = ["i128"] }
 percent-encoding = { version = "2" }
+petgraph = { version = "0.7", default-features = false, features = ["graphmap", "stable_graph"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = { version = "1" }
 rand = { version = "0.8" }
@@ -85,6 +87,7 @@ crypto-common = { version = "0.1", default-features = false, features = ["getran
 deranged = { version = "0.3", default-features = false, features = ["powerfmt", "serde", "std"] }
 digest = { version = "0.10", features = ["mac", "std"] }
 either = { version = "1", features = ["serde"] }
+fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-core = { version = "0.3" }
@@ -98,8 +101,9 @@ indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", default-features = false, features = ["i128", "std"] }
+num-traits = { version = "0.2", features = ["i128"] }
 percent-encoding = { version = "2" }
+petgraph = { version = "0.7", default-features = false, features = ["graphmap", "stable_graph"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = { version = "1" }
 rand = { version = "0.8" }
