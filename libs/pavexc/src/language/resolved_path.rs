@@ -351,7 +351,7 @@ impl PartialEq for ResolvedPath {
             package_id: other_package_id,
         } = other;
         let is_equal = package_id == other_package_id
-            && segments.len() == segments.len()
+            && segments.len() == other_segments.len()
             && qualified_self == other_qualified_self;
         if is_equal {
             // We want to ignore the first segment of the path, because dependencies can be
