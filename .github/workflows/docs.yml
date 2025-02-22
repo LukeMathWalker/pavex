@@ -447,15 +447,15 @@ jobs:
     - name: Run tests
       working-directory: libs
       run: |
-        cargo test --no-run
-        cargo test --workspace --exclude="pavex_cli"
+        cargo test --all-features --no-run
+        cargo test --all-features --workspace --exclude="pavex_cli"
     - name: Run UI tests
       env:
         PAVEX_TEST_CLI_PATH: /home/runner/.cargo/bin/pavex
         PAVEXC_TEST_CLI_PATH: /home/runner/.cargo/bin/pavexc
       working-directory: libs
       run: |
-        cargo test --package pavex_cli
+        cargo test --all-features --package pavex_cli
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -606,15 +606,15 @@ jobs:
     - name: Run tests
       working-directory: libs
       run: |
-        cargo test --no-run
-        cargo test --workspace --exclude="pavex_cli"
+        cargo test --all-features --no-run
+        cargo test --all-features --workspace --exclude="pavex_cli"
     - name: Run UI tests
       env:
         PAVEX_TEST_CLI_PATH: /Users/runner/.cargo/bin/pavex
         PAVEXC_TEST_CLI_PATH: /Users/runner/.cargo/bin/pavexc
       working-directory: libs
       run: |
-        cargo test --package pavex_cli
+        cargo test --all-features --package pavex_cli
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -759,15 +759,15 @@ jobs:
     - name: Run tests
       working-directory: libs
       run: |
-        cargo test --no-run
-        cargo test --workspace --exclude="pavex_cli"
+        cargo test --all-features --no-run
+        cargo test --all-features --workspace --exclude="pavex_cli"
     - name: Run UI tests
       env:
         PAVEX_TEST_CLI_PATH: C:\Users\runneradmin\.cargo\bin\pavex.exe
         PAVEXC_TEST_CLI_PATH: C:\Users\runneradmin\.cargo\bin\pavexc.exe
       working-directory: libs
       run: |
-        cargo test --package pavex_cli
+        cargo test --all-features --package pavex_cli
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
