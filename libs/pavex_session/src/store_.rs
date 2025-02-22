@@ -91,7 +91,7 @@ impl SessionStore {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 /// The interface of a session storage backend.
 pub trait SessionStorageBackend: std::fmt::Debug + Send + Sync {
     /// Creates a new session record in the store using the provided ID.
