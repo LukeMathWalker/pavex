@@ -331,7 +331,7 @@ impl ConstructibleDb {
             if component_ids.len() > 1 {
                 let n_unique_constructors = component_ids
                     .iter()
-                    .map(|(_, &component_id)| {
+                    .map(|&(_, &component_id)| {
                         component_db.hydrated_component(component_id, computation_db)
                     })
                     .collect::<HashSet<_>>()
@@ -666,12 +666,10 @@ impl ConstructibleDb {
         let component_kind = user_component_db[user_component_id].callable_type();
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .and_then(|source| {
-                diagnostic::get_f_macro_invocation_span(source, location)
-                    .labeled(format!("The {component_kind} was registered here"))
-            });
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled(format!("The {component_kind} was registered here"))
+        });
 
         let callable = &computation_db[user_component_id];
         let e = anyhow::anyhow!("I can't find a constructor for `{}`.\n{self:?}", unconstructible_type.display_for_error()).context(
@@ -731,12 +729,10 @@ impl ConstructibleDb {
         let callable = &computation_db[user_component_id];
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .and_then(|source| {
-                diagnostic::get_f_macro_invocation_span(source, location)
-                    .labeled(format!("The {component_kind} was registered here"))
-            });
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled(format!("The {component_kind} was registered here"))
+        });
 
         let definition_snippet = get_snippet(
             &computation_db[user_component_id],
@@ -744,7 +740,10 @@ impl ConstructibleDb {
             package_graph,
             singleton_input_index,
         );
-        let error = anyhow::anyhow!("You can't inject a mutable reference to a singleton (`{singleton_input_type:?}`) as an input parameter to `{}`.", callable.path);
+        let error = anyhow::anyhow!(
+            "You can't inject a mutable reference to a singleton (`{singleton_input_type:?}`) as an input parameter to `{}`.",
+            callable.path
+        );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
             .optional_label(label)
@@ -785,12 +784,10 @@ impl ConstructibleDb {
         let callable = &computation_db[user_component_id];
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .and_then(|source| {
-                diagnostic::get_f_macro_invocation_span(source, location)
-                    .labeled(format!("The {component_kind} was registered here"))
-            });
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled(format!("The {component_kind} was registered here"))
+        });
 
         let definition_snippet = get_snippet(
             &computation_db[user_component_id],
@@ -798,9 +795,12 @@ impl ConstructibleDb {
             package_graph,
             transient_input_index,
         );
-        let error = anyhow::anyhow!("You can't inject a mutable reference to a transient type (`{transient_input_type:?}`) as an input parameter to `{}`.\n\
+        let error = anyhow::anyhow!(
+            "You can't inject a mutable reference to a transient type (`{transient_input_type:?}`) as an input parameter to `{}`.\n\
         Transient constructors are invoked every time their output is needed—instances of transient types are never reused. \
-        The result of any mutation would be immediately discarded.", callable.path);
+        The result of any mutation would be immediately discarded.",
+            callable.path
+        );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
             .optional_label(label)
@@ -838,12 +838,10 @@ impl ConstructibleDb {
         let callable = &computation_db[user_component_id];
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .and_then(|source| {
-                diagnostic::get_f_macro_invocation_span(source, location)
-                    .labeled(format!("The {component_kind} was registered here"))
-            });
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled(format!("The {component_kind} was registered here"))
+        });
 
         let definition_snippet = get_snippet(
             &computation_db[user_component_id],
@@ -1048,10 +1046,16 @@ impl ConstructiblesInScope {
                     &bindings,
                 );
                 let bound = self.get(type_);
-                assert!(bound.is_some(), "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
+                assert!(
+                    bound.is_some(),
+                    "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
                     template.display_for_error(),
                     type_.display_for_error(),
-                    bindings.into_iter().map(|(k, v)| format!("- {k} -> {}", v.display_for_error())).collect::<Vec<_>>().join("\n")
+                    bindings
+                        .into_iter()
+                        .map(|(k, v)| format!("- {k} -> {}", v.display_for_error()))
+                        .collect::<Vec<_>>()
+                        .join("\n")
                 );
                 return bound;
             }

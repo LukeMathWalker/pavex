@@ -1,6 +1,6 @@
+use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::Constructor;
 use crate::blueprint::linter::Lint;
-use crate::blueprint::Blueprint;
 use crate::request::body::{BodySizeLimit, BufferedBody, JsonBody, UrlEncodedBody};
 use crate::request::path::PathParams;
 use crate::request::query::QueryParams;

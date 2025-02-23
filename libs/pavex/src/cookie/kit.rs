@@ -1,7 +1,7 @@
+use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::Constructor;
 use crate::blueprint::linter::Lint;
 use crate::blueprint::middleware::PostProcessingMiddleware;
-use crate::blueprint::Blueprint;
 use crate::f;
 
 #[derive(Clone, Debug)]

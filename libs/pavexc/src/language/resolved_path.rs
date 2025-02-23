@@ -14,7 +14,7 @@ use quote::format_ident;
 use pavex_bp_schema::RawIdentifiers;
 use rustdoc_types::ItemEnum;
 
-use crate::compiler::resolvers::{resolve_type, GenericBindings};
+use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::callable_path::{
     CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
 };
@@ -22,8 +22,8 @@ use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive,
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::{
-    CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt,
-    CORE_PACKAGE_ID,
+    CORE_PACKAGE_ID, CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem,
+    RustdocKindExt,
 };
 
 use super::resolved_type::GenericLifetimeParameter;
@@ -173,8 +173,12 @@ impl ResolvedPathType {
                             }
                             rustdoc_types::GenericParamDefKind::Type { default, .. } => {
                                 let Some(default) = default else {
-                                    anyhow::bail!("Every generic parameter must either be explicitly assigned or have a default. \
-                                        `{}` in `{}` is unassigned and without a default.", param_def.name, base_type.join("::"))
+                                    anyhow::bail!(
+                                        "Every generic parameter must either be explicitly assigned or have a default. \
+                                        `{}` in `{}` is unassigned and without a default.",
+                                        param_def.name,
+                                        base_type.join("::")
+                                    )
                                 };
                                 let ty = resolve_type(
                                     default,
@@ -185,7 +189,11 @@ impl ResolvedPathType {
                                 GenericArgument::TypeParameter(ty)
                             }
                             rustdoc_types::GenericParamDefKind::Const { .. } => {
-                                anyhow::bail!("Const generics are not supported yet. I can't process `{}` in `{}`", param_def.name, base_type.join("::"))
+                                anyhow::bail!(
+                                    "Const generics are not supported yet. I can't process `{}` in `{}`",
+                                    param_def.name,
+                                    base_type.join("::")
+                                )
                             }
                         }
                     };
@@ -628,18 +636,23 @@ impl ResolvedPath {
             .expect("There is no package in the current workspace whose name matches the registration crate for these identifiers");
         let package_id = if normalize(registration_package.name()) == krate_name_candidate {
             registration_package.id().to_owned()
-        } else if let Some(dependency) = registration_package
-            .direct_links()
-            .find(|d| normalize(d.resolved_name()) == krate_name_candidate)
-        {
-            dependency.to().id().to_owned()
-        } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
-            PackageId::new(krate_name_candidate.clone())
         } else {
-            return Err(PathMustBeAbsolute {
-                relative_path: path.to_string(),
+            match registration_package
+                .direct_links()
+                .find(|d| normalize(d.resolved_name()) == krate_name_candidate)
+            {
+                Some(dependency) => dependency.to().id().to_owned(),
+                _ => {
+                    if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
+                        PackageId::new(krate_name_candidate.clone())
+                    } else {
+                        return Err(PathMustBeAbsolute {
+                            relative_path: path.to_string(),
+                        }
+                        .into());
+                    }
+                }
             }
-            .into());
         };
         Ok(Self {
             segments,

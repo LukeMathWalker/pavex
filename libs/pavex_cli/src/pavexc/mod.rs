@@ -38,15 +38,15 @@ pub fn get_or_install_from_graph(
         // the pre-built binary for the new version of `pavex` CLI is not available yet.
         if &latest_pavex_cli_version >= pavex_lib_version {
             return Err(anyhow::anyhow!(
-            "Your `pavex` CLI is too old: \
+                "Your `pavex` CLI is too old: \
             the current workspace uses version `{}` of the `pavex` library, but you're using version `{}` of the `pavex` CLI.\n\
             You must update your `pavex` CLI to a version greater or equal than `{}` to build the current workspace. \n\
             To fix the issue, run:\n\n    pavex self update\n\n\
             It'll update your `pavex` CLI to the latest released version.",
-            pavex_lib_version,
-            pavex_cli_version,
-            pavex_lib_version,
-        ));
+                pavex_lib_version,
+                pavex_cli_version,
+                pavex_lib_version,
+            ));
         }
     }
     let pavexc_cli_path = location::path_from_graph(

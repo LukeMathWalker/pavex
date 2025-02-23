@@ -13,23 +13,27 @@ async fn fresh_session_is_empty() {
     let session = Session::new(&store, &config, None);
     assert!(!session.is_invalidated());
     assert!(session.client().is_empty());
-    assert!(session
-        .server()
-        .is_empty()
-        .await
-        .expect("Failed to load session state"));
+    assert!(
+        session
+            .server()
+            .is_empty()
+            .await
+            .expect("Failed to load session state")
+    );
 
     // Trying to get a non-existing key on a fresh session returns `None`
     let key = "key".to_string();
 
     assert!(session.client().get::<String>(&key).unwrap().is_none());
     assert!(session.client().get_value(&key).is_none());
-    assert!(session
-        .server()
-        .get::<String>(&key)
-        .await
-        .unwrap()
-        .is_none());
+    assert!(
+        session
+            .server()
+            .get::<String>(&key)
+            .await
+            .unwrap()
+            .is_none()
+    );
     assert!(session.server().get_value(&key).await.unwrap().is_none());
 }
 
@@ -369,11 +373,13 @@ async fn server_get_methods_on_mut_and_non_mut_are_equivalent() {
 
     assert!(session.server().get_value(&key).await.unwrap().is_none());
     assert!(session.server().is_empty().await.unwrap());
-    assert!(session
-        .server_mut()
-        .get_value(&key)
-        .await
-        .unwrap()
-        .is_none());
+    assert!(
+        session
+            .server_mut()
+            .get_value(&key)
+            .await
+            .unwrap()
+            .is_none()
+    );
     assert!(session.server_mut().is_empty().await.unwrap());
 }

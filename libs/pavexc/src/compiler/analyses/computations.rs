@@ -3,7 +3,7 @@ use ahash::HashMap;
 use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::computation::Computation;
 use crate::compiler::interner::Interner;
-use crate::compiler::resolvers::{resolve_callable, CallableResolutionError};
+use crate::compiler::resolvers::{CallableResolutionError, resolve_callable};
 use crate::language::{Callable, ResolvedPath};
 use crate::rustdoc::CrateCollection;
 

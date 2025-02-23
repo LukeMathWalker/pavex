@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
@@ -14,13 +14,13 @@ use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibi
 use tracing::Span;
 use tracing_log_error::log_error;
 
-use crate::compiler::resolvers::{resolve_type, GenericBindings};
+use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
-use crate::rustdoc::{utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
+use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
 
-use super::compute::{compute_crate_docs, RustdocCacheKey, RustdocGlobalFsCache};
+use super::compute::{RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -892,7 +892,8 @@ impl Crate {
         Err(anyhow::anyhow!(
             "Failed to find an importable path for the type id `{:?}` in the index I computed for `{:?}`. \
             This is likely to be a bug in pavex's handling of rustdoc's JSON output or in rustdoc itself.",
-            type_id, self.core.package_id.repr()
+            type_id,
+            self.core.package_id.repr()
         ))
     }
 }
@@ -1319,7 +1320,8 @@ pub fn compute_package_id_for_crate_id(
                     .map(|l| format!("- {}@{}", l.name, l.version))
                     .collect::<Vec<_>>()
                     .join("\n");
-                anyhow::bail!("Searching for `{expected_link_name}` among the transitive dependencies \
+                anyhow::bail!(
+                    "Searching for `{expected_link_name}` among the transitive dependencies \
                     of `{search_root}` led to multiple results:\n{candidates}\n\
                     When the version ({expected_link_version}) was added to the search filters, \
                     no results come up. Could the inferred version be incorrect?\n\
@@ -1387,18 +1389,16 @@ pub fn compute_package_id_for_crate_id(
         }
     }
 
-    Err(
-        anyhow!(
-            "There are multiple packages named `{}` among the dependencies of {}. \
+    Err(anyhow!(
+        "There are multiple packages named `{}` among the dependencies of {}. \
             In order to disambiguate among them, I need to know their versions.\n\
             Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
             JSON documentation for `{}`.\n\
             This due to a limitation in `rustdoc` itself: follow https://github.com/rust-lang/compiler-team/issues/622 \
             to track progress on this issue.",
-            external_crate.name,
-            package_id.repr(),
-            external_crate.name,
-            package_id.repr()
-        )
-    )
+        external_crate.name,
+        package_id.repr(),
+        external_crate.name,
+        package_id.repr()
+    ))
 }

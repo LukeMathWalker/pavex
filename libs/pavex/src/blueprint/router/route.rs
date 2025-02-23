@@ -1,7 +1,7 @@
+use crate::blueprint::Blueprint;
 use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::blueprint::router::MethodGuard;
-use crate::blueprint::Blueprint;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
 
 /// The type returned by [`Blueprint::route`].

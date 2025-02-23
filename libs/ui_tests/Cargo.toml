@@ -314,7 +314,9 @@ members = [
   "reflection/type_alias_are_supported",
   "reflection/type_alias_are_supported/generated_app",
 ]
-resolver = "2"
+resolver = "3"
+[workspace.package]
+edition = "2024"
 [workspace.dependencies]
 pavex = { path = "../pavex" }
 pavex_cli_client = { path = "../pavex_cli_client" }

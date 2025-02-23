@@ -151,14 +151,13 @@ impl CallPath {
                             GenericArgument::Type(t) => {
                                 CallPathGenericArgument::Type(Self::parse_type(t)?)
                             }
-                            GenericArgument::Lifetime(l) => {
-                                CallPathGenericArgument::Lifetime(CallPathLifetime::new(l.ident.to_string()))
-                            }
+                            GenericArgument::Lifetime(l) => CallPathGenericArgument::Lifetime(
+                                CallPathLifetime::new(l.ident.to_string()),
+                            ),
                             GenericArgument::AssocType(_)
                             | GenericArgument::AssocConst(_)
                             | GenericArgument::Constraint(_)
-                            | GenericArgument::Const(_)
-                             => todo!(
+                            | GenericArgument::Const(_) => todo!(
                                 "We can only handle concrete types and lifetimes as generic parameters for the time being."
                             ),
                             a => todo!("Unknown class of generic arguments: {:?}", a),
@@ -178,10 +177,9 @@ impl CallPath {
             segments.push(segment)
         }
 
-        let qualified_self = if let Some(qself) = qualified_self {
-            Some(Self::parse_qself(qself)?)
-        } else {
-            None
+        let qualified_self = match qualified_self {
+            Some(qself) => Some(Self::parse_qself(qself)?),
+            _ => None,
         };
         Ok(Self {
             has_leading_colon,

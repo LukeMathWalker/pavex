@@ -5,10 +5,10 @@ use std::ops::Deref;
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
+use petgraph::Direction;
 use petgraph::graph::{EdgeIndex, NodeIndex};
 use petgraph::prelude::{DfsPostOrder, EdgeRef};
 use petgraph::visit::NodeRef;
-use petgraph::Direction;
 
 use crate::compiler::analyses::call_graph::borrow_checker::clone::get_clone_component_id;
 use crate::compiler::analyses::call_graph::core_graph::{InputParameterSource, RawCallGraph};

@@ -65,18 +65,20 @@ impl<'a> RequestHandler<'a> {
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum RequestHandlerValidationError {
     #[error(
-    "All request handlers must return a type that can be converted into a \
+        "All request handlers must return a type that can be converted into a \
         `pavex::response::Response`.\n\
         This request handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response."
     )]
     CannotReturnTheUnitType,
     #[error(
-    "All request handlers must return a type that can be converted into a \
+        "All request handlers must return a type that can be converted into a \
         `pavex::response::Response`.\n\
         This request handler doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
     )]
     CannotFalliblyReturnTheUnitType,
-    #[error("Input parameters for a request handler can't have any *unassigned* generic type parameters.")]
+    #[error(
+        "Input parameters for a request handler can't have any *unassigned* generic type parameters."
+    )]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
     #[error(transparent)]
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),

@@ -4,14 +4,14 @@ use time::OffsetDateTime;
 use tokio::sync::{Mutex, MutexGuard};
 
 use pavex_session::{
+    SessionId,
     store::{
+        SessionRecord, SessionRecordRef, SessionStorageBackend,
         errors::{
             ChangeIdError, CreateError, DeleteError, DeleteExpiredError, DuplicateIdError,
             LoadError, UnknownIdError, UpdateError, UpdateTtlError,
         },
-        SessionRecord, SessionRecordRef, SessionStorageBackend,
     },
-    SessionId,
 };
 
 #[derive(Clone)]

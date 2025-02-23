@@ -6,7 +6,7 @@
 //! for a thorough introduction to routing in Pavex applications.
 pub use fallback::{Fallback, RegisteredFallback};
 pub use method_guard::{
-    MethodGuard, ANY, ANY_WITH_EXTENSIONS, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT,
+    ANY, ANY_WITH_EXTENSIONS, CONNECT, DELETE, GET, HEAD, MethodGuard, OPTIONS, PATCH, POST, PUT,
     TRACE,
 };
 pub use route::{RegisteredRoute, Route};

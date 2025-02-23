@@ -1,8 +1,8 @@
 use crate::cli_kind::CliKind;
 use crate::locator::ToolchainsLocator;
 use crate::pavexc::install::UnsupportedSourceError;
-use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
 use guppy::Version;
+use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
 use std::path::PathBuf;
 
 /// Given the version and source for the `pavex` library crate, determine the path to the

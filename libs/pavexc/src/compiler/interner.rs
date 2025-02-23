@@ -18,8 +18,7 @@ impl<T> Interner<T> {
 
     pub fn iter(
         &self,
-    ) -> impl ExactSizeIterator<Item = (la_arena::Idx<T>, &T)> + DoubleEndedIterator
-    {
+    ) -> impl ExactSizeIterator<Item = (la_arena::Idx<T>, &T)> + DoubleEndedIterator {
         self.arena.iter()
     }
 
@@ -33,12 +32,13 @@ where
     T: Hash + Eq + Clone,
 {
     pub fn get_or_intern(&mut self, value: T) -> la_arena::Idx<T> {
-        if let Some(id) = self.item2id.get(&value) {
-            *id
-        } else {
-            let id = self.arena.alloc(value.clone());
-            self.item2id.insert(value, id);
-            id
+        match self.item2id.get(&value) {
+            Some(id) => *id,
+            _ => {
+                let id = self.arena.alloc(value.clone());
+                self.item2id.insert(value, id);
+                id
+            }
         }
     }
 

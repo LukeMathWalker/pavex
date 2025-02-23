@@ -1,7 +1,7 @@
 [package]
 name = "integration_e628417e"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [dependencies]
 workspace_hack = { version = "0.1", path = "../../../workspace_hack" }

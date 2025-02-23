@@ -1,6 +1,6 @@
 //! Utilities to determine which version of `pavexc` should be used.
-use guppy::graph::{PackageGraph, PackageSource};
 use guppy::Version;
+use guppy::graph::{PackageGraph, PackageSource};
 
 /// Determine which version of `pavex` (the library) is being used
 /// in the current workspace.
@@ -33,14 +33,18 @@ pub(super) fn pavex_lib_version(
 
 #[derive(Debug, thiserror::Error)]
 pub enum PavexVersionError {
-    #[error("`pavex` is not in the dependency tree of the current workspace. Are you sure this is a Pavex project?")]
+    #[error(
+        "`pavex` is not in the dependency tree of the current workspace. Are you sure this is a Pavex project?"
+    )]
     NoPavexInDependencyTree,
     #[error(transparent)]
     MultiplePavexVersions(MultiplePavexVersionsError),
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("There are multiple versions of `pavex` in the dependency tree of the current workspace: {versions:?}\nIt has to be a single version.")]
+#[error(
+    "There are multiple versions of `pavex` in the dependency tree of the current workspace: {versions:?}\nIt has to be a single version."
+)]
 pub struct MultiplePavexVersionsError {
     versions: Vec<(Version, String)>,
 }

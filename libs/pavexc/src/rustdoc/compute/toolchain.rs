@@ -22,16 +22,16 @@ pub(crate) fn get_toolchain_crate_docs(
     let mut krate = match serde_json::from_str::<rustdoc_types::Crate>(&json) {
         Ok(krate) => krate,
         Err(e) => {
-            return if let Err(format_err) = check_format(std::io::Cursor::new(json)) {
+            return match check_format(std::io::Cursor::new(json)) { Err(format_err) => {
                 Err(format_err).with_context(|| {
                     format!(
                         "The JSON docs for {name} are not in the expected format. Are you using the right version of the `nightly` toolchain, `{}`, to generate the JSON docs?",
                         crate::DEFAULT_DOCS_TOOLCHAIN
                     )
                 })
-            } else {
+            } _ => {
                 Err(e).with_context(|| format!("Failed to deserialize the JSON docs for {}", name))
-            };
+            }};
         }
     };
 

@@ -3,8 +3,8 @@ use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::Report;
-use petgraph::graph::NodeIndex;
 use petgraph::Direction;
+use petgraph::graph::NodeIndex;
 use rustdoc_types::{ItemEnum, StructKind};
 
 use crate::compiler::analyses::call_graph::{CallGraphNode, RawCallGraph};
@@ -208,10 +208,10 @@ fn report_non_existing_path_parameters(
         let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
         if path_parameter_names.is_empty() {
             let error = anyhow!(
-                    "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
+                "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
                     But there are no path parameters in `{path}`, the corresponding path pattern!",
-                    callable.path
-                );
+                callable.path
+            );
             let d = CompilerDiagnostic::builder(error)
                 .source(source)
                 .optional_label(source_span.labeled(format!(
@@ -253,12 +253,12 @@ fn report_non_existing_path_parameters(
                 .map(|p| format!("- `{}`", p))
                 .join("\n");
             let error = anyhow!(
-                    "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
+                "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
                     Every struct field in `{extracted_type:?}` must be named after one of the route \
                     parameters that appear in `{path}`:\n{path_parameters}\n\n\
                     {missing_msg}. This is going to cause a runtime error!",
-                    raw_identifiers.fully_qualified_path().join("::"),
-                );
+                raw_identifiers.fully_qualified_path().join("::"),
+            );
             let d = CompilerDiagnostic::builder(error)
                 .source(source)
                 .optional_label(source_span.labeled(format!(

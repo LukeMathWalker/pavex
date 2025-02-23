@@ -7,12 +7,12 @@ use fixedbitset::FixedBitSet;
 use guppy::PackageId;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use petgraph::Direction;
 use petgraph::graph::NodeIndex;
 use petgraph::prelude::{DfsPostOrder, EdgeRef};
 use petgraph::visit::{Dfs, IntoNeighborsDirected, Reversed, VisitMap, Visitable};
-use petgraph::Direction;
 use proc_macro2::{Ident, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::ItemFn;
 
 use crate::compiler::analyses::call_graph::core_graph::{CallGraphEdgeMetadata, RawCallGraph};

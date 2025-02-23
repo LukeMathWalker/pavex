@@ -5,7 +5,7 @@ use crate::commands::{
 use crate::user_input::confirm;
 use anyhow::Error;
 use cargo_like_utils::shell::style;
-use pavex_cli_shell::{ShellExt, SHELL};
+use pavex_cli_shell::{SHELL, ShellExt};
 use std::borrow::Cow;
 use std::io::IsTerminal;
 
@@ -74,11 +74,14 @@ pub fn verify_installation<D: Dependency>(
                 IfAutoinstallable::PrintInstructions => false,
             };
             if auto_install {
-                if let Err(inner) = dep.auto_install() {
-                    attempted_auto_install = true;
-                    e = inner;
-                } else {
-                    installed = true;
+                match dep.auto_install() {
+                    Err(inner) => {
+                        attempted_auto_install = true;
+                        e = inner;
+                    }
+                    _ => {
+                        installed = true;
+                    }
                 }
             }
         }

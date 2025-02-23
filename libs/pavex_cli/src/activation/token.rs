@@ -1,9 +1,9 @@
-use crate::activation::token_cache::CliTokenDiskCache;
 use crate::activation::HTTP_CLIENT;
+use crate::activation::token_cache::CliTokenDiskCache;
 use crate::activation::{CliTokenError, InvalidActivationKey};
 use anyhow::Context;
 use jsonwebtoken::jwk::{JwkSet, KeyAlgorithm};
-use jsonwebtoken::{decode_header, Algorithm, DecodingKey, TokenData};
+use jsonwebtoken::{Algorithm, DecodingKey, TokenData, decode_header};
 use redact::Secret;
 use std::collections::HashSet;
 

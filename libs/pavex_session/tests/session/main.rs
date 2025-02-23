@@ -1,7 +1,7 @@
 use std::{collections::HashMap, num::NonZeroUsize};
 
 use assertions::is_removal_cookie;
-use fixtures::{spy_store, store, SessionFixture};
+use fixtures::{SessionFixture, spy_store, store};
 use googletest::{
     assert_that,
     prelude::{eq, none, not},
@@ -9,8 +9,8 @@ use googletest::{
 use helpers::SetCookie;
 use itertools::Itertools;
 use pavex_session::{
-    config::{MissingServerState, ServerStateCreation},
     IncomingSession, Session, SessionConfig, SessionId,
+    config::{MissingServerState, ServerStateCreation},
 };
 
 mod assertions;
@@ -448,8 +448,8 @@ async fn id_cycling_fails_if_the_old_state_record_is_gone_and_it_had_not_been_lo
 }
 
 #[tokio::test]
-async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_had_been_loaded_previously(
-) {
+async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_had_been_loaded_previously()
+ {
     let (store, config) = (store(), SessionConfig::default());
 
     let fixture = SessionFixture::default();
@@ -469,8 +469,8 @@ async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_h
 }
 
 #[tokio::test]
-async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_had_been_changed_previously(
-) {
+async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_had_been_changed_previously()
+ {
     let (store, config) = (store(), SessionConfig::default());
 
     let fixture = SessionFixture::default();

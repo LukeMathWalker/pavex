@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use tracing::{
+    Subscriber,
     field::Visit,
     span::{Attributes, Id, Record},
-    Subscriber,
 };
-use tracing_subscriber::{layer::Context, registry::LookupSpan, EnvFilter, Layer};
+use tracing_subscriber::{EnvFilter, Layer, layer::Context, registry::LookupSpan};
 
 /// Keep spans if either of the following is true:
 /// - They satisfy the criteria of the inner `EnvFilter`

@@ -114,7 +114,7 @@ pub struct UnexpectedBufferError {
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
+    "The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
 )]
 #[non_exhaustive]
 /// The `Content-Type` header is missing, while we expected it to be set to `application/json`, or
@@ -132,7 +132,7 @@ pub struct JsonDeserializationError {
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-"The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
+    "The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
 )]
 #[non_exhaustive]
 /// The `Content-Type` header not set to `application/json`, or another `application/*+json` MIME type.
@@ -143,7 +143,7 @@ pub struct JsonContentTypeMismatch {
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
+    "The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
 )]
 #[non_exhaustive]
 /// The `Content-Type` header is missing, while we expected it to be set to `application/x-www-form-urlencoded`.
@@ -151,7 +151,7 @@ pub struct MissingUrlEncodedContentType;
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-"The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
+    "The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
 )]
 #[non_exhaustive]
 /// The `Content-Type` header not set to `application/x-www-form-urlencoded`.

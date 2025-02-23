@@ -96,13 +96,13 @@ impl SessionStore {
 pub trait SessionStorageBackend: std::fmt::Debug + Send + Sync {
     /// Creates a new session record in the store using the provided ID.
     async fn create(&self, id: &SessionId, record: SessionRecordRef<'_>)
-        -> Result<(), CreateError>;
+    -> Result<(), CreateError>;
 
     /// Update the state of an existing session in the store.
     ///
     /// It overwrites the existing record with the provided one.
     async fn update(&self, id: &SessionId, record: SessionRecordRef<'_>)
-        -> Result<(), UpdateError>;
+    -> Result<(), UpdateError>;
 
     /// Update the TTL of an existing session record in the store.
     ///

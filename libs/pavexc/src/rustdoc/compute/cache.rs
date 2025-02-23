@@ -4,8 +4,8 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
 use camino::Utf8Path;
 use guppy::{
-    graph::{feature::StandardFeatures, PackageGraph, PackageMetadata},
     PackageId,
+    graph::{PackageGraph, PackageMetadata, feature::StandardFeatures},
 };
 use itertools::Itertools;
 use r2d2_sqlite::SqliteConnectionManager;

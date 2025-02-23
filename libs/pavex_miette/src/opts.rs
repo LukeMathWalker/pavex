@@ -260,7 +260,7 @@ impl PavexMietteHandlerOpts {
             terminal_size::terminal_size()
                 .unwrap_or((terminal_size::Width(80), terminal_size::Height(0)))
                 .0
-                 .0 as usize
+                .0 as usize
         })
     }
 }

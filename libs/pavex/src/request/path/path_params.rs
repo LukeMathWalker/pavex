@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::f;
 use crate::request::path::deserializer::PathDeserializer;
 use crate::request::path::errors::{DecodeError, ExtractPathParamsError, InvalidUtf8InPathParam};

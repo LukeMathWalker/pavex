@@ -18,8 +18,8 @@
 //! Feel free to open a PR if you need a **stable** field that isn't currently covered!
 
 use pavex::http::{Method, Version};
-use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
+use pavex::request::path::MatchedPathPattern;
 use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
 use tracing::Value;
@@ -84,7 +84,7 @@ pub const USER_AGENT_ORIGINAL: &str = "user_agent.original";
 /// The canonical representation for the value in [`HTTP_REQUEST_METHOD`].
 ///
 /// If the HTTP method is not canonical, it is set to `_OTHER`.
-pub fn http_request_method(request_head: &RequestHead) -> impl Value {
+pub fn http_request_method(request_head: &RequestHead) -> impl Value + use<> {
     match request_head.method {
         Method::GET => "GET",
         Method::POST => "POST",
@@ -105,7 +105,7 @@ pub fn http_request_server_id(id: ServerRequestId) -> impl Value {
 }
 
 /// The canonical representation for the value in [`HTTP_RESPONSE_STATUS_CODE`].
-pub fn http_response_status_code(response: &Response) -> impl Value {
+pub fn http_response_status_code(response: &Response) -> impl Value + use<> {
     response.status().as_u16()
 }
 
@@ -120,7 +120,7 @@ pub fn network_protocol_name() -> impl Value {
 }
 
 /// The canonical representation for the value in [`NETWORK_PROTOCOL_VERSION`].
-pub fn network_protocol_version(request_head: &RequestHead) -> impl Value {
+pub fn network_protocol_version(request_head: &RequestHead) -> impl Value + use<> {
     match request_head.version {
         Version::HTTP_09 => "0.9",
         Version::HTTP_10 => "1.0",

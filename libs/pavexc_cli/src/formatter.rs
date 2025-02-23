@@ -3,7 +3,7 @@ use tracing::{Event, Level, Subscriber};
 use tracing_log::NormalizeEvent;
 use tracing_subscriber::fmt::FormattedFields;
 use tracing_subscriber::{
-    fmt::{format::Writer, FmtContext, FormatEvent, FormatFields},
+    fmt::{FmtContext, FormatEvent, FormatFields, format::Writer},
     registry::LookupSpan,
 };
 

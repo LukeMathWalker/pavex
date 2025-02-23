@@ -2,8 +2,8 @@ use super::state::errors::{ServerGetError, ServerSetError, SyncError, ValueDeser
 
 use errors::{FinalizeError, ServerRemoveError, ValueLocation, ValueSerializationError};
 use pavex::cookie::{RemovalCookie, ResponseCookie};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::cell::OnceCell;
@@ -11,16 +11,16 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::MutexGuard;
 
+use crate::SessionConfig;
+use crate::SessionId;
+use crate::SessionStore;
 use crate::config::{
     MissingServerState, ServerStateCreation, SessionCookieKind, TtlExtensionTrigger,
 };
 use crate::incoming::IncomingSession;
-use crate::store::errors::{ChangeIdError, DeleteError, LoadError};
 use crate::store::SessionRecordRef;
+use crate::store::errors::{ChangeIdError, DeleteError, LoadError};
 use crate::wire::WireClientState;
-use crate::SessionConfig;
-use crate::SessionId;
-use crate::SessionStore;
 
 /// The current HTTP session.
 ///
@@ -224,7 +224,8 @@ impl<'store> Session<'store> {
         let i = 0;
         let new = loop {
             if i >= MAX_N_ATTEMPTS {
-                panic!("Failed to generate a new session ID that doesn't collide with the pre-existing one, \
+                panic!(
+                    "Failed to generate a new session ID that doesn't collide with the pre-existing one, \
                     even though {MAX_N_ATTEMPTS} attempts were carried out. Something seems to be seriously wrong \
                     with the underlying source of randomness."
                 )
@@ -672,7 +673,9 @@ impl ServerSessionStateMut<'_, '_> {
                         self.0.store.change_id(&old, &new).await?;
                     }
                     CurrentSessionId::NewlyGenerated(..) => {
-                        unreachable!("A newly generated session cannot have a 'NotLoaded' server state. It must be set to 'DoesNotExist'.")
+                        unreachable!(
+                            "A newly generated session cannot have a 'NotLoaded' server state. It must be set to 'DoesNotExist'."
+                        )
                     }
                 };
             }
@@ -740,7 +743,9 @@ impl ServerSessionStateMut<'_, '_> {
                     }
                 }
                 None => {
-                    tracing::trace!("The server session state was marked for deletion, but there was no session to delete. This is a no-op.")
+                    tracing::trace!(
+                        "The server session state was marked for deletion, but there was no session to delete. This is a no-op."
+                    )
                 }
             },
             Some(Changed { state }) => {
@@ -1093,7 +1098,9 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    #[error("Failed to deserialize the value associated with `{key}` in the {location}-side session state")]
+    #[error(
+        "Failed to deserialize the value associated with `{key}` in the {location}-side session state"
+    )]
     /// Returned when we fail to deserialize a value stored in either the server or the client
     /// session state.
     pub struct ValueDeserializationError {
@@ -1107,7 +1114,9 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    #[error("Failed to serialize the value that would have been associated with `{key}` in the {location}-side session state")]
+    #[error(
+        "Failed to serialize the value that would have been associated with `{key}` in the {location}-side session state"
+    )]
     /// Returned when we fail to serialize a value to be stored in either the server or the client
     /// session state.
     pub struct ValueSerializationError {

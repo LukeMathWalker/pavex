@@ -38,7 +38,7 @@ fn sanitize_filename(filename: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use liquid::{model::Value, Object};
+    use liquid::{Object, model::Value};
 
     #[test]
     fn should_do_happy_path() {

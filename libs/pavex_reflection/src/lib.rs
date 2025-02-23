@@ -143,7 +143,7 @@ impl RawIdentifiers {
                 .map(ToOwned::to_owned)
                 .collect();
             let n_module_segments = module_segments.len();
-            
+
             module_segments
                 .into_iter()
                 .take(n_module_segments - n_super)

@@ -1,4 +1,4 @@
-use std::future::{poll_fn, Future, IntoFuture};
+use std::future::{Future, IntoFuture, poll_fn};
 use std::io::Error;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
@@ -289,22 +289,25 @@ where
                         // Track if the worker has crashed.
                         let mut has_crashed: Option<usize> = None;
                         let worker_handle = &worker_handles[next_worker];
-                        if let Err(e) = worker_handle.dispatch(connection_message) {
-                            connection_message = match e {
-                                TrySendError::Full(message) => message,
-                                // A closed channel implies that the worker thread is no longer running,
-                                // therefore we need to restart it.
-                                TrySendError::Closed(conn) => {
-                                    has_crashed = Some(worker_handle.id());
-                                    conn
-                                }
-                            };
-                            next_worker = (next_worker + 1) % n_workers;
-                        } else {
-                            // We've successfully sent the connection to a worker, so we can stop trying
-                            // to send it to other workers.
-                            has_been_handled = true;
-                            break;
+                        match worker_handle.dispatch(connection_message) {
+                            Err(e) => {
+                                connection_message = match e {
+                                    TrySendError::Full(message) => message,
+                                    // A closed channel implies that the worker thread is no longer running,
+                                    // therefore we need to restart it.
+                                    TrySendError::Closed(conn) => {
+                                        has_crashed = Some(worker_handle.id());
+                                        conn
+                                    }
+                                };
+                                next_worker = (next_worker + 1) % n_workers;
+                            }
+                            _ => {
+                                // We've successfully sent the connection to a worker, so we can stop trying
+                                // to send it to other workers.
+                                has_been_handled = true;
+                                break;
+                            }
                         }
 
                         // Restart the crashed worker thread.
