@@ -9,19 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.75](https://github.com/LukeMathWalker/pavex/compare/0.1.74...0.1.75) - 2025-02-23
 
-
 ### 🐛 Bug Fixes
+
 - Compare path length before iterating in lock step over their segments. (by @LukeMathWalker) - #450
 
-
-
 ### 🧪 Testing
-- Push pavex_session test coverage over 90% (by @LukeMathWalker) - #449
 
+- Push pavex_session test coverage over 90% (by @LukeMathWalker) - #449
 
 ### Contributors
 
-* @LukeMathWalker
+- @LukeMathWalker
 
 ## [0.1.74](https://github.com/LukeMathWalker/pavex/compare/0.1.73...0.1.74) - 2025-02-12
 
