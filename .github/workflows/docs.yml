@@ -1074,9 +1074,6 @@ jobs:
         run_id: ${{ github.run_id }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - uses: dprint/check@v2.2
-      with:
-        args: >-
-          docs/*
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
