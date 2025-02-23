@@ -6,6 +6,23 @@ E.g. logging the response's status code, injecting response headers, etc.
 
 --8<-- "doc_examples/guide/middleware/post/project-basic.snap"
 
+## Signature
+
+Pavex accepts a wide range of function signatures for post-processing middlewares. There are two constraints:
+
+- They must take a [`Response`][Response] as one of their input parameters.
+- They must return a [type that can be converted into a `Response` via the `IntoResponse` trait](#intoresponse).\
+  If fallible, [they can return a `Result` with a type that implements `IntoResponse` as its `Ok` variant](#middlewares-can-fail).
+
+Other than that, you have a lot of freedom in how you define your post-processing middlewares:
+
+- They can be free functions or methods.
+- They can be synchronous or asynchronous.
+- [They can take additional input parameters, leaning on Pavex's dependency injection system](#dependency-injection).
+- [If fallible, they can use whatever error type you prefer, as long as you provide an error handler for it](#middlewares-can-fail).
+
+The next sections of this guide will elaborate on each of these points.
+
 ## Registration
 
 You register a post-processing middleware against a blueprint via the [`post_process`](crate::blueprint::Blueprint::post_process) method.

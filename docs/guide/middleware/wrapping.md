@@ -12,6 +12,22 @@ They let you execute logic before _and_ after the rest of the request processing
 But, most importantly, they give you access to a future representing the rest of the request processing pipeline
 (the [`Next`][Next] type), a prerequisite for those more advanced use cases.
 
+## Signature
+
+Pavex accepts a wide range of function signatures for wrapping middlewares. There are two constraints:
+
+- They must take [an instance of `Next` as one of their input parameters](#next).
+- They must return a [type that can be converted into a `Response` via the `IntoResponse` trait](#intoresponse).\
+  If fallible, [they can return a `Result` with a type that implements `IntoResponse` as its `Ok` variant](#middlewares-can-fail).
+
+Other than that, you have a lot of freedom in how you define your wrapping middlewares:
+
+- They can be free functions or methods.
+- [They can take additional input parameters, leaning on Pavex's dependency injection system](#dependency-injection).
+- [If fallible, they can use whatever error type you prefer, as long as you provide an error handler for it](#middlewares-can-fail).
+
+The next sections of this guide will elaborate on each of these points.
+
 ## Registration
 
 You register a wrapping middleware against a blueprint via the [`wrap`](crate::blueprint::Blueprint::wrap) method.
