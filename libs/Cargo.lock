@@ -1126,7 +1126,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2339,7 +2339,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -2385,7 +2385,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -2393,7 +2393,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -2454,7 +2454,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2463,7 +2463,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_deps"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
@@ -2474,7 +2474,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_diagnostic"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "miette",
@@ -2483,7 +2483,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_flock"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2495,7 +2495,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_shell"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
@@ -2503,7 +2503,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -2515,7 +2515,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "miette",
  "owo-colors",
@@ -2529,14 +2529,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_session"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2558,7 +2558,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_memory_store"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "async-trait",
  "pavex_session",
@@ -2570,7 +2570,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_sqlx"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2586,7 +2586,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2617,7 +2617,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "pavex",
  "tracing",
@@ -2626,7 +2626,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2683,7 +2683,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -2719,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2728,7 +2728,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_rustdoc_types"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "rustc-hash",
  "serde",
@@ -2761,7 +2761,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.74"
+version = "0.1.75"
 dependencies = [
  "anyhow",
  "fs-err",
