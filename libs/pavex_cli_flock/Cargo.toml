@@ -13,7 +13,7 @@ pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.75" }
 tracing = { workspace = true }
 libc = { workspace = true }
 fs-err = { workspace = true }
-windows-sys = { version = "0.52.0", features = [
+windows-sys = { workspace = true, features = [
     "Win32_Foundation",
     "Win32_Security",
     "Win32_Storage_FileSystem",

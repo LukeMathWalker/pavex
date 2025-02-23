@@ -31,7 +31,7 @@ pub fn download_prebuilt(
     );
     let err_msg = "Failed to download prebuilt binary from GitHub";
     let response = ureq::get(&download_url).call().context(err_msg)?;
-    if response.status() < 200 || response.status() >= 300 {
+    if !response.status().is_success() {
         return Err(
             anyhow::anyhow!("GitHub returned a {} status code", response.status())
                 .context(err_msg)
@@ -40,6 +40,7 @@ pub fn download_prebuilt(
     }
     let mut bytes = Vec::new();
     response
+        .into_body()
         .into_reader()
         .read_to_end(&mut bytes)
         .context(err_msg)?;
@@ -162,10 +163,13 @@ mod tests {
         // We don't commit the ZIP archive to the repository to avoid bloating it,
         // so we need to download it on the fly.
         let bytes = {
+            use std::io::Read as _;
+
             let mut bytes = Vec::new();
             ureq::get(source_url)
                 .call()
                 .expect("Failed to download ZIP archive")
+                .into_body()
                 .into_reader()
                 .read_to_end(&mut bytes)
                 .expect("Failed to read the response body");
@@ -186,10 +190,13 @@ mod tests {
         // We don't commit the ZIP archive to the repository to avoid bloating it,
         // so we need to download it on the fly.
         let bytes = {
+            use std::io::Read as _;
+
             let mut bytes = Vec::new();
             ureq::get(source_url)
                 .call()
                 .expect("Failed to download ZIP archive")
+                .into_body()
                 .into_reader()
                 .read_to_end(&mut bytes)
                 .expect("Failed to read the response body");

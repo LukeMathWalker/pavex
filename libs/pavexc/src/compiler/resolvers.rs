@@ -57,7 +57,11 @@ pub(crate) fn resolve_type(
     generic_bindings: &GenericBindings,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
-        Type::ResolvedPath(rustdoc_types::Path { id, args, name }) => {
+        Type::ResolvedPath(rustdoc_types::Path {
+            id,
+            args,
+            path: name,
+        }) => {
             let re_exporter_crate_name = {
                 let mut re_exporter = None;
                 if let Some(krate) = krate_collection.get_crate_by_package_id(used_by_package_id) {
