@@ -1,6 +1,6 @@
 # Middleware
 
-Middlewares are a mechanism to execute logic before and/or after the request handler.  
+Middlewares are a mechanism to execute logic before and/or after the request handler.\
 Middlewares are often used to implement **cross-cutting functionality**, such as:
 
 - telemetry (e.g. structured logging, metrics, etc.)
@@ -10,9 +10,8 @@ Middlewares are often used to implement **cross-cutting functionality**, such as
 
 ## Middleware types
 
-Pavex provides three types of middlewares: [pre-processing], [post-processing], and [wrapping middlewares].  
+Pavex provides three types of middlewares: [pre-processing], [post-processing], and [wrapping middlewares].\
 As the naming suggests, they differ in **when** they start and complete their execution, making them suitable for different use cases.
-
 
 !!! note "Request processing pipeline"
 
@@ -24,7 +23,7 @@ As the naming suggests, they differ in **when** they start and complete their ex
 At a glance:
 
 | Type              | Starts                     | Completes                  | Suitable for                                                                                                                                                                     |
-|-------------------|----------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------- | -------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Pre-processing]  | Before the request handler | Before the request handler | Skipping the remaining processing, returning an early response.<br/> Example: rejecting unauthenticated requests.                                                                |
 | [Post-processing] | After the request handler  | After the request handler  | Modifying the response and/or performing side-effects based on the its contents.<br/>Examples: logging the response's status code, injecting headers.                            |
 | [Wrapping]        | Before the request handler | After the request handler  | Accessing the future representing the rest of the request processing pipeline.<br/>Examples: enforcing a timeout, attaching a `tracing` span to the request processing pipeline. |

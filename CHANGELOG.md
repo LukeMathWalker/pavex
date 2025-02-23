@@ -9,88 +9,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.74](https://github.com/LukeMathWalker/pavex/compare/0.1.73...0.1.74) - 2025-02-12
 
-
 ### 🐛 Bug Fixes
+
 - Don't show the 'PAVEX_DEBUG' note if the exit code is successful (by @LukeMathWalker)
 - Quickstart template doesn't require an AppConfig instance as input to the application state (by @LukeMathWalker)
 - Ensure that the starter project compiles straight away (by @LukeMathWalker)
 
-
 ### Contributors
 
-* @LukeMathWalker
+- @LukeMathWalker
 
 ## [0.1.73](https://github.com/LukeMathWalker/pavex/compare/0.1.72...0.1.73) - 2025-02-11
 
-
 ### ⛰️ Features
-- Don't require native libraries to decompress archives from GitHub. (by @LukeMathWalker) - #442
 
+- Don't require native libraries to decompress archives from GitHub. (by @LukeMathWalker) - #442
 
 ### Contributors
 
-* @LukeMathWalker
+- @LukeMathWalker
 
 ## [0.1.72](https://github.com/LukeMathWalker/pavex/compare/0.1.71...0.1.72) - 2025-02-09
 
-
 ### ⛰️ Features
+
 - Nudge users towards PAVEX_DEBUG if they need to investigate errors further (by @LukeMathWalker) - #438
 - Add a '-w' option to 'pavex self setup' to streamline the onboard process. (by @LukeMathWalker) - #436
 - When printing an error chain, deduplicate identical errors to reduce visual noise (by @LukeMathWalker) - #438
 
-
-
 ### 🐛 Bug Fixes
-- Add a '--skip-activation' flag to 'pavex self setup' to fix the CI/CD pipeline of the starter project (by @LukeMathWalker) - #437
 
+- Add a '--skip-activation' flag to 'pavex self setup' to fix the CI/CD pipeline of the starter project (by @LukeMathWalker) - #437
 
 ### Contributors
 
-* @LukeMathWalker
+- @LukeMathWalker
 
 ## [0.1.71](https://github.com/LukeMathWalker/pavex/compare/0.1.70...0.1.71) - 2025-02-01
 
-
 ### ⛰️ Features
+
 - Inform the user when generating JSON docs for crates in the workspace (by @LukeMathWalker) - #430
 - Strive to use the path with the smallest number of segments in the generated code (by @LukeMathWalker) - #430
 - All ApplicationState fields should be public to allow manipulation of the state ahead of request serving. This is particularly important for end-to-end tests. (by @LukeMathWalker) - #430
 - Assign unique and intelligible field names to the singletons stored inside ApplicationState (by @LukeMathWalker) - #430
 
-
-
 ### 🐛 Bug Fixes
+
 - Don't confuse the JSON docs for different versions of the same crate. Be defensive against cargo's broken caching strategy. (by @LukeMathWalker) - #430
-
-
-
 
 ### Contributors
 
-* @LukeMathWalker
+- @LukeMathWalker
 
 ## [0.1.70](https://github.com/LukeMathWalker/pavex/compare/0.1.69...0.1.70) - 2025-01-24
 
-
 ### 🐛 Bug Fixes
+
 - Don't install the current nightly when checking the freshness of a project. Pavex will install the specific nightly version it requires when it initializes (by @LukeMathWalker)
 - Use the new install URL in the starter project template (#425) (by @LukeMathWalker) - #425
 
-
-
 ### 🫧 Polishing
+
 - Use 'tracing_log_error::log_error!' in the project template to ensure consistent error logging (by @LukeMathWalker) - #427
-
-
-
 
 ### Contributors
 
-* @LukeMathWalker
-* @pavex-releaser[bot]
-* @github-actions[bot]
+- @LukeMathWalker
+- @pavex-releaser[bot]
+- @github-actions[bot]
+
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -172,7 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [`pavex_session`] Fix a runtime panic: the server-side state should be loaded if it hasn't been loaded yet.
- 
+
 ## [0.1.61](https://github.com/LukeMathWalker/pavex/compare/0.1.60...0.1.61) - 2024-12-11
 
 ### Features
@@ -300,14 +290,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.48](https://github.com/LukeMathWalker/pavex/compare/0.1.47...0.1.48) - 2024-09-02
 
 ### Fixed
+
 - Avoid panic petgraph-related panic when inserting clone nodes to fix borrow checking errors ([#334](https://github.com/LukeMathWalker/pavex/pull/334))
 
 ## [0.1.47](https://github.com/LukeMathWalker/pavex/compare/0.1.46...0.1.47) - 2024-08-14
 
 ### Fixed
+
 - always use the specified toolchain, remove yet another location where nightly was hard-coded
 
 ### Other
+
 - Pin a specific `nightly` version for each version of `pavexc`, ensuring they are compatible ([#331](https://github.com/LukeMathWalker/pavex/pull/331))
 - Allow overriding the `nightly` toolchain used to generate JSON docs via `PAVEXC_DOCS_TOOLCHAIN` ([#331](https://github.com/LukeMathWalker/pavex/pull/331))
 - Fix panics when performing dependency injection for complex call graphs ([#329](https://github.com/LukeMathWalker/pavex/pull/329))
@@ -315,48 +308,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.46](https://github.com/LukeMathWalker/pavex/compare/0.1.45...0.1.46) - 2024-07-27
 
 ### Other
+
 - Feature gate tokio net feature for pavex behind server feature ([#324](https://github.com/LukeMathWalker/pavex/pull/324))
 - update Cargo.toml dependencies
 
 ## [0.1.45](https://github.com/LukeMathWalker/pavex/compare/0.1.44...0.1.45) - 2024-07-02
 
 ### Added
+
 - enable 'std' feature on the 'time' crate in 'pavex'
 
 ### Fixed
+
 - std's collections can be used as prebuilt types ([#321](https://github.com/LukeMathWalker/pavex/pull/321))
 
 ### Other
+
 - Add constructor for RequestHead ([#319](https://github.com/LukeMathWalker/pavex/pull/319))
 
 ## [0.1.44](https://github.com/LukeMathWalker/pavex/compare/0.1.43...0.1.44) - 2024-06-22
 
 ### Fixed
+
 - Don't use public items via paths that include private modules ([#316](https://github.com/LukeMathWalker/pavex/pull/316))
 
 ## [0.1.43](https://github.com/LukeMathWalker/pavex/compare/0.1.42...0.1.43) - 2024-06-19
 
 ### Added
+
 - Add status_mut() function to Response ([#313](https://github.com/LukeMathWalker/pavex/pull/313))
 
 ## [0.1.42](https://github.com/LukeMathWalker/pavex/compare/0.1.41...0.1.42) - 2024-06-18
 
 ### Fixed
+
 - elided lifetime parameters in generic structs are handled correctly ([#310](https://github.com/LukeMathWalker/pavex/pull/310))
 
 ## [0.1.41](https://github.com/LukeMathWalker/pavex/compare/0.1.40...0.1.41) - 2024-06-16
 
 ### Fixed
+
 - Pavex will reject singleton constructors if they return a type with non-`'static` lifetime parameters. Singletons must be shared across worker threads, therefore they must be `'static`.
 
 ## [0.1.40](https://github.com/LukeMathWalker/pavex/compare/0.1.39...0.1.40) - 2024-06-16
 
 ### Fixed
-- 'pavex new' no longer panics if 'cargo fmt' fails.  ([#303](https://github.com/LukeMathWalker/pavex/pull/303))
+
+- 'pavex new' no longer panics if 'cargo fmt' fails. ([#303](https://github.com/LukeMathWalker/pavex/pull/303))
 
 ## [0.1.39](https://github.com/LukeMathWalker/pavex/compare/0.1.38...0.1.39) - 2024-06-15
 
 ### Added
+
 - Add a workspace-hack crate to the generated starter project to minimise (re)build times
 - Introduce prebuilt types ([#298](https://github.com/LukeMathWalker/pavex/pull/298))
 - Add a new '--template' option to 'pavex new' and 'pavexc new'. It includes a dedicated 'quickstart' template as well as the 'api' template, the default.
@@ -364,6 +367,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shorthand methods (`.clone_if_necessary()` and `.never_clone()`) to tweak the default cloning strategy on constructors and prebuilt types
 
 ### Fixed
+
 - Set new Cargo lint to allow 'cfg(pavex_ide_hint)' in Pavex, its snapshot tests and its scaffolded projects
 - Use the [env] section of .cargo/config.toml to store non-sensitive env variables used for local development. It fixes configuration for newly generated projects.
 - Don't use colored logs if color is not enabled.
@@ -373,49 +377,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.38](https://github.com/LukeMathWalker/pavex/compare/0.1.37...0.1.38) - 2024-04-28
 
 ### Added
+
 - Rework CLI introspections ([#292](https://github.com/LukeMathWalker/pavex/pull/292))
 
 ### Fixed
+
 - anyhow::Result<Self> can be returned from constructors and other fallible components ([#293](https://github.com/LukeMathWalker/pavex/pull/293))
 
 ## [0.1.37](https://github.com/LukeMathWalker/pavex/compare/0.1.36...0.1.37) - 2024-04-27
 
 ### Fixed
+
 - Interpolate error message when failing to download a prebuilt `pavexc` binary
 - Remove dependency on OpenSSL on Linux
 
 ## [0.1.36](https://github.com/LukeMathWalker/pavex/compare/0.1.35...0.1.36) - 2024-04-27
 
 ### Fixed
+
 - Use the correct name for package names that contain hyphens in the (generated) server SDK Cargo.toml ([#287](https://github.com/LukeMathWalker/pavex/pull/287))
   For example, `sqlx-query` used to be renamed to `sqlx_query` in the generated `Cargo.toml`, causing a `cargo` error.
 
 ### Other
+
 - Update dependencies ([#285](https://github.com/LukeMathWalker/pavex/pull/285))
 - Activation keys are now validated server-side ([#283](https://github.com/LukeMathWalker/pavex/pull/283))
 
 ## [0.1.35](https://github.com/LukeMathWalker/pavex/compare/0.1.34...0.1.35) - 2024-04-26
 
 ### Fixed
+
 - Allow &mut references to be held by Next's state. ([#280](https://github.com/LukeMathWalker/pavex/pull/280))
 
 ## [0.1.34](https://github.com/LukeMathWalker/pavex/compare/0.1.33...0.1.34) - 2024-04-25
 
 ### Fixes
+
 - Use Unix path separator in Cargo.toml manifests when specifying path dependencies ([#275](https://github.com/LukeMathWalker/pavex/pull/275))
   It allows the same Pavex project to be built on all platforms with no changes.
 - Re-add default .env file ([#276](https://github.com/LukeMathWalker/pavex/pull/276))
   It allows `cargo px r` to "just work" on a newly scaffolded Pavex project.
 
 ### Other
+
 - Re-order Cargo.toml file ([#277](https://github.com/LukeMathWalker/pavex/pull/277))
 
 ## [0.1.33](https://github.com/LukeMathWalker/pavex/compare/0.1.32...0.1.33) - 2024-04-21
 
 ### Added
+
 - Server request id is now represented as a TypeId ([#272](https://github.com/LukeMathWalker/pavex/pull/272))
 
 ## [0.1.31](https://github.com/LukeMathWalker/pavex/compare/0.1.30...0.1.31) - 2024-04-21
 
 ### Other
+
 - Centralize version.

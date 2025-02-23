@@ -1,52 +1,52 @@
 # Cookies
 
-[Cookies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies) are a mechanism 
+[Cookies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies) are a mechanism
 to attach state to an otherwise stateless protocol, HTTP.
 They are often used by web applications to manage authenticated sessions, shopping cart contents,
 and other kinds of ephemeral user-specific data.
 
 ## What is a cookie?
 
-A cookie is a key-value pair.  
+A cookie is a key-value pair.\
 E.g. `session_id=1234567890abcdef` is a cookie,
 where `session_id` is the **cookie name** and `1234567890abcdef` is the **cookie value**.
 
 ## Where are cookies stored?
 
-Cookies are stored on the client side, usually by a browser.  
-Cookies are passed back and forth between the client and the server 
-using the [Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie) 
+Cookies are stored on the client side, usually by a browser.\
+Cookies are passed back and forth between the client and the server
+using the [Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie)
 and [Set-Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie) headers.
 
-The [Cookie header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie) is used by clients 
-to send relevant cookies to the server when they issue requests.  
-The [Set-Cookie header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie), instead, is used by the 
-server to alter the state on the client-side, either by creating new cookies, 
+The [Cookie header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie) is used by clients
+to send relevant cookies to the server when they issue requests.\
+The [Set-Cookie header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie), instead, is used by the
+server to alter the state on the client-side, either by creating new cookies,
 removing existing ones, or updating their attributes.
 
 ## Cookie attributes
 
 On top of the name and value, cookies can have a number of **attributes** that control their behavior:
-`Path`, `Domain`, `Expires`, `Max-Age`, `Secure`, `HttpOnly`, `SameSite`, etc.  
+`Path`, `Domain`, `Expires`, `Max-Age`, `Secure`, `HttpOnly`, `SameSite`, etc.\
 Those attributes are used:
 
 - by the client, to determine if a cookie should be sent back to the server or not (e.g. `Path`, `Domain`, `SameSite`, `Secure`)
 - by the server, to determine how long the cookie should be stored on the client-side (e.g. `Expires`, `Max-Age`)
-  and what restrictions should be applied to it (e.g. `Secure`, `HttpOnly`). 
+  and what restrictions should be applied to it (e.g. `Secure`, `HttpOnly`).
 
-Refer to the [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes) 
+Refer to the [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes)
 for more details on each attribute.
 
 ## Cookies in Pavex
 
-Pavex provides first-party support for manipulating cookies.  
+Pavex provides first-party support for manipulating cookies.\
 Check out the ["Installation"](installation.md) section
-to learn how to set up the machinery required to work with cookies.  
+to learn how to set up the machinery required to work with cookies.\
 Once everything is in place, you can start using cookies in your application:
 
 - Check out ["Request cookies"](request_cookies.md) to learn how to access cookies sent by the client.
 - Check out ["Response cookies"](response_cookies.md) to learn how to attach cookies to the response,
-  to either set new cookies, update existing ones, or delete them. 
+  to either set new cookies, update existing ones, or delete them.
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 [CookieKit]: ../../api_reference/pavex/cookie/struct.CookieKit.html

@@ -7,7 +7,7 @@
 
 ## Create a new Pavex project
 
-The `pavex` CLI provides a `new` subcommand to scaffold a new Pavex project.  
+The `pavex` CLI provides a `new` subcommand to scaffold a new Pavex project.\
 You can choose between different templates, each one tailored for a specific use case. We'll use the `quickstart` template for this tutorial:
 
 ```bash
@@ -19,7 +19,7 @@ pavex new --template="quickstart" demo && cd demo
 ### Build a Pavex project
 
 `cargo` is not enough, on its own, to build a Pavex project:
-you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead(1).  
+you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead(1).\
 From a usage perspective, it's a **drop-in replacement for `cargo`**:
 you can use it to build, test, run, etc. your project just like you would with `cargo` itself.
 { .annotate }
@@ -66,7 +66,7 @@ Leave it running in the background and open a new terminal window.
 
 ### Issue your first request
 
-Let's issue your first request to a Pavex application!    
+Let's issue your first request to a Pavex application!\
 The template project comes with a `GET /api/ping` endpoint to be used as health check.
 Let's hit it:
 
@@ -89,5 +89,5 @@ If all goes according to plan, you'll receive a `200 OK` response with an empty 
 < date: [...]
 ```
 
-You've just created a new Pavex project, built it, launched it and verified that it accepts requests correctly.  
+You've just created a new Pavex project, built it, launched it and verified that it accepts requests correctly.\
 It's a good time to start exploring the codebase!

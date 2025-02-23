@@ -18,14 +18,14 @@ If you try to build the project now, you'll get an error from Pavex:
 --8<-- "doc_examples/quickstart/07-error.snap"
 ```
 
-Pavex is complaining: you can register a fallible constructor, but you must also register an 
+Pavex is complaining: you can register a fallible constructor, but you must also register an
 [**error handler**](../../guide/errors/error_handlers.md) for it.
 
 ## Add an error handler
 
-An error handler must convert a reference to the error type into a [`Response`][Response] (1).  
+An error handler must convert a reference to the error type into a [`Response`][Response] (1).\
 It decouples the detection of an error from its representation on the wire: a constructor doesn't need to know how the
-error will be represented in the response, it just needs to signal that something went wrong.  
+error will be represented in the response, it just needs to signal that something went wrong.\
 You can then change the representation of an error on the wire without touching the constructor: you only need to change
 the
 error handler.
@@ -44,7 +44,5 @@ Then register the error handler with the [`Blueprint`][Blueprint]:
 
 The application should compile successfully now.
 
-
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-
 [Response]: ../../api_reference/pavex/response/struct.Response.html

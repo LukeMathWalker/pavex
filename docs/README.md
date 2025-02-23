@@ -1,6 +1,6 @@
 # Documentation
 
-This folder contains the documentation that's published to [pavex.dev](https://pavex.dev).  
+This folder contains the documentation that's published to [pavex.dev](https://pavex.dev).\
 The auto-generated documentation for the Rust crates serves as an API reference; this documentation, instead,
 serves as a higher-level guide to the project: quickstart, tutorials, recipes, concept deep-dives, etc.
 
@@ -33,13 +33,10 @@ docker run --rm -it -p 8001:8000 \
 The docs will be available at [http://localhost:8001](http://localhost:8001) and will auto-reload when you make changes.
 
 The docs embed the auto-generated API reference for the first-party Pavex crates: the command above mounts the
-relevant folders so that the docs can access the generated HTML files, but it **won't (re)generate them for you**.  
+relevant folders so that the docs can access the generated HTML files, but it **won't (re)generate them for you**.\
 If you want to generate or update the API reference,
 you'll need to run the following command from the root of the repository:
 
 ```bash
 cd libs && cargo doc --no-deps --package pavex
 ```
-
-
-

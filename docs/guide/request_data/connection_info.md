@@ -1,10 +1,10 @@
 # Connection info
 
-[`ConnectionInfo`][ConnectionInfo] groups together information about the HTTP connection 
+[`ConnectionInfo`][ConnectionInfo] groups together information about the HTTP connection
 used to transmit the request you're currently processing.
 
 [`ConnectionInfo`][ConnectionInfo] gives you access to the peer address of the client that sent the request, via
-the [`ConnectionInfo::peer_addr`][ConnectionInfo::peer_addr] method.  
+the [`ConnectionInfo::peer_addr`][ConnectionInfo::peer_addr] method.\
 Many applications include the peer address in their request logs, for example.
 
 !!! warning "Security implications"
@@ -15,7 +15,7 @@ Many applications include the peer address in their request logs, for example.
 
 ## Injection
 
-Inject [`ConnectionInfo`][ConnectionInfo] to access the peer address via its [`peer_addr`][ConnectionInfo::peer_addr] 
+Inject [`ConnectionInfo`][ConnectionInfo] to access the peer address via its [`peer_addr`][ConnectionInfo::peer_addr]
 method:
 
 --8<-- "doc_examples/guide/request_data/connection/project-connection_peer.snap"

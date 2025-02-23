@@ -24,6 +24,7 @@ markdown_extensions:
       dedent_subsections: true
   - attr_list
   - md_in_html
+  - md_slash:TrailingSlashExtension
   - footnotes
   - pymdownx.tabbed:
       alternate_style: true

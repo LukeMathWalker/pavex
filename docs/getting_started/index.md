@@ -2,7 +2,7 @@
 
 ## Pavex CLI
 
-To work on a Pavex project you need its command-line interface, `pavex`.  
+To work on a Pavex project you need its command-line interface, `pavex`.\
 Execute one of the following commands to install it:
 
 === "shell"
@@ -41,6 +41,6 @@ If there are no errors, you're ready to [embark on your Pavex journey](learning_
 
 ### Verifying your setup
 
-At any point in time, you can invoke `pavex self setup` to verify that all the necessary dependencies are installed 
-on your system and that they are configured as Pavex expects them to.  
+At any point in time, you can invoke `pavex self setup` to verify that all the necessary dependencies are installed
+on your system and that they are configured as Pavex expects them to.\
 It's a good first step if you're experiencing issues with your setup.

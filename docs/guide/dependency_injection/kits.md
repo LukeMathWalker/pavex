@@ -1,15 +1,15 @@
 # Kits
 
-Pavex provides a [rich set of first-party constructors](../request_data/index.md).  
+Pavex provides a [rich set of first-party constructors](../request_data/index.md).\
 To leverage them, you must register them with your application's [`Blueprint`][Blueprint]: after a while,
-it gets tedious. 
-To make your life easier, Pavex provides **kits**: collections of commonly used constructors, 
-organized by application type.  
+it gets tedious.
+To make your life easier, Pavex provides **kits**: collections of commonly used constructors,
+organized by application type.
 
 ## `ApiKit`
 
 [`ApiKit`][ApiKit] is a good starting point for most APIs and it's installed by default in projects created with
-`pavex new`.  
+`pavex new`.
 
 --8<-- "doc_examples/guide/dependency_injection/kit/project-default_kit.snap"
 
@@ -35,19 +35,19 @@ kit field to `None`:
 
 ### Tweak a constructor
 
-In other cases, you may want to include a constructor, but the default configuration doesn't fit your requirements.  
-For example, you might want to change the cloning behavior or the associated error handler.  
+In other cases, you may want to include a constructor, but the default configuration doesn't fit your requirements.\
+For example, you might want to change the cloning behavior or the associated error handler.
 
 --8<-- "doc_examples/guide/dependency_injection/kit/project-tweak.snap"
 
 ### Replace a constructor
 
-You can also replace one of the constructors provided by the kit with a custom one.  
+You can also replace one of the constructors provided by the kit with a custom one.
 
 --8<-- "doc_examples/guide/dependency_injection/kit/project-replace.snap"
 
 1. When working with a kit,
-   you configure the constructor _without_ registering it directly with the blueprint.  
+   you configure the constructor _without_ registering it directly with the blueprint.\
    The kit takes care of the registration for you when its `register` method is invoked.
 
 [PathParams]: ../request_data/path/path_parameters.md
