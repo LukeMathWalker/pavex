@@ -95,3 +95,10 @@ jobs:
       <%- from 'build_docs_steps' import output %>
       <<- output | indent(4) >>
     <%- endwith %>
+
+  format_docs:
+    runs-on: ubuntu-latest
+    <%- with job_name = 'Format docs' %>
+        <%- from 'format_docs_steps' import output %>
+        <<- output | indent(4) >>
+    <%- endwith %>
