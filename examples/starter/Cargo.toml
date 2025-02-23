@@ -4,4 +4,7 @@ members = ["app", "server_sdk", "server", "workspace_hack"]
 # when executed from the root of the workspace.
 # Otherwise, you would have to use `cargo run --bin server` to run the server binary.
 default-members = ["server"]
-resolver = "2"
+resolver = "3"
+
+[workspace.package]
+edition = "2024"

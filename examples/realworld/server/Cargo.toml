@@ -1,7 +1,7 @@
 [package]
 name = "server"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [[bin]]
 path = "src/bin/api.rs"
@@ -22,7 +22,13 @@ humantime-serde = "1.1"
 
 # Telemetry
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry", "tracing-log"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "env-filter",
+    "smallvec",
+    "std",
+    "registry",
+    "tracing-log",
+] }
 tracing-bunyan-formatter = "0.3"
 pavex_tracing = "0.1"
 workspace_hack = { version = "0.1", path = "../workspace_hack" }

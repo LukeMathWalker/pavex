@@ -1,6 +1,6 @@
 use anyhow::Context;
 use pavex::server::{Server, ServerHandle, ShutdownMode};
-use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
+use pavex_tracing::fields::{ERROR_DETAILS, ERROR_MESSAGE, error_details, error_message};
 use server::{
     configuration::Config,
     telemetry::{get_subscriber, init_telemetry},

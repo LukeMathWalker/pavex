@@ -1,5 +1,5 @@
 use pavex::blueprint::router::{DELETE, POST};
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{Blueprint, router::GET};
 use pavex::f;
 
 pub(crate) fn profiles_bp() -> Blueprint {

@@ -3,7 +3,7 @@ use crate::routes::articles::articles_bp;
 use crate::routes::profiles::profiles_bp;
 use crate::routes::users::users_bp;
 use crate::telemetry;
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{Blueprint, router::GET};
 use pavex::cookie::CookieKit;
 use pavex::f;
 use pavex::kit::ApiKit;
