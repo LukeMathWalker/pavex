@@ -4,7 +4,7 @@ In REST APIs, the [path](index.md) is often used to identify a resource.
 For example, in `https://example.com/users/123`, the path is `/users/123` and the resource is the user with ID `123`.
 
 Those dynamic path segments are called **path parameters**.
-In Pavex, you must declare the path parameters for a given path in the route definition—see [Path parameters](../../routing/path_patterns.md#route-parameters)
+In Pavex, you must declare the path parameters for a given path in the route definition—see [Path parameters](../../routing/path_patterns.md#path-parameters)
 for more details.
 You then use [`PathParams<T>`][PathParams] to extract the parameters from the incoming request.
 

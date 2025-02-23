@@ -139,7 +139,12 @@ nav:
 exclude_docs: |
   README.md
   Dockerfile
+  tools/
 extra_css:
   - ansi.css
   - mermaid.css
   - content_tab.css
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
