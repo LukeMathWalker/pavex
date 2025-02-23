@@ -35,7 +35,7 @@ If you don't care about the HTTP method of the incoming request, use the [`ANY`]
 ```
 
 [`ANY`][ANY] matches all well-known HTTP methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `CONNECT` and
-`TRACE`.  
+`TRACE`.\
 It won't match, however, custom HTTP methods (e.g. `FOO`).
 If you truly want to match _any_ HTTP method, use [`ANY_WITH_EXTENSIONS`][ANY_WITH_EXTENSIONS] instead.
 

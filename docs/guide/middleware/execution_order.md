@@ -1,14 +1,14 @@
 # Execution order
 
-Pavex provides three types of middlewares: [pre-processing], [post-processing], and [wrapping middlewares].  
+Pavex provides three types of middlewares: [pre-processing], [post-processing], and [wrapping middlewares].\
 When all three types of middlewares are present in the same request processing pipeline, it can be challenging to figure
-out the order in which they will be executed.  
+out the order in which they will be executed.\
 This guide will help you build a mental model for Pavex's runtime behaviour.
 
 ## Same kind
 
-Let's start with the simplest case: all registered middlewares are of the same kind. 
-The middlewares will be executed in the order they were registered.  
+Let's start with the simplest case: all registered middlewares are of the same kind.
+The middlewares will be executed in the order they were registered.\
 But let's review some concrete examples to make sure we're on the same page.
 
 ### Pre-processing
@@ -21,7 +21,7 @@ When a request arrives, the following sequence of events will occur:
 2. `pre2` is invoked and executed to completion.
 3. `handler` is invoked and executed to completion.
 
-If `pre1` returns an early response, the rest of the request processing pipeline will be skipped—i.e. 
+If `pre1` returns an early response, the rest of the request processing pipeline will be skipped—i.e.
 `pre2` and `handler` will not be executed.
 
 ### Post-processing
@@ -41,12 +41,12 @@ When a request arrives, the following sequence of events will occur:
 When a request arrives, the following sequence of events will occur:
 
 1. `wrap1` is invoked.
-    1. `next.await` is called inside `wrap1`
-        1. `wrap2` is invoked.
-            1. `next.await` is called inside `wrap2`
-                1. `handler` is invoked and executed to completion.
-            2. `wrap2` completes.
-    2. `wrap1` completes.
+   1. `next.await` is called inside `wrap1`
+      1. `wrap2` is invoked.
+         1. `next.await` is called inside `wrap2`
+            1. `handler` is invoked and executed to completion.
+         2. `wrap2` completes.
+   2. `wrap1` completes.
 
 ## Different kinds
 
@@ -66,10 +66,10 @@ When a request arrives, the following sequence of events will occur:
 4. `post1` is invoked and executed to completion.
 5. `post2` is invoked and executed to completion.
 
-Pavex doesn't care about the fact that `post1` was registered before `pre1`.  
-Pre-processing middlewares are guaranteed to be executed before the request handler, 
+Pavex doesn't care about the fact that `post1` was registered before `pre1`.\
+Pre-processing middlewares are guaranteed to be executed before the request handler,
 and post-processing middlewares are guaranteed to be executed after the request handler.
-As a consequence, pre-processing middlewares will always be executed before post-processing middlewares.  
+As a consequence, pre-processing middlewares will always be executed before post-processing middlewares.
 
 Pavex relies on registration order as a way to sort middlewares of the same kind.
 
@@ -101,17 +101,17 @@ When a request arrives, the following sequence of events will occur:
 
 1. `pre1` is invoked and executed to completion.
 2. `wrap1` is invoked.
-    1. `next.await` is called inside `wrap1`
-        1. `pre2` is invoked and executed to completion.
-        2. `wrap2` is invoked.
-            1. `next.await` is called inside `wrap3`
-                1. `pre3` is invoked and executed to completion.
-                2. `handler` is invoked and executed to completion.
-            2. `wrap2` completes.
-    2. `wrap1` completes.
+   1. `next.await` is called inside `wrap1`
+      1. `pre2` is invoked and executed to completion.
+      2. `wrap2` is invoked.
+         1. `next.await` is called inside `wrap3`
+            1. `pre3` is invoked and executed to completion.
+            2. `handler` is invoked and executed to completion.
+         2. `wrap2` completes.
+   2. `wrap1` completes.
 
-Pre-processing and wrapping middlewares can be **interleaved**, therefore their execution order 
-matches the order in which they were registered.  
+Pre-processing and wrapping middlewares can be **interleaved**, therefore their execution order
+matches the order in which they were registered.
 
 If `pre2` returns an early response, the rest of the request processing pipeline will be skipped—i.e.
 `wrap2`, `pre3` and `handler` will not be executed.
@@ -127,16 +127,16 @@ Let's now consider a scenario where post-processing and wrapping middlewares are
 When a request arrives, the following sequence of events will occur:
 
 1. `wrap1` is invoked.
-    1. `next.await` is called inside `wrap1`
-        1. `handler` is invoked and executed to completion.
-        2. `post2` is invoked and executed to completion.
-    2. `wrap1` completes.
+   1. `next.await` is called inside `wrap1`
+      1. `handler` is invoked and executed to completion.
+      2. `post2` is invoked and executed to completion.
+   2. `wrap1` completes.
 2. `post1` is invoked and executed to completion.
 
-Wrapping middlewares must begin their execution before the request handler, therefore they will always be executed 
-before post-processing middlewares.  
+Wrapping middlewares must begin their execution before the request handler, therefore they will always be executed
+before post-processing middlewares.\
 Registration order matters the way out, though: `wrap1` was registered before `post2`, therefore `post2` will be part
-of the request processing pipeline that `wrap1` wraps around, i.e. it will be invoked by `next.await`.  
+of the request processing pipeline that `wrap1` wraps around, i.e. it will be invoked by `next.await`.\
 `post1`, on the other hand, was registered before `wrap1`, therefore it will be invoked after `wrap1` completes.
 
 !!! warning
@@ -155,11 +155,11 @@ If there are no errors or early returns, the following sequence of events will o
 
 1. `pre1` is invoked and executed to completion.
 2. `wrap1` is invoked.
-    1. `next.await` is called inside `wrap1`
-        1. `pre2` is invoked and executed to completion.
-        2. `handler` is invoked and executed to completion.
-        3. `post2` is invoked and executed to completion.
-    2. `wrap1` completes.
+   1. `next.await` is called inside `wrap1`
+      1. `pre2` is invoked and executed to completion.
+      2. `handler` is invoked and executed to completion.
+      3. `post2` is invoked and executed to completion.
+   2. `wrap1` completes.
 3. `post1` is invoked and executed to completion.
 
 ### Pre-, post-, and wrapping, early return
@@ -173,10 +173,10 @@ The following sequence of events will occur:
 
 1. `pre1` is invoked and returns [`Processing::EarlyReturn`][Processing::EarlyReturn].
 2. `wrap1` is **skipped**.
-    1. `next.await` is **not** called inside `wrap1`
-        1. `pre2` is **skipped**.
-        2. `handler` is **skipped**.
-        3. `post2` is **skipped**.
+   1. `next.await` is **not** called inside `wrap1`
+      1. `pre2` is **skipped**.
+      2. `handler` is **skipped**.
+      3. `post2` is **skipped**.
 3. `post1` is invoked and executed to completion.
 
 Pay attention to the fact that `post2` is not executed, even though it is a post-processing middleware.

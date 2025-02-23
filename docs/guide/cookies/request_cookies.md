@@ -8,8 +8,8 @@ You can then retrieve a cookie by name using the [`get`][RequestCookies::get] me
 
 ## Multiple cookies with the same name
 
-In [some scenarios](https://stackoverflow.com/questions/4056306/how-to-handle-multiple-cookies-with-the-same-name/24214538#24214538), 
-the client might send multiple cookies with the same name.  
+In [some scenarios](https://stackoverflow.com/questions/4056306/how-to-handle-multiple-cookies-with-the-same-name/24214538#24214538),
+the client might send multiple cookies with the same name.\
 [`get`][RequestCookies::get] will return the first one it finds.
 If that's not what you want, you can use [`get_all`][RequestCookies::get_all] to retrieve all of them:
 

@@ -11,10 +11,10 @@
 
 ## What is Pavex?
 
-Pavex is a new framework to build APIs with Rust.  
+Pavex is a new framework to build APIs with Rust.
 
-Pavex aims to have it all: great ergonomics and high performance.   
-The same **productivity boost** of Ruby on Rails, Spring or ASP.NET Core.  
+Pavex aims to have it all: great ergonomics and high performance.\
+The same **productivity boost** of Ruby on Rails, Spring or ASP.NET Core.\
 As **fast** as a handwritten solution that strips away all abstractions.
 
 Check out [Pavex's documentation](https://pavex.dev/docs/) for a thorough introduction to the framework
@@ -52,8 +52,8 @@ in [`ARCHITECTURE.md`](ARCHITECTURE.md) to learn how Pavex works under the hood.
 
 ## Contributing
 
-Typo in documentation? Open a PR straight-away!  
-Small bug fix with a regression test? Open a PR straight-away!  
+Typo in documentation? Open a PR straight-away!\
+Small bug fix with a regression test? Open a PR straight-away!\
 Anything beyond 20 lines of code? **Open an issue first**.
 
 If you are looking to contribute, you can find dedicated instructions in [`CONTRIBUTING.md`](CONTRIBUTING.md).

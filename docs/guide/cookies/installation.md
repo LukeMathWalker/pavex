@@ -30,17 +30,17 @@ You have two options:
 
 1. Add [`ProcessorConfig`][ProcessorConfig] as a field on your application's `AppConfig` struct, usually located
    in `app/src/configuration.rs`.
-   Check out [the "Realworld" example](https://github.com/LukeMathWalker/pavex/blob/883aed7b8c85bd97e0df5edda12025dd3a51f9b9/examples/realworld/app/src/configuration.rs#L16) 
+   Check out [the "Realworld" example](https://github.com/LukeMathWalker/pavex/blob/883aed7b8c85bd97e0df5edda12025dd3a51f9b9/examples/realworld/app/src/configuration.rs#L16)
    as a reference (1).
    { .annotate }
-   
+
        1. If you annotate the field with `#[serde(default)]`, it'll fall back on the [default settings] unless you override them in your
           configuration files or with environment variables.
- 
+
 2. Use [`ProcessorConfig::default`][ProcessorConfig::default] as its constructor if you're happy with the [default settings].
    --8<-- "doc_examples/guide/cookies/installation_with_default/project-default.snap"
 
-The second option is the quickest way to get started.  
+The second option is the quickest way to get started.\
 You'll have to switch to the first approach if you need to customize [`ProcessorConfig`][ProcessorConfig].
 That'll be necessary, for example, if you rely on cookies for sensitive information, such as session tokens.
 You'll have to configure [`ProcessorConfig::crypto_rules`][ProcessorConfig::crypto_rules] to ensure those cookies are

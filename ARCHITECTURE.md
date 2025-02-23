@@ -1,6 +1,6 @@
 # Architecture
 
-This document gives you a bird-eye view of Pavex's architecture.  
+This document gives you a bird-eye view of Pavex's architecture.\
 This is an ideal starting point if you want to contribute or gain a deeper understanding of its inner workings.
 
 > If you've never used Pavex before, we recommend going through the [user-facing guide](https://pavex.dev/docs/) first.
@@ -34,7 +34,7 @@ To accomplish these tasks, users interact with two different components:
 
 ### `pavex`
 
-You can put most of the machinery in the `pavex` crate in the same bucket of `axum` or `actix-web`: 
+You can put most of the machinery in the `pavex` crate in the same bucket of `axum` or `actix-web`:
 the types and abstractions that are needed at runtime to handle incoming requests.
 
 You will see `pavex` in two contexts:
@@ -55,7 +55,7 @@ pub fn stream_file(
 
 ### `pavex::blueprint`
 
-`pavex::blueprint` is the module in the `pavex` crate containing the interface used to craft a `Blueprint`—a specification of 
+`pavex::blueprint` is the module in the `pavex` crate containing the interface used to craft a `Blueprint`—a specification of
 how the application is supposed to behave at runtime.
 
 ```rust
@@ -101,10 +101,10 @@ source code.
 ### `pavex`'s CLI and Pavex
 
 `pavex`'s CLI is our transpiler, the component in charge of transforming a `Blueprint` into a ready-to-run web
-server.  
+server.\
 It is packaged as a binary, a thin wrapper over the (internal) `pavexc`'s CLI.
 
-The transpiler is where most of the complexity lives.  
+The transpiler is where most of the complexity lives.\
 It must generate:
 
 - a struct representing the application state;
@@ -114,7 +114,7 @@ It must generate:
 - for each route, a function that takes as input the server state and the incoming request while returning an HTTP
   response as output.
 
-What is `pavex`'s CLI getting as input?  
+What is `pavex`'s CLI getting as input?\
 Something that looks like this:
 
 ```text
@@ -167,13 +167,13 @@ Something that looks like this:
 We have the raw path of the functions and methods registered by the developer. We need to turn this into working source
 code!
 
-To make this happen, we need to turn those strings into structured metadata.  
+To make this happen, we need to turn those strings into structured metadata.\
 For each of those functions and methods, we want to know:
 
 - their input parameters;
 - their output type.
 
-But Rust does not have reflection, nor at compile-time nor at runtime!  
+But Rust does not have reflection, nor at compile-time nor at runtime!\
 Luckily enough, there is a feature currently baking in `nightly` that, if you squint hard enough, looks like
 reflection: `rustdoc`'s JSON output.
 
@@ -183,11 +183,11 @@ Using
 cargo +nightly rustdoc -p library_name --lib -- -Zunstable-options -wjson
 ```
 
-You can get a structured representation of all the types in `library_name`.  
+You can get a structured representation of all the types in `library_name`.\
 This is what Pavex does: for each registered route handler and constructor, it builds the documentation for the crate
 it belongs to and extracts the relevant bits of information from `rustdoc`'s output.
 
-If you are going through the source code, this is the process that converts a `RawCallableIdentifiers` into a `Callable`, 
+If you are going through the source code, this is the process that converts a `RawCallableIdentifiers` into a `Callable`,
 with `ResolvedPath` as an intermediate step.
 
 `Callable` looks like this:
@@ -206,12 +206,12 @@ pub struct ResolvedType {
 }
 ```
 
-After this phase, we have a collection of `Callable` instances representing our constructors and handlers.  
+After this phase, we have a collection of `Callable` instances representing our constructors and handlers.\
 It's a puzzle that we need to solve, starting from the handlers: how do we build instances of the types that they take
 as inputs?
 
 The framework machinery, as we discussed before, provides the request processing pipeline with two types out of the box:
-the incoming request and the application state.  
+the incoming request and the application state.\
 The constructors registered by the developer can then be used to _transform_ those types and/or _extract_ information
 out of them.
 
@@ -238,9 +238,9 @@ flowchart TB
     request --> path
 ```
 
-This information is encoded in the `DependencyGraph` struct.  
+This information is encoded in the `DependencyGraph` struct.\
 At this point, we are only looking at types and signatures: we are not taking into account the _lifecycle_ of those
-types.  
+types.\
 E.g. is `reqwest::Client` a singleton that needs to be built once and reused?
 Or a transient type, that must be built from scratch every time it is needed?
 
@@ -266,7 +266,7 @@ flowchart TB
 You can spot how `reqwest::Client` is now fetched from `app::ServerState` instead of being built from scratch
 from `app::Config`.
 
-Armed with this representation, Pavex can now generate the source code for the server SDK crate.  
+Armed with this representation, Pavex can now generate the source code for the server SDK crate.\
 Using the same example, assuming the application has a single route, we get the following code:
 
 ```rust
@@ -343,7 +343,7 @@ be ready for prime time in less than 6 months.
 
 ### `rustdoc`'s JSON output is unstable (🟡😢)
 
-`rustdoc`'s JSON output requires the `nightly` compiler.  
+`rustdoc`'s JSON output requires the `nightly` compiler.\
 This is not a showstopper for production usage of Pavex since `nightly` is never used to compile
 any code that is actually run at runtime, it is only used by the "reflection engine". Nonetheless, `nightly` can cause
 breakage and unnecessary disruption due to its instability. `rustdoc`'s JSON output itself is quickly evolving,
@@ -373,7 +373,7 @@ _Future avenues_:
 ### `pavex`'s CLI cannot be run from a build script (🔴😭)
 
 Due to `cargo`'s very coarse locking scheme, it is not possible to invoke `cargo` itself from a `build.rs` script (
-see [tracking issue](https://github.com/rust-lang/cargo/issues/6412)).  
+see [tracking issue](https://github.com/rust-lang/cargo/issues/6412)).\
 Pavex relies on `cargo` commands to:
 
 - build `rustdoc`'s JSON output for local and third-party crates;

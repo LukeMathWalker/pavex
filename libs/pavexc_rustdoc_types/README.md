@@ -1,8 +1,8 @@
 # `pavexc_rustdoc_types`
 
 It's a fork of [`rustdoc_types`](https://github.com/rust-lang/rustdoc-types) with a specific purpose: maximise performance
-when working with JSON docs in `pavexc`.  
-In particular, we want to minimise the size of the JSON files stored in `pavexc` SQLite database as well as the time it 
+when working with JSON docs in `pavexc`.\
+In particular, we want to minimise the size of the JSON files stored in `pavexc` SQLite database as well as the time it
 takes to parse the JSON files returned by `rustdoc`.
 
 ## Changes

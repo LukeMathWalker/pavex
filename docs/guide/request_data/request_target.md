@@ -1,7 +1,7 @@
 # Request target
 
 All incoming HTTP requests include a [target](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3)
-in the [request head](wire_data.md#requesthead).  
+in the [request head](wire_data.md#requesthead).\
 The target is a URI[^rfc], either in absolute form (e.g. `https://example.com/foo/bar?baz=qux`) or in
 origin form (e.g. `/foo/bar?baz=qux`).
 
@@ -26,15 +26,15 @@ Inject [`RequestHead`][RequestHead] to access the request target via its [`targe
 
 ## Use cases
 
-The raw target and its components are primarily useful for logging purposes.  
+The raw target and its components are primarily useful for logging purposes.\
 Rely on higher-level abstractions
 to perform more advanced processing—e.g. parsing query parameters or [path parameters](path/path_parameters.md).
 
 [^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows two other formats of request target,
-authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`).  
-For both alternative formats there is a canonical conversion into a URI (_effective request URI_). 
-Pavex takes care of the conversion automatically; you can access [`RequestHead::target`][RequestHead::target] 
-without having to worry about it.
+    authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`).\
+    For both alternative formats there is a canonical conversion into a URI (_effective request URI_).
+    Pavex takes care of the conversion automatically; you can access [`RequestHead::target`][RequestHead::target]
+    without having to worry about it.
 
 [RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::target]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.target

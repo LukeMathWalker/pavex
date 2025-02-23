@@ -1,6 +1,6 @@
 # Cookbook
 
-This cookbook contains a collection of reference examples for Pavex's dependency injection framework. 
+This cookbook contains a collection of reference examples for Pavex's dependency injection framework.
 It covers the registration syntax for common use cases (free functions, methods) as well as more advanced ones
 (trait methods, generics, etc.).
 
@@ -13,8 +13,8 @@ Use it a reference in your day-to-day Pavex development if you're not sure of th
 
 ## Unambiguous paths
 
-In all the cases described in this cookbook, we'll talk about **unambiguous paths**. 
-They allow Pavex to identify with certainty the callable you want to register.  
+In all the cases described in this cookbook, we'll talk about **unambiguous paths**.
+They allow Pavex to identify with certainty the callable you want to register.\
 The format differs between [local items](#local-items) and [items imported from a dependency of your crate](#from-a-dependency).
 
 ### Local items
@@ -23,6 +23,7 @@ If the item you want to register is defined in the current crate,
 you can use three different formats for its unambiguous path:
 
 - A path prefixed with `crate`, spelling out where the item is located **with respect to the root of the crate**.
+
 ```rust
 //! You can use `crate::my_module::handler` as an unambiguous path
 //! for the `handler` function from anywhere in your crate.
@@ -33,7 +34,9 @@ pub mod my_module {
    }
 }
 ```
+
 - A path prefixed with `self`, spelling out where the item is located **with respect to the root of the current module**.
+
 ```rust
 pub mod my_module {
    //! From inside `my_module`, you can use `self::handler` as an unambiguous path
@@ -43,7 +46,9 @@ pub mod my_module {
    }
 }
 ```
+
 - A path prefixed with `super`, spelling out where the item is located **with respect to the parent of the current module**.
+
 ```rust
 pub fn handler() {
    // [...]
@@ -61,12 +66,12 @@ paths prefixed with `self` or `super` often end up being shorter—prefer them i
 
 ### From a dependency
 
-If the item is defined in a dependency of your crate, you must use its absolute path, starting the name of 
+If the item is defined in a dependency of your crate, you must use its absolute path, starting the name of
 the crate it is defined into. E.g. `reqwest::Client`, if `reqwest` is one of your dependencies.
 
 ## Free functions
 
-Free functions are the simplest case.  
+Free functions are the simplest case.\
 You pass an [unambiguous path] to the [`f!` macro][f!] as input.
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-function_registration.snap"
@@ -86,14 +91,14 @@ Static methods (1) behave exactly like free functions: you provide an [unambiguo
 
 ## Non-static methods
 
-On the surface, non-static methods are registered in the same way as static methods: 
+On the surface, non-static methods are registered in the same way as static methods:
 by passing an [unambiguous path] to the [`f!` macro][f!].
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_registration.snap"
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_def.snap"
 
-However, there's a catch: `self` counts as a dependency!  
+However, there's a catch: `self` counts as a dependency!\
 When registering a non-static method, you need to make sure to also register a constructor
 for the type of `self`.
 
@@ -115,12 +120,11 @@ for function calls[^ufcs].
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-trait_method_def.snap"
 
-
 ## Generics
 
 ### Output-driven generics
 
-A generic parameter is **output-driven** if it appears in the output type of a constructor.  
+A generic parameter is **output-driven** if it appears in the output type of a constructor.
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-output_def.snap"
 
@@ -137,8 +141,8 @@ based on the scenarios where the constructor is used.
 
 ### Input-driven generics
 
-A generic parameter is **input-driven** if it isn't output-driven, i.e. it doesn't appear in the output type of a 
-constructor.  
+A generic parameter is **input-driven** if it isn't output-driven, i.e. it doesn't appear in the output type of a
+constructor.
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-input_def.snap"
 
@@ -153,7 +157,7 @@ If a constructor has both input-driven and output-driven generic parameters,
 you need to explicitly specify the concrete type for all generic parameters
 when registering the constructor.
 
-
 [f!]: ../../api_reference/pavex/macro.f!.html
 [unambiguous path]: #unambiguous-paths
+
 [^ufcs]: Check out the [relevant RFC](https://github.com/rust-lang/rfcs/blob/master/text/0132-ufcs.md) if you're curious.

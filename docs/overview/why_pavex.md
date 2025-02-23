@@ -1,10 +1,11 @@
 ---
 title: Why Pavex?
 ---
+
 ## Batteries included
 
 Pavex aims to be a **one-stop shop** for your API projects,
-providing all the batteries you need to build something production-ready.  
+providing all the batteries you need to build something production-ready.\
 You can expect **first-class solutions for common API development tasks** (e.g. authentication, background jobs, telemetry, etc.)
 or an **opinionated recommendation** for specific high-quality third-party libraries (e.g. async executors, cryptography, etc.), with a smooth integration into the framework.
 

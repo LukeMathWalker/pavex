@@ -4,11 +4,11 @@ You can use [`Blueprint::prefix`][Blueprint::prefix] to group multiple routes un
 
 --8<-- "doc_examples/guide/routing/path_prefixes/project-intro.snap"
 
-1. Here we are using a [block expression](https://doc.rust-lang.org/stable/reference/expressions/block-expr.html) 
-   since the nested blueprint is particularly short. 
+1. Here we are using a [block expression](https://doc.rust-lang.org/stable/reference/expressions/block-expr.html)
+   since the nested blueprint is particularly short.
    If it's more complex, you can build it in a separate function, as shown in the next section.
 
-The prefix is prepended to the path of all routes **nested** under it.  
+The prefix is prepended to the path of all routes **nested** under it.\
 In the example above, we end up with three different route paths:
 
 - `/homes/` and `/homes/{id}`, after applying the `/homes` prefix
@@ -25,7 +25,7 @@ The `get_room` request handler will be available at `/homes/{home_id}/rooms/{roo
 
 ## Path parameters are allowed
 
-As shown in the previous example, your path prefixes can contain path parameters.  
+As shown in the previous example, your path prefixes can contain path parameters.\
 There is no difference between a path parameter in a prefix and a path parameter in a route path.
 
 ## Restrictions
@@ -40,9 +40,9 @@ These constraints are enforced by Pavex at compile time.
 
 ## Trailing slashes
 
-Pavex forbids trailing `/` in path prefixes as a safety measure.  
-It's easy to accidentally end up with consecutive `/` if a prefix ends with a `/`—e.g. 
-`/prefix//path`, using `/prefix/` as prefix and `/path` for your route.  
+Pavex forbids trailing `/` in path prefixes as a safety measure.\
+It's easy to accidentally end up with consecutive `/` if a prefix ends with a `/`—e.g.
+`/prefix//path`, using `/prefix/` as prefix and `/path` for your route.
 
 Since consecutive slashes are rarely desirable, you must add them explicitly to
 your route path if that's what you want:

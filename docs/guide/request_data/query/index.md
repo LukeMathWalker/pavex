@@ -1,6 +1,6 @@
 # Overview
 
-The **query** is a component of the [request target](../request_target.md).  
+The **query** is a component of the [request target](../request_target.md).\
 E.g. `baz=qux` is the query component in `https://example.com/foo/bar?baz=qux` or `/foo/bar?baz=qux`.
 
 The query is primarily used to **encode data** in `GET` requests and redirects.

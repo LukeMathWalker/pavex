@@ -147,15 +147,15 @@ For this reason, Pavex does not support the following types as `T` in [`PathPara
 - enums
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting path parameters.
-Check out [the API reference](../../../api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
-to learn more about the rationale behind this decision.
+    Check out [the API reference](../../../api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
+    to learn more about the rationale behind this decision.
 
 [^wrong-name]: If a field name doesn't match a path parameter name, Pavex will detect it at compile time and return
-an error.
-No more runtime errors because you misspelled a field name!
+    an error.
+    No more runtime errors because you misspelled a field name!
 
 [^structural-deserialize]: Check the documentation for [`StructuralDeserialize`][StructuralDeserialize] if you want
-to know more about the underlying mechanism.
+    to know more about the underlying mechanism.
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target

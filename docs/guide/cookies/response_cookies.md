@@ -1,6 +1,6 @@
 # Response cookies
 
-To attach cookies to the response, you need to insert them into [`ResponseCookies`][ResponseCookies].  
+To attach cookies to the response, you need to insert them into [`ResponseCookies`][ResponseCookies].\
 The [`response_cookie_injector`][response_cookie_injector] middleware in [`CookieKit`][CookieKit] will take care of adding a `Set-Cookie`
 header to the response for each cookie inside [`ResponseCookies`][ResponseCookies].
 
@@ -29,7 +29,7 @@ into [`ResponseCookies`][ResponseCookies]:
 --8<-- "doc_examples/guide/cookies/response_cookies/project-delete.snap"
 
 The client will receive a `Set-Cookie` header with the cookie name and an empty value,
-along with an expiration date in the past.  
+along with an expiration date in the past.\
 You need to make sure that the `Path` and `Domain` properties on the [`RemovalCookie`][RemovalCookie] match the ones
 set on the client-side cookie you want to delete.
 

@@ -1,10 +1,10 @@
-As you have seen in the [Quickstart](../getting_started/quickstart/index.md) tutorial, 
-`pavex new` is a quick way to scaffold a new project and start working on it. 
-If you execute 
+As you have seen in the [Quickstart](../getting_started/quickstart/index.md) tutorial,
+`pavex new` is a quick way to scaffold a new project and start working on it.
+If you execute
 
 ```bash
 pavex new demo
-``` 
+```
 
 the CLI will create a project with the following structure:
 
@@ -22,16 +22,16 @@ This guide will answer all these questions and more.
 If you're in a hurry, here's a quick summary of the most important points:
 
 - A Pavex project is a [Cargo workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html)
-  with at least three crates: 
-    - a core crate (_library_), conventionally named `app`
-    - a server SDK crate (_library_), conventionally named `server_sdk`
-    - a server crate (_binary_), conventionally named `server`
+  with at least three crates:
+  - a core crate (_library_), conventionally named `app`
+  - a server SDK crate (_library_), conventionally named `server_sdk`
+  - a server crate (_binary_), conventionally named `server`
 - The `app` crate contains the [`Blueprint`][Blueprint] for your API. It's where you'll spend most of your time.
 - The `server_sdk` crate is generated from the core crate by `pavex generate`, which is invoked automatically
-  by [`cargo-px`][cargo-px] when building or running the project.  
-  **You'll never modify `server_sdk` manually**. 
+  by [`cargo-px`][cargo-px] when building or running the project.\
+  **You'll never modify `server_sdk` manually**.
 - The `server` crate is the entrypoint for your application.
-  You'll have to change it whenever the [application state changes](dependency_injection/application_state.md) 
+  You'll have to change it whenever the [application state changes](dependency_injection/application_state.md)
   or if you want to tweak the binary entrypoint (e.g. modify the default telemetry setup).
   Your integration tests live in this crate.
 
@@ -49,7 +49,7 @@ If you want to know more, read on!
 
 ## Blueprint
 
-Every Pavex project has, at its core, a [`Blueprint`][Blueprint].  
+Every Pavex project has, at its core, a [`Blueprint`][Blueprint].\
 It's the type you use to declare the structure of your API:
 [routes], [middlewares], [constructors], [error handlers], [error observers], etc.
 
@@ -83,7 +83,7 @@ Rust crate, the **server SDK** for your Pavex project.
 If you went through the [Quickstart](../getting_started/quickstart/index.md) tutorial, you might be
 wondering: I've never run `pavex generate`! How comes my project worked?
 
-That's thanks to [`cargo-px`][cargo-px]!  
+That's thanks to [`cargo-px`][cargo-px]!\
 If you look into the `Cargo.toml` manifest for the `server_sdk` crate in the `demo` project,
 you'll find this section:
 
@@ -91,7 +91,7 @@ you'll find this section:
 --8<-- "doc_examples/quickstart/demo-cargo_px_in_manifest.snap"
 ```
 
-It's a [`cargo-px`][cargo-px] configuration section.  
+It's a [`cargo-px`][cargo-px] configuration section.\
 The `server_sdk` crate is telling [`cargo-px`][cargo-px] to generate the whole crate
 by executing a binary called `bp` (short for `blueprint`) from the current Cargo workspace.
 
@@ -109,7 +109,7 @@ that need it, and then goes on to complete the build process.
 ## The server SDK
 
 We've talked at length about how the server SDK is generated, but we haven't yet
-discussed what it actually _does_.  
+discussed what it actually _does_.\
 The **server SDK is the glue that wires everything together**. It is the code
 executed at runtime when a request hits your API.
 
@@ -117,7 +117,7 @@ You can think of it as the output of a macro, with the difference that you can e
 It's right there in your filesystem: you can open it, you can read it, you can use it as a way
 to get a deeper understanding of how Pavex works under the hood.
 
-At the same time, you actually don't need to know how it works to use it.  
+At the same time, you actually don't need to know how it works to use it.\
 As a Pavex user, **you only need to care about** the two public types it exports: **the `run` function and the [`ApplicationState`](#applicationstate)
 struct**.
 
@@ -126,19 +126,19 @@ struct**.
 [`ApplicationState`](dependency_injection/application_state.md) holds all the types
 with a [`Singleton` lifecycle][Lifecycle::Singleton] that your application needs to access at runtime when processing a request.
 
-To build an instance of [`ApplicationState`](dependency_injection/application_state.md), 
+To build an instance of [`ApplicationState`](dependency_injection/application_state.md),
 the server SDK exposes a function called `build_application_state`.
 
 ### `run`
 
-`run` is the entrypoint of your application.  
+`run` is the entrypoint of your application.\
 It takes as input:
 
 - an instance of [`ApplicationState`](#applicationstate)
 - a [`pavex::server::Server`][Server] instance
 
 [`pavex::server::Server`][Server] holds the configuration for the HTTP server that will be used to serve your API:
-the port(s) to listen on, the number of worker threads to be used, etc.  
+the port(s) to listen on, the number of worker threads to be used, etc.\
 When you call `run`, the HTTP server starts listening for incoming requests.
 You're live!
 
@@ -146,7 +146,7 @@ You're live!
 
 But who calls `run`?
 
-The server SDK crate is a library, it doesn't contain an executable binary.  
+The server SDK crate is a library, it doesn't contain an executable binary.\
 That's why you need a **server crate**.
 
 ```text hl_lines="2"
@@ -161,7 +161,7 @@ That's why you need a **server crate**.
 
 ### The executable binary
 
-The server crate contains the `main` function that you'll be running to start your application.  
+The server crate contains the `main` function that you'll be running to start your application.\
 In that `main` function you'll be building an instance of [`ApplicationState`](#applicationstate) and passing it to `run`.
 You'll be doing a few other things too: initializing your `tracing` subscriber, loading
 configuration, etc.
@@ -175,7 +175,7 @@ that it's happening (and where it's happening) in case you need to customize it.
 
 ### Integration tests
 
-The server crate is also where you'll be writing your **API tests**, also known as **black-box tests**.  
+The server crate is also where you'll be writing your **API tests**, also known as **black-box tests**.\
 These are scenarios that exercise your application as a customer would, by sending HTTP requests and asserting on the
 responses.
 
@@ -187,7 +187,6 @@ The `demo` project includes an example of such a test which you can use as a ref
 [Client::generate]: ../../api_reference/pavex_cli_client/client/struct.Client.html#method.generate
 [Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 [Server]: ../../api_reference/pavex/server/struct.Server.html
-
 [routes]: routing/index.md
 [constructors]: dependency_injection/index.md
 [middlewares]: middleware/index.md

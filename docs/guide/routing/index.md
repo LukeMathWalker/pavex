@@ -7,10 +7,9 @@ its [`route`][Blueprint::route] method:
 --8<-- "doc_examples/guide/routing/core_concepts/src/blueprint.rs"
 ```
 
-[`Blueprint::route`][Blueprint::route] expects three arguments: a [**method guard**](method_guards.md), a [**path pattern**](path_patterns.md) and a [**request
-handler**](request_handlers.md).
+[`Blueprint::route`][Blueprint::route] expects three arguments: a [**method guard**](method_guards.md), a [**path pattern**](path_patterns.md) and a [**request handler**](request_handlers.md).
 
-As your application grows, you can choose to lean into Pavex's more advanced routing features: 
+As your application grows, you can choose to lean into Pavex's more advanced routing features:
 
 - [**Fallbacks**], to customize the response returned when no route matches
 - [**Path prefixes**](path_prefixes.md), to reduce repetition in your route definitions

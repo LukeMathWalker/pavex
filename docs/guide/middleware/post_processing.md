@@ -1,6 +1,6 @@
 # Post-processing
 
-Post-processing middlewares are invoked after the request handler.  
+Post-processing middlewares are invoked after the request handler.\
 They are suitable for modifying the response and/or performing side-effects based on its contents.
 E.g. logging the response's status code, injecting response headers, etc.
 
@@ -12,7 +12,7 @@ You register a post-processing middleware against a blueprint via the [`post_pro
 
 --8<-- "doc_examples/guide/middleware/post/project-registration.snap"
 
-You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f!`][f] macro.  
+You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f!`][f] macro.
 
 The middleware will be invoked for all request handlers registered after it, as long as they were registered against the same [`Blueprint`][Blueprint]
 or one of its nested children.
@@ -24,11 +24,10 @@ Check out the [scoping section](scoping.md) for more details.
     Check out the [dependency injection cookbook](../dependency_injection/cookbook.md) for more details on
     the syntax for each case.
 
-
 ## `IntoResponse`
 
 Post-processing middlewares, like request handlers, must return a type that can be converted into a [`Response`][Response] via the
-[`IntoResponse`][IntoResponse] trait.  
+[`IntoResponse`][IntoResponse] trait.\
 If you want to return a custom type from your middleware, you must implement [`IntoResponse`][IntoResponse] for it.
 
 ## Middlewares can fail
@@ -43,12 +42,11 @@ If they do, you must specify an [**error handler**](../errors/error_handlers.md)
 
 Check out the [error handling guide](../errors/error_handlers.md) for more details.
 
-
 ## Dependency injection
 
 Post-processing middlewares can take advantage of **dependency injection**.
 
-You must specify the dependencies of your middleware as **input parameters** in its function signature.  
+You must specify the dependencies of your middleware as **input parameters** in its function signature.\
 Those inputs are going to be built and injected by the framework, according to the **constructors** you have registered.
 
 Post-processing middlewares, like request handlers and pre-processing middlewares,
@@ -56,7 +54,7 @@ can **mutate request-scoped types**.
 Ask for a `&mut` reference to the type you want to mutate as an input parameter, the framework will take care of the rest.
 
 Check out the [dependency injection guide](../dependency_injection/index.md) for more details
-on how the process works.  
+on how the process works.\
 Check out the [request data guide](../request_data/index.md) for an overview of the data you can extract from the request
 using Pavex's first-party extractors.
 

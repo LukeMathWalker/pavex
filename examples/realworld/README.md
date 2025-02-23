@@ -32,6 +32,7 @@ For more information on how this works with other frontends/backends, head over 
 ### Setup steps
 
 - Launch a local Postgres instance and run SQL migrations:
+
 ```bash
 ./scripts/init_db.sh
 ```
@@ -63,7 +64,7 @@ Configuration values are loaded from two sources:
 Environment variables take precedence over configuration files.
 
 All configuration files are in the `server/configuration` folder.
-The application can be run in two different profiles: `dev` and `prod`.  
+The application can be run in two different profiles: `dev` and `prod`.\
 The settings that you want to share across all profiles should be placed
 in `server/configuration/base.yml`.
 Profile-specific configuration files can be then used
@@ -89,12 +90,12 @@ Since this an example, the `.env` file is committed for reference.
 The application uses JWT for authentication, therefore it requires a secret key pair to sign and verify tokens. You can
 generate one for local development purposes by running:
 
-```bash 
+```bash
 openssl genpkey -algorithm ed25519 -out private.pem
 openssl pkey -in private.pem -pubout -out public.pem
 ```
 
-You then need to copy the generated keys to your configuration file, `api_server/configuration/dev.yml` for 
+You then need to copy the generated keys to your configuration file, `api_server/configuration/dev.yml` for
 local development:
 
 ```yaml

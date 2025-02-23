@@ -1,6 +1,6 @@
 # URL encoded
 
-[URL encoding](https://en.wikipedia.org/wiki/Percent-encoding), also known as _percent encoding_, is one 
+[URL encoding](https://en.wikipedia.org/wiki/Percent-encoding), also known as _percent encoding_, is one
 of the formats used by browsers to encode the data submitted via a `POST` web form.
 
 You can use [`UrlEncodedBody<T>`][UrlEncodedBody] to work with URL encoded payloads:
@@ -22,7 +22,7 @@ and error handler:
 
 --8<-- "doc_examples/guide/request_data/urlencoded/project-installation.snap"
 
-1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!  
+1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!\
    Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
 
 ## Extraction
@@ -34,7 +34,7 @@ Inject [`UrlEncodedBody<T>`][UrlEncodedBody] as an input in your components to a
 ## Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement
-the [`serde::Deserialize`][serde::Deserialize] trait.  
+the [`serde::Deserialize`][serde::Deserialize] trait.\
 You can derive [`serde::Deserialize`][serde::Deserialize] in most cases.
 
 --8<-- "doc_examples/guide/request_data/urlencoded/project-struct_with_attr.snap"
@@ -60,7 +60,7 @@ pub struct Address {
 ```
 
 If you need to deserialize nested structures from a URL encoded body,
-you might want to look into writing your own extractor on top of a crate like 
+you might want to look into writing your own extractor on top of a crate like
 [`serde_qs`](https://crates.io/crates/serde_qs).
 
 ## Avoiding allocations
@@ -71,11 +71,11 @@ Pavex supports this use case—**you can borrow from the request body**.
 
 ### Percent-encoding
 
-It is not always possible to avoid allocations when handling a URL encoded body.  
+It is not always possible to avoid allocations when handling a URL encoded body.\
 Fields and values in a URL encoded body must comply with the restriction of the URI specification:
-you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).  
+you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).\
 If you want to use a character that's not URL-safe, you
-must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).  
+must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).\
 For example, if you want to use a space in a field name or a field value, you must encode it as `%20`.
 A string like `John Doe` becomes `John%20Doe` when percent-encoded.
 
