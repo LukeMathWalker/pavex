@@ -1,4 +1,4 @@
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use pavex::http::HeaderMap;
 use secrecy::Secret;
 use serde::{Deserialize, Serialize};

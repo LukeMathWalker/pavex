@@ -6,3 +6,6 @@ resolver = "2"
 # when executed from the root of the workspace.
 # Otherwise, you would have to use `cargo run --bin api` to run the server binary.
 default-members = ["server"]
+
+[workspace.package]
+edition = "2024"

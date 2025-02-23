@@ -1,8 +1,8 @@
 use crate::configuration::ApplicationProfile;
 use anyhow::Context;
 use app::configuration::AppConfig;
-use figment::providers::{Env, Format, Yaml};
 use figment::Figment;
+use figment::providers::{Env, Format, Yaml};
 use pavex::server::IncomingStream;
 use std::net::SocketAddr;
 

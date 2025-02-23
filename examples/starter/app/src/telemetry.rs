@@ -1,17 +1,17 @@
-use pavex::blueprint::{constructor::CloningStrategy, Blueprint};
+use pavex::blueprint::{Blueprint, constructor::CloningStrategy};
 use pavex::f;
-use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
+use pavex::request::path::MatchedPathPattern;
 use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
-use pavex_tracing::fields::{
-    error_details, error_message, error_source_chain, http_request_method, http_request_server_id,
-    http_response_status_code, http_route, network_protocol_version, url_path, url_query,
-    user_agent_original, ERROR_DETAILS, ERROR_MESSAGE, ERROR_SOURCE_CHAIN, HTTP_REQUEST_METHOD,
-    HTTP_REQUEST_SERVER_ID, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_VERSION,
-    URL_PATH, URL_QUERY, USER_AGENT_ORIGINAL,
-};
 use pavex_tracing::RootSpan;
+use pavex_tracing::fields::{
+    ERROR_DETAILS, ERROR_MESSAGE, ERROR_SOURCE_CHAIN, HTTP_REQUEST_METHOD, HTTP_REQUEST_SERVER_ID,
+    HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_VERSION, URL_PATH, URL_QUERY,
+    USER_AGENT_ORIGINAL, error_details, error_message, error_source_chain, http_request_method,
+    http_request_server_id, http_response_status_code, http_route, network_protocol_version,
+    url_path, url_query, user_agent_original,
+};
 use tracing_log_error::log_error;
 
 /// Register telemetry middlewares, an error observer and the relevant constructors

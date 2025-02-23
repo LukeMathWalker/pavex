@@ -5,7 +5,7 @@ use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::{
     request::body::JsonBody,
-    response::{body::Json, Response},
+    response::{Response, body::Json},
 };
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;

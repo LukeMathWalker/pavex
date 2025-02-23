@@ -1,5 +1,5 @@
-use pavex::blueprint::router::{DELETE, GET, POST, PUT};
 use pavex::blueprint::Blueprint;
+use pavex::blueprint::router::{DELETE, GET, POST, PUT};
 use pavex::f;
 
 pub(crate) fn articles_bp() -> Blueprint {

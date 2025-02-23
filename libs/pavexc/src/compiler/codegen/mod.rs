@@ -273,7 +273,7 @@ where
     );
     let manifest = GeneratedManifest {
         dependencies,
-        edition: Edition::E2021,
+        edition: Edition::E2024,
     };
 
     // Toolchain crates are not listed as dependencies in the manifest, but we need to add them to

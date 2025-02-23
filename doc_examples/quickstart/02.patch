@@ -17,7 +17,7 @@ index 0472c7d..3c53d60 100644
 +pub mod greet;
  pub mod ping;
 
- use pavex::blueprint::{router::GET, Blueprint};
+ use pavex::blueprint::{Blueprint, router::GET};
 @@ -5,4 +5,5 @@ use pavex::f;
 
  pub fn register(bp: &mut Blueprint) {
