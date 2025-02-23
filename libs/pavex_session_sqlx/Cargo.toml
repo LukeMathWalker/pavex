@@ -23,7 +23,10 @@ async-trait = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
-sqlx = { workspace = true, features = ["uuid", "time"] }
+sqlx = { workspace = true, default-features = true, features = [
+    "uuid",
+    "time",
+] }
 
 [dev-dependencies]
 pavex_session_sqlx = { path = ".", features = ["postgres"] }
