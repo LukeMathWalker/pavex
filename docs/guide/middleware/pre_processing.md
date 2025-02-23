@@ -7,6 +7,20 @@ E.g., rejecting unauthenticated requests or enforcing rate limits.
 
 --8<-- "doc_examples/guide/middleware/pre/project-basic.snap"
 
+## Signature
+
+Pavex accepts a wide range of function signatures for pre-processing middlewares. There is only one constraint:
+they must return either [`Processing`](#processing) or a [`Result` with `Processing` as its `Ok` variant](#middlewares-can-fail).
+
+Other than that, you have a lot of freedom in how you define your pre-processing middlewares:
+
+- They can be free functions or methods.
+- They can be synchronous or asynchronous.
+- [They can take zero or more parameters, leaning on Pavex's dependency injection system](#dependency-injection).
+- [If fallible, they can use whatever error type you prefer, as long as you provide an error handler for it](#middlewares-can-fail).
+
+The next sections of this guide will elaborate on each of these points.
+
 ## Registration
 
 You register a pre-processing middleware against a blueprint via the [`pre_process`](crate::blueprint::Blueprint::pre_process) method.
