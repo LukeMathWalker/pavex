@@ -33,12 +33,15 @@ impl AppWriter {
     }
 
     pub fn persist_if_changed(&mut self, path: &Path, content: &[u8]) -> Result<(), anyhow::Error> {
-        if let WriterMode::CheckOnly { outdated } = &mut self.mode {
-            if has_changed_file2buffer(path, content)? {
-                outdated.insert(path.to_path_buf());
+        match &mut self.mode {
+            WriterMode::CheckOnly { outdated } => {
+                if has_changed_file2buffer(path, content)? {
+                    outdated.insert(path.to_path_buf());
+                }
             }
-        } else {
-            persist_if_changed(path, content)?;
+            _ => {
+                persist_if_changed(path, content)?;
+            }
         }
         Ok(())
     }

@@ -1,7 +1,7 @@
 [package]
 name = "dep_3e2693d0"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [lints.rust.unexpected_cfgs]
 level = "allow"

@@ -1,7 +1,7 @@
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use petgraph::graph::NodeIndex;
 use petgraph::Direction;
+use petgraph::graph::NodeIndex;
 
 use crate::compiler::analyses::call_graph::borrow_checker::clone::get_clone_component_id;
 use crate::compiler::analyses::call_graph::borrow_checker::ownership_relationship::OwnershipRelationships;
@@ -285,11 +285,11 @@ fn emit_borrow_checking_error(
 
         if let Some(component_id) = component_id {
             let error = anyhow::anyhow!(
-                    "I can't generate code that will pass the borrow checker *and* match \
+                "I can't generate code that will pass the borrow checker *and* match \
                     the instructions in your blueprint.\n\
                     There are a few different ways to unblock me: check out the help messages below!\n\
                     You only need to follow *one* of them."
-                );
+            );
             let mut diagnostic = CompilerDiagnostic::builder(error);
 
             if let Some(user_component_id) = component_db.user_component_id(component_id) {

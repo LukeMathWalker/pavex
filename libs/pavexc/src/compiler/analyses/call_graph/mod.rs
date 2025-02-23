@@ -1,4 +1,4 @@
-pub(crate) use application_state::{application_state_call_graph, ApplicationStateCallGraph};
+pub(crate) use application_state::{ApplicationStateCallGraph, application_state_call_graph};
 pub(crate) use borrow_checker::OrderedCallGraph;
 pub(crate) use core_graph::{
     CallGraph, CallGraphEdgeMetadata, CallGraphNode, InputParameterSource,

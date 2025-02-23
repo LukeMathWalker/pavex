@@ -12,7 +12,7 @@ use pavex_cli_diagnostic::anyhow2miette;
 
 use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, ApplicationStateCallGraph,
+    ApplicationStateCallGraph, application_state_call_graph,
 };
 use crate::compiler::analyses::cloning::clonables_can_be_cloned;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};

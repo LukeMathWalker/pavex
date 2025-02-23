@@ -1012,8 +1012,9 @@ impl RawUserComponentDb {
                 .labeled("The path missing a leading '/'".to_string())
         });
         let path = &route.path;
-        let err =
-            anyhow!("Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",);
+        let err = anyhow!(
+            "Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",
+        );
         let diagnostic = CompilerDiagnostic::builder(err)
             .optional_source(source)
             .optional_label(label)

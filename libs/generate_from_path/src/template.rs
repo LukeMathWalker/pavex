@@ -1,10 +1,10 @@
+use crate::GenerateArgs;
 use crate::filenames::substitute_filename;
 use crate::progressbar::spinner;
-use crate::GenerateArgs;
 use anyhow::Context;
 use indicatif::{MultiProgress, ProgressBar};
-use liquid::model::KString;
 use liquid::Parser;
+use liquid::model::KString;
 use liquid_core::{Object, Value};
 use std::fs;
 use std::path::Path;

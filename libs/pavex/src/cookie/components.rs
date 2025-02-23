@@ -1,11 +1,11 @@
-use crate::cookie::errors::{ExtractRequestCookiesError, InjectResponseCookiesError};
 use crate::cookie::ResponseCookies;
+use crate::cookie::errors::{ExtractRequestCookiesError, InjectResponseCookiesError};
 use crate::error::UnexpectedError;
 use crate::request::RequestHead;
 use crate::response::Response;
 use biscotti::{Processor, RequestCookies};
-use http::header::{COOKIE, SET_COOKIE};
 use http::HeaderValue;
+use http::header::{COOKIE, SET_COOKIE};
 
 /// Parse cookies out of the incoming request.
 ///

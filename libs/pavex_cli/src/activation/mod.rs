@@ -181,11 +181,15 @@ async fn _check_activation_with_key(
 }
 
 #[derive(thiserror::Error, Debug)]
-#[error("Your installation of Pavex must be activated before it can be used.\nRun `pavex self activate` to fix the issue.")]
+#[error(
+    "Your installation of Pavex must be activated before it can be used.\nRun `pavex self activate` to fix the issue."
+)]
 pub struct PavexMustBeActivated;
 
 #[derive(thiserror::Error, Debug)]
-#[error("The activation key attached to your installation of Pavex is not valid.\nRun `pavex self activate` to fix the issue.")]
+#[error(
+    "The activation key attached to your installation of Pavex is not valid.\nRun `pavex self activate` to fix the issue."
+)]
 pub struct InvalidActivationKey;
 
 #[derive(thiserror::Error, Debug)]
@@ -201,14 +205,18 @@ pub enum CliTokenError {
     "The wizard key you provided is malformed. {details}",
     details = .details.as_deref().unwrap_or_default()
 )]
-#[diagnostic(help("Try copying the key again from the browser (https://console.pavex.dev/wizard/setup). Perhaps you lost a piece along the way?"))]
+#[diagnostic(help(
+    "Try copying the key again from the browser (https://console.pavex.dev/wizard/setup). Perhaps you lost a piece along the way?"
+))]
 pub struct MalformedWizardKey {
     details: Option<String>,
 }
 
 #[derive(thiserror::Error, miette::Diagnostic, Debug)]
 #[error("The wizard key you provided is either invalid or expired.")]
-#[diagnostic(help("Refresh the setup page (https://console.pavex.dev/wizard/setup) in the browser to generate a new key."))]
+#[diagnostic(help(
+    "Refresh the setup page (https://console.pavex.dev/wizard/setup) in the browser to generate a new key."
+))]
 pub struct InvalidWizardKey;
 
 #[derive(thiserror::Error, miette::Diagnostic, Debug)]
@@ -222,6 +230,8 @@ pub enum WizardKeyError {
     #[error(
         "Something went wrong when trying to exchange your wizard key for an activation token."
     )]
-    #[diagnostic(help("Please try again! If the problem persists, send us a message in the #get-help channel on Discord."))]
+    #[diagnostic(help(
+        "Please try again! If the problem persists, send us a message in the #get-help channel on Discord."
+    ))]
     UnexpectedError(#[source] anyhow::Error),
 }

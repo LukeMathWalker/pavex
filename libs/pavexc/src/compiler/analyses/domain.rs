@@ -357,25 +357,40 @@ impl std::fmt::Display for InvalidDomainConstraint {
                 }
             }
             InvalidDomainConstraint::EmptyDnsLabel { original } => {
-                write!(f, "`{original}` is not a valid domain. It contains an empty DNS label: two consecutive dots (`..`), with nothing in between.")
+                write!(
+                    f,
+                    "`{original}` is not a valid domain. It contains an empty DNS label: two consecutive dots (`..`), with nothing in between."
+                )
             }
             InvalidDomainConstraint::InvalidDnsLabel {
                 original,
                 invalid_label,
                 violations,
             } => {
-                write!(f, "`{original}` is not a valid domain. It contains an invalid DNS label, `{invalid_label}`. ")?;
+                write!(
+                    f,
+                    "`{original}` is not a valid domain. It contains an invalid DNS label, `{invalid_label}`. "
+                )?;
                 match violations {
                     DnsLabelViolations::InvalidStart => {
                         let first = invalid_label.chars().next().unwrap();
-                        write!(f, "DNS labels must start with an alphanumeric ASCII character, but `{invalid_label}` starts with `{first}`.")
+                        write!(
+                            f,
+                            "DNS labels must start with an alphanumeric ASCII character, but `{invalid_label}` starts with `{first}`."
+                        )
                     }
                     DnsLabelViolations::InvalidEnd => {
                         let last = invalid_label.chars().last().unwrap();
-                        write!(f, "DNS labels must end with an alphanumeric ASCII character, but `{invalid_label}` ends with `{last}`.")
+                        write!(
+                            f,
+                            "DNS labels must end with an alphanumeric ASCII character, but `{invalid_label}` ends with `{last}`."
+                        )
                     }
                     DnsLabelViolations::InvalidChars(chars) => {
-                        write!(f, "DNS labels must only contain alphanumeric ASCII characters and hyphens (`-`), but `{invalid_label}` contains the following invalid characters: ")?;
+                        write!(
+                            f,
+                            "DNS labels must only contain alphanumeric ASCII characters and hyphens (`-`), but `{invalid_label}` contains the following invalid characters: "
+                        )?;
                         for (i, c) in chars.iter().enumerate() {
                             if i > 0 {
                                 write!(f, ", ")?;
@@ -386,17 +401,31 @@ impl std::fmt::Display for InvalidDomainConstraint {
                     }
                     DnsLabelViolations::TooLong { length, templated } => {
                         if *templated {
-                            write!(f, "DNS labels must be at most 63 characters long, but `{invalid_label}` would only match labels that are at least {} characters long.", length)
+                            write!(
+                                f,
+                                "DNS labels must be at most 63 characters long, but `{invalid_label}` would only match labels that are at least {} characters long.",
+                                length
+                            )
                         } else {
-                            write!(f, "DNS labels must be at most 63 characters long, but `{invalid_label}` is {} characters long.", length)
+                            write!(
+                                f,
+                                "DNS labels must be at most 63 characters long, but `{invalid_label}` is {} characters long.",
+                                length
+                            )
                         }
                     }
                     DnsLabelViolations::ParameterNotAtStart { parameter, prefix } => {
-                        write!(f, "Domain parameters must appear at the beginning of the DNS label they belong to. That's not the case here: `{parameter}` is preceded by `{prefix}`.")
+                        write!(
+                            f,
+                            "Domain parameters must appear at the beginning of the DNS label they belong to. That's not the case here: `{parameter}` is preceded by `{prefix}`."
+                        )
                     }
                     DnsLabelViolations::TooManyParameters { parameters } => {
                         let n = parameters.len();
-                        write!(f, "DNS labels can contain at most one domain parameter. `{invalid_label}`, instead, contains {n} parameters: ")?;
+                        write!(
+                            f,
+                            "DNS labels can contain at most one domain parameter. `{invalid_label}`, instead, contains {n} parameters: "
+                        )?;
                         for (i, p) in parameters.iter().enumerate() {
                             if n > 1 && i == n - 1 {
                                 write!(f, " and ")?;
@@ -413,21 +442,30 @@ impl std::fmt::Display for InvalidDomainConstraint {
                 original,
                 parameter_name,
             } => {
-                write!(f, "`{parameter_name}`, one of the domain parameters in `{original}`, is not a valid Rust identifier.")
+                write!(
+                    f,
+                    "`{parameter_name}`, one of the domain parameters in `{original}`, is not a valid Rust identifier."
+                )
             }
             InvalidDomainConstraint::EmptyParameterName {
                 original,
                 unnamed_parameter,
             } => {
-                write!(f, "All domain parameters must be named. `{original}` can't be accepted since it contains an unnamed parameter, `{unnamed_parameter}`.")
+                write!(
+                    f,
+                    "All domain parameters must be named. `{original}` can't be accepted since it contains an unnamed parameter, `{unnamed_parameter}`."
+                )
             }
             InvalidDomainConstraint::UnclosedParameter {
                 original,
                 dns_label,
                 partial_parameter,
             } => {
-                write!(f, "`{original}` is not a valid domain. It contains an unclosed domain parameter in one of its DNS labels, `{dns_label}`. \
-                    Domain parameters must be enclosed in curly braces (`{{` and `}}`), but `{partial_parameter}` is missing a closing brace (`}}`).")
+                write!(
+                    f,
+                    "`{original}` is not a valid domain. It contains an unclosed domain parameter in one of its DNS labels, `{dns_label}`. \
+                    Domain parameters must be enclosed in curly braces (`{{` and `}}`), but `{partial_parameter}` is missing a closing brace (`}}`)."
+                )
             }
         }
     }
@@ -435,8 +473,8 @@ impl std::fmt::Display for InvalidDomainConstraint {
 
 #[cfg(test)]
 mod tests {
-    use super::validate;
     use super::DomainGuard;
+    use super::validate;
     use insta::assert_snapshot;
 
     macro_rules! is_valid {

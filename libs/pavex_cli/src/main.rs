@@ -1,6 +1,6 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
-use pavex_cli_shell::{try_init_shell, ShellExt, SHELL};
+use pavex_cli_shell::{SHELL, ShellExt, try_init_shell};
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -10,10 +10,10 @@ use clap::Parser;
 use jsonwebtoken::jwk::JwkSet;
 use owo_colors::OwoColorize;
 use pavex_cli::activation::{
-    background_token_refresh, check_activation, exchange_wizard_key, get_activation_key,
-    get_activation_key_if_necessary, CliTokenError,
+    CliTokenError, background_token_refresh, check_activation, exchange_wizard_key,
+    get_activation_key, get_activation_key_if_necessary,
 };
-use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
+use pavex_cli::cargo_install::{GitSourceRevision, Source, cargo_install};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
 use pavex_cli::locator::PavexLocator;
@@ -23,20 +23,20 @@ use pavex_cli::prebuilt::download_prebuilt;
 use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::version::latest_released_version;
-use pavex_cli_deps::{verify_installation, CargoPx, IfAutoinstallable, Rustup};
+use pavex_cli_deps::{CargoPx, IfAutoinstallable, Rustup, verify_installation};
 use pavex_cli_diagnostic::anyhow2miette;
+use pavexc_cli_client::Client;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::commands::new::TemplateName;
-use pavexc_cli_client::Client;
 use redact::Secret;
 use semver::Version;
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 
@@ -384,9 +384,10 @@ fn activate(
                         CliTokenError::RpcError(e) => {
                             print_error(
                                 &format!(
-                                "Something went wrong when I tried to verify your activation key against Pavex's API:\n\
+                                    "Something went wrong when I tried to verify your activation key against Pavex's API:\n\
                                 {e:?}\n\
-                                Please try again."),
+                                Please try again."
+                                ),
                                 color,
                             );
                         }

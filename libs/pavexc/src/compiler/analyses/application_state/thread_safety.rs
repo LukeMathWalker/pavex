@@ -8,7 +8,7 @@ use crate::{
             computations::ComputationDb,
         },
         computation::Computation,
-        traits::{assert_trait_is_implemented, MissingTraitImplementationError},
+        traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
     diagnostic::{self, CallableType, CompilerDiagnostic, OptionalSourceSpanExt},

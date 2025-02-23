@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use console::{style, Key};
+use console::{Key, style};
 
 use pavex_test_runner::{get_test_name, get_ui_test_directories, print_changeset};
 

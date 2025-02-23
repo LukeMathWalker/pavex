@@ -20,9 +20,7 @@ impl CliTokenDiskCache {
     }
 
     pub async fn get_token(&self) -> Result<Option<Secret<String>>, anyhow::Error> {
-        self.get_cache()
-            .await
-            .map(|data| data.and_then(|d| d.jwt))
+        self.get_cache().await.map(|data| data.and_then(|d| d.jwt))
     }
 
     async fn get_cache(&self) -> Result<Option<CachedToken>, anyhow::Error> {

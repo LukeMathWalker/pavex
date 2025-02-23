@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::str::FromStr;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
+use tracing_subscriber::Registry;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::Registry;
 
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let _guard = if std::env::var("PAVEX_TEST_LOG").is_ok_and(|s| s == "true") {

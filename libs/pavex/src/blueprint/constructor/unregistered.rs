@@ -1,8 +1,8 @@
+use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle, RegisteredConstructor};
 use crate::blueprint::conversions::{lint2lint, raw_identifiers2callable};
 use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::Blueprint;
 use pavex_bp_schema::{Callable, LintSetting};
 use std::collections::BTreeMap;
 

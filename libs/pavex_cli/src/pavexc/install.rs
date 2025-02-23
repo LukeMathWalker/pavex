@@ -1,9 +1,9 @@
-use crate::cargo_install::{cargo_install, GitSourceRevision, Source};
+use crate::cargo_install::{GitSourceRevision, Source, cargo_install};
 use crate::cli_kind::CliKind;
 use crate::prebuilt::download_prebuilt;
-use guppy::graph::PackageSource;
 use guppy::Version;
-use pavex_cli_shell::{ShellExt, SHELL};
+use guppy::graph::PackageSource;
+use pavex_cli_shell::{SHELL, ShellExt};
 use std::path::{Path, PathBuf};
 use tracing_log_error::log_error;
 
@@ -69,7 +69,7 @@ impl<'a> TryFrom<PackageSource<'a>> for InstallSource {
                                     UnsupportedSourceError {
                                         package_source: format!("an unknown `git` source ({s})",),
                                     },
-                                ))
+                                ));
                             }
                         },
                         resolved: Some(resolved.into()),
@@ -207,7 +207,9 @@ pub struct InvalidSourceError {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("You are using a local version of `pavex` (source at `{pavex_source_path}`). I expect the corresponding `pavexc` binary crate to be available at `{pavexc_expected_path}`, but it's not there. Did you forget to run `cargo build --release --bin pavexc` from `{workspace_path}`?")]
+#[error(
+    "You are using a local version of `pavex` (source at `{pavex_source_path}`). I expect the corresponding `pavexc` binary crate to be available at `{pavexc_expected_path}`, but it's not there. Did you forget to run `cargo build --release --bin pavexc` from `{workspace_path}`?"
+)]
 pub struct NoLocalBinaryError {
     pavex_source_path: PathBuf,
     pavexc_expected_path: PathBuf,
@@ -215,7 +217,9 @@ pub struct NoLocalBinaryError {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("You are using a version of `pavex` from the current workspace. I expect the corresponding `pavexc` binary crate to be available at `{pavexc_expected_path}`, but it's not there. Did you forget to run `cargo build --release --bin pavexc`?")]
+#[error(
+    "You are using a version of `pavex` from the current workspace. I expect the corresponding `pavexc` binary crate to be available at `{pavexc_expected_path}`, but it's not there. Did you forget to run `cargo build --release --bin pavexc`?"
+)]
 pub struct NoWorkspaceBinaryError {
     pavexc_expected_path: PathBuf,
 }

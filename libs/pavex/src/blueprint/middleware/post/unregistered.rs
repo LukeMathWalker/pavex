@@ -1,7 +1,7 @@
+use crate::blueprint::Blueprint;
 use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::middleware::RegisteredPostProcessingMiddleware;
 use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::Blueprint;
 use pavex_bp_schema::Callable;
 
 /// A post-processing middleware that has been configured

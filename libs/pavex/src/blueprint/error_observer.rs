@@ -5,9 +5,9 @@
 //! Check out the ["Error observers"](https://pavex.dev/docs/guide/errors/error_observers)
 //! section of Pavex's guide for a thorough introduction to error observers
 //! in Pavex applications.
+use crate::blueprint::Blueprint;
 use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::Blueprint;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable};
 
 /// The type returned by [`Blueprint::error_observer`].

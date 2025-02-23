@@ -15,9 +15,8 @@ use super::AllowedMethods;
 /// It also returns a `404 Not Found` response if the path allows all HTTP methods,
 /// including custom ones.
 pub async fn default_fallback(allowed_methods: &AllowedMethods) -> Response {
-    if let Some(header_value) = allowed_methods.allow_header_value() {
-        Response::method_not_allowed().insert_header(ALLOW, header_value)
-    } else {
-        Response::not_found()
+    match allowed_methods.allow_header_value() {
+        Some(header_value) => Response::method_not_allowed().insert_header(ALLOW, header_value),
+        _ => Response::not_found(),
     }
 }

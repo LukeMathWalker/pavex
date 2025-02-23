@@ -11,8 +11,8 @@ use console::style;
 use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
-use pavexc::rustdoc::CrateCollection;
 use pavexc::DEFAULT_DOCS_TOOLCHAIN;
+use pavexc::rustdoc::CrateCollection;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sha2::Digest;
 use toml::toml;
@@ -26,7 +26,7 @@ use crate::snapshot::SnapshotTest;
 mod snapshot;
 
 /// Return an iterator over the directories containing a UI test.
-pub fn get_ui_test_directories(test_folder: &Path) -> impl Iterator<Item = PathBuf> {
+pub fn get_ui_test_directories(test_folder: &Path) -> impl Iterator<Item = PathBuf> + use<> {
     WalkDir::new(test_folder)
         .into_iter()
         .filter_map(|entry| entry.ok())
@@ -297,7 +297,9 @@ fn compile_generated_apps(
         trials.push(trial);
     }
     if !output.status.success() && crate_names2error.is_empty() {
-        panic!("Something went wrong when compiling the generated crates, but we failed to capture what or where.")
+        panic!(
+            "Something went wrong when compiling the generated crates, but we failed to capture what or where."
+        )
     }
     println!(
         "Compiled {} generated crates in {} seconds",
@@ -461,7 +463,8 @@ debug = "none""##
         }
     }
     writeln!(&mut cargo_toml, "]").unwrap();
-    writeln!(&mut cargo_toml, "resolver = \"2\"").unwrap();
+    writeln!(&mut cargo_toml, "resolver = \"3\"").unwrap();
+    writeln!(&mut cargo_toml, "[workspace.package]\nedition = \"2024\"")?;
     writeln!(&mut cargo_toml, "[workspace.dependencies]").unwrap();
     writeln!(&mut cargo_toml, "pavex = {{ path = \"../pavex\" }}").unwrap();
     writeln!(
@@ -848,17 +851,18 @@ fn code_generation_diagnostics_test(test_name: &str, test: &TestData) -> Trial {
         expectations_directory.join("diagnostics.dot"),
         test.blueprint_crate_name(),
     );
-    let actual_diagnostics =
-        match fs_err::read_to_string(test.definition_directory.join("diagnostics.dot")) {
-            Ok(d) => d,
-            Err(e) => {
-                let msg = format!(
+    let actual_diagnostics = match fs_err::read_to_string(
+        test.definition_directory.join("diagnostics.dot"),
+    ) {
+        Ok(d) => d,
+        Err(e) => {
+            let msg = format!(
                 "Code generation didn't produce a diagnostic file in the expected location.\n{:?}",
                 e
             );
-                return Trial::test(test_name, move || Err(Failed::from(msg)));
-            }
-        };
+            return Trial::test(test_name, move || Err(Failed::from(msg)));
+        }
+    };
     if diagnostics_snapshot.verify(&actual_diagnostics).is_err() {
         let msg =
             "The diagnostics returned by code generation don't match what we expected.".to_string();
@@ -937,9 +941,10 @@ fn application_integration_test(test: &TestData) -> Result<(), anyhow::Error> {
         .context("The output of `cargo test` contains non-UTF8 characters")?;
     if !output.status.success() {
         anyhow::bail!(
-                "Integration tests didn't succeed.\n\nCARGO TEST:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                test_output.stdout, test_output.stderr
-            )
+            "Integration tests didn't succeed.\n\nCARGO TEST:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+            test_output.stdout,
+            test_output.stderr
+        )
     } else {
         Ok(())
     }

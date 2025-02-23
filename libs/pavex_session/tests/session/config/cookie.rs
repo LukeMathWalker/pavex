@@ -6,11 +6,11 @@ use googletest::{
 };
 use pavex::cookie::{RequestCookie, RequestCookies, SameSite};
 use pavex_session::{
-    config::{SessionCookieConfig, SessionCookieKind},
     IncomingSession, Session, SessionConfig,
+    config::{SessionCookieConfig, SessionCookieKind},
 };
 
-use crate::fixtures::{store, SessionFixture};
+use crate::fixtures::{SessionFixture, store};
 
 #[tokio::test]
 #[googletest::test]

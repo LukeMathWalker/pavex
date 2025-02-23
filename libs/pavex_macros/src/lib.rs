@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 
 use quote::quote;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, Attribute, Data, DeriveInput, Error, GenericParam, Token};
+use syn::{Attribute, Data, DeriveInput, Error, GenericParam, Token, parse_macro_input};
 
 #[allow(non_snake_case)]
 #[proc_macro_attribute]

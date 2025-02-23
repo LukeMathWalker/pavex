@@ -1,8 +1,8 @@
 use http::HeaderMap;
 use serde::Deserialize;
 
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::f;
 use crate::request::RequestHead;
 

@@ -32,8 +32,9 @@ use std::any::type_name;
 use std::borrow::Cow;
 
 use serde::{
+    Deserializer,
     de::{self, DeserializeSeed, EnumAccess, Error, MapAccess, VariantAccess, Visitor},
-    forward_to_deserialize_any, Deserializer,
+    forward_to_deserialize_any,
 };
 
 use crate::request::path::errors::{ErrorKind, PathDeserializationError};
@@ -744,8 +745,7 @@ mod tests {
             vec![("a", "1"), ("b", "true"), ("c", "abc")],
             TupleStruct,
             ErrorKind::UnsupportedType {
-                name:
-                    "pavex::request::path::deserializer::tests::test_unsupported_seq::TupleStruct"
+                name: "pavex::request::path::deserializer::tests::test_unsupported_seq::TupleStruct"
             }
         );
 

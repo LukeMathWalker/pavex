@@ -29,7 +29,7 @@
 //! DEALINGS IN THE SOFTWARE.
 use crate::template::create_liquid_object;
 use crate::template_variables::{
-    set_project_name_variables, CrateName, ProjectDir, ProjectName, ProjectNameInput,
+    CrateName, ProjectDir, ProjectName, ProjectNameInput, set_project_name_variables,
 };
 use anyhow::bail;
 use liquid::ParserBuilder;

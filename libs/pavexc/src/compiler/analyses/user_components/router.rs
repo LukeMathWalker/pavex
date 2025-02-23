@@ -54,7 +54,11 @@ impl Router {
                         continue;
                     };
                     let parents = scope_id.direct_parent_ids(scope_graph);
-                    assert_eq!(parents.len(), 1, "Fallbacks are always encapsulated in their own sub-scope and should only have one parent scope.");
+                    assert_eq!(
+                        parents.len(),
+                        1,
+                        "Fallbacks are always encapsulated in their own sub-scope and should only have one parent scope."
+                    );
                     let parent_scope_id = parents.into_iter().next().unwrap();
                     // This is the root scope, we don't need to check anything.
                     // We'll use that fallback for routes that fail to match.
@@ -320,11 +324,7 @@ impl DomainRouter {
             );
         }
 
-        if has_errored {
-            Err(())
-        } else {
-            Ok(())
-        }
+        if has_errored { Err(()) } else { Ok(()) }
     }
 
     fn push_domain_conflict_diagnostic(
@@ -465,7 +465,7 @@ impl PathRouter {
         for (path, routes) in path2method2component_id.into_iter() {
             for method in METHODS {
                 let mut relevant_handler_ids = IndexSet::new();
-                for (guard, &id) in &routes {
+                for &(ref guard, &id) in &routes {
                     match guard {
                         // `None` stands for the `ANY` guard, it matches all well-known methods
                         MethodGuard::Any { .. } => {
@@ -545,11 +545,7 @@ impl PathRouter {
                 }
             }
         }
-        if errored {
-            Err(())
-        } else {
-            Ok(path_router)
-        }
+        if errored { Err(()) } else { Ok(path_router) }
     }
 
     /// Determine, for each request handler, which fallback should be used if an incoming request
@@ -1104,10 +1100,16 @@ fn push_matchit_diagnostic(
     // diagnostics we emit.
     let error = match error {
         InsertError::Conflict { with } => {
-            anyhow!("This route path, `{}`, conflicts with the path of another route you already registered, `{}`.", path, with)
+            anyhow!(
+                "This route path, `{}`, conflicts with the path of another route you already registered, `{}`.",
+                path,
+                with
+            )
         }
         InsertError::InvalidParam => {
-            anyhow!("You can only use path parameters in the form of `{{name}}` or `{{*name}}`. You can use `{{{{` and `}}}}` if you need to escape curly braces.")
+            anyhow!(
+                "You can only use path parameters in the form of `{{name}}` or `{{*name}}`. You can use `{{{{` and `}}}}` if you need to escape curly braces."
+            )
         }
         InsertError::InvalidParamSegment => {
             anyhow!("You can only register one path parameter for each path segment.")
@@ -1152,9 +1154,9 @@ fn push_router_conflict_diagnostic(
     }
     let mut annotated_snippets = annotated_snippets.into_iter();
     let mut builder = CompilerDiagnostic::builder(anyhow!(
-            "I don't know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
+        "I don't know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
             different request handlers for this path+method combination."
-        ));
+    ));
     if let Some(first) = annotated_snippets.next() {
         builder = builder
             .source(first.source_code)

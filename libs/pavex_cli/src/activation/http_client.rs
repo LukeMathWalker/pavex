@@ -2,7 +2,7 @@ use std::sync::LazyLock;
 
 use reqwest::header::{HeaderValue, USER_AGENT};
 use reqwest_middleware::{ClientWithMiddleware, Middleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use reqwest_tracing::TracingMiddleware;
 
 pub static HTTP_CLIENT: LazyLock<ClientWithMiddleware> = LazyLock::new(http_client);

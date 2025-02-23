@@ -112,7 +112,10 @@ pub(crate) fn implements_trait(
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I can't handle:\n {:?}", generic)
+                            todo!(
+                                "Generic parameters other than type parameters with a default value are not supported yet. I can't handle:\n {:?}",
+                                generic
+                            )
                         }
                     }
                 }

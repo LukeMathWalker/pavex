@@ -80,12 +80,10 @@ impl CannotTakeMutReferenceError {
 
         let location = raw_user_component_db.get_location(raw_user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .and_then(|source| {
-                diagnostic::get_f_macro_invocation_span(source, location)
-                    .labeled(format!("The {callable_type} was registered here"))
-            });
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled(format!("The {callable_type} was registered here"))
+        });
 
         let definition_snippet = get_snippet(
             &computation_db[raw_user_component_id],

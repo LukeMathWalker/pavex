@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::{HashMap, HashMapExt};
 use convert_case::{Case, Casing};
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
+use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 
@@ -11,8 +11,8 @@ use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
-    core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
-    OrderedCallGraph,
+    CallGraph, CallGraphNode, NumberOfAllowedInvocations, OrderedCallGraph,
+    core_graph::build_call_graph,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{
@@ -27,7 +27,7 @@ use crate::language::{
     Callable, GenericArgument, InvocationStyle, PathType, ResolvedPath, ResolvedPathSegment,
     ResolvedType,
 };
-use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID_REPR};
+use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
 /// Build an [`OrderedCallGraph`] for the application state.
 #[tracing::instrument(name = "Compute the application state graph", skip_all)]

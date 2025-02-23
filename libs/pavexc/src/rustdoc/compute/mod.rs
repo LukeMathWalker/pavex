@@ -19,14 +19,16 @@ use itertools::Itertools as _;
 use pavex_cli_shell::SHELL;
 use serde::Deserialize;
 
+use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::utils::normalize_crate_name;
-use crate::rustdoc::TOOLCHAIN_CRATES;
 
 use self::toolchain::get_toolchain_crate_docs;
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I failed to retrieve information about the public types of a package in your workspace ('{package_spec}').")]
+#[error(
+    "I failed to retrieve information about the public types of a package in your workspace ('{package_spec}')."
+)]
 pub struct CannotGetCrateData {
     pub package_spec: String,
     #[source]

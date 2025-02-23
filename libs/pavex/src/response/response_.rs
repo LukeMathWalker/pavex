@@ -5,9 +5,9 @@ use http_body_util::Empty;
 use crate::http::StatusCode;
 use crate::http::{HeaderMap, Version};
 
-use super::body::raw::RawBody;
-use super::body::TypedBody;
 use super::ResponseBody;
+use super::body::TypedBody;
+use super::body::raw::RawBody;
 
 /// Represents an HTTP response.
 ///

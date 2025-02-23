@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use minijinja::{
-    context,
+    Environment, context,
     syntax::SyntaxConfig,
     value::{Enumerator, Object},
-    Environment,
 };
 
 pub fn pavex_path(target: &str) -> String {

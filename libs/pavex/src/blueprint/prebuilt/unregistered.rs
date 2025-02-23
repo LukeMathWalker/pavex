@@ -1,10 +1,10 @@
 use pavex_bp_schema::Type;
 
+use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::CloningStrategy;
 use crate::blueprint::conversions::raw_identifiers2type;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::Blueprint;
 
 /// A state input that has been configured but has not yet been registered with a [`Blueprint`].
 ///

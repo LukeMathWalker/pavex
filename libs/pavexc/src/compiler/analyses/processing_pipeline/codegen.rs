@@ -5,15 +5,15 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use syn::{ItemFn, Token, Visibility};
 
 use crate::compiler::analyses::application_state;
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::{FrameworkItemDb, FrameworkItemId};
-use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
+use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
 
 use self::application_state::ApplicationState;

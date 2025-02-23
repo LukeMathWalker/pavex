@@ -116,7 +116,10 @@ pub(crate) fn resolve_type(
                                         generic_bindings,
                                     )?
                                 } else {
-                                    anyhow::bail!("Expected `{:?}` to be a generic _type_ parameter, but it wasn't!", provided_arg)
+                                    anyhow::bail!(
+                                        "Expected `{:?}` to be a generic _type_ parameter, but it wasn't!",
+                                        provided_arg
+                                    )
                                 }
                             } else if let Some(default) = default {
                                 let default = resolve_type(
@@ -154,7 +157,10 @@ pub(crate) fn resolve_type(
                                 .insert(generic_param_def.name.to_string(), lifetime);
                         }
                         GenericParamDefKind::Const { .. } => {
-                            anyhow::bail!("I can only work with generic type parameters when working with type aliases. I can't handle a `{:?}` yet, sorry!", generic_param_def)
+                            anyhow::bail!(
+                                "I can only work with generic type parameters when working with type aliases. I can't handle a `{:?}` yet, sorry!",
+                                generic_param_def
+                            )
                         }
                     }
                 }
@@ -760,7 +766,9 @@ pub(crate) struct TypeResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I can work with functions and methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here.")]
+#[error(
+    "I can work with functions and methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here."
+)]
 pub(crate) struct UnsupportedCallableKind {
     pub import_path: ResolvedPath,
     pub item_kind: String,
@@ -778,7 +786,9 @@ pub(crate) struct InputParameterResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I can't handle `{generic_type}`, one of the generic parameters you specified for `{callable_path}`.")]
+#[error(
+    "I can't handle `{generic_type}`, one of the generic parameters you specified for `{callable_path}`."
+)]
 pub(crate) struct GenericParameterResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,

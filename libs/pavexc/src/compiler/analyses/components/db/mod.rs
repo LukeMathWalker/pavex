@@ -1,7 +1,7 @@
 use crate::compiler::analyses::components::component::{Component, TransformerInfo};
 use crate::compiler::analyses::components::{
-    unregistered::UnregisteredComponent, ConsumptionMode, HydratedComponent, InsertTransformer,
-    SourceId,
+    ConsumptionMode, HydratedComponent, InsertTransformer, SourceId,
+    unregistered::UnregisteredComponent,
 };
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::framework_items::FrameworkItemDb;

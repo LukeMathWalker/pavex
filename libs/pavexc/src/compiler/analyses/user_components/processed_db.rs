@@ -17,7 +17,7 @@ use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
 use crate::compiler::component::{PrebuiltType, PrebuiltTypeValidationError};
 use crate::compiler::interner::Interner;
-use crate::compiler::resolvers::{resolve_type_path, CallableResolutionError, TypeResolutionError};
+use crate::compiler::resolvers::{CallableResolutionError, TypeResolutionError, resolve_type_path};
 use crate::diagnostic::{
     AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
 };
@@ -339,10 +339,18 @@ impl UserComponentDb {
                         diagnostics,
                     ),
                 };
-            } else if let Err(e) =
-                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
-            {
-                Self::cannot_resolve_callable_path(e, raw_id, raw_db, package_graph, diagnostics);
+            } else if let Err(e) = computation_db.resolve_and_intern(
+                krate_collection,
+                resolved_path,
+                Some(raw_id),
+            ) {
+                Self::cannot_resolve_callable_path(
+                    e,
+                    raw_id,
+                    raw_db,
+                    package_graph,
+                    diagnostics,
+                );
             }
         }
     }
@@ -477,21 +485,23 @@ impl UserComponentDb {
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
-                let definition_snippet = if let Some(def) =
-                    CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph)
-                {
-                    let mut inputs = def.sig.inputs.iter();
-                    let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
-                    let local_span = match input {
-                        syn::FnArg::Typed(typed) => typed.ty.span(),
-                        syn::FnArg::Receiver(r) => r.span(),
-                    };
-                    let label = def
-                        .convert_local_span(local_span)
-                        .labeled("I don't know how handle this parameter".into());
-                    Some(AnnotatedSnippet::new(def.named_source(), label))
-                } else {
-                    None
+                let definition_snippet = match CallableDefinition::compute_from_item(
+                    &inner_error.callable_item,
+                    package_graph,
+                ) {
+                    Some(def) => {
+                        let mut inputs = def.sig.inputs.iter();
+                        let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
+                        let local_span = match input {
+                            syn::FnArg::Typed(typed) => typed.ty.span(),
+                            syn::FnArg::Receiver(r) => r.span(),
+                        };
+                        let label = def
+                            .convert_local_span(local_span)
+                            .labeled("I don't know how handle this parameter".into());
+                        Some(AnnotatedSnippet::new(def.named_source(), label))
+                    }
+                    _ => None,
                 };
                 let label = source.as_ref().and_then(|source| {
                     diagnostic::get_f_macro_invocation_span(source, location)
@@ -509,7 +519,10 @@ impl UserComponentDb {
                     diagnostic::get_f_macro_invocation_span(source, location)
                         .labeled(format!("It was registered as a {callable_type} here"))
                 });
-                let message = format!("I can work with functions and methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
+                let message = format!(
+                    "I can work with functions and methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.",
+                    inner_error.import_path, inner_error.item_kind, callable_type
+                );
                 let error = anyhow::anyhow!(e).context(message);
                 diagnostics.push(
                     CompilerDiagnostic::builder(error)
@@ -521,11 +534,11 @@ impl UserComponentDb {
             }
             CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
                 let annotated_snippet = {
-                    if let Some(def) = CallableDefinition::compute_from_item(
+                    match CallableDefinition::compute_from_item(
                         &inner_error.callable_item,
                         package_graph,
                     ) {
-                        match &def.sig.output {
+                        Some(def) => match &def.sig.output {
                             syn::ReturnType::Default => None,
                             syn::ReturnType::Type(_, type_) => Some(type_.span()),
                         }
@@ -534,9 +547,8 @@ impl UserComponentDb {
                                 .convert_local_span(s)
                                 .labeled("The output type that I can't handle".into());
                             AnnotatedSnippet::new(def.named_source(), label)
-                        })
-                    } else {
-                        None
+                        }),
+                        _ => None,
                     }
                 };
 

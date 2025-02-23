@@ -15,8 +15,8 @@
 // - the `errors` module, which is augmented with additional error types in the `errors` module
 // - the `response` module, which is replaced with a wrapped version in the `response` module
 pub use biscotti::{
-    config, request, Expiration, Key, Processor, ProcessorConfig, RemovalCookie, RequestCookie,
-    RequestCookies, ResponseCookie, ResponseCookieId, SameSite,
+    Expiration, Key, Processor, ProcessorConfig, RemovalCookie, RequestCookie, RequestCookies,
+    ResponseCookie, ResponseCookieId, SameSite, config, request,
 };
 pub mod errors;
 pub mod response;

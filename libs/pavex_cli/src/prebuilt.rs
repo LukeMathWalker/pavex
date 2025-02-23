@@ -22,7 +22,7 @@ pub fn download_prebuilt(
                 UnsupportedHostTriple {
                     triple: host_triple,
                 },
-            ))
+            ));
         }
     };
     let download_url = format!(

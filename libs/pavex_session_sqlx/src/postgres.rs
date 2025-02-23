@@ -1,19 +1,19 @@
 use std::{i64, num::NonZeroUsize, usize};
 
 use sqlx::{
-    postgres::{PgDatabaseError, PgQueryResult},
     PgPool,
+    postgres::{PgDatabaseError, PgQueryResult},
 };
 
 use pavex_session::{
+    SessionId,
     store::{
+        SessionRecord, SessionRecordRef, SessionStorageBackend,
         errors::{
             ChangeIdError, CreateError, DeleteError, DeleteExpiredError, DuplicateIdError,
             LoadError, UnknownIdError, UpdateError, UpdateTtlError,
         },
-        SessionRecord, SessionRecordRef, SessionStorageBackend,
     },
-    SessionId,
 };
 
 #[derive(Debug, Clone)]

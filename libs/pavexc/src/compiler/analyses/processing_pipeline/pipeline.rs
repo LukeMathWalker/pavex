@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::{HashMap, HashMapExt, HashSet};
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
+use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use quote::quote;
@@ -11,11 +11,11 @@ use pavex_bp_schema::{CloningStrategy, Lifecycle};
 use tracing::Level;
 
 use crate::compiler::analyses::call_graph::{
-    request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
-    InputParameterSource, OrderedCallGraph, RawCallGraph, RawCallGraphExt,
+    CallGraphNode, InputParameterSource, OrderedCallGraph, RawCallGraph, RawCallGraphExt,
+    request_scoped_call_graph, request_scoped_ordered_call_graph,
 };
-use crate::compiler::analyses::components::component::Component;
 use crate::compiler::analyses::components::HydratedComponent;
+use crate::compiler::analyses::components::component::Component;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
@@ -757,15 +757,17 @@ impl RequestHandlerPipeline {
         };
         // Force the constructibles database to bind a constructor for `Next<{NextState}>`.
         // Really ugly, but alas.
-        assert!(constructible_db
-            .get_or_try_bind(
-                next_state_scope_id,
-                &bound_mw.next_input_type().to_owned(),
-                component_db,
-                computation_db,
-                framework_item_db,
-            )
-            .is_some());
+        assert!(
+            constructible_db
+                .get_or_try_bind(
+                    next_state_scope_id,
+                    &bound_mw.next_input_type().to_owned(),
+                    component_db,
+                    computation_db,
+                    framework_item_db,
+                )
+                .is_some()
+        );
 
         wrapping_id2next_state.insert(
             bound_middleware_id,
@@ -1140,9 +1142,9 @@ fn emit_cloning_error(
     let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
     if let Some(user_component_id) = component_db.user_component_id(component_id) {
         let help_msg = format!(
-                "Allow me to clone `{ty_:?}` in order to satisfy the borrow checker.\n\
+            "Allow me to clone `{ty_:?}` in order to satisfy the borrow checker.\n\
                 You can do so by invoking `.clone_if_necessary()` after having registered your constructor.",
-            );
+        );
         let location = component_db
             .user_component_db()
             .get_location(user_component_id);

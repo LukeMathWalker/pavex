@@ -144,9 +144,13 @@ impl ApplicationState {
             .cloned()
             .collect();
         if !still_ambiguous.is_empty() {
-            panic!("Failed to assign unique fields names to the singletons stored inside `ApplicationState`. \
+            panic!(
+                "Failed to assign unique fields names to the singletons stored inside `ApplicationState`. \
                 I couldn't disambiguate the following types:\n{}",
-                still_ambiguous.into_iter().map(|i| type2id.get_index(i).unwrap().0.display_for_error()).join("\n-")
+                still_ambiguous
+                    .into_iter()
+                    .map(|i| type2id.get_index(i).unwrap().0.display_for_error())
+                    .join("\n-")
             );
         }
 

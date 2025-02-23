@@ -1,4 +1,4 @@
-use std::future::{poll_fn, Future};
+use std::future::{Future, poll_fn};
 use std::net::SocketAddr;
 use std::task::Poll;
 use std::thread;

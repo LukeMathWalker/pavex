@@ -1,4 +1,4 @@
-use std::pin::{pin, Pin};
+use std::pin::{Pin, pin};
 use std::task::{Context, Poll};
 
 use http_body::{Frame, SizeHint};
@@ -96,8 +96,8 @@ mod boxed {
     //! Body types and utilities used by Pavex.
     use http_body_util::BodyExt;
 
-    use crate::response::body::raw::RawBody;
     use crate::Error;
+    use crate::response::body::raw::RawBody;
 
     use super::{Bytes, ResponseBody};
 
@@ -118,10 +118,9 @@ mod boxed {
         K: Send + 'static,
     {
         let mut k = Some(k);
-        if let Some(k) = <dyn std::any::Any>::downcast_mut::<Option<T>>(&mut k) {
-            Ok(k.take().unwrap())
-        } else {
-            Err(k.unwrap())
+        match <dyn std::any::Any>::downcast_mut::<Option<T>>(&mut k) {
+            Some(k) => Ok(k.take().unwrap()),
+            _ => Err(k.unwrap()),
         }
     }
 

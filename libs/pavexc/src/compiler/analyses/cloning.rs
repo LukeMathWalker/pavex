@@ -7,7 +7,7 @@ use crate::{
             components::{ComponentDb, ComponentId, HydratedComponent},
             computations::ComputationDb,
         },
-        traits::{assert_trait_is_implemented, MissingTraitImplementationError},
+        traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
     diagnostic::{self, CallableType, CompilerDiagnostic, OptionalSourceSpanExt},
@@ -80,17 +80,17 @@ fn must_be_clonable(
         CallableType::Constructor => {
             let callable_path = &computation_db[user_component_id].path;
             format!(
-                    "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
+                "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
                     The cloning strategy for `{callable_path}` is `CloneIfNecessary`, but `{}`, its output type, doesn't implement the `Clone` trait.",
-                    type_.display_for_error(),
-                )
+                type_.display_for_error(),
+            )
         }
         CallableType::PrebuiltType => {
             format!(
-                    "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
+                "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
                     The cloning strategy for `{}`, a prebuilt type, is `CloneIfNecessary`, but it doesn't implement the `Clone` trait.",
-                    type_.display_for_error(),
-                )
+                type_.display_for_error(),
+            )
         }
         _ => unreachable!(),
     };

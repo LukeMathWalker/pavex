@@ -15,7 +15,7 @@ use formatter::ReversedFull;
 use generate_from_path::GenerateArgs;
 use liquid_core::Value;
 use miette::Severity;
-use pavex_cli_deps::{verify_installation, IfAutoinstallable, RustdocJson, RustupToolchain};
+use pavex_cli_deps::{IfAutoinstallable, RustdocJson, RustupToolchain, verify_installation};
 use pavex_cli_diagnostic::anyhow2miette;
 use pavex_cli_shell::try_init_shell;
 use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN};
@@ -24,10 +24,10 @@ use supports_color::Stream;
 use telemetry::Filtered;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_log_error::log_error;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 const INTROSPECTION_HEADING: &str = "Introspection";
 
@@ -414,7 +414,7 @@ fn generate(
 
 mod package_graph {
     use anyhow::Context;
-    use guppy::{graph::PackageGraph, CargoMetadata};
+    use guppy::{CargoMetadata, graph::PackageGraph};
     use std::path::PathBuf;
     use tracing_log_error::log_error;
 

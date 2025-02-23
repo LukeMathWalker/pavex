@@ -8,7 +8,7 @@ use syn::{Expr, ExprCall, ExprMethodCall, Stmt};
 
 use pavex_bp_schema::Location;
 
-use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpanExt};
+use crate::diagnostic::{ParsedSourceFile, ProcMacroSpanExt, convert_proc_macro_span};
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
 /// `.` in the method invocation for `route` and `constructor`.

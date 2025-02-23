@@ -36,10 +36,10 @@ pub struct RawIdentifiers {
 // demand to know the type of each generic parameter without a default.
 #[macro_export]
 /// Convert an [unambiguous callable path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths)
-/// into [`RawIdentifiers`].  
+/// into [`RawIdentifiers`].
 ///
 /// `f!` is a short-hand for "function-like". It's the macro used to specify a function or a method
-/// to be used as a constructor, request handler, etc.  
+/// to be used as a constructor, request handler, etc.
 /// Use [`t!`](crate::t), instead, to specify a type when invoking [`Blueprint::prebuilt`].
 ///
 /// # Guide
@@ -67,9 +67,9 @@ macro_rules! f {
 
 #[macro_export]
 /// Convert an [unambiguous type path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths)
-/// into [`RawIdentifiers`].  
+/// into [`RawIdentifiers`].
 ///
-/// `t!` is a short-hand for "type". It's the macro used by [`Blueprint::prebuilt`].  
+/// `t!` is a short-hand for "type". It's the macro used by [`Blueprint::prebuilt`].
 /// You should use [`f!`](f) if you're invoking other methods on [`Blueprint`].
 ///
 /// # Guide

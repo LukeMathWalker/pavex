@@ -1,5 +1,5 @@
 use crate::diagnostic;
-use crate::diagnostic::{convert_proc_macro_span, convert_rustdoc_span, SourceSpanExt};
+use crate::diagnostic::{SourceSpanExt, convert_proc_macro_span, convert_rustdoc_span};
 use crate::language::Callable;
 use crate::rustdoc::CrateCollection;
 use guppy::graph::PackageGraph;
@@ -36,21 +36,30 @@ impl CallableDefinition {
             source_contents[span.offset()..(span.offset() + span.len())].to_string();
         let (attrs, vis, sig, block) = match &item.inner {
             ItemEnum::Function(_) => {
-                if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                    (item.attrs, Some(item.vis), item.sig, Some(item.block))
-                } else if let Ok(item) = syn::parse_str::<syn::ImplItemFn>(&span_contents) {
-                    (
-                        item.attrs,
-                        Some(item.vis),
-                        item.sig,
-                        Some(Box::new(item.block)),
-                    )
-                } else if let Ok(item) = syn::parse_str::<syn::TraitItemFn>(&span_contents) {
-                    (item.attrs, None, item.sig, None)
-                } else {
-                    // This can happen with components defined by macros.
-                    tracing::debug!("Could not parse as a function or method:\n{span_contents}");
-                    return None;
+                match syn::parse_str::<syn::ItemFn>(&span_contents) {
+                    Ok(item) => (item.attrs, Some(item.vis), item.sig, Some(item.block)),
+                    _ => {
+                        match syn::parse_str::<syn::ImplItemFn>(&span_contents) {
+                            Ok(item) => (
+                                item.attrs,
+                                Some(item.vis),
+                                item.sig,
+                                Some(Box::new(item.block)),
+                            ),
+                            _ => {
+                                match syn::parse_str::<syn::TraitItemFn>(&span_contents) {
+                                    Ok(item) => (item.attrs, None, item.sig, None),
+                                    _ => {
+                                        // This can happen with components defined by macros.
+                                        tracing::debug!(
+                                            "Could not parse as a function or method:\n{span_contents}"
+                                        );
+                                        return None;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             _ => {

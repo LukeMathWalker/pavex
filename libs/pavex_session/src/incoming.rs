@@ -1,6 +1,6 @@
-use crate::{config::SessionCookieConfig, wire::WireClientState, SessionId};
+use crate::{SessionId, config::SessionCookieConfig, wire::WireClientState};
 use pavex::cookie::RequestCookies;
-use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
+use pavex_tracing::fields::{ERROR_DETAILS, ERROR_MESSAGE, error_details, error_message};
 use serde_json::Value;
 use std::collections::HashMap;
 

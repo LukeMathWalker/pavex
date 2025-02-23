@@ -2,10 +2,10 @@ use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
+use petgraph::Direction;
 use petgraph::algo::has_path_connecting;
 use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
-use petgraph::Direction;
 
 use pavex_bp_schema::Lifecycle;
 

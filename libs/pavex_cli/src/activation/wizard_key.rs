@@ -1,9 +1,9 @@
 use crate::activation::{
-    json_api::JsonApiErrors, InvalidWizardKey, MalformedWizardKey, HTTP_CLIENT,
+    HTTP_CLIENT, InvalidWizardKey, MalformedWizardKey, json_api::JsonApiErrors,
 };
 use redact::Secret;
 
-use super::{token::CliToken, WizardKeyError};
+use super::{WizardKeyError, token::CliToken};
 
 /// A short-lived key obtained via Pavex's Console.
 ///
