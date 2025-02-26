@@ -73,6 +73,7 @@ impl Default for SessionStateConfig {
 }
 
 fn default_ttl() -> std::time::Duration {
+    // 1 day
     std::time::Duration::from_secs(60 * 60 * 24)
 }
 

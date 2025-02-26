@@ -1,4 +1,6 @@
-use pavex_session::config::TtlExtensionThreshold;
+use pavex_session::{Session, SessionConfig, config::TtlExtensionThreshold};
+
+use crate::fixtures::spy_store;
 
 #[test]
 fn test_ttl_extension_threshold_valid() {
@@ -68,4 +70,40 @@ fn test_ttl_extension_threshold_deserialization() {
         invalid_threshold.is_err(),
         "Expected JSON value to be invalid"
     );
+}
+
+#[tokio::test]
+async fn default_ttl_can_be_changed() {
+    let ((store, call_tracker), mut config) = (spy_store(), SessionConfig::default());
+    let ttl_seconds = 10;
+    config.state.ttl = std::time::Duration::from_secs(ttl_seconds);
+
+    let mut session = Session::new(&store, &config, None);
+    session
+        .server_mut()
+        .set("key".into(), "value")
+        .await
+        .unwrap();
+    session.finalize().await.unwrap().unwrap();
+
+    let oplog = call_tracker.operation_log().await;
+    let last = oplog.last().unwrap();
+    assert_eq!(last, &format!("create <id> {ttl_seconds}s"));
+}
+
+#[tokio::test]
+async fn default_ttl() {
+    let ((store, call_tracker), config) = (spy_store(), SessionConfig::default());
+
+    let mut session = Session::new(&store, &config, None);
+    session
+        .server_mut()
+        .set("key".into(), "value")
+        .await
+        .unwrap();
+    session.finalize().await.unwrap().unwrap();
+
+    let oplog = call_tracker.operation_log().await;
+    let last = oplog.last().unwrap();
+    assert_eq!(last, &format!("create <id> {}s", 60 * 60 * 24));
 }

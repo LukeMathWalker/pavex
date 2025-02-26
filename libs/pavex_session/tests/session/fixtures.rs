@@ -123,6 +123,10 @@ impl CallTracker {
         self.0.lock().await.oplog.clone()
     }
 
+    pub async fn reset_operation_log(&self) {
+        self.0.lock().await.oplog = Vec::new();
+    }
+
     async fn push_operation(&self, op: impl Into<String>) {
         self.0.lock().await.oplog.push(op.into());
     }
@@ -142,7 +146,7 @@ impl<B: SessionStorageBackend> SessionStorageBackend for SpyBackend<B> {
         record: SessionRecordRef<'_>,
     ) -> Result<(), CreateError> {
         self.call_tracker
-            .push_operation(format!("create {}", id.inner()))
+            .push_operation(format!("create <id> {}s", record.ttl.as_secs()))
             .await;
         self.backend.create(id, record).await
     }
@@ -156,7 +160,7 @@ impl<B: SessionStorageBackend> SessionStorageBackend for SpyBackend<B> {
         record: SessionRecordRef<'_>,
     ) -> Result<(), UpdateError> {
         self.call_tracker
-            .push_operation(format!("update {}", id.inner()))
+            .push_operation(format!("update <id> {}s", record.ttl.as_secs()))
             .await;
         self.backend.update(id, record).await
     }
@@ -167,29 +171,25 @@ impl<B: SessionStorageBackend> SessionStorageBackend for SpyBackend<B> {
         ttl: std::time::Duration,
     ) -> Result<(), UpdateTtlError> {
         self.call_tracker
-            .push_operation(format!("update-ttl {}", id.inner()))
+            .push_operation(format!("update-ttl <id> {}s", ttl.as_secs()))
             .await;
         self.backend.update_ttl(id, ttl).await
     }
 
     async fn load(&self, session_id: &SessionId) -> Result<Option<SessionRecord>, LoadError> {
-        self.call_tracker
-            .push_operation(format!("load {}", session_id.inner()))
-            .await;
+        self.call_tracker.push_operation("load <id>").await;
         self.call_tracker.0.lock().await.has_invoked_load = true;
         self.backend.load(session_id).await
     }
 
     async fn delete(&self, session_id: &SessionId) -> Result<(), DeleteError> {
-        self.call_tracker
-            .push_operation(format!("delete {}", session_id.inner()))
-            .await;
+        self.call_tracker.push_operation("delete <id>").await;
         self.backend.delete(session_id).await
     }
 
     async fn change_id(&self, old_id: &SessionId, new_id: &SessionId) -> Result<(), ChangeIdError> {
         self.call_tracker
-            .push_operation(format!("change {} {}", old_id.inner(), new_id.inner()))
+            .push_operation("change <old_id> <new_id>")
             .await;
         self.backend.change_id(old_id, new_id).await
     }
