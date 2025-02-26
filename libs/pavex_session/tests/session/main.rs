@@ -4,13 +4,13 @@ use assertions::is_removal_cookie;
 use fixtures::{SessionFixture, spy_store, store};
 use googletest::{
     assert_that,
-    prelude::{eq, none, not},
+    prelude::{empty, eq, len, none, not},
 };
 use helpers::SetCookie;
 use itertools::Itertools;
 use pavex_session::{
     IncomingSession, Session, SessionConfig, SessionId,
-    config::{MissingServerState, ServerStateCreation},
+    config::{MissingServerState, ServerStateCreation, TtlExtensionTrigger},
 };
 
 mod assertions;
@@ -200,8 +200,109 @@ async fn server_state_can_be_cleared_without_invalidating_the_session() {
     assert_eq!(cookie.id(), fixture.id());
 
     // The server state is present, but empty.
-    let server_state = store.load(&fixture.id).await.unwrap();
-    assert!(server_state.is_some());
+    let server_state = store.load(&fixture.id).await.unwrap().unwrap();
+    assert_that!(server_state.state, empty());
+}
+
+#[tokio::test]
+async fn store_is_not_touched_if_you_clear_an_empty_server_state_and_ttl_is_configured_to_update_on_changes()
+ {
+    let ((store, call_tracker), mut config) = (spy_store(), SessionConfig::default());
+    config.state.extend_ttl = TtlExtensionTrigger::OnStateChanges;
+
+    let fixture = SessionFixture::default();
+    let incoming = fixture.setup(&store).await;
+    let mut session = Session::new(&store, &config, Some(incoming));
+    assert!(session.server_mut().is_empty().await.unwrap());
+    // Otherwise `create` and `load` will show up in the operation log.
+    call_tracker.reset_operation_log().await;
+
+    session.server_mut().clear().await.unwrap();
+
+    let cookie = session.finalize().await.unwrap().unwrap();
+
+    // It's not a removal cookie!
+    let cookie = SetCookie::parse(cookie);
+    assert_eq!(cookie.id(), fixture.id());
+
+    call_tracker.assert_store_was_untouched().await;
+}
+
+#[tokio::test]
+async fn ttl_is_updated_if_server_state_is_loaded_but_unchanged() {
+    let ((store, call_tracker), mut config) = (spy_store(), SessionConfig::default());
+    // Always extend TTL
+    config.state.ttl_extension_threshold = None;
+
+    let mut fixture = SessionFixture::default();
+    fixture.server_ttl = Some(config.state.ttl);
+    let incoming = fixture.setup(&store).await;
+    let mut session = Session::new(&store, &config, Some(incoming));
+    assert!(session.server_mut().is_empty().await.unwrap());
+    // Otherwise `create` and `load` will show up in the operation log.
+    call_tracker.reset_operation_log().await;
+
+    let cookie = session.finalize().await.unwrap().unwrap();
+
+    // It's not a removal cookie!
+    let cookie = SetCookie::parse(cookie);
+    assert_eq!(cookie.id(), fixture.id());
+
+    let oplog = call_tracker.operation_log().await;
+    assert_that!(oplog, len(eq(1)));
+    assert!(oplog[0].starts_with("update-ttl"));
+}
+
+#[tokio::test]
+async fn ttl_is_not_updated_if_server_state_is_unchanged_but_ttl_threshold_is_not_met() {
+    let ((store, call_tracker), config) = (spy_store(), SessionConfig::default());
+    let ttl_extension_threshold = config.state.ttl_extension_threshold.unwrap();
+    assert!(ttl_extension_threshold.inner() < 0.9);
+
+    let mut fixture = SessionFixture::default();
+    // We start at full TTL
+    fixture.server_ttl = Some(config.state.ttl);
+    let incoming = fixture.setup(&store).await;
+    let mut session = Session::new(&store, &config, Some(incoming));
+    assert!(session.server_mut().is_empty().await.unwrap());
+    // Otherwise `create` and `load` will show up in the operation log.
+    call_tracker.reset_operation_log().await;
+
+    let cookie = session.finalize().await.unwrap().unwrap();
+
+    // It's not a removal cookie!
+    let cookie = SetCookie::parse(cookie);
+    assert_eq!(cookie.id(), fixture.id());
+
+    let oplog = call_tracker.operation_log().await;
+    assert_that!(oplog, empty());
+}
+
+#[tokio::test]
+async fn ttl_is_updated_if_server_state_is_unchanged_and_ttl_threshold_is_met() {
+    let ((store, call_tracker), config) = (spy_store(), SessionConfig::default());
+    let ttl_extension_threshold = config.state.ttl_extension_threshold.unwrap();
+
+    let mut fixture = SessionFixture::default();
+    // We start below the threshold
+    let ttl = config.state.ttl.as_secs_f32() * (ttl_extension_threshold.inner() - 0.1);
+    assert!(ttl > 0.);
+    fixture.server_ttl = Some(std::time::Duration::from_secs_f32(ttl));
+    let incoming = fixture.setup(&store).await;
+    let mut session = Session::new(&store, &config, Some(incoming));
+    assert!(session.server_mut().is_empty().await.unwrap());
+    // Otherwise `create` and `load` will show up in the operation log.
+    call_tracker.reset_operation_log().await;
+
+    let cookie = session.finalize().await.unwrap().unwrap();
+
+    // It's not a removal cookie!
+    let cookie = SetCookie::parse(cookie);
+    assert_eq!(cookie.id(), fixture.id());
+
+    let oplog = call_tracker.operation_log().await;
+    assert_that!(oplog, len(eq(1)));
+    assert!(oplog[0].starts_with("update-ttl"));
 }
 
 #[tokio::test]

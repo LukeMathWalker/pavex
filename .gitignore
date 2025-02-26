@@ -4,6 +4,7 @@
 /libs/ui_tests/Cargo.lock
 /libs/target
 /libs/vendor
+/libs/**/mutants.out*
 /ci_utils/target
 /doc_examples/tutorial_envs/
 /doc_examples/**/target
@@ -12,10 +13,10 @@
 /examples/**/.cargo
 !/examples/.cargo
 /.cargo
+/.cache/
 /vendor
 .DS_Store
 *.snap
 trace-*.json
-/.cache/
 /docs/api_reference/
 .direnv/

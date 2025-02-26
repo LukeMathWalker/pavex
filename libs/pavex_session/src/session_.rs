@@ -221,7 +221,7 @@ impl<'store> Session<'store> {
 
         static MAX_N_ATTEMPTS: usize = 16;
 
-        let i = 0;
+        let mut i = 0;
         let new = loop {
             if i >= MAX_N_ATTEMPTS {
                 panic!(
@@ -234,6 +234,8 @@ impl<'store> Session<'store> {
             let new = SessionId::random();
             if Some(new) != old {
                 break new;
+            } else {
+                i += 1;
             }
         };
 

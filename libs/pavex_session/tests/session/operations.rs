@@ -62,13 +62,67 @@ async fn operation_outcomes_are_immediately_visible() {
     assert_that!(&stored_client_value, eq(&client_value));
     assert_that!(&stored_server_value, eq(&server_value));
 
+    // Internal consistency
+    assert_that!(
+        &stored_client_value,
+        eq(&session.client_mut().get::<String>(&key).unwrap().unwrap())
+    );
+    assert_that!(
+        &stored_server_value,
+        eq(&session
+            .server_mut()
+            .get::<String>(&key)
+            .await
+            .unwrap()
+            .unwrap())
+    );
+
+    // We can also avoid the deserialize step by using `get_value`.
+    let stored_client_value = session.client().get_value(&key).unwrap().to_owned();
+    let stored_server_value = session
+        .server()
+        .get_value(&key)
+        .await
+        .unwrap()
+        .unwrap()
+        .to_owned();
+
+    assert_that!(
+        stored_client_value,
+        eq(&serde_json::Value::String(client_value.into()))
+    );
+    assert_that!(
+        stored_server_value,
+        eq(&serde_json::Value::String(server_value.into()))
+    );
+    // Internal consistency
+    assert_that!(
+        stored_client_value,
+        eq(session.client_mut().get_value(&key).unwrap())
+    );
+    assert_that!(
+        stored_server_value,
+        eq(session.server_mut().get_value(&key).await.unwrap().unwrap())
+    );
+
+    // The session is now reported as being non-empty
+    assert_that!(session.client().is_empty(), eq(false));
+    assert_that!(session.client_mut().is_empty(), eq(false));
+    assert_that!(session.server().is_empty().await.unwrap(), eq(false));
+    assert_that!(session.server_mut().is_empty().await.unwrap(), eq(false));
+
     session.client_mut().remove::<String>(&key).unwrap();
     session.server_mut().remove::<String>(&key).await.unwrap();
 
     assert_that!(session.client().get_value(&key), none());
+    assert_that!(session.client_mut().get_value(&key), none());
     assert_that!(session.server().get_value(&key).await.unwrap(), none());
-    assert!(session.client().is_empty());
-    assert!(session.server().is_empty().await.unwrap());
+    assert_that!(session.server_mut().get_value(&key).await.unwrap(), none());
+
+    assert_that!(session.client().is_empty(), eq(true));
+    assert_that!(session.client_mut().is_empty(), eq(true));
+    assert_that!(session.server().is_empty().await.unwrap(), eq(true));
+    assert_that!(session.server_mut().is_empty().await.unwrap(), eq(true));
 }
 
 #[tokio::test]
