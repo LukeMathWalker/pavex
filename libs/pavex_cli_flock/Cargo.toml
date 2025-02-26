@@ -22,4 +22,3 @@ windows-sys = { workspace = true, features = [
     "Win32_System_JobObjects",
     "Win32_System_Threading",
 ] }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
