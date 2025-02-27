@@ -7,6 +7,9 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
+
 [dependencies]
 pavex = { version = "0.1.77", path = "../pavex", default-features = false, features = [
     "cookie",

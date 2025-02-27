@@ -39,6 +39,7 @@ Further reading on sessions:
 pub mod config;
 mod id;
 mod incoming;
+mod kit;
 mod middleware;
 mod session_;
 mod store_;
@@ -46,6 +47,7 @@ pub(crate) mod wire;
 
 pub use id::SessionId;
 pub use incoming::IncomingSession;
+pub use kit::SessionKit;
 pub use middleware::finalize_session;
 pub use session_::Session;
 pub use store_::SessionStore;
@@ -78,4 +80,21 @@ pub struct SessionConfig {
     #[serde(default)]
     /// Configure how the session state should behave.
     pub state: crate::config::SessionStateConfig,
+}
+
+impl SessionConfig {
+    /// Create a new session configuration with the default settings.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[doc(hidden)]
+    pub fn cookie_config(&self) -> &crate::config::SessionCookieConfig {
+        &self.cookie
+    }
+
+    #[doc(hidden)]
+    pub fn state_config(&self) -> &crate::config::SessionStateConfig {
+        &self.state
+    }
 }
