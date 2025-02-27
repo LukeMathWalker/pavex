@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.77](https://github.com/LukeMathWalker/pavex/compare/0.1.76...0.1.77) - 2025-02-26
+
+### 🧪 Testing
+
+- Use `cargo-mutants` to further increase test effectiveness for `pavex_session` (by @LukeMathWalker)
+
+### Contributors
+
+- @LukeMathWalker
+
 ## [0.1.76](https://github.com/LukeMathWalker/pavex/compare/0.1.75...0.1.76) - 2025-02-24
 
 ### ⛰️ Features
