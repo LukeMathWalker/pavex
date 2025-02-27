@@ -977,7 +977,14 @@ jobs:
     - name: Build API reference
       run: |
         cd libs
-        cargo doc --package pavex --package pavex_cli_client --package pavex_session --package pavex_session_memory_store --no-deps
+        cargo doc \
+            --all-features \
+            --package pavex \
+            --package pavex_cli_client \
+            --package pavex_session \
+            --package pavex_session_sqlx \
+            --package pavex_session_memory_store \
+            --no-deps
     - name: Copy API reference files
       run: |
         mkdir -p docs/api_reference
@@ -1012,20 +1019,20 @@ jobs:
         # starting in 0.17.0
         lycheeVersion: v0.16.1
         args: |
-          --base site 
-          --exclude-loopback 
-          --exclude-path="site/api_reference/pavex/http" 
-          --exclude-path="site/api_reference/pavex/time" 
-          --exclude-path="site/api_reference/help.html" 
-          --exclude-path="site/api_reference/settings.html" 
-          --exclude="https://doc.rust-lang.org/*" 
-          --exclude="https://stackoverflow.com/*" 
+          --base site
+          --exclude-loopback
+          --exclude-path="site/api_reference/pavex/http"
+          --exclude-path="site/api_reference/pavex/time"
+          --exclude-path="site/api_reference/help.html"
+          --exclude-path="site/api_reference/settings.html"
+          --exclude="https://doc.rust-lang.org/*"
+          --exclude="https://stackoverflow.com/*"
           --exclude="https://github.com/LukeMathWalker/pavex/edit/main/*"
-          --exclude="https://docs.rs/**/*" 
-          --exclude-path="site/api_reference/static.files" 
-          --exclude="https://fonts.gstatic.com" 
-          --require-https 
-          --no-progress 
+          --exclude="https://docs.rs/**/*"
+          --exclude-path="site/api_reference/static.files"
+          --exclude="https://fonts.gstatic.com"
+          --require-https
+          --no-progress
           site
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}

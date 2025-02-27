@@ -134,11 +134,16 @@ nav:
               - guide/cookies/installation.md
               - guide/cookies/request_cookies.md
               - guide/cookies/response_cookies.md
+          - "Sessions":
+              - guide/sessions/index.md
+              - guide/sessions/installation.md
+              - guide/sessions/data.md
 
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
   Dockerfile
+  .dockerignore
   tools/
 extra_css:
   - ansi.css

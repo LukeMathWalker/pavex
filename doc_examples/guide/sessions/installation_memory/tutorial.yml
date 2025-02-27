@@ -1,0 +1,8 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "in_memory"
+    source_path: "src/in_memory.rs"
+    ranges: ["0..14", "15.."]

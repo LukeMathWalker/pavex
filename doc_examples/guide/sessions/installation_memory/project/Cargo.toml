@@ -1,0 +1,20 @@
+[package]
+name = "session_installation_memory"
+version = "0.1.0"
+edition = "2021"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
+
+[dependencies]
+pavex = { path = "../../../../../libs/pavex" }
+pavex_session = { path = "../../../../../libs/pavex_session" }
+pavex_session_memory_store = { path = "../../../../../libs/pavex_session_memory_store" }
+pavex_cli_client = { path = "../../../../../libs/pavex_cli_client" }
+serde = { version = "1", features = ["derive"] }
+cargo_px_env = "0.1"
+tokio = { version = "1.35.1", features = ["time"] }
+anyhow = "1"
+
+[workspace]
+members = [".", "server_sdk"]
