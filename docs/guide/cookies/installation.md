@@ -1,6 +1,6 @@
 # Installation
 
-The machinery required to manipulate cookies is not included by default in the project scaffolded by `pavex new`.
+The cookie machinery is not included in the project scaffolded by `pavex new`.
 You need to go through a few steps to set it up.
 
 ## `CookieKit`
