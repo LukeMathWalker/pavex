@@ -99,7 +99,7 @@ impl InvalidationFlag {
     }
 }
 
-/// See https://stackoverflow.com/questions/62713667/how-to-implement-send-or-sync-for-a-type
+/// See <https://stackoverflow.com/questions/62713667/how-to-implement-send-or-sync-for-a-type>
 type PhantomUnsend = PhantomData<MutexGuard<'static, ()>>;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -211,7 +211,7 @@ impl<'store> Session<'store> {
     /// The session state is preserved on both the client-side and the server-side.
     ///
     /// This method is useful for security reasons, as it can help prevent
-    /// session fixation attacks.
+    /// [session fixation attacks](https://owasp.org/www-community/attacks/Session_fixation).
     pub fn cycle_id(&mut self) {
         let old = match &self.id {
             CurrentSessionId::Existing(id) => Some(*id),
@@ -1080,7 +1080,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionState::remove`][super::ServerSessionState::remove].
+    /// The error returned by [`ServerSessionStateMut::remove`][super::ServerSessionStateMut::remove].
     pub enum ServerRemoveError {
         #[error("Failed to load the session record")]
         LoadError(#[from] LoadError),

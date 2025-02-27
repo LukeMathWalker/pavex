@@ -14,6 +14,8 @@ use pavex_session::{
     },
 };
 
+pub use kit::{InMemorySessionKit, RegisteredInMemorySessionKit};
+
 #[derive(Clone)]
 /// An in-memory session store.
 ///
@@ -217,4 +219,163 @@ impl SessionStorageBackend for InMemorySessionStore {
         }
         Ok(num_deleted)
     }
+}
+
+mod kit {
+    use pavex::{
+        blueprint::{
+            Blueprint, constructor::Constructor, linter::Lint, middleware::PostProcessingMiddleware,
+        },
+        f,
+    };
+
+    #[derive(Clone, Debug)]
+    #[non_exhaustive]
+    /// Components required to work with sessions using an in-memory store
+    /// as the storage backend.
+    ///
+    /// # Guide
+    ///
+    /// Check out the [session installation](https://pavex.dev/guide/sessions/installation/)
+    /// section of Pavex's guide for a thorough introduction to sessions and how to
+    /// customize them.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::cookie::CookieKit;
+    /// use pavex_session::SessionKit;
+    ///
+    /// let mut bp = Blueprint::new();
+    /// InMemorySessionKit::new()
+    ///     .with_default_config()
+    ///     .register(&mut bp);
+    /// // Sessions are built on top of cookies,
+    /// // so you need to set those up too.
+    /// // Order is important here!
+    /// CookieKit::new()
+    ///     .with_default_processor_config()
+    ///     .register(&mut bp);
+    /// ```
+    pub struct InMemorySessionKit {
+        /// The constructor for [`Session`].
+        ///
+        /// By default, it uses [`Session::new`].
+        ///
+        /// [`Session`]: pavex_session::Session
+        /// [`Session::new`]: pavex_session::Session::new
+        pub session: Option<Constructor>,
+        /// The constructor for [`IncomingSession`].
+        ///
+        /// By default, it uses [`IncomingSession::extract`].
+        ///
+        /// [`IncomingSession`]: pavex_session::IncomingSession
+        /// [`IncomingSession::extract`]: pavex_session::IncomingSession::extract
+        pub incoming_session: Option<Constructor>,
+        /// The constructor for [`SessionConfig`].
+        ///
+        /// By default, it's `None`.
+        /// You can use [`with_default_config`] to set it [`SessionConfig::new`].
+        ///
+        /// [`SessionConfig`]: pavex_session::SessionConfig
+        /// [`SessionConfig::new`]: pavex_session::SessionConfig::new
+        /// [`with_default_config`]: InMemorySessionKit::with_default_config
+        pub session_config: Option<Constructor>,
+        /// The constructor for [`InMemorySessionStore`].
+        ///
+        /// By default, it uses [`InMemorySessionStore::new`].
+        ///
+        /// [`InMemorySessionStore`]: crate::InMemorySessionStore
+        /// [`InMemorySessionStore::new`]: crate::InMemorySessionStore::new
+        pub in_memory_session_store: Option<Constructor>,
+        /// The constructor for [`SessionStore`].
+        ///
+        /// By default, it uses [`SessionStore::new`] with [`InMemorySessionStore`]
+        /// as its underlying storage backend.
+        ///
+        /// [`SessionStore`]: pavex_session::SessionStore
+        /// [`SessionStore::new`]: pavex_session::SessionStore::new
+        pub session_store: Option<Constructor>,
+        /// A post-processing middleware to sync the session state with the session store
+        /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
+        ///
+        /// By default, it's set to [`finalize_session`].
+        /// The error is handled by [`FinalizeError::into_response`].
+        ///
+        /// [`FinalizeError::into_response`]: pavex_session::state::errors::FinalizeError::into_response
+        /// [`finalize_session`]: pavex_session::finalize_session
+        pub session_finalizer: Option<PostProcessingMiddleware>,
+    }
+
+    impl Default for InMemorySessionKit {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl InMemorySessionKit {
+        /// Create a new [`InMemorySessionKit`] with all the bundled constructors and middlewares.
+        pub fn new() -> Self {
+            let pavex_session::SessionKit {
+                session,
+                session_config,
+                session_finalizer,
+                incoming_session,
+                ..
+            } = pavex_session::SessionKit::new();
+            Self {
+                session,
+                incoming_session,
+                session_config,
+                session_finalizer,
+                in_memory_session_store: Some(
+                    Constructor::singleton(f!(crate::InMemorySessionStore::new))
+                        .ignore(Lint::Unused),
+                ),
+                session_store: Some(
+                    Constructor::singleton(f!(pavex_session::SessionStore::new::<
+                        crate::InMemorySessionStore,
+                    >))
+                    .ignore(Lint::Unused),
+                ),
+            }
+        }
+
+        /// Set the [`SessionConfig`] constructor to [`SessionConfig::new`].
+        ///
+        /// [`SessionConfig`]: pavex_session::SessionConfig
+        /// [`SessionConfig::new`]: pavex_session::SessionConfig::new
+        pub fn with_default_config(mut self) -> Self {
+            let constructor =
+                Constructor::singleton(f!(pavex_session::SessionConfig::new)).ignore(Lint::Unused);
+            self.session_config = Some(constructor);
+            self
+        }
+
+        /// Register all the bundled constructors and middlewares with a [`Blueprint`].
+        ///
+        /// If a component is set to `None` it will not be registered.
+        pub fn register(self, bp: &mut Blueprint) -> RegisteredInMemorySessionKit {
+            let mut kit = pavex_session::SessionKit::new();
+            kit.session = self.session;
+            kit.incoming_session = self.incoming_session;
+            kit.session_config = self.session_config;
+            kit.session_finalizer = self.session_finalizer;
+            kit.register(bp);
+            if let Some(in_memory_session_store) = self.in_memory_session_store {
+                in_memory_session_store.register(bp);
+            }
+            if let Some(session_store) = self.session_store {
+                session_store.register(bp);
+            }
+
+            RegisteredInMemorySessionKit {}
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    #[non_exhaustive]
+    /// The type returned by [`InMemorySessionKit::register`].
+    pub struct RegisteredInMemorySessionKit {}
 }
