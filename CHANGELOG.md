@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.78](https://github.com/LukeMathWalker/pavex/compare/0.1.77...0.1.78) - 2025-03-01
+
+### ‼️ Breaking changes
+
+- Finalize the API for `pavex_session`, the HTTP session implementation for Pavex.
+  
+  The previous API gave equal standing to client-side and server-side state manipulation,
+  while the latter is to be preferred and likely to be more widely used.
+  This change moves all server-related method to appear directly on the `Session`
+  type, while client-side method remain on dedicated accessors.
+  Capabilities are unchanged, but the user-experience should be more pleasant.
+
+### 📚 Documentation
+- Add [a guide on HTTP sessions](https://pavex.dev/docs/guide/sessions/) to pavex.dev (by @LukeMathWalker) - #463
+
+### Contributors
+
+* @LukeMathWalker
+
 ## [0.1.77](https://github.com/LukeMathWalker/pavex/compare/0.1.76...0.1.77) - 2025-02-26
 
 ### 🧪 Testing
