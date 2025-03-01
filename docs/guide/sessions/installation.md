@@ -5,8 +5,8 @@ You need to go through a few steps to set it up.
 
 ## Dependencies
 
-The core session logic lives in a standalone crate, [`pavex_session`][pavex_session].  
-Support for different session storage backends is provided by separate crates, such as 
+The core session logic lives in a standalone crate, [`pavex_session`][pavex_session].\
+Support for different session storage backends is provided by separate crates, such as
 [`pavex_session_sqlx`][pavex_session_sqlx] and [`pavex_session_memory_store`][pavex_session_in_memory_store].
 
 Choose a storage backend that fits your needs and then add the required dependencies to the `Cargo.toml`
@@ -49,7 +49,7 @@ Check out their respective documentation for more information.
 ## `SessionConfig`
 
 [`SessionConfig`][SessionConfig] determines how sessions are processed by your application.
-What's the name of the session cookie? How long should it last? Do we create a 
+What's the name of the session cookie? How long should it last? Do we create a
 server-side session state for every client-side cookie?
 
 The example above invokes `with_default_config` to rely on the default settings.\
