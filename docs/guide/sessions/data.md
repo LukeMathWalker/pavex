@@ -13,10 +13,10 @@ Use [`insert`][insert] to store an entry in the server-side state of your sessio
 --8<-- "doc_examples/guide/sessions/installation/project-server_insert.snap"
 
 1. Pavex knows how to inject a `&mut Session` or a `&Session` as an input parameter.
-   It's using [the session kit you installed](installation.md#kits) which specifies 
+   It's using [the session kit you installed](installation.md#kits) which specifies
    how to construct a [`Session`][Session] instance.
-   
-In the example above, [`insert`][insert] will create a new `user.id` entry in the session state. 
+
+In the example above, [`insert`][insert] will create a new `user.id` entry in the session state.
 If there is already a `user.id` entry, it'll overwrite it.
 
 ### Complex objects
@@ -37,26 +37,26 @@ Use [`get`][get] to retrieve an entry from the server-side state of your session
 --8<-- "doc_examples/guide/sessions/installation/project-server_get.snap"
 
 1. [`get`][get] doesn't modify the session state, it only reads from it.
-  It is therefore enough to ask for a shared reference to the session,
-  rather than a mutable one.
-  If you need to both read and write to the session state, ask for a mutable reference.
+   It is therefore enough to ask for a shared reference to the session,
+   rather than a mutable one.
+   If you need to both read and write to the session state, ask for a mutable reference.
 2. [`get`][get] returns an `Option` because the key might not exist in the session state.
-  We specify the type of the value we expect to get back so that [`get`]
-  knows what to deserialize the value as, if it exists.
-3. [`get`][get] may fail if the value is not of the expected type, thus failing 
-  the deserialization step.
-  
+   We specify the type of the value we expect to get back so that [`get`]
+   knows what to deserialize the value as, if it exists.
+3. [`get`][get] may fail if the value is not of the expected type, thus failing
+   the deserialization step.
+
 ### Complex objects
 
 The process is exactly the same for more complex types. You just need to specify the type
-you expect to get back: 
+you expect to get back:
 
 --8<-- "doc_examples/guide/sessions/installation/project-server_get_struct.snap"
 
 1. The extracted type must be deserializeable. That's why we derive `serde`'s `Deserialize` trait.
 2. The type annotation tells [`get`][get] to deserialize the value as an `AuthInfo` instance,
    rather than a string, as in the previous example.
-   
+
 ## Removing data
 
 Use [`remove`][remove] to delete an entry from the server-side state of your session:
@@ -74,7 +74,7 @@ It returns the raw entry, without trying to deserialize it. It spares you from h
 
 ## Regenerating the session ID
 
-Your application may be required to regenerate the session ID 
+Your application may be required to regenerate the session ID
 to prevent [session fixation attacks](https://owasp.org/www-community/attacks/Session_fixation).\
 You can do this by calling [`cycle_id`][cycle_id]:
 
@@ -91,7 +91,7 @@ If you want to destroy the current session, call [`invalidate`][invalidate]:
 [`invalidate`][invalidate] will:
 
 - remove the server-side state from the storage backend
-- delete the session cookie on the client-side 
+- delete the session cookie on the client-side
 
 It effectively ends the current session.\
 All operations on the current session after invoking [`invalidate`][invalidate] will be ignored.
@@ -103,7 +103,7 @@ from the server-side state. Use [`clear`][clear]:
 
 --8<-- "doc_examples/guide/sessions/installation/project-server_clear.snap"
 
-[`clear`][clear] removes all entries from the server-side state, leaving an empty record 
+[`clear`][clear] removes all entries from the server-side state, leaving an empty record
 in the storage backend.\
 If you want to delete the server-side state entry completely, use [`delete`][delete]:
 
@@ -113,8 +113,8 @@ If you want to delete the server-side state entry completely, use [`delete`][del
 delete the session cookie on the client-side.
 
 ## Client-side state
-    
-As we discussed in the [introduction](index.md#anatomy-of-a-session), there are two types of session data: 
+
+As we discussed in the [introduction](index.md#anatomy-of-a-session), there are two types of session data:
 the client-side state and the server-side state.\
 All the examples above manipulate the server-side state, but there may be cases where you want to
 store data in the client-side state to minimize the number of round-trips to the session storage
@@ -128,9 +128,9 @@ Keep in mind that the client-side state is stored inside the session cookie.\
 It's not suitable for storing large amounts of data and it is inherently more exposed than its
 server-side counterpart. Use it only for small, non-sensitive data.
 
-[^internal-representation]: Internally, each value is stored as a JSON object. This means that 
-  you can store any type that can be serialized to (and deserialized from) JSON. In Rust terms,
-  you can reason about the session state as if it were a `HashMap<String, serde_json::Value>`.
+[^internal-representation]: Internally, each value is stored as a JSON object. This means that
+    you can store any type that can be serialized to (and deserialized from) JSON. In Rust terms,
+    you can reason about the session state as if it were a `HashMap<String, serde_json::Value>`.
 
 [Session]: ../../api_reference/pavex_session/struct.Session.html
 [delete]: ../../api_reference/pavex_session/struct.Session.html#method.delete
