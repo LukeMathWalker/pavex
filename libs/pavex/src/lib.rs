@@ -12,6 +12,8 @@
 pub use error::error_::Error;
 
 pub mod blueprint;
+#[cfg(feature = "config")]
+pub mod config;
 pub mod connection;
 #[cfg(feature = "cookie")]
 pub mod cookie;

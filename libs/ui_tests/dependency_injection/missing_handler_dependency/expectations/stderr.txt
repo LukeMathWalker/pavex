@@ -20,4 +20,4 @@
   [31m│[0m   [36mhelp:[0m Register a constructor for `std::path::PathBuf`.
   [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
   [31m│[0m         parameter of type `std::path::PathBuf` to the (generated)
-  [31m│[0m         `build_application_state`.
+  [31m│[0m         `ApplicationState::new` method.

@@ -410,7 +410,10 @@ fn warm_up_rustdoc_cache(
     crates.insert("typenum".into());
     crates.insert("http".into());
     crates.insert("anyhow".into());
+    crates.insert("pear".into());
+    crates.insert("yansi".into());
     crates.insert("serde".into());
+    crates.insert("zerocopy".into());
     crates.insert("pavex_macros".into());
     let package_ids = crate_collection
         .package_graph()
@@ -477,8 +480,13 @@ debug = "none""##
         "workspace_hack = {{ path = \"workspace_hack\" }}"
     )
     .unwrap();
-    writeln!(&mut cargo_toml, "tokio = \"1\"").unwrap();
     writeln!(&mut cargo_toml, "reqwest = \"0.12\"").unwrap();
+    writeln!(&mut cargo_toml, "tokio = \"1\"").unwrap();
+    writeln!(
+        &mut cargo_toml,
+        r#"serde = {{ version = "1", features = ["derive"] }}"#
+    )
+    .unwrap();
 
     persist_if_changed(&cargo_toml_path, cargo_toml.as_bytes())?;
 

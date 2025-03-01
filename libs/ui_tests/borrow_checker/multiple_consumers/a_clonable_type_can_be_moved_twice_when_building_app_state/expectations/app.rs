@@ -6,9 +6,53 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub b: app::B,
     pub c: app::C,
+}
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Self::_new().await
+    }
+    async fn _new() -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        let v0 = app::a();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = crate::ApplicationStateError::A(v1);
+                    core::result::Result::Err(v2)
+                };
+            }
+        };
+        let v2 = <app::A as core::clone::Clone>::clone(&v1);
+        let v3 = app::b(v2);
+        let v4 = app::c(v1);
+        let v5 = match v4 {
+            Ok(ok) => ok,
+            Err(v5) => {
+                return {
+                    let v6 = crate::ApplicationStateError::C(v5);
+                    core::result::Result::Err(v6)
+                };
+            }
+        };
+        let v6 = crate::ApplicationState {
+            b: v3,
+            c: v5,
+        };
+        core::result::Result::Ok(v6)
+    }
+}
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
@@ -16,38 +60,6 @@ pub enum ApplicationStateError {
     A(pavex::Error),
     #[error(transparent)]
     C(pavex::Error),
-}
-pub async fn build_application_state() -> Result<
-    crate::ApplicationState,
-    crate::ApplicationStateError,
-> {
-    let v0 = app::a();
-    let v1 = match v0 {
-        Ok(ok) => ok,
-        Err(v1) => {
-            return {
-                let v2 = crate::ApplicationStateError::A(v1);
-                core::result::Result::Err(v2)
-            };
-        }
-    };
-    let v2 = <app::A as core::clone::Clone>::clone(&v1);
-    let v3 = app::b(v2);
-    let v4 = app::c(v1);
-    let v5 = match v4 {
-        Ok(ok) => ok,
-        Err(v5) => {
-            return {
-                let v6 = crate::ApplicationStateError::C(v5);
-                core::result::Result::Err(v6)
-            };
-        }
-    };
-    let v6 = crate::ApplicationState {
-        b: v3,
-        c: v5,
-    };
-    core::result::Result::Ok(v6)
 }
 pub fn run(
     server_builder: pavex::server::Server,

@@ -30,11 +30,10 @@ generic-array = { version = "0.14", default-features = false, features = ["more_
 indexmap = { version = "2", features = ["serde"] }
 lazy_static = { version = "1", default-features = false, features = ["spin_no_std"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
-num-traits = { version = "0.2", default-features = false, features = ["i128", "libm", "std"] }
+num-traits = { version = "0.2", features = ["i128", "libm"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 rand = { version = "0.8" }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
@@ -62,11 +61,10 @@ futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
 generic-array = { version = "0.14", default-features = false, features = ["more_lengths", "zeroize"] }
 indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
-num-traits = { version = "0.2", default-features = false, features = ["i128", "libm", "std"] }
+num-traits = { version = "0.2", features = ["i128", "libm"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 rand = { version = "0.8" }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }

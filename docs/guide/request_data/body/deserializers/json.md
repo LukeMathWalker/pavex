@@ -57,9 +57,9 @@ It borrows from the request's body if possible, it allocates a new `String` if i
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error
 if the field contains escape sequences, but you tried to use `&str` as its field type.
 
-[BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
-[JsonBody]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html
-[JsonBody::register]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html#method.register
+[BufferedBody]: /api_reference/pavex/request/body/struct.BufferedBody.html
+[JsonBody]: /api_reference/pavex/request/body/struct.JsonBody.html
+[JsonBody::register]: /api_reference/pavex/request/body/struct.JsonBody.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
 [ApiKit]: ../../../dependency_injection/kits.md

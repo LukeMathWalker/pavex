@@ -1,0 +1,5 @@
+description = """They key for configuration types must be unique. There can only be one
+instance of a specific type in configuration."""
+
+[expectations]
+codegen = "fail"

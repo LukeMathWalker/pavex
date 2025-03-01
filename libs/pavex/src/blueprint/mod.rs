@@ -6,6 +6,7 @@ pub use blueprint::Blueprint;
 
 #[allow(clippy::module_inception)]
 mod blueprint;
+pub mod config;
 pub mod constructor;
 mod conversions;
 pub mod error_observer;

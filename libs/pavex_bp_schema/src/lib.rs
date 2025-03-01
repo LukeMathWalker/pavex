@@ -27,11 +27,18 @@ pub enum Component {
     NestedBlueprint(NestedBlueprint),
     ErrorObserver(ErrorObserver),
     PrebuiltType(PrebuiltType),
+    ConfigType(ConfigType),
 }
 
 impl From<PrebuiltType> for Component {
     fn from(i: PrebuiltType) -> Self {
         Self::PrebuiltType(i)
+    }
+}
+
+impl From<ConfigType> for Component {
+    fn from(c: ConfigType) -> Self {
+        Self::ConfigType(c)
     }
 }
 
@@ -116,12 +123,27 @@ pub struct ErrorObserver {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A type registered against a `Blueprint` via `Blueprint::prebuilt` to
-/// be added as an input parameter to `build_application_state`.
+/// be added as an input parameter to `ApplicationState::new`.
 pub struct PrebuiltType {
     /// The type.
     pub input: Type,
     /// The strategy dictating when the prebuilt type can be cloned.
     pub cloning_strategy: Option<CloningStrategy>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// A type registered against a `Blueprint` via `Blueprint::config` to
+/// become part of the overall configuration for the application.
+pub struct ConfigType {
+    /// The type.
+    pub input: Type,
+    /// The field name.
+    pub key: String,
+    /// The strategy dictating when the config type can be cloned.
+    pub cloning_strategy: Option<CloningStrategy>,
+    /// Whether to use `Default::default` to generate default configuration
+    /// values if the user hasn't specified any.
+    pub default_if_missing: Option<bool>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]

@@ -1,7 +1,7 @@
 use std::future::IntoFuture;
 use std::net::TcpListener;
 
-use application::{build_application_state, run};
+use application::{ApplicationConfig, ApplicationState, run};
 
 async fn spawn_test_server() -> Client {
     static TELEMETRY: std::sync::Once = std::sync::Once::new();
@@ -20,7 +20,7 @@ async fn spawn_test_server() -> Client {
     let incoming_stream: pavex::server::IncomingStream =
         listener.try_into().expect("Failed to convert listener");
     let server = pavex::server::Server::new().listen(incoming_stream);
-    let application_state = build_application_state().await;
+    let application_state = ApplicationState::new(ApplicationConfig {}).await.unwrap();
     tokio::task::spawn(run(server, application_state).into_future());
     Client::new(port)
 }

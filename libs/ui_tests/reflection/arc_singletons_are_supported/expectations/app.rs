@@ -6,21 +6,38 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub arc_custom: alloc::sync::Arc<app::Custom>,
     pub arc_mutex: alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
     pub arc_rw_lock: alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
 }
-pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::arc_rwlock();
-    let v1 = app::arc_mutex();
-    let v2 = app::arc();
-    crate::ApplicationState {
-        arc_custom: v2,
-        arc_mutex: v1,
-        arc_rw_lock: v0,
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Ok(Self::_new().await)
+    }
+    async fn _new() -> crate::ApplicationState {
+        let v0 = app::arc_rwlock();
+        let v1 = app::arc_mutex();
+        let v2 = app::arc();
+        crate::ApplicationState {
+            arc_custom: v2,
+            arc_mutex: v1,
+            arc_rw_lock: v0,
+        }
     }
 }
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config).await
+}
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationStateError {}
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,

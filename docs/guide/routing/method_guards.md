@@ -39,8 +39,8 @@ If you don't care about the HTTP method of the incoming request, use the [`ANY`]
 It won't match, however, custom HTTP methods (e.g. `FOO`).
 If you truly want to match _any_ HTTP method, use [`ANY_WITH_EXTENSIONS`][ANY_WITH_EXTENSIONS] instead.
 
-[MethodGuard]: ../../api_reference/pavex/blueprint/router/struct.MethodGuard.html
-[pavex::blueprint::router#constants]: ../../api_reference/pavex/blueprint/router/index.html#constants
-[or]: ../../api_reference/pavex/blueprint/router/struct.MethodGuard.html#method.or
-[ANY]: ../../api_reference/pavex/blueprint/router/constant.ANY.html
-[ANY_WITH_EXTENSIONS]: ../../api_reference/pavex/blueprint/router/constant.ANY_WITH_EXTENSIONS.html
+[MethodGuard]: /api_reference/pavex/blueprint/router/struct.MethodGuard.html
+[pavex::blueprint::router#constants]: /api_reference/pavex/blueprint/router/index.html#constants
+[or]: /api_reference/pavex/blueprint/router/struct.MethodGuard.html#method.or
+[ANY]: /api_reference/pavex/blueprint/router/constant.ANY.html
+[ANY_WITH_EXTENSIONS]: /api_reference/pavex/blueprint/router/constant.ANY_WITH_EXTENSIONS.html

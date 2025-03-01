@@ -8,10 +8,13 @@ ignore = [
     # so no easy way to remove it until all intermediate crates get rid of it.
     # Since it isn't vulnerable, we'll ignore the advisory for now.
     "RUSTSEC-2024-0384",
-    # `*ring*` is unmaintained, but we depend on it transitively,
-    # so no easy way to remove it until all intermediate crates get rid of it.
-    # Since there are no known vulnerabilities, we'll ignore the advisory for now.
-    "RUSTSEC-2025-0007",
+    # `paste` is unmaintained, but it's a small utility for macro-writing.
+    # There are no known vulnerabilities, so we'll ignore the advisory for now.
+    "RUSTSEC-2024-0436",
+    # `humantime` is unmaintained.
+    # We'll fix it by moving all out time-handling to `jiff` ASAP,
+    # as we already planned to.
+    "RUSTSEC-2025-0014",
 ]
 
 [licenses]

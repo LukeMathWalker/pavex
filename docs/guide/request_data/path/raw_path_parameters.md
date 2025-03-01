@@ -50,6 +50,6 @@ You might have to allocate when [you perform percent-decoding][EncodedParamValue
 
 [^relationship]: [`PathParams<T>`][PathParams] is built on top of [`RawPathParams`][RawPathParams].
 
-[PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
-[RawPathParams]: ../../../api_reference/pavex/request/path/struct.RawPathParams.html
-[EncodedParamValue::decode]: ../../../api_reference/pavex/request/path/struct.EncodedParamValue.html#method.decode
+[PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
+[RawPathParams]: /api_reference/pavex/request/path/struct.RawPathParams.html
+[EncodedParamValue::decode]: /api_reference/pavex/request/path/struct.EncodedParamValue.html#method.decode

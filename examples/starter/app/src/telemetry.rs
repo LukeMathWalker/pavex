@@ -1,4 +1,4 @@
-use pavex::blueprint::{Blueprint, constructor::CloningStrategy};
+use pavex::blueprint::Blueprint;
 use pavex::f;
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
@@ -17,8 +17,7 @@ use tracing_log_error::log_error;
 /// Register telemetry middlewares, an error observer and the relevant constructors
 /// with the application blueprint.
 pub(crate) fn register(bp: &mut Blueprint) {
-    bp.request_scoped(f!(self::root_span))
-        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.request_scoped(f!(self::root_span)).clone_if_necessary();
     bp.wrap(f!(pavex_tracing::logger));
     bp.post_process(f!(self::response_logger));
     bp.error_observer(f!(self::error_logger));

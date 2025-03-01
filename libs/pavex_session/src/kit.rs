@@ -1,8 +1,9 @@
 use pavex::blueprint::Blueprint;
+use pavex::blueprint::config::ConfigType;
 use pavex::blueprint::constructor::Constructor;
 use pavex::blueprint::linter::Lint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
-use pavex::f;
+use pavex::{f, t};
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -47,15 +48,12 @@ pub struct SessionKit {
     /// [`IncomingSession`]: crate::IncomingSession
     /// [`IncomingSession::extract`]: crate::IncomingSession::extract
     pub incoming_session: Option<Constructor>,
-    /// The constructor for [`SessionConfig`].
+    /// Register [`SessionConfig`] as configuration.
     ///
-    /// By default, it's `None`.
-    /// You can use [`with_default_config`] to set it [`SessionConfig::new`].
+    /// By default, it uses the `session` key.
     ///
     /// [`SessionConfig`]: crate::SessionConfig
-    /// [`SessionConfig::new`]: crate::SessionConfig::new
-    /// [`with_default_config`]: SessionKit::with_default_config
-    pub session_config: Option<Constructor>,
+    pub session_config: Option<ConfigType>,
     /// A post-processing middleware to sync the session state with the session store
     /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
     ///
@@ -82,22 +80,20 @@ impl SessionKit {
         let session_finalizer =
             PostProcessingMiddleware::new(f!(crate::middleware::finalize_session))
                 .error_handler(f!(crate::errors::FinalizeError::into_response));
+        let session_config =
+            ConfigType::new("session", t!(crate::SessionConfig)).default_if_missing();
         Self {
             session: Some(session),
             incoming_session: Some(incoming_session),
-            session_config: None,
+            session_config: Some(session_config),
             session_finalizer: Some(session_finalizer),
         }
     }
 
-    /// Set the [`SessionConfig`] constructor to [`SessionConfig::new`].
-    ///
-    /// [`SessionConfig`]: crate::SessionConfig
-    /// [`SessionConfig::new`]: crate::SessionConfig::new
-    pub fn with_default_config(mut self) -> Self {
-        let constructor =
-            Constructor::singleton(f!(crate::SessionConfig::new)).ignore(Lint::Unused);
-        self.session_config = Some(constructor);
+    #[doc(hidden)]
+    #[deprecated(note = "This call is no longer necessary. \
+        The session configuration will automatically use its default values if left unspecified.")]
+    pub fn with_default_config(self) -> Self {
         self
     }
 

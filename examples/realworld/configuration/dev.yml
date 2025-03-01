@@ -1,0 +1,21 @@
+# This file contains the configuration for the dev environment.
+# None of the values here are actually secret, so it's fine
+# to commit this file to the repository.
+server:
+  ip: "127.0.0.1"
+database:
+  host: "127.0.0.1"
+  port: 5432
+  username: "postgres"
+  password: "password"
+  database_name: "conduit"
+  require_ssl: false
+auth:
+  eddsa_private_key_pem: |
+    -----BEGIN PRIVATE KEY-----
+    MC4CAQAwBQYDK2VwBCIEIBqnGOzzgBG8ngfK6j4YzNRypzpB60XFXbw8CVnDntKT
+    -----END PRIVATE KEY-----
+  eddsa_public_key_pem: |
+    -----BEGIN PUBLIC KEY-----
+    MCowBQYDK2VwAyEAcVQaHntN4Gbp+P3RqNd7JpDBdUjWOe3Yx8a/wVE6/2s=
+    -----END PUBLIC KEY-----

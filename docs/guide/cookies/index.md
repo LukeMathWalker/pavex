@@ -48,18 +48,16 @@ Once everything is in place, you can start using cookies in your application:
 - Check out ["Response cookies"](response_cookies.md) to learn how to attach cookies to the response,
   to either set new cookies, update existing ones, or delete them.
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[CookieKit]: ../../api_reference/pavex/cookie/struct.CookieKit.html
-[ProcessorConfig]: ../../api_reference/pavex/cookie/struct.ProcessorConfig.html
-[build_application_state]: ../../api_reference/pavex/server/fn.build_application_state.html
-[ProcessorConfig::default]: ../../api_reference/pavex/cookie/struct.ProcessorConfig.html#method.default
-[default settings]: ../../api_reference/pavex/cookie/struct.ProcessorConfig.html#fields
-[build_application_state]: ../../project_structure.md#applicationstate
-[RequestCookies]: ../../api_reference/pavex/cookie/struct.RequestCookies.html
-[RequestCookies::get]: ../../api_reference/pavex/cookie/struct.RequestCookies.html#method.get
-[RequestCookies::get_all]: ../../api_reference/pavex/cookie/struct.RequestCookies.html#method.get_all
-[ResponseCookie::new]: ../../api_reference/pavex/cookie/struct.ResponseCookie.html#method.new
-[ResponseCookies]: ../../api_reference/pavex/cookie/struct.ResponseCookies.html
-[ResponseCookies::insert]: ../../api_reference/pavex/cookie/struct.ResponseCookies.html#method.insert
-[RemovalCookie]: ../../api_reference/pavex/cookie/struct.RemovalCookie.html
-[response_cookie_injector]: ../../api_reference/pavex/cookie/struct.CookieKit.html#method.response_cookie_injector
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[CookieKit]: /api_reference/pavex/cookie/struct.CookieKit.html
+[ProcessorConfig]: /api_reference/pavex/cookie/struct.ProcessorConfig.html
+[ProcessorConfig::default]: /api_reference/pavex/cookie/struct.ProcessorConfig.html#method.default
+[default settings]: /api_reference/pavex/cookie/struct.ProcessorConfig.html#fields
+[RequestCookies]: /api_reference/pavex/cookie/struct.RequestCookies.html
+[RequestCookies::get]: /api_reference/pavex/cookie/struct.RequestCookies.html#method.get
+[RequestCookies::get_all]: /api_reference/pavex/cookie/struct.RequestCookies.html#method.get_all
+[ResponseCookie::new]: /api_reference/pavex/cookie/struct.ResponseCookie.html#method.new
+[ResponseCookies]: /api_reference/pavex/cookie/struct.ResponseCookies.html
+[ResponseCookies::insert]: /api_reference/pavex/cookie/struct.ResponseCookies.html#method.insert
+[RemovalCookie]: /api_reference/pavex/cookie/struct.RemovalCookie.html
+[response_cookie_injector]: /api_reference/pavex/cookie/struct.CookieKit.html#method.response_cookie_injector

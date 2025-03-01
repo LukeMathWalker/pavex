@@ -1,0 +1,32 @@
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys must begin with a letter.
+  [31m│[0m `12a` starts with `1` which is not a letter.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:19:1]
+  [31m│[0m  [2m19[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m20[0m │     bp.config("12a", t!(crate::A));
+  [31m│[0m     · [35;1m              ──┬──[0m
+  [31m│[0m     ·                 [35;1m╰── The config key was registered here[0m
+  [31m│[0m  [2m21[0m │     bp.config("", t!(crate::B));
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys can't be empty.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:20:1]
+  [31m│[0m  [2m20[0m │     bp.config("12a", t!(crate::A));
+  [31m│[0m  [2m21[0m │     bp.config("", t!(crate::B));
+  [31m│[0m     · [35;1m              ─┬[0m
+  [31m│[0m     ·                [35;1m╰── The config key was registered here[0m
+  [31m│[0m  [2m22[0m │     bp.config("my-key", t!(crate::C));
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys can only contain letters, digits, and underscores.
+  [31m│[0m `my-key` contains `-` which is not a letter, digit, or underscore.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:21:1]
+  [31m│[0m  [2m21[0m │     bp.config("", t!(crate::B));
+  [31m│[0m  [2m22[0m │     bp.config("my-key", t!(crate::C));
+  [31m│[0m     · [35;1m              ────┬───[0m
+  [31m│[0m     ·                   [35;1m╰── The config key was registered here[0m
+  [31m│[0m  [2m23[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ╰────

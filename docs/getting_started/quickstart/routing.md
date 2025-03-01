@@ -82,11 +82,11 @@ curl http://localhost:8000/api/greet/Ursula
 
 You should see `Hello, Ursula!` in your terminal if everything went well.
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[StatusCode]: ../../api_reference/pavex/http/struct.StatusCode.html
-[Response]: ../../api_reference/pavex/response/struct.Response.html
-[IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
-[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
-[Response::ok]: ../../api_reference/pavex/response/struct.Response.html#method.ok
-[set_typed_body]: ../../api_reference/pavex/response/struct.Response.html#method.set_typed_body
-[f!]: ../../api_reference/pavex/macro.f!.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[StatusCode]: /api_reference/pavex/http/struct.StatusCode.html
+[Response]: /api_reference/pavex/response/struct.Response.html
+[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
+[PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
+[Response::ok]: /api_reference/pavex/response/struct.Response.html#method.ok
+[set_typed_body]: /api_reference/pavex/response/struct.Response.html#method.set_typed_body
+[f!]: /api_reference/pavex/macro.f!.html

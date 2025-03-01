@@ -27,7 +27,8 @@ pub(crate) enum Computation<'a> {
     MatchResult(Cow<'a, MatchResult>),
     /// A type that's been prebuilt and is ready to be used.
     ///
-    /// This is either a framework primitive or a type that has been prebuilt by the user.
+    /// This is either a framework primitive, a type coming from configuration or a type
+    /// that has been prebuilt by the user.
     ///
     /// You could say that it's a bit of a hack to list this as a "computation".
     /// Open to suggestions on how to model this better!

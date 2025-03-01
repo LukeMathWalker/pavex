@@ -1,15 +1,19 @@
 use anyhow::Context;
+use pavex::config::ConfigLoader;
 use pavex::server::{Server, ServerHandle, ShutdownMode};
-use pavex_tracing::fields::{ERROR_DETAILS, ERROR_MESSAGE, error_details, error_message};
 use server::{
-    configuration::Config,
+    configuration::Profile,
     telemetry::{get_subscriber, init_telemetry},
 };
-use server_sdk::{build_application_state, run};
+use server_sdk::{ApplicationConfig, ApplicationState, run};
 use std::time::Duration;
+use tracing_log_error::log_error;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Load environment variables from a .env file, if it exists.
+    let _ = dotenvy::dotenv();
+
     let subscriber = get_subscriber("realworld".into(), "info".into(), std::io::stdout);
     init_telemetry(subscriber)?;
 
@@ -17,26 +21,14 @@ async fn main() -> anyhow::Result<()> {
     //  to have a single choke point where we make sure to log fatal errors
     // that will cause the application to exit.
     if let Err(e) = _main().await {
-        tracing::event!(
-            tracing::Level::ERROR,
-            { ERROR_MESSAGE } = error_message(&e),
-            { ERROR_DETAILS } = error_details(&e),
-            "The application is exiting due to an error"
-        )
+        log_error!(*e, "The application is exiting due to an error");
     }
 
     Ok(())
 }
 
 async fn _main() -> anyhow::Result<()> {
-    // Load environment variables from a .env file, if it exists.
-    let _ = dotenvy::dotenv();
-
-    let config = Config::load(None)?;
-    let application_state = build_application_state(&config.app)
-        .await
-        .context("Failed to build the application state")?;
-
+    let config: ApplicationConfig = ConfigLoader::<Profile>::new().load()?;
     let tcp_listener = config
         .server
         .listener()
@@ -46,14 +38,15 @@ async fn _main() -> anyhow::Result<()> {
         .local_addr()
         .context("The server TCP listener doesn't have a local socket address")?;
     let server_builder = Server::new().listen(tcp_listener);
+    let shutdown_timeout = config.server.graceful_shutdown_timeout;
+
+    let application_state = ApplicationState::new(config)
+        .await
+        .context("Failed to build the application state")?;
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
     let server_handle = run(server_builder, application_state);
-    graceful_shutdown(
-        server_handle.clone(),
-        config.server.graceful_shutdown_timeout,
-    )
-    .await;
+    graceful_shutdown(server_handle.clone(), shutdown_timeout).await;
     server_handle.await;
     Ok(())
 }

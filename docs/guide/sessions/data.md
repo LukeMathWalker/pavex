@@ -132,14 +132,14 @@ server-side counterpart. Use it only for small, non-sensitive data.
     you can store any type that can be serialized to (and deserialized from) JSON. In Rust terms,
     you can reason about the session state as if it were a `HashMap<String, serde_json::Value>`.
 
-[Session]: ../../api_reference/pavex_session/struct.Session.html
-[delete]: ../../api_reference/pavex_session/struct.Session.html#method.delete
-[cycle_id]: ../../api_reference/pavex_session/struct.Session.html#method.cycle_id
-[invalidate]: ../../api_reference/pavex_session/struct.Session.html#method.invalidate
-[client]: ../../api_reference/pavex_session/struct.Session.html#method.client
-[client_mut]: ../../api_reference/pavex_session/struct.Session.html#method.client_mut
-[clear]: ../../api_reference/pavex_session/struct.Session.html#method.clear
-[insert]: ../../api_reference/pavex_session/struct.Session.html#method.insert
-[remove]: ../../api_reference/pavex_session/struct.Session.html#method.remove
-[remove_raw]: ../../api_reference/pavex_session/struct.Session.html#method.remove_raw
-[get]: ../../api_reference/pavex_session/struct.Session.html#method.get
+[Session]: /api_reference/pavex_session/struct.Session.html
+[delete]: /api_reference/pavex_session/struct.Session.html#method.delete
+[cycle_id]: /api_reference/pavex_session/struct.Session.html#method.cycle_id
+[invalidate]: /api_reference/pavex_session/struct.Session.html#method.invalidate
+[client]: /api_reference/pavex_session/struct.Session.html#method.client
+[client_mut]: /api_reference/pavex_session/struct.Session.html#method.client_mut
+[clear]: /api_reference/pavex_session/struct.Session.html#method.clear
+[insert]: /api_reference/pavex_session/struct.Session.html#method.insert
+[remove]: /api_reference/pavex_session/struct.Session.html#method.remove
+[remove_raw]: /api_reference/pavex_session/struct.Session.html#method.remove_raw
+[get]: /api_reference/pavex_session/struct.Session.html#method.get

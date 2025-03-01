@@ -6,25 +6,50 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub a: app::A,
     pub b: app::B<alloc::string::String>,
     pub c: app::C<'static>,
     pub vec: alloc::vec::Vec<alloc::string::String>,
 }
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+        v0: app::A,
+        v1: app::B<alloc::string::String>,
+        v2: app::C<'static>,
+        v3: alloc::vec::Vec<alloc::string::String>,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Ok(Self::_new(v0, v1, v2, v3).await)
+    }
+    async fn _new(
+        v0: app::A,
+        v1: app::B<alloc::string::String>,
+        v2: app::C<'static>,
+        v3: alloc::vec::Vec<alloc::string::String>,
+    ) -> crate::ApplicationState {
+        crate::ApplicationState {
+            a: v0,
+            b: v1,
+            c: v2,
+            vec: v3,
+        }
+    }
+}
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
 pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
     v0: app::A,
     v1: app::B<alloc::string::String>,
     v2: app::C<'static>,
     v3: alloc::vec::Vec<alloc::string::String>,
-) -> crate::ApplicationState {
-    crate::ApplicationState {
-        a: v0,
-        b: v1,
-        c: v2,
-        vec: v3,
-    }
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config, v0, v1, v2, v3).await
 }
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationStateError {}
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,

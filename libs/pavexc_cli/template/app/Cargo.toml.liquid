@@ -16,10 +16,12 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 
 [dependencies]
 cargo_px_env = "0.1"
+humantime-serde = "1.1"
 pavex = { {{pavex_package_spec}} }
 pavex_tracing = { {{pavex_tracing_package_spec}} }
 pavex_cli_client = { {{pavex_cli_client_package_spec}} }
 tracing = "0.1"
 tracing_log_error = "0.1"
 serde = { version = "1", features = ["derive"] }
+serde-aux = "4"
 workspace_hack = { path = "../workspace_hack" }

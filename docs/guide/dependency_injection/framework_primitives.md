@@ -24,9 +24,9 @@ and produce a [`JsonBody<T>`][JsonBody] instance.\
 You lose this flexibility with framework primitives: you can't customize how they are constructed.
 That's why we try to keep their number to a minimum.
 
-[RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
-[ConnectionInfo]: ../../api_reference/pavex/connection/struct.ConnectionInfo.html
-[RawPathParams]: ../../api_reference/pavex/request/path/struct.RawPathParams.html
-[AllowedMethods]: ../../api_reference/pavex/router/enum.AllowedMethods.html
-[RawIncomingBody]: ../../api_reference/pavex/request/body/struct.RawIncomingBody.html
-[JsonBody]: ../../api_reference/pavex/request/body/struct.JsonBody.html
+[RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
+[ConnectionInfo]: /api_reference/pavex/connection/struct.ConnectionInfo.html
+[RawPathParams]: /api_reference/pavex/request/path/struct.RawPathParams.html
+[AllowedMethods]: /api_reference/pavex/router/enum.AllowedMethods.html
+[RawIncomingBody]: /api_reference/pavex/request/body/struct.RawIncomingBody.html
+[JsonBody]: /api_reference/pavex/request/body/struct.JsonBody.html

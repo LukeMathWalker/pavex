@@ -183,10 +183,10 @@ Pay attention to the fact that `post2` is not executed, even though it is a post
 That's because of `wrap1`: since `post2` is part of the request processing pipeline that `wrap1` wraps around,
 it will be skipped if `wrap1` is skipped.
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[nest]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.nest
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[nest]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.nest
 [pre-processing]: pre_processing.md
 [post-processing]: post_processing.md
 [wrapping middlewares]: wrapping.md
-[Processing::Continue]: ../../api_reference/pavex/middleware/enum.Processing.html#variant.Continue
-[Processing::EarlyReturn]: ../../api_reference/pavex/middleware/enum.Processing.html#variant.EarlyReturn
+[Processing::Continue]: /api_reference/pavex/middleware/enum.Processing.html#variant.Continue
+[Processing::EarlyReturn]: /api_reference/pavex/middleware/enum.Processing.html#variant.EarlyReturn

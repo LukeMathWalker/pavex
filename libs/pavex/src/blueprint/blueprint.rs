@@ -6,11 +6,12 @@ use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, PostProcessingMiddleware,
-    PreProcessingMiddleware, PrebuiltType, Route, WrappingMiddleware,
+    Blueprint as BlueprintSchema, ConfigType, Constructor, Fallback, NestedBlueprint,
+    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
+use super::config::RegisteredConfigType;
 use super::constructor::{Lifecycle, RegisteredConstructor};
 use super::middleware::{
     RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
@@ -128,8 +129,8 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Register a type to be used as input parameter to the (generated) `build_application_state`
-    /// function.
+    /// Register a type to be used as input parameter to the (generated) `ApplicationState::new`
+    /// method.
     ///
     /// # Guide
     ///
@@ -158,6 +159,52 @@ impl Blueprint {
         };
         let component_id = self.push_component(i);
         RegisteredPrebuiltType {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    #[track_caller]
+    /// Add a new type to the application's configuration.
+    ///
+    /// It adds a new field to the generate `ApplicationConfig` struct.
+    /// Its name matches the key you provided.
+    /// Its type matches the one you specified via the [`t!`](crate::t) macro.
+    ///
+    /// # Required traits
+    ///
+    /// Configuration types *must* implement `Debug`, `Clone` and `serde::Deserialize`.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
+    /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
+    pub fn config(&mut self, key: &str, type_: RawIdentifiers) -> RegisteredConfigType {
+        let registered = pavex_bp_schema::ConfigType {
+            input: raw_identifiers2type(type_),
+            key: key.to_owned(),
+            cloning_strategy: None,
+            default_if_missing: None,
+        };
+        let component_id = self.push_component(registered);
+        RegisteredConfigType {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    pub(super) fn register_config_type(
+        &mut self,
+        i: super::config::ConfigType,
+    ) -> RegisteredConfigType {
+        let i = ConfigType {
+            input: i.type_,
+            key: i.key,
+            cloning_strategy: i.cloning_strategy.map(cloning2cloning),
+            default_if_missing: i.default_if_missing,
+        };
+        let component_id = self.push_component(i);
+        RegisteredConfigType {
             component_id,
             blueprint: &mut self.schema,
         }

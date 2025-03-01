@@ -16,9 +16,6 @@ app = { path = "../app" }
 
 # Configuration
 dotenvy = "0.15"
-figment = { version = "0.10", features = ["env", "yaml"] }
-serde = { version = "1", features = ["derive"] }
-humantime-serde = "1.1"
 
 # Telemetry
 tracing = "0.1"
@@ -30,6 +27,8 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "tracing-log",
 ] }
 tracing-bunyan-formatter = "0.3"
+tracing_log_error = "0.1"
+tracing-panic = "0.1"
 pavex_tracing = "0.1"
 workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
@@ -38,3 +37,4 @@ reqwest = { version = "0.12", features = ["json"] }
 jwt-simple = "0.11"
 secrecy = "0.8"
 serde_json = "1"
+serde = { version = "1", features = ["derive"] }

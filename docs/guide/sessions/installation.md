@@ -46,28 +46,7 @@ Register the one provided by the storage backend you chose against your [`Bluepr
 You can customize each component inside the kit to suit your needs.
 Check out their respective documentation for more information.
 
-## `SessionConfig`
-
-[`SessionConfig`][SessionConfig] determines how sessions are processed by your application.
-What's the name of the session cookie? How long should it last? Do we create a
-server-side session state for every client-side cookie?
-
-The example above invokes `with_default_config` to rely on the default settings.\
-If you wish to customize the session behaviour, follow these steps:
-
-1. Add [`SessionConfig`][SessionConfig] as a field on your application's `AppConfig` struct, usually located
-   in `app/src/configuration.rs`.
-2. Register a constructor that returns a [`SessionConfig`][SessionConfig] instance by accessing the field.
-
-Check out the "Realworld" example as a reference:
-
-1. [Configuration field](https://github.com/LukeMathWalker/pavex/blob/310afce47413bbfc56ffa7a1b15940086ce7e773/examples/realworld/app/src/configuration.rs#L15)
-2. [Constructor registration](https://github.com/LukeMathWalker/pavex/blob/310afce47413bbfc56ffa7a1b15940086ce7e773/examples/realworld/app/src/configuration.rs#L35)
-
-[pavex_session]: ../../api_reference/pavex_session/index.html
-[pavex_session_sqlx]: ../../api_reference/pavex_session_sqlx/index.html
-[pavex_session_memory_store]: ../../api_reference/pavex_session_memory_store/index.html
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[SessionConfig]: ../../api_reference/pavex_session/struct.SessionConfig.html
-[default settings]: ../../api_reference/pavex_session/struct.SessionConfig.html#fields
-[build_application_state]: ../project_structure.md#applicationstate
+[pavex_session]: /api_reference/pavex_session/index.html
+[pavex_session_sqlx]: /api_reference/pavex_session_sqlx/index.html
+[pavex_session_memory_store]: /api_reference/pavex_session_memory_store/index.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html

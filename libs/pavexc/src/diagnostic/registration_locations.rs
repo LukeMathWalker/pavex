@@ -38,11 +38,12 @@ pub(crate) fn get_f_macro_invocation_span(
     let node = find_method_call(location, &source.parsed)?;
     match node {
         Call::MethodCall(node) => {
-            let argument = match node.method.to_string().as_str() {
+            let argument_index = match node.method.to_string().as_str() {
                 "error_handler" | "error_observer" | "constructor" | "wrap" | "pre_process"
                 | "post_process" | "fallback" | "singleton" | "request_scoped" | "transient"
-                | "prebuilt" => node.args.first(),
-                "route" => node.args.iter().nth(2),
+                | "prebuilt" => 0,
+                "config" => 1,
+                "route" => 2,
                 s => {
                     tracing::trace!(
                         "Unknown method name when looking for component registration: {}",
@@ -50,7 +51,8 @@ pub(crate) fn get_f_macro_invocation_span(
                     );
                     return None;
                 }
-            }?;
+            };
+            let argument = node.args.iter().nth(argument_index)?;
             Some(convert_proc_macro_span(raw_source, argument.span()))
         }
         Call::FunctionCall(node) => {
@@ -70,7 +72,8 @@ pub(crate) fn get_f_macro_invocation_span(
                         | ("Blueprint", "pre_process")
                         | ("Blueprint", "post_process")
                         | ("Blueprint", "prebuilt")
-                        | ("Blueprint", "fallback") => {
+                        | ("Blueprint", "fallback")
+                        | ("ConfigType", "new") => {
                             // Blueprint::error_handler(bp, handler)
                             // Blueprint::error_observer(bp, observer)
                             // Blueprint::constructor(bp, constructor, lifecycle)
@@ -80,14 +83,17 @@ pub(crate) fn get_f_macro_invocation_span(
                             // Blueprint::wrap(bp, middleware)
                             // Blueprint::pre_process(bp, middleware)
                             // Blueprint::post_process(bp, middleware)
-                            // Blueprint::fallback(bp, handler)
+                            // Blueprint::fallback(bp, fallback)
+                            // Blueprint::prebuilt(bp, prebuilt)
+                            // ConfigType::new(key, config)
                             1
                         }
                         ("Blueprint", "route") => {
                             // Blueprint::route(bp, method, path_pattern, handler)
                             3
                         }
-                        ("Route", "new") => {
+                        ("Route", "new") | ("Blueprint", "config") => {
+                            // Blueprint::config(bp, key, config)
                             // Route::new(method, path_pattern, handler)
                             2
                         }
@@ -110,6 +116,7 @@ pub(crate) fn get_f_macro_invocation_span(
                             // PostProcessingMiddleware::new(mw)
                             // ErrorObserver::new(observer)
                             // Fallback::new(fallback)
+                            // PrebuiltType::new(prebuilt)
                             0
                         }
                         _ => {
@@ -187,6 +194,65 @@ pub(crate) fn get_route_path_span(
                 node.args.iter().nth(2)
             } else {
                 tracing::trace!("Unexpected number of arguments for `route` invocation");
+                return None;
+            };
+            argument.span()
+        }
+    };
+    Some(convert_proc_macro_span(raw_source, span))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `.` in the method invocation for `config`.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.config("home", t!(crate::Streamer))
+/// //^ `location` points here!
+/// ```
+///
+/// We build a `SourceSpan` that matches the key argument.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.config("home", t!(crate::Streamer))
+/// //        ^^^^^^
+/// //        We want a SourceSpan that points at this for routes
+/// ```
+pub(crate) fn get_config_key_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let raw_source = &source.contents;
+    let node = find_method_call(location, &source.parsed)?;
+    let span = match node {
+        Call::MethodCall(node) => {
+            let argument = match node.method.to_string().as_str() {
+                "config" => {
+                    if node.args.len() == 2 {
+                        // bp.config(key, type)
+                        node.args.iter().next()
+                    } else {
+                        tracing::trace!("Unexpected number of arguments for `config` invocation");
+                        return None;
+                    }
+                }
+                s => {
+                    tracing::trace!(
+                        "Unknown method name when looking for a `config` invocation: {}",
+                        s
+                    );
+                    return None;
+                }
+            }?;
+            argument.span()
+        }
+        Call::FunctionCall(node) => {
+            let argument = if node.args.len() == 3 {
+                // Blueprint::config(bp, key, type)
+                node.args.iter().nth(1)
+            } else {
+                tracing::trace!("Unexpected number of arguments for `config` invocation");
                 return None;
             };
             argument.span()

@@ -15,6 +15,6 @@ As your application grows, you can choose to lean into Pavex's more advanced rou
 - [**Path prefixes**](path_prefixes.md), to reduce repetition in your route definitions
 - [**Domain guards**](domain_guards.md), to serve different content based on the domain being requested
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::route]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.route
-[**Fallbacks**]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.fallback
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::route]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.route
+[**Fallbacks**]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.fallback

@@ -6,10 +6,66 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {
+    pub auth: app::configuration::AuthConfig,
+    #[serde(default)]
+    pub cookies: biscotti::ProcessorConfig,
+    pub database: app::configuration::DatabaseConfig,
+    pub server: app::configuration::ServerConfig,
+}
 pub struct ApplicationState {
     pub encoding_key: jsonwebtoken::EncodingKey,
     pub pool: sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
     pub processor: biscotti::Processor,
+}
+impl ApplicationState {
+    pub async fn new(
+        app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Self::_new(app_config.cookies, &app_config.auth, &app_config.database).await
+    }
+    async fn _new(
+        v0: biscotti::ProcessorConfig,
+        v1: &app::configuration::AuthConfig,
+        v2: &app::configuration::DatabaseConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        let v3 = app::configuration::AuthConfig::encoding_key(v1);
+        let v4 = match v3 {
+            Ok(ok) => ok,
+            Err(v4) => {
+                return {
+                    let v5 = crate::ApplicationStateError::AuthConfigEncodingKey(v4);
+                    core::result::Result::Err(v5)
+                };
+            }
+        };
+        let v5 = app::configuration::DatabaseConfig::get_pool(v2).await;
+        let v6 = match v5 {
+            Ok(ok) => ok,
+            Err(v6) => {
+                return {
+                    let v7 = crate::ApplicationStateError::DatabaseConfigGetPool(v6);
+                    core::result::Result::Err(v7)
+                };
+            }
+        };
+        let v7 = <pavex::cookie::Processor as core::convert::From<
+            pavex::cookie::ProcessorConfig,
+        >>::from(v0);
+        let v8 = crate::ApplicationState {
+            encoding_key: v4,
+            pool: v6,
+            processor: v7,
+        };
+        core::result::Result::Ok(v8)
+    }
+}
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(app_config).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
@@ -17,42 +73,6 @@ pub enum ApplicationStateError {
     AuthConfigEncodingKey(jsonwebtoken::errors::Error),
     #[error(transparent)]
     DatabaseConfigGetPool(sqlx_core::Error),
-}
-pub async fn build_application_state(
-    v0: &app::configuration::ApplicationConfig,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    let v1 = app::configuration::ApplicationConfig::auth_config(v0);
-    let v2 = app::configuration::AuthConfig::encoding_key(v1);
-    let v3 = match v2 {
-        Ok(ok) => ok,
-        Err(v3) => {
-            return {
-                let v4 = crate::ApplicationStateError::AuthConfigEncodingKey(v3);
-                core::result::Result::Err(v4)
-            };
-        }
-    };
-    let v4 = app::configuration::ApplicationConfig::database_config(v0);
-    let v5 = app::configuration::DatabaseConfig::get_pool(v4).await;
-    let v6 = match v5 {
-        Ok(ok) => ok,
-        Err(v6) => {
-            return {
-                let v7 = crate::ApplicationStateError::DatabaseConfigGetPool(v6);
-                core::result::Result::Err(v7)
-            };
-        }
-    };
-    let v7 = app::configuration::ApplicationConfig::cookie_config(v0);
-    let v8 = <pavex::cookie::Processor as core::convert::From<
-        pavex::cookie::ProcessorConfig,
-    >>::from(v7);
-    let v9 = crate::ApplicationState {
-        encoding_key: v3,
-        pool: v6,
-        processor: v8,
-    };
-    core::result::Result::Ok(v9)
 }
 pub fn run(
     server_builder: pavex::server::Server,

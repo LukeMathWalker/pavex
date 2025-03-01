@@ -15,6 +15,6 @@ If that's not what you want, you can use [`get_all`][RequestCookies::get_all] to
 
 --8<-- "doc_examples/guide/cookies/request_cookies/project-multiple.snap"
 
-[RequestCookies]: ../../api_reference/pavex/cookie/struct.RequestCookies.html
-[RequestCookies::get]: ../../api_reference/pavex/cookie/struct.RequestCookies.html#method.get
-[RequestCookies::get_all]: ../../api_reference/pavex/cookie/struct.RequestCookies.html#method.get_all
+[RequestCookies]: /api_reference/pavex/cookie/struct.RequestCookies.html
+[RequestCookies::get]: /api_reference/pavex/cookie/struct.RequestCookies.html#method.get
+[RequestCookies::get_all]: /api_reference/pavex/cookie/struct.RequestCookies.html#method.get_all

@@ -5,4 +5,4 @@ commands:
 snippets:
   - name: "in_memory"
     source_path: "src/in_memory.rs"
-    ranges: ["0..14", "15.."]
+    ranges: ["0..12", "13.."]

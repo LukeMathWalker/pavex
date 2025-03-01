@@ -6,30 +6,42 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub a: app::A,
+}
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Self::_new().await
+    }
+    async fn _new() -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        let v0 = app::a();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = crate::ApplicationStateError::A(v1);
+                    core::result::Result::Err(v2)
+                };
+            }
+        };
+        let v2 = crate::ApplicationState { a: v1 };
+        core::result::Result::Ok(v2)
+    }
+}
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
     #[error(transparent)]
     A(app::AnError),
-}
-pub async fn build_application_state() -> Result<
-    crate::ApplicationState,
-    crate::ApplicationStateError,
-> {
-    let v0 = app::a();
-    let v1 = match v0 {
-        Ok(ok) => ok,
-        Err(v1) => {
-            return {
-                let v2 = crate::ApplicationStateError::A(v1);
-                core::result::Result::Err(v2)
-            };
-        }
-    };
-    let v2 = crate::ApplicationState { a: v1 };
-    core::result::Result::Ok(v2)
 }
 pub fn run(
     server_builder: pavex::server::Server,

@@ -33,9 +33,9 @@ along with an expiration date in the past.\
 You need to make sure that the `Path` and `Domain` properties on the [`RemovalCookie`][RemovalCookie] match the ones
 set on the client-side cookie you want to delete.
 
-[CookieKit]: ../../api_reference/pavex/cookie/struct.CookieKit.html
-[ResponseCookie::new]: ../../api_reference/pavex/cookie/struct.ResponseCookie.html#method.new
-[ResponseCookies]: ../../api_reference/pavex/cookie/struct.ResponseCookies.html
-[ResponseCookies::insert]: ../../api_reference/pavex/cookie/struct.ResponseCookies.html#method.insert
-[RemovalCookie]: ../../api_reference/pavex/cookie/struct.RemovalCookie.html
-[response_cookie_injector]: ../../api_reference/pavex/cookie/struct.CookieKit.html#structfield.response_cookie_injector
+[CookieKit]: /api_reference/pavex/cookie/struct.CookieKit.html
+[ResponseCookie::new]: /api_reference/pavex/cookie/struct.ResponseCookie.html#method.new
+[ResponseCookies]: /api_reference/pavex/cookie/struct.ResponseCookies.html
+[ResponseCookies::insert]: /api_reference/pavex/cookie/struct.ResponseCookies.html#method.insert
+[RemovalCookie]: /api_reference/pavex/cookie/struct.RemovalCookie.html
+[response_cookie_injector]: /api_reference/pavex/cookie/struct.CookieKit.html#structfield.response_cookie_injector

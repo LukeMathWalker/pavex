@@ -1,6 +1,7 @@
-```rust title="server_sdk/src/lib.rs" hl_lines="2"
-// [...]
-pub async fn build_application_state(v0: di_prebuilt::base::A) -> crate::ApplicationState {
-// [...]
-}
+```rust title="server_sdk/src/lib.rs" hl_lines="4"
+    // [...]
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+        v0: di_prebuilt::base::A,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
 ```

@@ -9,7 +9,7 @@ use crate::compiler::component::{
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
 use crate::diagnostic::{
-    AnnotatedSnippet, CallableDefinition, CallableType, CompilerDiagnostic, OptionalSourceSpanExt,
+    AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt,
     SourceSpanExt, convert_proc_macro_span, convert_rustdoc_span,
 };
 use crate::language::{Callable, ResolvedType};
@@ -47,7 +47,7 @@ impl ComponentDb {
                     computation_db,
                     krate_collection,
                     package_graph,
-                    CallableType::Constructor,
+                    ComponentKind::Constructor,
                     diagnostics,
                 );
             }
@@ -247,7 +247,7 @@ impl ComponentDb {
                     computation_db,
                     krate_collection,
                     package_graph,
-                    CallableType::RequestHandler,
+                    ComponentKind::RequestHandler,
                     diagnostics,
                 );
             }
@@ -383,7 +383,7 @@ impl ComponentDb {
                     computation_db,
                     krate_collection,
                     package_graph,
-                    CallableType::WrappingMiddleware,
+                    ComponentKind::WrappingMiddleware,
                     diagnostics,
                 );
             }
@@ -690,7 +690,7 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = user_component_db.get_location(user_component_id);
-        let callable_type = user_component_db[user_component_id].callable_type();
+        let callable_type = user_component_db[user_component_id].kind();
         let source = try_source!(location, package_graph, diagnostics);
         let label = source.as_ref().and_then(|source| {
             diagnostic::get_f_macro_invocation_span(source, location)
@@ -719,7 +719,7 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let callable_type = raw_user_component_db[raw_user_component_id].callable_type();
+        let callable_type = raw_user_component_db[raw_user_component_id].kind();
         let source = try_source!(location, package_graph, diagnostics);
         let label = source.as_ref().and_then(|source| {
             diagnostic::get_f_macro_invocation_span(source, location)
@@ -756,13 +756,13 @@ impl ComponentDb {
         });
         match e {
             ErrorObserverValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
-                inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, CallableType::ErrorObserver, diagnostics);
+                inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, ComponentKind::ErrorObserver, diagnostics);
             }
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
             //  a label the non-unit return type.
             ErrorObserverValidationError::MustReturnUnitType { .. } |
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-            //  a label the input types. 
+            //  a label the input types.
             ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
                 let d = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
@@ -953,7 +953,7 @@ impl ComponentDb {
                 diagnostics.push(diagnostic.into());
             }
             ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
-                inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, CallableType::ErrorHandler, diagnostics);
+                inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, ComponentKind::ErrorHandler, diagnostics);
             }
         };
     }
@@ -965,7 +965,7 @@ impl ComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let fallible_kind = raw_user_component_db[fallible_id].callable_type();
+        let fallible_kind = raw_user_component_db[fallible_id].kind();
         let location = raw_user_component_db.get_location(error_handler_id);
         let source = try_source!(location, package_graph, diagnostics);
         let label = source.as_ref().and_then(|source| {
@@ -994,8 +994,8 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         debug_assert_eq!(
-            raw_user_component_db[fallible_id].callable_type(),
-            CallableType::Constructor
+            raw_user_component_db[fallible_id].kind(),
+            ComponentKind::Constructor
         );
         let location = raw_user_component_db.get_location(error_handler_id);
         let source = try_source!(location, package_graph, diagnostics);
@@ -1021,7 +1021,7 @@ impl ComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let fallible_kind = raw_user_component_db[fallible_id].callable_type();
+        let fallible_kind = raw_user_component_db[fallible_id].kind();
         let location = raw_user_component_db.get_location(fallible_id);
         let source = try_source!(location, package_graph, diagnostics);
         let label = source.as_ref().and_then(|source| {

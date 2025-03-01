@@ -58,10 +58,10 @@ You can leverage nesting to define more granular limits.
 
 --8<-- "doc_examples/guide/request_data/buffered_body/project-granular_limits.snap"
 
-[BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
-[BufferedBody::register]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html#method.register
-[JsonBody]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html
-[BufferedBody::extract]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html#method.extract
-[SizeLimitExceeded]: ../../../../api_reference/pavex/request/body/errors/enum.ExtractBufferedBodyError.html#variant.SizeLimitExceeded
-[BodySizeLimit]: ../../../../api_reference/pavex/request/body/enum.BodySizeLimit.html
-[Blueprint]: ../../../../api_reference/pavex/blueprint/struct.Blueprint.html
+[BufferedBody]: /api_reference/pavex/request/body/struct.BufferedBody.html
+[BufferedBody::register]: /api_reference/pavex/request/body/struct.BufferedBody.html#method.register
+[JsonBody]: /api_reference/pavex/request/body/struct.JsonBody.html
+[BufferedBody::extract]: /api_reference/pavex/request/body/struct.BufferedBody.html#method.extract
+[SizeLimitExceeded]: /api_reference/pavex/request/body/errors/enum.ExtractBufferedBodyError.html#variant.SizeLimitExceeded
+[BodySizeLimit]: /api_reference/pavex/request/body/enum.BodySizeLimit.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html

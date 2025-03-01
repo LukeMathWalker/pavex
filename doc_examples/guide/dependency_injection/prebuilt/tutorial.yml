@@ -12,5 +12,5 @@ steps:
     snippets:
       - name: "build_state"
         source_path: "server_sdk/src/lib.rs"
-        ranges: ["11..12", "13..14"]
-        hl_lines: [2]
+        ranges: ["14..18"]
+        hl_lines: [4]

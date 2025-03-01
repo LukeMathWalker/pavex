@@ -398,6 +398,48 @@ impl ResolvedType {
         }
     }
 
+    /// Return the set of all lifetime parameters for this type.
+    pub fn lifetime_parameters(&self) -> IndexSet<Lifetime> {
+        let mut set = IndexSet::new();
+        self._lifetime_parameters(&mut set);
+        set
+    }
+
+    fn _lifetime_parameters(&self, set: &mut IndexSet<Lifetime>) {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                for arg in &path.generic_arguments {
+                    match arg {
+                        GenericArgument::TypeParameter(g) => {
+                            g._lifetime_parameters(set);
+                        }
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Static) => {
+                            set.insert(Lifetime::Static);
+                        }
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
+                            if l != "_" {
+                                set.insert(Lifetime::Named(l.into()));
+                            } else {
+                                set.insert(Lifetime::Elided);
+                            }
+                        }
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => {
+                set.insert(r.lifetime.clone());
+                r.inner._lifetime_parameters(set)
+            }
+            ResolvedType::Tuple(t) => {
+                for inner in &t.elements {
+                    inner._lifetime_parameters(set);
+                }
+            }
+            ResolvedType::Slice(s) => s.element_type._lifetime_parameters(set),
+            ResolvedType::ScalarPrimitive(_) | ResolvedType::Generic(_) => {}
+        }
+    }
+
     /// Return the set of free lifetime parameters (i.e. non `'static`) for this type.
     pub fn named_lifetime_parameters(&self) -> IndexSet<String> {
         let mut set = IndexSet::new();
@@ -708,7 +750,7 @@ pub struct PathType {
     /// The id associated with this type within the (JSON) docs for `package_id`.
     ///
     /// The id is optional to allow for flexible usage patterns—e.g. to leverage [`ResolvedType`]
-    /// to work with types that we want to code-generate into a new crate.  
+    /// to work with types that we want to code-generate into a new crate.
     pub rustdoc_id: Option<rustdoc_types::Id>,
     pub base_type: Vec<String>,
     pub generic_arguments: Vec<GenericArgument>,
@@ -952,6 +994,14 @@ impl Lifetime {
         match self {
             Lifetime::Named(_) | Lifetime::Elided => false,
             Lifetime::Static => true,
+        }
+    }
+
+    pub fn is_elided(&self) -> bool {
+        match self {
+            Lifetime::Named(n) if n == "_" => true,
+            Lifetime::Elided => true,
+            _ => false,
         }
     }
 }

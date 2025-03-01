@@ -1,0 +1,24 @@
+[31;1mERROR[0m:
+  [31m×[0m All configuration types must be clonable.
+  [31m│[0m `app::A` is a configuration type, but it doesn't implement the
+  [31m│[0m `Clone` trait.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_must_be_clone/src/lib.rs[0m:16:1]
+  [31m│[0m  [2m16[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m17[0m │     bp.config("a", t!(crate::A));
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m18[0m │     // It must generate an error even if the config is marked as never clone.
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m All configuration types must be clonable.
+  [31m│[0m `app::B` is a configuration type, but it doesn't implement the
+  [31m│[0m `Clone` trait.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_must_be_clone/src/lib.rs[0m:18:1]
+  [31m│[0m  [2m18[0m │     // It must generate an error even if the config is marked as never clone.
+  [31m│[0m  [2m19[0m │     bp.config("b", t!(crate::B)).never_clone();
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m20[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ╰────

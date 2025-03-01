@@ -1,8 +1,8 @@
 //! Types related to [`PostgresSessionStore`].
-use pavex::blueprint::Blueprint;
 use pavex::blueprint::constructor::Constructor;
 use pavex::blueprint::linter::Lint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
+use pavex::blueprint::{Blueprint, config::ConfigType};
 use pavex::f;
 use pavex_session::{
     SessionId,
@@ -393,15 +393,12 @@ pub struct PostgresSessionKit {
     /// [`IncomingSession`]: pavex_session::IncomingSession
     /// [`IncomingSession::extract`]: pavex_session::IncomingSession::extract
     pub incoming_session: Option<Constructor>,
-    /// The constructor for [`SessionConfig`].
+    /// Register [`SessionConfig`] as a configuration type.
     ///
-    /// By default, it's `None`.
-    /// You can use [`with_default_config`] to set it [`SessionConfig::new`].
+    /// By default, it uses `session` as configuration key.
     ///
     /// [`SessionConfig`]: pavex_session::SessionConfig
-    /// [`SessionConfig::new`]: pavex_session::SessionConfig::new
-    /// [`with_default_config`]: PostgresSessionKit::with_default_config
-    pub session_config: Option<Constructor>,
+    pub session_config: Option<ConfigType>,
     /// The constructor for [`PostgresSessionStore`].
     ///
     /// By default, it uses [`PostgresSessionStore::new`].
@@ -461,14 +458,10 @@ impl PostgresSessionKit {
         }
     }
 
-    /// Set the [`SessionConfig`] constructor to [`SessionConfig::new`].
-    ///
-    /// [`SessionConfig`]: pavex_session::SessionConfig
-    /// [`SessionConfig::new`]: pavex_session::SessionConfig::new
-    pub fn with_default_config(mut self) -> Self {
-        let constructor =
-            Constructor::singleton(f!(pavex_session::SessionConfig::new)).ignore(Lint::Unused);
-        self.session_config = Some(constructor);
+    #[doc(hidden)]
+    #[deprecated(note = "This call is no longer necessary. \
+        The session configuration will automatically use its default values if left unspecified.")]
+    pub fn with_default_config(self) -> Self {
         self
     }
 

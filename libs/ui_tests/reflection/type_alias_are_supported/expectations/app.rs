@@ -6,28 +6,45 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub actual_type: dep_f8f62968::ActualType,
     pub bool__char__u8_: (bool, char, u8),
     pub generic_type: dep_f8f62968::GenericType<bool, bool>,
     pub string: alloc::string::String,
 }
-pub async fn build_application_state(
-    v0: alloc::string::String,
-) -> crate::ApplicationState {
-    let v1 = dep_f8f62968::GenericType::<
-        std::primitive::bool,
-        std::primitive::bool,
-    >::new();
-    let v2 = app::constructor_with_output_tuple();
-    let v3 = dep_f8f62968::ActualType::new();
-    crate::ApplicationState {
-        actual_type: v3,
-        bool__char__u8_: v2,
-        generic_type: v1,
-        string: v0,
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+        v0: alloc::string::String,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Ok(Self::_new(v0).await)
+    }
+    async fn _new(v0: alloc::string::String) -> crate::ApplicationState {
+        let v1 = dep_f8f62968::GenericType::<
+            std::primitive::bool,
+            std::primitive::bool,
+        >::new();
+        let v2 = app::constructor_with_output_tuple();
+        let v3 = dep_f8f62968::ActualType::new();
+        crate::ApplicationState {
+            actual_type: v3,
+            bool__char__u8_: v2,
+            generic_type: v1,
+            string: v0,
+        }
     }
 }
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+    v0: alloc::string::String,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config, v0).await
+}
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationStateError {}
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
