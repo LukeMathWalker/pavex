@@ -1,6 +1,7 @@
-use super::state::errors::{ServerGetError, ServerSetError, SyncError, ValueDeserializationError};
-
-use errors::{FinalizeError, ServerRemoveError, ValueLocation, ValueSerializationError};
+use errors::{
+    FinalizeError, ServerGetError, ServerInsertError, ServerRemoveError, SyncError,
+    ValueDeserializationError, ValueLocation, ValueSerializationError,
+};
 use pavex::cookie::{RemovalCookie, ResponseCookie};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -186,25 +187,188 @@ impl<'store> Session<'store> {
             _unsend: Default::default(),
         }
     }
+}
 
-    /// Read values from the client-side state attached to this session.
-    pub fn client(&self) -> ClientSessionState<'_> {
-        ClientSessionState(&self.client_state, &self.invalidated)
+/// All the operations you can perform on the server-side state of your session.
+impl<'store> Session<'store> {
+    /// Get the value associated with `key` from the server-side state.
+    ///
+    /// If the value is not found, `None` is returned.\
+    /// If the value is found, but it cannot be deserialized into the expected type,
+    /// an error is returned.
+    ///
+    /// If you don't need to deserialize the value, or you'd like to handle the deserialization
+    /// yourself, use [`get_raw`][Self::get_raw] instead.
+    pub async fn get<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, ServerGetError> {
+        self.get_raw(key)
+            .await?
+            .map(|value| serde_json::from_value(value.clone()))
+            .transpose()
+            .map_err(|e| {
+                ValueDeserializationError {
+                    key: key.to_owned(),
+                    location: ValueLocation::Server,
+                    source: e,
+                }
+                .into()
+            })
     }
 
-    /// Read or mutate the client-side state attached to this session.
-    pub fn client_mut(&mut self) -> ClientSessionStateMut<'_> {
-        ClientSessionStateMut(&mut self.client_state, &self.invalidated)
+    /// Insert a value for the given key in the server-side state.
+    ///
+    /// If the state didn't have an entry for this key, the value is inserted and `None` is returned.\
+    /// If the state did have an entry for this key, its value is updated and the old
+    /// value is returned in its raw JSON form.
+    ///
+    /// The provided value is serialized to JSON prior to being stored. If
+    /// the serialization fails, an error is returned. If you'd prefer to
+    /// take care of the serialization yourself, use [`insert_raw`][Self::insert_raw] instead.
+    pub async fn insert<T: Serialize>(
+        &mut self,
+        key: String,
+        value: T,
+    ) -> Result<Option<Value>, ServerInsertError> {
+        let value = serde_json::to_value(value).map_err(|e| ValueSerializationError {
+            key: key.clone(),
+            location: ValueLocation::Server,
+            source: e,
+        })?;
+        self.insert_raw(key, value).await.map_err(Into::into)
     }
 
-    /// Read values from the server-side state attached to this session.
-    pub fn server<'session>(&'session self) -> ServerSessionState<'session, 'store> {
-        ServerSessionState(self)
+    /// Remove the value associated with `key` from the server-side state.
+    ///
+    /// If the key doesn't exist, `None` is returned.
+    ///
+    /// If the key exists, the removed value is returned, deserialized into the type you specify as `T`.
+    /// If the removed value cannot be deserialized, an error is returned.
+    ///
+    /// If you're not interested in the removed value, or you don't want to deserialize it,
+    /// use [`remove_raw`][Self::remove_raw] instead.
+    pub async fn remove<T: DeserializeOwned>(
+        &mut self,
+        key: &str,
+    ) -> Result<Option<T>, ServerRemoveError> {
+        self.remove_raw(key)
+            .await?
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(|source| ValueDeserializationError {
+                key: key.to_owned(),
+                location: ValueLocation::Server,
+                source,
+            })
+            .map_err(ServerRemoveError::DeserializationError)
     }
 
-    /// Read or mutate the server-side state attached to this session.
-    pub fn server_mut<'session>(&'session mut self) -> ServerSessionStateMut<'session, 'store> {
-        ServerSessionStateMut(self)
+    /// Returns `true` if there are no values in the server-side state.
+    pub async fn is_empty(&self) -> Result<bool, LoadError> {
+        use ServerState::*;
+
+        match force_load_ref(self).await? {
+            Unchanged { state, .. } | Changed { state } => Ok(state.is_empty()),
+            DoesNotExist | MarkedForDeletion => Ok(true),
+        }
+    }
+
+    /// Get the value associated with `key` from the server-side state.
+    pub async fn get_raw<'a>(&'a self, key: &str) -> Result<Option<&'a Value>, LoadError> {
+        use ServerState::*;
+
+        match force_load_ref(self).await? {
+            Unchanged { state, .. } | Changed { state } => Ok(state.get(key)),
+            DoesNotExist => Ok(None),
+            MarkedForDeletion => {
+                tracing::debug!(session.key = %key, "Tried to access a server-side value on a session marked for deletion.");
+                Ok(None)
+            }
+        }
+    }
+
+    /// Insert a value for the given key in the server-side state.
+    ///
+    /// If the state didn't have an entry for this key, the value is inserted and `None` is returned.\
+    /// If the state did have an entry for this key, its value is updated and the old
+    /// value is returned in its raw JSON form.
+    ///
+    /// The provided value must be a JSON value, which will be stored as-is, without any
+    /// further manipulation. If you'd prefer to let `pavex_session` handle the serialization,
+    /// use [`insert`][Self::insert] instead.
+    pub async fn insert_raw(
+        &mut self,
+        key: String,
+        value: Value,
+    ) -> Result<Option<Value>, LoadError> {
+        let mut existing_state;
+
+        use ServerState::*;
+        match force_load_mut(self).await? {
+            MarkedForDeletion => {
+                tracing::debug!(session.key = %key, "Tried to insert a server-side value on a session marked for deletion.");
+                return Ok(None);
+            }
+            Unchanged { state, .. } | Changed { state } => {
+                existing_state = std::mem::take(state);
+            }
+            DoesNotExist => {
+                existing_state = HashMap::new();
+            }
+        };
+        let old_value = existing_state.insert(key, value);
+        self.server_state = new_cell_with(Some(ServerState::Changed {
+            state: existing_state,
+        }));
+        Ok(old_value)
+    }
+
+    /// Remove the value associated with `key` from the server-side state.
+    ///
+    /// If the key exists, the removed value is returned.\
+    /// The value is returned as it was stored in the server-side state, without any deserialization.
+    /// If you want to deserialize the value as a specific type, use [`remove`][Self::remove] instead.
+    pub async fn remove_raw(&mut self, key: &str) -> Result<Option<Value>, LoadError> {
+        use ServerState::*;
+        match force_load_mut(self).await? {
+            MarkedForDeletion => {
+                tracing::debug!(session.key = %key, "Tried to delete a server-side value on a session marked for deletion.");
+                Ok(None)
+            }
+            DoesNotExist => Ok(None),
+            Unchanged { state, .. } | Changed { state } => Ok(state.remove(key)),
+        }
+    }
+
+    /// Delete the session record from the store.
+    ///
+    /// This doesn't destroy the whole session—you must invoke [`Session::invalidate`]
+    /// if that's your goal.
+    pub fn delete(&mut self) {
+        self.server_state = new_cell_with(Some(ServerState::MarkedForDeletion));
+    }
+
+    /// Remove all key-value pairs from the server-side state.
+    ///
+    /// This doesn't delete the session record from the store—you must invoke
+    /// [`Session::delete`][Self::delete] if you want to delete the record altogether.
+    ///
+    /// This doesn't invalidate the session—you must invoke [`Session::invalidate`]
+    /// if you want to delete the session altogether.
+    pub async fn clear(&mut self) -> Result<(), LoadError> {
+        use ServerState::*;
+        match force_load_mut(self).await? {
+            MarkedForDeletion | DoesNotExist => {}
+            Unchanged { state, .. } => {
+                if !state.is_empty() {
+                    self.server_state = new_cell_with(Some(ServerState::Changed {
+                        state: HashMap::new(),
+                    }));
+                }
+            }
+            Changed { state } => {
+                state.clear();
+            }
+        }
+        Ok(())
     }
 
     /// Generate a new session identifier and attach it to this session.
@@ -263,6 +427,197 @@ impl<'store> Session<'store> {
     pub fn is_invalidated(&self) -> bool {
         self.invalidated.is_invalidated()
     }
+}
+
+/// Control when the server-side state is synchronized with the store.
+impl<'store> Session<'store> {
+    /// Sync the in-memory representation of the server-side state
+    /// with the store.
+    ///
+    /// In most cases, you don't need to invoke this method manually: it is
+    /// done for you by [`finalize_session`][`super::finalize_session`],
+    /// the post-processing middleware that attaches the session cookie to
+    /// the response returned to the client.
+    pub async fn sync(&mut self) -> Result<(), SyncError> {
+        let state_config = &self.config.state;
+        let fresh_ttl = state_config.ttl;
+        let create_if_empty = {
+            let has_client_side = self.id.old_id().is_some()
+                || matches!(self.client_state, ClientState::Updated { .. });
+            has_client_side && state_config.server_state_creation == ServerStateCreation::NeverSkip
+        };
+        use ServerState::*;
+        match self.server_state.get() {
+            Some(DoesNotExist) => match self.id {
+                CurrentSessionId::NewlyGenerated(id) | CurrentSessionId::Existing(id) => {
+                    if create_if_empty {
+                        self.store
+                            .create(&id, SessionRecordRef::empty(fresh_ttl))
+                            .await?;
+                    }
+                }
+                CurrentSessionId::ToBeRenamed { .. } => {
+                    // Nothing to do.
+                }
+            },
+            None => {
+                match self.id {
+                    CurrentSessionId::Existing(_) => {
+                        // Nothing to do.
+                    }
+                    CurrentSessionId::ToBeRenamed { old, new } => {
+                        self.store.change_id(&old, &new).await?;
+                    }
+                    CurrentSessionId::NewlyGenerated(..) => {
+                        unreachable!(
+                            "A newly generated session cannot have a 'NotLoaded' server state. It must be set to 'DoesNotExist'."
+                        )
+                    }
+                };
+            }
+            Some(Unchanged {
+                state,
+                ttl: remaining_ttl,
+            }) => {
+                match self.id {
+                    CurrentSessionId::Existing(old) => {
+                        if state_config.extend_ttl == TtlExtensionTrigger::OnStateLoadsAndChanges {
+                            let extend = state_config
+                                .ttl_extension_threshold
+                                .map(|ratio| *remaining_ttl < fresh_ttl.mul_f32(ratio.inner()))
+                                .unwrap_or(true);
+                            if extend {
+                                self.store.update_ttl(&old, fresh_ttl).await?;
+                            }
+                        }
+                    }
+                    CurrentSessionId::ToBeRenamed { old, new } => {
+                        match self.store.change_id(&old, &new).await {
+                            Ok(_) => {}
+                            Err(ChangeIdError::UnknownId(_)) => {
+                                // The old state is no longer in the store—e.g. it may have
+                                // expired while we were processing. Rare, but possible.
+                                // We know what the new state needs to be though, so we
+                                // can handle this edge case gracefully.
+                                let record = SessionRecordRef {
+                                    state: Cow::Borrowed(state),
+                                    ttl: fresh_ttl,
+                                };
+                                self.store.create(&new, record).await?;
+                            }
+                            Err(e) => {
+                                return Err(e.into());
+                            }
+                        }
+                    }
+                    CurrentSessionId::NewlyGenerated(new) => {
+                        if create_if_empty {
+                            self.store
+                                .create(&new, SessionRecordRef::empty(fresh_ttl))
+                                .await?;
+                        }
+
+                        // Integrity check.
+                        assert!(
+                            state.is_empty(),
+                            "Server state is not empty on a new session, \
+                                    but the state is marked as 'unchanged'. This is a bug in `pavex_session`"
+                        );
+                    }
+                };
+            }
+            Some(MarkedForDeletion) => match self.id.old_id() {
+                Some(id) => {
+                    if let Err(e) = self.store.delete(&id).await {
+                        match e {
+                            // We're good as long as we made sure that no server-side
+                            // state is stored against this id, we're good.
+                            DeleteError::UnknownId(_) => {}
+                            _ => return Err(e.into()),
+                        }
+                    }
+                }
+                None => {
+                    tracing::trace!(
+                        "The server session state was marked for deletion, but there was no session to delete. This is a no-op."
+                    )
+                }
+            },
+            Some(Changed { state }) => {
+                let record = SessionRecordRef {
+                    state: Cow::Borrowed(state),
+                    ttl: fresh_ttl,
+                };
+                match self.id {
+                    CurrentSessionId::Existing(id) => {
+                        self.store.update(&id, record).await?;
+                    }
+                    CurrentSessionId::ToBeRenamed { old, new } => {
+                        if let Err(e) = self.store.delete(&old).await {
+                            match e {
+                                DeleteError::UnknownId(_) => {
+                                    // The record may have expired between this
+                                    // delete operation and the first (successful)
+                                    // load we performed at the beginning of this
+                                    // request processing task.
+                                    // Since we already have the value in memory,
+                                    // this is not an issue.
+                                }
+                                _ => {
+                                    return Err(e.into());
+                                }
+                            }
+                        }
+                        self.store.create(&new, record).await?;
+                    }
+                    CurrentSessionId::NewlyGenerated(id) => {
+                        self.store.create(&id, record).await?;
+                    }
+                }
+            }
+        };
+
+        self.server_state = {
+            let old_state = self.server_state.take();
+            let new_state = old_state.map(|state| match state {
+                Changed { state } => Unchanged {
+                    state,
+                    ttl: fresh_ttl,
+                },
+                Unchanged { state, ttl } => Unchanged { state, ttl },
+                MarkedForDeletion => {
+                    if self.is_invalidated() {
+                        MarkedForDeletion
+                    } else {
+                        DoesNotExist
+                    }
+                }
+                DoesNotExist => {
+                    if create_if_empty {
+                        Unchanged {
+                            state: HashMap::new(),
+                            ttl: fresh_ttl,
+                        }
+                    } else {
+                        DoesNotExist
+                    }
+                }
+            });
+            new_cell_with(new_state)
+        };
+        Ok(())
+    }
+
+    /// Load the server-side state from the store.
+    /// This method does nothing if the server-side state has already been loaded.
+    ///
+    /// After calling this method, the server-side state will be loaded
+    /// and cached in memory, so that subsequent calls to [`get_raw`](#method.get_raw),
+    /// [`insert_raw`](#method.insert_raw), and [`remove_raw`](#method.remove_raw)
+    /// will operate on the in-memory state.
+    pub async fn force_load(&self) -> Result<(), LoadError> {
+        force_load(self).await
+    }
 
     /// Sync the current server-side state with the chosen storage backend.
     /// If necessary, it returns a cookie to be attached to the outgoing response
@@ -270,7 +625,7 @@ impl<'store> Session<'store> {
     #[must_use = "The cookie returned by `finalize` must be attached to the outgoing HTTP response. \
         Failing to do so will push the session into an invalid state."]
     pub async fn finalize(&mut self) -> Result<Option<ResponseCookie<'static>>, FinalizeError> {
-        self.server_mut().sync().await?;
+        self.sync().await?;
 
         let cookie_config = &self.config.cookie;
         let cookie_name = &cookie_config.name;
@@ -351,6 +706,19 @@ impl<'store> Session<'store> {
     }
 }
 
+/// APIs for manipulating the client-side session state.
+impl<'store> Session<'store> {
+    /// Read values from the client-side state attached to this session.
+    pub fn client(&self) -> ClientSessionState<'_> {
+        ClientSessionState(&self.client_state, &self.invalidated)
+    }
+
+    /// Read or mutate the client-side state attached to this session.
+    pub fn client_mut(&mut self) -> ClientSessionStateMut<'_> {
+        ClientSessionStateMut(&mut self.client_state, &self.invalidated)
+    }
+}
+
 /// A read-only reference to the client-side state of a session.
 pub struct ClientSessionState<'session>(&'session ClientState, &'session InvalidationFlag);
 
@@ -367,8 +735,8 @@ impl<'session> ClientSessionState<'session> {
     }
 
     /// Get the raw JSON value associated with `key` from the client-side state.
-    pub fn get_value(&self, key: &str) -> Option<&'session Value> {
-        client_get_value(self.0, self.1, key)
+    pub fn get_raw(&self, key: &str) -> Option<&'session Value> {
+        client_get_raw(self.0, self.1, key)
     }
 
     /// Returns true if there are no values in the client-side state.
@@ -393,8 +761,8 @@ impl ClientSessionStateMut<'_> {
     }
 
     /// Get the raw JSON value associated with `key` from the client-side state.
-    pub fn get_value<'a>(&'a self, key: &str) -> Option<&'a Value> {
-        client_get_value(&*self.0, self.1, key)
+    pub fn get_raw<'a>(&'a self, key: &str) -> Option<&'a Value> {
+        client_get_raw(&*self.0, self.1, key)
     }
 
     /// Returns true if there are no values in the client-side state.
@@ -402,11 +770,11 @@ impl ClientSessionStateMut<'_> {
         client_is_empty(self.0, self.1)
     }
 
-    /// Set a value in the client-side state for the given key.
+    /// Insert a value in the client-side state for the given key.
     ///
     /// If the key already exists, the value is updated and the old raw value is returned.
     /// If the value cannot be serialized, an error is returned.
-    pub fn set<T: Serialize>(
+    pub fn insert<T: Serialize>(
         &mut self,
         key: String,
         value: T,
@@ -416,16 +784,16 @@ impl ClientSessionStateMut<'_> {
             location: ValueLocation::Client,
             source,
         })?;
-        Ok(self.set_value(key, value))
+        Ok(self.insert_raw(key, value))
     }
 
-    /// Set a value in the client-side state for the given key.
+    /// Insert a value in the client-side state for the given key.
     ///
     /// If the key already exists, the value is updated and the old value is returned.
-    pub fn set_value(&mut self, key: String, value: Value) -> Option<Value> {
+    pub fn insert_raw(&mut self, key: String, value: Value) -> Option<Value> {
         if self.1.is_invalidated() {
             tracing::trace!(
-                "Attempted to set a client-side value on a session that's been invalidated."
+                "Attempted to insert a client-side value on a session that's been invalidated."
             );
             return None;
         }
@@ -449,7 +817,7 @@ impl ClientSessionStateMut<'_> {
         &mut self,
         key: &str,
     ) -> Result<Option<T>, ValueDeserializationError> {
-        self.remove_value(key)
+        self.remove_raw(key)
             .map(|value| serde_json::from_value(value))
             .transpose()
             .map_err(|source| ValueDeserializationError {
@@ -462,7 +830,7 @@ impl ClientSessionStateMut<'_> {
     /// Remove the value associated with `key` from the client-side state.
     ///
     /// If the key exists, the removed value is returned.
-    pub fn remove_value(&mut self, key: &str) -> Option<Value> {
+    pub fn remove_raw(&mut self, key: &str) -> Option<Value> {
         if self.1.is_invalidated() {
             return None;
         }
@@ -499,371 +867,6 @@ impl ClientSessionStateMut<'_> {
     }
 }
 
-/// A mutable reference to the server-side state of a session.
-pub struct ServerSessionStateMut<'session, 'store>(&'session mut Session<'store>);
-
-impl ServerSessionStateMut<'_, '_> {
-    /// Get the value associated with `key` from the server-side state.
-    ///
-    /// If the value is not found, `None` is returned.
-    /// If the value cannot be deserialized into the expected type, an error is returned.
-    pub async fn get<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, ServerGetError> {
-        server_get(self.0, key).await
-    }
-
-    /// Set a value in the server-side state for the given key.
-    ///
-    /// If the key already exists, the old raw value is returned.
-    /// If the value cannot be serialized, an error is returned.
-    pub async fn set<T: Serialize>(
-        &mut self,
-        key: String,
-        value: T,
-    ) -> Result<Option<Value>, ServerSetError> {
-        let value = serde_json::to_value(value).map_err(|e| ValueSerializationError {
-            key: key.clone(),
-            location: ValueLocation::Server,
-            source: e,
-        })?;
-        self.set_value(key, value).await.map_err(Into::into)
-    }
-
-    /// Get the value associated with `key` from the server-side state.
-    pub async fn get_value<'a>(&'a self, key: &str) -> Result<Option<&'a Value>, LoadError> {
-        server_get_value(self.0, key).await
-    }
-
-    /// Returns `true` if there are no values in the server-side state.
-    pub async fn is_empty(&self) -> Result<bool, LoadError> {
-        server_is_empty(self.0).await
-    }
-
-    /// Set a value in the server-side state for the given key.
-    ///
-    /// If the key already exists, the old value is returned.
-    pub async fn set_value(
-        &mut self,
-        key: String,
-        value: Value,
-    ) -> Result<Option<Value>, LoadError> {
-        let mut existing_state;
-
-        use ServerState::*;
-        match force_load_mut(self.0).await? {
-            MarkedForDeletion => {
-                tracing::debug!(session.key = %key, "Tried to set a server-side value on a session marked for deletion.");
-                return Ok(None);
-            }
-            Unchanged { state, .. } | Changed { state } => {
-                existing_state = std::mem::take(state);
-            }
-            DoesNotExist => {
-                existing_state = HashMap::new();
-            }
-        };
-        let old_value = existing_state.insert(key, value);
-        self.0.server_state = new_cell_with(Some(ServerState::Changed {
-            state: existing_state,
-        }));
-        Ok(old_value)
-    }
-
-    /// Remove the value associated with `key` from the server-side state.
-    ///
-    /// If the key exists, the removed value is returned.
-    /// If the removed value cannot be serialized, an error is returned.
-    pub async fn remove<T: DeserializeOwned>(
-        &mut self,
-        key: &str,
-    ) -> Result<Option<T>, ServerRemoveError> {
-        self.remove_value(key)
-            .await?
-            .map(serde_json::from_value)
-            .transpose()
-            .map_err(|source| ValueDeserializationError {
-                key: key.to_owned(),
-                location: ValueLocation::Server,
-                source,
-            })
-            .map_err(ServerRemoveError::DeserializationError)
-    }
-
-    /// Remove the value associated with `key` from the server-side state.
-    ///
-    /// If the key exists, the removed value is returned.
-    pub async fn remove_value(&mut self, key: &str) -> Result<Option<Value>, LoadError> {
-        use ServerState::*;
-        match force_load_mut(self.0).await? {
-            MarkedForDeletion => {
-                tracing::debug!(session.key = %key, "Tried to delete a server-side value on a session marked for deletion.");
-                Ok(None)
-            }
-            DoesNotExist => Ok(None),
-            Unchanged { state, .. } | Changed { state } => Ok(state.remove(key)),
-        }
-    }
-
-    /// Delete the session record from the store.
-    ///
-    /// This doesn't destroy the whole session—you must invoke [`Session::invalidate`]
-    /// if that's your goal.
-    pub fn delete(&mut self) {
-        self.0.server_state = new_cell_with(Some(ServerState::MarkedForDeletion));
-    }
-
-    /// Remove all key-value pairs from the server-side state.
-    ///
-    /// This doesn't delete the session record from the store—you must invoke
-    /// [`Session::delete`][Self::delete] if you want to delete the record altogether.
-    ///
-    /// This doesn't invalidate the session—you must invoke [`Session::invalidate`]
-    /// if you want to delete the session altogether.
-    pub async fn clear(&mut self) -> Result<(), LoadError> {
-        use ServerState::*;
-        match force_load_mut(self.0).await? {
-            MarkedForDeletion | DoesNotExist => {}
-            Unchanged { state, .. } => {
-                if !state.is_empty() {
-                    self.0.server_state = new_cell_with(Some(ServerState::Changed {
-                        state: HashMap::new(),
-                    }));
-                }
-            }
-            Changed { state } => {
-                state.clear();
-            }
-        }
-        Ok(())
-    }
-
-    /// Sync the in-memory representation of the server-side state
-    /// with the store.
-    ///
-    /// In most cases, you don't need to invoke this method manually: it is
-    /// done for you by [`finalize_session`][`super::finalize_session`],
-    /// the post-processing middleware that attaches the session cookie to
-    /// the response returned to the client.
-    pub async fn sync(&mut self) -> Result<(), SyncError> {
-        let state_config = &self.0.config.state;
-        let fresh_ttl = state_config.ttl;
-        let create_if_empty = {
-            let has_client_side = self.0.id.old_id().is_some()
-                || matches!(self.0.client_state, ClientState::Updated { .. });
-            has_client_side && state_config.server_state_creation == ServerStateCreation::NeverSkip
-        };
-        use ServerState::*;
-        match self.0.server_state.get() {
-            Some(DoesNotExist) => match self.0.id {
-                CurrentSessionId::NewlyGenerated(id) | CurrentSessionId::Existing(id) => {
-                    if create_if_empty {
-                        self.0
-                            .store
-                            .create(&id, SessionRecordRef::empty(fresh_ttl))
-                            .await?;
-                    }
-                }
-                CurrentSessionId::ToBeRenamed { .. } => {
-                    // Nothing to do.
-                }
-            },
-            None => {
-                match self.0.id {
-                    CurrentSessionId::Existing(_) => {
-                        // Nothing to do.
-                    }
-                    CurrentSessionId::ToBeRenamed { old, new } => {
-                        self.0.store.change_id(&old, &new).await?;
-                    }
-                    CurrentSessionId::NewlyGenerated(..) => {
-                        unreachable!(
-                            "A newly generated session cannot have a 'NotLoaded' server state. It must be set to 'DoesNotExist'."
-                        )
-                    }
-                };
-            }
-            Some(Unchanged {
-                state,
-                ttl: remaining_ttl,
-            }) => {
-                match self.0.id {
-                    CurrentSessionId::Existing(old) => {
-                        if state_config.extend_ttl == TtlExtensionTrigger::OnStateLoadsAndChanges {
-                            let extend = state_config
-                                .ttl_extension_threshold
-                                .map(|ratio| *remaining_ttl < fresh_ttl.mul_f32(ratio.inner()))
-                                .unwrap_or(true);
-                            if extend {
-                                self.0.store.update_ttl(&old, fresh_ttl).await?;
-                            }
-                        }
-                    }
-                    CurrentSessionId::ToBeRenamed { old, new } => {
-                        match self.0.store.change_id(&old, &new).await {
-                            Ok(_) => {}
-                            Err(ChangeIdError::UnknownId(_)) => {
-                                // The old state is no longer in the store—e.g. it may have
-                                // expired while we were processing. Rare, but possible.
-                                // We know what the new state needs to be though, so we
-                                // can handle this edge case gracefully.
-                                let record = SessionRecordRef {
-                                    state: Cow::Borrowed(state),
-                                    ttl: fresh_ttl,
-                                };
-                                self.0.store.create(&new, record).await?;
-                            }
-                            Err(e) => {
-                                return Err(e.into());
-                            }
-                        }
-                    }
-                    CurrentSessionId::NewlyGenerated(new) => {
-                        if create_if_empty {
-                            self.0
-                                .store
-                                .create(&new, SessionRecordRef::empty(fresh_ttl))
-                                .await?;
-                        }
-
-                        // Integrity check.
-                        assert!(
-                            state.is_empty(),
-                            "Server state is not empty on a new session, \
-                            but the state is marked as 'unchanged'. This is a bug in `pavex_session`"
-                        );
-                    }
-                };
-            }
-            Some(MarkedForDeletion) => match self.0.id.old_id() {
-                Some(id) => {
-                    if let Err(e) = self.0.store.delete(&id).await {
-                        match e {
-                            // We're good as long as we made sure that no server-side
-                            // state is stored against this id, we're good.
-                            DeleteError::UnknownId(_) => {}
-                            _ => return Err(e.into()),
-                        }
-                    }
-                }
-                None => {
-                    tracing::trace!(
-                        "The server session state was marked for deletion, but there was no session to delete. This is a no-op."
-                    )
-                }
-            },
-            Some(Changed { state }) => {
-                let record = SessionRecordRef {
-                    state: Cow::Borrowed(state),
-                    ttl: fresh_ttl,
-                };
-                match self.0.id {
-                    CurrentSessionId::Existing(id) => {
-                        self.0.store.update(&id, record).await?;
-                    }
-                    CurrentSessionId::ToBeRenamed { old, new } => {
-                        if let Err(e) = self.0.store.delete(&old).await {
-                            match e {
-                                DeleteError::UnknownId(_) => {
-                                    // The record may have expired between this
-                                    // delete operation and the first (successful)
-                                    // load we performed at the beginning of this
-                                    // request processing task.
-                                    // Since we already have the value in memory,
-                                    // this is not an issue.
-                                }
-                                _ => {
-                                    return Err(e.into());
-                                }
-                            }
-                        }
-                        self.0.store.create(&new, record).await?;
-                    }
-                    CurrentSessionId::NewlyGenerated(id) => {
-                        self.0.store.create(&id, record).await?;
-                    }
-                }
-            }
-        };
-
-        self.0.server_state = {
-            let old_state = self.0.server_state.take();
-            let new_state = old_state.map(|state| match state {
-                Changed { state } => Unchanged {
-                    state,
-                    ttl: fresh_ttl,
-                },
-                Unchanged { state, ttl } => Unchanged { state, ttl },
-                MarkedForDeletion => {
-                    if self.0.is_invalidated() {
-                        MarkedForDeletion
-                    } else {
-                        DoesNotExist
-                    }
-                }
-                DoesNotExist => {
-                    if create_if_empty {
-                        Unchanged {
-                            state: HashMap::new(),
-                            ttl: fresh_ttl,
-                        }
-                    } else {
-                        DoesNotExist
-                    }
-                }
-            });
-            new_cell_with(new_state)
-        };
-        Ok(())
-    }
-
-    /// Load the server-side state from the store.
-    /// This method does nothing if the server-side state has already been loaded.
-    ///
-    /// After calling this method, the server-side state will be loaded
-    /// and cached in memory, so that subsequent calls to [`get_value`](#method.get_value),
-    /// [`set_value`](#method.set_value), and [`remove_value`](#method.remove_value)
-    /// will operate on the in-memory state.
-    pub async fn force_load(&self) -> Result<(), LoadError> {
-        force_load(self.0).await
-    }
-}
-
-/// A read-only reference to the server-side state of a session.
-pub struct ServerSessionState<'session, 'store>(&'session Session<'store>);
-
-impl<'session> ServerSessionState<'session, '_> {
-    /// Get the value associated with `key` from the server-side state.
-    ///
-    /// If the value is not found, `None` is returned.
-    /// If the value cannot be deserialized into the expected type, an error is returned.
-    pub async fn get<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, ServerGetError> {
-        server_get(self.0, key).await
-    }
-
-    /// Get the value associated with `key` from the server-side state.
-    pub async fn get_value<'a, 'b>(
-        &'a self,
-        key: &'b str,
-    ) -> Result<Option<&'session Value>, LoadError> {
-        server_get_value(self.0, key).await
-    }
-
-    /// Returns `true` if there are no values in the server-side state.
-    pub async fn is_empty(&self) -> Result<bool, LoadError> {
-        server_is_empty(self.0).await
-    }
-
-    /// Load the server-side state from the store.
-    /// This method does nothing if the server-side state has already been loaded.
-    ///
-    /// After calling this method, the server-side state will be loaded
-    /// and cached in memory, so that subsequent calls to [`get_value`](#method.get_value),
-    /// [`set_value`](#method.set_value), and [`remove_value`](#method.remove_value)
-    /// will operate on the in-memory state.
-    pub async fn force_load(&self) -> Result<(), LoadError> {
-        force_load(self.0).await
-    }
-}
-
 /// Get the value associated with `key` from the client-side state.
 ///
 /// If the value is not found, `None` is returned.
@@ -873,7 +876,7 @@ fn client_get<T: DeserializeOwned>(
     flag: &InvalidationFlag,
     key: &str,
 ) -> Result<Option<T>, ValueDeserializationError> {
-    client_get_value(state, flag, key)
+    client_get_raw(state, flag, key)
         .map(|value| serde_json::from_value(value.clone()))
         .transpose()
         .map_err(|source| ValueDeserializationError {
@@ -884,7 +887,7 @@ fn client_get<T: DeserializeOwned>(
 }
 
 /// Get the raw JSON value associated with `key` from the client-side state.
-fn client_get_value<'session>(
+fn client_get_raw<'session>(
     state: &'session ClientState,
     flag: &'session InvalidationFlag,
     key: &str,
@@ -906,55 +909,6 @@ fn client_is_empty(state: &ClientState, flag: &InvalidationFlag) -> bool {
     }
     match state {
         ClientState::Updated { state } | ClientState::Unchanged { state } => state.is_empty(),
-    }
-}
-
-/// Get the value associated with `key` from the server-side state.
-///
-/// If the value is not found, `None` is returned.
-/// If the value cannot be deserialized into the expected type, an error is returned.
-async fn server_get<T: DeserializeOwned>(
-    session: &Session<'_>,
-    key: &str,
-) -> Result<Option<T>, ServerGetError> {
-    server_get_value(session, key)
-        .await?
-        .map(|value| serde_json::from_value(value.clone()))
-        .transpose()
-        .map_err(|e| {
-            ValueDeserializationError {
-                key: key.to_owned(),
-                location: ValueLocation::Server,
-                source: e,
-            }
-            .into()
-        })
-}
-
-/// Get the value associated with `key` from the server-side state.
-async fn server_get_value<'a>(
-    session: &'a Session<'_>,
-    key: &str,
-) -> Result<Option<&'a Value>, LoadError> {
-    use ServerState::*;
-
-    match force_load_ref(session).await? {
-        Unchanged { state, .. } | Changed { state } => Ok(state.get(key)),
-        DoesNotExist => Ok(None),
-        MarkedForDeletion => {
-            tracing::debug!(session.key = %key, "Tried to access a server-side value on a session marked for deletion.");
-            Ok(None)
-        }
-    }
-}
-
-/// Check if the server-side state is empty.
-async fn server_is_empty(session: &Session<'_>) -> Result<bool, LoadError> {
-    use ServerState::*;
-
-    match force_load_ref(session).await? {
-        Unchanged { state, .. } | Changed { state } => Ok(state.is_empty()),
-        DoesNotExist | MarkedForDeletion => Ok(true),
     }
 }
 
@@ -990,8 +944,8 @@ async fn force_load_ref<'a>(session: &'a Session<'_>) -> Result<&'a ServerState,
 /// This method does nothing if the server-side state has already been loaded.
 ///
 /// After calling this method, the server-side state will be loaded
-/// and cached in memory, so that subsequent calls to [`get_value`](#method.get_value),
-/// [`set_value`](#method.set_value), and [`remove_value`](#method.remove_value)
+/// and cached in memory, so that subsequent calls to [`get_raw`](#method.get_raw),
+/// [`insert_raw`](#method.insert_raw), and [`remove_raw`](#method.remove_raw)
 /// will operate on the in-memory state.
 async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
     // All other cases either imply that we've already loaded the
@@ -1054,7 +1008,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionStateMut::sync`][super::ServerSessionStateMut::sync].
+    /// The error returned by [`Session::sync`][super::Session::sync].
     pub enum SyncError {
         #[error("Failed to create a new session record")]
         CreateError(#[from] CreateError),
@@ -1070,7 +1024,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionState::get`][super::ServerSessionState::get].
+    /// The error returned by [`Session::get`][super::Session::get].
     pub enum ServerGetError {
         #[error("Failed to load the session record")]
         LoadError(#[from] LoadError),
@@ -1080,7 +1034,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionStateMut::remove`][super::ServerSessionStateMut::remove].
+    /// The error returned by [`Session::remove`][super::Session::remove].
     pub enum ServerRemoveError {
         #[error("Failed to load the session record")]
         LoadError(#[from] LoadError),
@@ -1090,8 +1044,8 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionStateMut::set`][super::ServerSessionStateMut::set].
-    pub enum ServerSetError {
+    /// The error returned by [`Session::insert`][super::Session::insert].
+    pub enum ServerInsertError {
         #[error("Failed to load the session record")]
         LoadError(#[from] LoadError),
         #[error(transparent)]

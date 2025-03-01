@@ -4,20 +4,23 @@ use pavex::f;
 use pavex::response::Response;
 
 pub mod clear;
+pub mod client;
 pub mod cycle_id;
 pub mod delete;
 pub mod get;
 pub mod get_struct;
+pub mod insert;
+pub mod insert_struct;
 pub mod invalidate;
 pub mod remove;
-pub mod remove_value;
-pub mod set;
-pub mod set_struct;
+pub mod remove_raw;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
 
     bp.route(GET, "/clear", f!(self::clear::handler))
+        .error_handler(f!(self::e500));
+    bp.route(GET, "/client", f!(self::client::handler))
         .error_handler(f!(self::e500));
     bp.route(GET, "/cycle_id", f!(self::cycle_id::handler))
         .error_handler(f!(self::e500));
@@ -31,11 +34,11 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(self::e500));
     bp.route(GET, "/remove", f!(self::remove::handler))
         .error_handler(f!(self::e500));
-    bp.route(GET, "/remove_value", f!(self::remove_value::handler))
+    bp.route(GET, "/remove_raw", f!(self::remove_raw::handler))
         .error_handler(f!(self::e500));
-    bp.route(GET, "/set", f!(self::set::handler))
+    bp.route(GET, "/insert", f!(self::insert::handler))
         .error_handler(f!(self::e500));
-    bp.route(GET, "/set_struct", f!(self::set_struct::handler))
+    bp.route(GET, "/insert_struct", f!(self::insert_struct::handler))
         .error_handler(f!(self::e500));
     bp
 }

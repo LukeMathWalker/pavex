@@ -62,7 +62,7 @@ pub struct SessionKit {
     /// By default, it's set to [`finalize_session`].
     /// The error is handled by [`FinalizeError::into_response`].
     ///
-    /// [`FinalizeError::into_response`]: crate::state::errors::FinalizeError::into_response
+    /// [`FinalizeError::into_response`]: crate::errors::FinalizeError::into_response
     /// [`finalize_session`]: crate::middleware::finalize_session
     pub session_finalizer: Option<PostProcessingMiddleware>,
 }
@@ -81,7 +81,7 @@ impl SessionKit {
             Constructor::request_scoped(f!(crate::IncomingSession::extract)).ignore(Lint::Unused);
         let session_finalizer =
             PostProcessingMiddleware::new(f!(crate::middleware::finalize_session))
-                .error_handler(f!(crate::state::errors::FinalizeError::into_response));
+                .error_handler(f!(crate::errors::FinalizeError::into_response));
         Self {
             session: Some(session),
             incoming_session: Some(incoming_session),

@@ -8,15 +8,15 @@ Let's go through a few examples to get familiar with the basic operations you ca
 
 ## Storing data
 
-Use [`set`][set] to store an entry in the server-side state of your session:
+Use [`insert`][insert] to store an entry in the server-side state of your session:
 
---8<-- "doc_examples/guide/sessions/installation/project-server_set.snap"
+--8<-- "doc_examples/guide/sessions/installation/project-server_insert.snap"
 
 1. Pavex knows how to inject a `&mut Session` or a `&Session` as an input parameter.
    It's using [the session kit you installed](installation.md#kits) which specifies 
    how to construct a [`Session`][Session] instance.
    
-In the example above, [`set`][set] will create a new `user.id` entry in the session state. 
+In the example above, [`insert`][insert] will create a new `user.id` entry in the session state. 
 If there is already a `user.id` entry, it'll overwrite it.
 
 ### Complex objects
@@ -24,11 +24,11 @@ If there is already a `user.id` entry, it'll overwrite it.
 You're not limited to storing simple values. You can store complex types like structs
 or enums as well, if they are serializable:
 
---8<-- "doc_examples/guide/sessions/installation/project-server_set_struct.snap"
+--8<-- "doc_examples/guide/sessions/installation/project-server_insert_struct.snap"
 
 1. We derive `serde`'s `Serialize` and `Deserialize` traits to ensure the type
    can be serialized and deserialized.
-2. [`set`][set] will return an error if the serialization step fails.
+2. [`insert`][insert] will return an error if the serialization step fails.
 
 ## Retrieving data
 
@@ -66,9 +66,9 @@ Use [`remove`][remove] to delete an entry from the server-side state of your ses
 1. You must add a type annotation to tell [`remove`][remove] what type of value you expect to get back.
 
 Remove returns the entry that was removed, if it existed, or `None` otherwise.\
-If you don't plan to use the removed value, you can invoke [`remove_value`][remove_value] instead:
+If you don't plan to use the removed value, you can invoke [`remove_raw`][remove_raw] instead:
 
---8<-- "doc_examples/guide/sessions/installation/project-server_remove_value.snap"
+--8<-- "doc_examples/guide/sessions/installation/project-server_remove_raw.snap"
 
 It returns the raw entry, without trying to deserialize it. It spares you from having to specify the type.
 
@@ -138,8 +138,8 @@ server-side counterpart. Use it only for small, non-sensitive data.
 [invalidate]: ../../api_reference/pavex_session/struct.Session.html#method.invalidate
 [client]: ../../api_reference/pavex_session/struct.Session.html#method.client
 [client_mut]: ../../api_reference/pavex_session/struct.Session.html#method.client_mut
-[clear]: ../../api_reference/pavex_session/struct.SessionServerMut.html#method.clear
-[set]: ../../api_reference/pavex_session/struct.SessionServerMut.html#method.set
-[remove]: ../../api_reference/pavex_session/struct.SessionServerMut.html#method.remove
-[remove_value]: ../../api_reference/pavex_session/struct.SessionServerMut.html#method.remove_value
-[get]: ../../api_reference/pavex_session/struct.SessionServer.html#method.get
+[clear]: ../../api_reference/pavex_session/struct.Session.html#method.clear
+[insert]: ../../api_reference/pavex_session/struct.Session.html#method.insert
+[remove]: ../../api_reference/pavex_session/struct.Session.html#method.remove
+[remove_raw]: ../../api_reference/pavex_session/struct.Session.html#method.remove_raw
+[get]: ../../api_reference/pavex_session/struct.Session.html#method.get

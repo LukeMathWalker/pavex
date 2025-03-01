@@ -6,12 +6,12 @@ snippets:
   - name: "postgres"
     source_path: "src/blueprint.rs"
     ranges: ["0..12", "17.."]
-  - name: "server_set"
-    source_path: "src/ops/set.rs"
+  - name: "server_insert"
+    source_path: "src/ops/insert.rs"
     ranges: ["0..7", "9.."]
     hl_lines: [7]
-  - name: "server_set_struct"
-    source_path: "src/ops/set_struct.rs"
+  - name: "server_insert_struct"
+    source_path: "src/ops/insert_struct.rs"
     ranges: ["0..16", "18.."]
     hl_lines: [5, 16]
   - name: "server_get"
@@ -26,8 +26,8 @@ snippets:
     source_path: "src/ops/remove.rs"
     ranges: ["0..6", "7.."]
     hl_lines: [6]
-  - name: "server_remove_value"
-    source_path: "src/ops/remove_value.rs"
+  - name: "server_remove_raw"
+    source_path: "src/ops/remove_raw.rs"
     ranges: ["0..6", "7.."]
     hl_lines: [6]
   - name: "server_delete"

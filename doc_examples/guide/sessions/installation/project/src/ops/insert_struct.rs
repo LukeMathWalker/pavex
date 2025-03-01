@@ -13,7 +13,7 @@ pub async fn handler(session: &mut Session<'_>) -> Result<Response, Error> {
         user_id: "my-user-identifier".into(),
         email: "user@domain.com".into(),
     };
-    session.server_mut().set("user".into(), info).await?; // (2)!
+    session.insert("user".into(), info).await?; // (2)!
 
     Ok(Response::ok())
 }
