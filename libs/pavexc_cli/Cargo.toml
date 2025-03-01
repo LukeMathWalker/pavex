@@ -14,14 +14,14 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true, features = ["derive", "env"] }
-pavexc = { path = "../pavexc", version = "0.1.77" }
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.77" }
-pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.77" }
-pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.77" }
-pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.1.77" }
+pavexc = { path = "../pavexc", version = "0.1.78" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.78" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.78" }
+pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.78" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.1.78" }
 tracing_log_error = { workspace = true }
 cargo-like-utils = { workspace = true }
-pavex_miette = { path = "../pavex_miette", version = "0.1.77" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.78" }
 liquid-core = { workspace = true }
 miette = { workspace = true }
 fs-err = { workspace = true }
@@ -37,7 +37,7 @@ supports-color = { workspace = true }
 include_dir = { workspace = true }
 path-absolutize = { workspace = true }
 ron = { workspace = true }
-generate_from_path = { path = "../generate_from_path", version = "0.1.77" }
+generate_from_path = { path = "../generate_from_path", version = "0.1.78" }
 tempfile = { workspace = true }
 better-panic = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
