@@ -9,6 +9,6 @@ struct AuthInfo {
 }
 
 pub async fn handler(session: &Session<'_>) -> Result<Response, Error> {
-    let auth_info: Option<AuthInfo> /* (2)! */ = session.server().get("user").await?;
+    let auth_info: Option<AuthInfo> /* (2)! */ = session.get("user").await?;
     Ok(Response::ok())
 }

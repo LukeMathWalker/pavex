@@ -50,12 +50,8 @@ async fn no_removal_cookie_is_sent_for_a_fresh_but_invalidated_session() {
     let mut session = Session::new(&store, &config, None);
 
     let key = "my_key";
-    session.client_mut().set(key.to_owned(), "hey").unwrap();
-    session
-        .server_mut()
-        .set(key.to_owned(), "yo")
-        .await
-        .unwrap();
+    session.client_mut().insert(key.to_owned(), "hey").unwrap();
+    session.insert(key.to_owned(), "yo").await.unwrap();
 
     session.invalidate();
 
@@ -106,9 +102,9 @@ async fn pre_existing_client_state_can_be_accessed() {
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    assert_eq!(session.client().get_value(key).unwrap(), &value);
+    assert_eq!(session.client().get_raw(key).unwrap(), &value);
     // No source confusion!
-    assert!(session.server().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -133,8 +129,8 @@ async fn pre_existing_client_state_can_be_modified() {
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    assert_eq!(session.client().get_value(key).unwrap(), &value);
-    session.client_mut().remove_value(key);
+    assert_eq!(session.client().get_raw(key).unwrap(), &value);
+    session.client_mut().remove_raw(key);
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -189,9 +185,9 @@ async fn server_state_can_be_cleared_without_invalidating_the_session() {
     let mut session = Session::new(&store, &config, Some(incoming));
 
     assert!(session.client().is_empty());
-    assert!(!session.server().is_empty().await.unwrap());
+    assert!(!session.is_empty().await.unwrap());
 
-    session.server_mut().clear().await.unwrap();
+    session.clear().await.unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
 
@@ -213,11 +209,11 @@ async fn store_is_not_touched_if_you_clear_an_empty_server_state_and_ttl_is_conf
     let fixture = SessionFixture::default();
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
-    assert!(session.server_mut().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
     // Otherwise `create` and `load` will show up in the operation log.
     call_tracker.reset_operation_log().await;
 
-    session.server_mut().clear().await.unwrap();
+    session.clear().await.unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
 
@@ -238,7 +234,7 @@ async fn ttl_is_updated_if_server_state_is_loaded_but_unchanged() {
     fixture.server_ttl = Some(config.state.ttl);
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
-    assert!(session.server_mut().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
     // Otherwise `create` and `load` will show up in the operation log.
     call_tracker.reset_operation_log().await;
 
@@ -264,7 +260,7 @@ async fn ttl_is_not_updated_if_server_state_is_unchanged_but_ttl_threshold_is_no
     fixture.server_ttl = Some(config.state.ttl);
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
-    assert!(session.server_mut().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
     // Otherwise `create` and `load` will show up in the operation log.
     call_tracker.reset_operation_log().await;
 
@@ -290,7 +286,7 @@ async fn ttl_is_updated_if_server_state_is_unchanged_and_ttl_threshold_is_met() 
     fixture.server_ttl = Some(std::time::Duration::from_secs_f32(ttl));
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
-    assert!(session.server_mut().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
     // Otherwise `create` and `load` will show up in the operation log.
     call_tracker.reset_operation_log().await;
 
@@ -323,7 +319,7 @@ async fn server_state_can_be_deleted_without_invalidating_the_session() {
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session.server_mut().delete();
+    session.delete();
 
     let cookie = session.finalize().await.unwrap().unwrap();
 
@@ -358,7 +354,7 @@ async fn server_state_is_deleted_if_the_session_is_invalidated() {
     let mut session = Session::new(&store, &config, Some(incoming));
 
     assert!(session.client().is_empty());
-    assert!(!session.server().is_empty().await.unwrap());
+    assert!(!session.is_empty().await.unwrap());
 
     session.invalidate();
 
@@ -375,11 +371,7 @@ async fn server_state_is_persisted_for_a_fresh_session() {
     let (store, config) = (store(), SessionConfig::default());
     let mut session = Session::new(&store, &config, None);
 
-    session
-        .server_mut()
-        .set("key".into(), "value")
-        .await
-        .unwrap();
+    session.insert("key".into(), "value").await.unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -404,7 +396,9 @@ async fn server_state_is_not_created_if_empty_when_config_demands_it() {
     let mut session = Session::new(&store, &config, None);
 
     // Set a client-side value to force session creation.
-    session.client_mut().set_value("key".into(), "value".into());
+    session
+        .client_mut()
+        .insert_raw("key".into(), "value".into());
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let _ = SetCookie::parse(cookie);
@@ -421,7 +415,9 @@ async fn server_state_is_created_if_empty_when_config_demands_it() {
     let mut session = Session::new(&store, &config, None);
 
     // Set a client-side value to force session creation.
-    session.client_mut().set_value("key".into(), "value".into());
+    session
+        .client_mut()
+        .insert_raw("key".into(), "value".into());
 
     let cookie = session.finalize().await.unwrap().unwrap();
     // Not a removal cookie.
@@ -446,7 +442,7 @@ async fn server_state_for_existing_session_can_be_missing_if_config_allows_it() 
     .await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session.server().force_load().await.unwrap();
+    session.force_load().await.unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     // Not a removal cookie, the session wasn't considered invalid.
@@ -468,7 +464,7 @@ async fn server_state_for_existing_session_cannot_be_missing_if_config_forbids_i
     let mut session = Session::new(&store, &config, Some(incoming));
 
     // Force loading the server state, thus allowing us to realize it's not there.
-    session.server().force_load().await.unwrap();
+    session.force_load().await.unwrap();
 
     // The session is invalidated.
     let cookie = session.finalize().await.unwrap().unwrap();
@@ -483,7 +479,7 @@ async fn server_state_is_created_even_if_empty_with_default_config() {
     let mut session = Session::new(&store, &config, None);
 
     // Add client-side state to force session creation.
-    session.client_mut().set("key".into(), "value").unwrap();
+    session.client_mut().insert("key".into(), "value").unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -501,7 +497,7 @@ async fn server_state_is_not_created_when_empty_if_config_allows_it() {
     let mut session = Session::new(&store, &config, None);
 
     // Add client-side state to force session creation.
-    session.client_mut().set("key".into(), "value").unwrap();
+    session.client_mut().insert("key".into(), "value").unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -558,7 +554,7 @@ async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_h
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session.server_mut().force_load().await.unwrap();
+    session.force_load().await.unwrap();
     session.cycle_id();
 
     // Remove the old state.
@@ -579,7 +575,7 @@ async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_h
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session.server_mut().set("yo".into(), "yo").await.unwrap();
+    session.insert("yo".into(), "yo").await.unwrap();
     session.cycle_id();
 
     // Remove the old state.
@@ -599,7 +595,7 @@ async fn server_state_is_reassigned_when_session_id_changes() {
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session.server().force_load().await.unwrap();
+    session.force_load().await.unwrap();
     session.cycle_id();
 
     let cookie = session.finalize().await.unwrap().unwrap();
@@ -616,7 +612,7 @@ async fn store_is_not_hit_if_you_try_to_load_the_server_state_for_a_fresh_sessio
     let ((store, call_tracker), config) = (spy_store(), SessionConfig::default());
     let session = Session::new(&store, &config, None);
 
-    session.server().force_load().await.unwrap();
+    session.force_load().await.unwrap();
     call_tracker.assert_never_loaded().await;
 }
 
@@ -630,8 +626,7 @@ async fn new_server_state_is_stored_against_the_new_id_when_cycled() {
     let mut session = Session::new(&store, &config, Some(incoming));
 
     session
-        .server_mut()
-        .set_value("key".into(), "value".into())
+        .insert_raw("key".into(), "value".into())
         .await
         .unwrap();
     session.cycle_id();

@@ -15,7 +15,6 @@ async fn fresh_session_is_empty() {
     assert!(session.client().is_empty());
     assert!(
         session
-            .server()
             .is_empty()
             .await
             .expect("Failed to load session state")
@@ -25,16 +24,9 @@ async fn fresh_session_is_empty() {
     let key = "key".to_string();
 
     assert!(session.client().get::<String>(&key).unwrap().is_none());
-    assert!(session.client().get_value(&key).is_none());
-    assert!(
-        session
-            .server()
-            .get::<String>(&key)
-            .await
-            .unwrap()
-            .is_none()
-    );
-    assert!(session.server().get_value(&key).await.unwrap().is_none());
+    assert!(session.client().get_raw(&key).is_none());
+    assert!(session.get::<String>(&key).await.unwrap().is_none());
+    assert!(session.get_raw(&key).await.unwrap().is_none());
 }
 
 #[tokio::test]
@@ -47,15 +39,14 @@ async fn operation_outcomes_are_immediately_visible() {
     let client_value = "hey";
     let server_value = "yo";
 
-    session.client_mut().set(key.clone(), client_value).unwrap();
     session
-        .server_mut()
-        .set(key.clone(), server_value)
-        .await
+        .client_mut()
+        .insert(key.clone(), client_value)
         .unwrap();
+    session.insert(key.clone(), server_value).await.unwrap();
 
     let stored_client_value: String = session.client().get(&key).unwrap().unwrap();
-    let stored_server_value: String = session.server().get(&key).await.unwrap().unwrap();
+    let stored_server_value: String = session.get(&key).await.unwrap().unwrap();
 
     // Even though we used the same key, the client-side and server-side states
     // don't overwrite each other. They're completely separate bags of values.
@@ -69,23 +60,12 @@ async fn operation_outcomes_are_immediately_visible() {
     );
     assert_that!(
         &stored_server_value,
-        eq(&session
-            .server_mut()
-            .get::<String>(&key)
-            .await
-            .unwrap()
-            .unwrap())
+        eq(&session.get::<String>(&key).await.unwrap().unwrap())
     );
 
-    // We can also avoid the deserialize step by using `get_value`.
-    let stored_client_value = session.client().get_value(&key).unwrap().to_owned();
-    let stored_server_value = session
-        .server()
-        .get_value(&key)
-        .await
-        .unwrap()
-        .unwrap()
-        .to_owned();
+    // We can also avoid the deserialize step by using `get_raw`.
+    let stored_client_value = session.client().get_raw(&key).unwrap().to_owned();
+    let stored_server_value = session.get_raw(&key).await.unwrap().unwrap().to_owned();
 
     assert_that!(
         stored_client_value,
@@ -98,31 +78,25 @@ async fn operation_outcomes_are_immediately_visible() {
     // Internal consistency
     assert_that!(
         stored_client_value,
-        eq(session.client_mut().get_value(&key).unwrap())
-    );
-    assert_that!(
-        stored_server_value,
-        eq(session.server_mut().get_value(&key).await.unwrap().unwrap())
+        eq(session.client_mut().get_raw(&key).unwrap())
     );
 
     // The session is now reported as being non-empty
     assert_that!(session.client().is_empty(), eq(false));
     assert_that!(session.client_mut().is_empty(), eq(false));
-    assert_that!(session.server().is_empty().await.unwrap(), eq(false));
-    assert_that!(session.server_mut().is_empty().await.unwrap(), eq(false));
+    assert_that!(session.is_empty().await.unwrap(), eq(false));
+    assert_that!(session.is_empty().await.unwrap(), eq(false));
 
     session.client_mut().remove::<String>(&key).unwrap();
-    session.server_mut().remove::<String>(&key).await.unwrap();
+    session.remove::<String>(&key).await.unwrap();
 
-    assert_that!(session.client().get_value(&key), none());
-    assert_that!(session.client_mut().get_value(&key), none());
-    assert_that!(session.server().get_value(&key).await.unwrap(), none());
-    assert_that!(session.server_mut().get_value(&key).await.unwrap(), none());
+    assert_that!(session.client().get_raw(&key), none());
+    assert_that!(session.client_mut().get_raw(&key), none());
+    assert_that!(session.get_raw(&key).await.unwrap(), none());
 
     assert_that!(session.client().is_empty(), eq(true));
     assert_that!(session.client_mut().is_empty(), eq(true));
-    assert_that!(session.server().is_empty().await.unwrap(), eq(true));
-    assert_that!(session.server_mut().is_empty().await.unwrap(), eq(true));
+    assert_that!(session.is_empty().await.unwrap(), eq(true));
 }
 
 #[tokio::test]
@@ -135,14 +109,14 @@ async fn server_set_overwrites_previous_values() {
     let value1 = "yo";
     let value2 = "yo";
 
-    session.server_mut().set(key.clone(), value1).await.unwrap();
+    session.insert(key.clone(), value1).await.unwrap();
 
-    let stored_value: String = session.server().get(&key).await.unwrap().unwrap();
+    let stored_value: String = session.get(&key).await.unwrap().unwrap();
     assert_that!(&stored_value, eq(&value1));
 
-    session.server_mut().set(key.clone(), value2).await.unwrap();
+    session.insert(key.clone(), value2).await.unwrap();
 
-    let stored_value: String = session.server().get(&key).await.unwrap().unwrap();
+    let stored_value: String = session.get(&key).await.unwrap().unwrap();
     assert_that!(&stored_value, eq(&value2));
 }
 
@@ -156,12 +130,12 @@ async fn client_set_overwrites_previous_values() {
     let value1 = "yo";
     let value2 = "yo";
 
-    session.client_mut().set(key.clone(), value1).unwrap();
+    session.client_mut().insert(key.clone(), value1).unwrap();
 
     let stored_value: String = session.client().get(&key).unwrap().unwrap();
     assert_that!(&stored_value, eq(&value1));
 
-    session.client_mut().set(key.clone(), value2).unwrap();
+    session.client_mut().insert(key.clone(), value2).unwrap();
 
     let stored_value: String = session.client().get(&key).unwrap().unwrap();
     assert_that!(&stored_value, eq(&value2));
@@ -173,7 +147,7 @@ async fn client_get_fails_if_deserialization_fails() {
     let mut session = Session::new(&store, &config, None);
 
     let key = "key".to_string();
-    session.client_mut().set(key.clone(), "yo").unwrap();
+    session.client_mut().insert(key.clone(), "yo").unwrap();
     let err = session.client().get::<u64>(&key).unwrap_err();
     assert_eq!(
         err.to_string(),
@@ -187,8 +161,8 @@ async fn server_get_fails_if_deserialization_fails() {
     let mut session = Session::new(&store, &config, None);
 
     let key = "key".to_string();
-    session.server_mut().set(key.clone(), "yo").await.unwrap();
-    let err = session.server().get::<u64>(&key).await.unwrap_err();
+    session.insert(key.clone(), "yo").await.unwrap();
+    let err = session.get::<u64>(&key).await.unwrap_err();
     assert_eq!(
         err.to_string(),
         "Failed to deserialize the value associated with `key` in the server-side session state"
@@ -201,7 +175,7 @@ async fn client_remove_fails_if_deserialization_fails() {
     let mut session = Session::new(&store, &config, None);
 
     let key = "key".to_string();
-    session.client_mut().set(key.clone(), "yo").unwrap();
+    session.client_mut().insert(key.clone(), "yo").unwrap();
     let err = session.client_mut().remove::<u64>(&key).unwrap_err();
     assert_eq!(
         err.to_string(),
@@ -215,8 +189,8 @@ async fn server_remove_fails_if_deserialization_fails() {
     let mut session = Session::new(&store, &config, None);
 
     let key = "key".to_string();
-    session.server_mut().set(key.clone(), "yo").await.unwrap();
-    let err = session.server_mut().remove::<u64>(&key).await.unwrap_err();
+    session.insert(key.clone(), "yo").await.unwrap();
+    let err = session.remove::<u64>(&key).await.unwrap_err();
     assert_eq!(
         err.to_string(),
         "Failed to deserialize the value associated with `key` in the server-side session state"
@@ -241,8 +215,7 @@ async fn server_set_fails_if_serialization_fails() {
     let mut session = Session::new(&store, &config, None);
 
     let err = session
-        .server_mut()
-        .set("key".into(), Unserializable)
+        .insert("key".into(), Unserializable)
         .await
         .unwrap_err();
     assert_eq!(
@@ -258,7 +231,7 @@ async fn client_set_fails_if_serialization_fails() {
 
     let err = session
         .client_mut()
-        .set("key".into(), Unserializable)
+        .insert("key".into(), Unserializable)
         .unwrap_err();
     assert_eq!(
         err.to_string(),
@@ -273,10 +246,10 @@ async fn clearing_an_empty_session_does_not_error() {
     let mut session = Session::new(&store, &config, None);
 
     session.client_mut().clear();
-    session.server_mut().clear().await.unwrap();
+    session.clear().await.unwrap();
 
     assert!(session.client().is_empty());
-    assert!(session.server().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
 }
 
 #[tokio::test]
@@ -285,33 +258,34 @@ async fn clearing_empties_the_session() {
 
     let mut session = Session::new(&store, &config, None);
 
-    session.client_mut().set("client.key".into(), 12).unwrap();
-    session.client_mut().set("client.key2".into(), 21).unwrap();
     session
-        .server_mut()
-        .set("server.key".into(), 43)
-        .await
+        .client_mut()
+        .insert("client.key".into(), 12)
         .unwrap();
     session
-        .server_mut()
-        .set("server.key2".into(), "Message")
+        .client_mut()
+        .insert("client.key2".into(), 21)
+        .unwrap();
+    session.insert("server.key".into(), 43).await.unwrap();
+    session
+        .insert("server.key2".into(), "Message")
         .await
         .unwrap();
 
     assert!(!session.client().is_empty());
-    assert!(!session.server().is_empty().await.unwrap());
+    assert!(!session.is_empty().await.unwrap());
 
     session.client_mut().clear();
 
     // Only the client-side session is emptied.
     assert!(session.client().is_empty());
-    assert!(!session.server().is_empty().await.unwrap());
+    assert!(!session.is_empty().await.unwrap());
 
-    session.server_mut().clear().await.unwrap();
+    session.clear().await.unwrap();
 
     // Now they're both empty.
     assert!(session.client().is_empty());
-    assert!(session.server().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
 }
 
 #[tokio::test]
@@ -324,14 +298,11 @@ async fn removing_a_non_existing_key_does_not_error() {
 
     let removed: Option<String> = session.client_mut().remove(&key).unwrap();
     assert_that!(removed, none());
-    let removed: Option<String> = session.server_mut().remove(&key).await.unwrap();
+    let removed: Option<String> = session.remove(&key).await.unwrap();
     assert_that!(removed, none());
 
-    assert_that!(session.client_mut().remove_value(&key), none());
-    assert_that!(
-        session.server_mut().remove_value(&key).await.unwrap(),
-        none()
-    );
+    assert_that!(session.client_mut().remove_raw(&key), none());
+    assert_that!(session.remove_raw(&key).await.unwrap(), none());
 }
 
 #[tokio::test]
@@ -340,12 +311,8 @@ async fn operations_on_an_invalidated_session_are_noops() {
     let mut session = Session::new(&store, &config, None);
 
     let key = "my_key";
-    session.client_mut().set(key.to_owned(), "hey").unwrap();
-    session
-        .server_mut()
-        .set(key.to_owned(), "yo")
-        .await
-        .unwrap();
+    session.client_mut().insert(key.to_owned(), "hey").unwrap();
+    session.insert(key.to_owned(), "yo").await.unwrap();
 
     session.invalidate();
 
@@ -353,34 +320,27 @@ async fn operations_on_an_invalidated_session_are_noops() {
 
     // The session is reported as being empty, immediately
     assert!(session.client().is_empty());
-    assert!(session.server().is_empty().await.unwrap());
+    assert!(session.is_empty().await.unwrap());
 
     // Removals are no-ops
     let removed: Option<String> = session.client_mut().remove(key).unwrap();
     assert_that!(removed, none());
-    let removed: Option<String> = session.server_mut().remove(key).await.unwrap();
+    let removed: Option<String> = session.remove(key).await.unwrap();
     assert_that!(removed, none());
 
-    assert_that!(session.client_mut().remove_value(key), none());
-    assert_that!(
-        session.server_mut().remove_value(key).await.unwrap(),
-        none()
-    );
+    assert_that!(session.client_mut().remove_raw(key), none());
+    assert_that!(session.remove_raw(key).await.unwrap(), none());
 
     // Insertions are no-ops
-    session.client_mut().set(key.to_owned(), "hey").unwrap();
-    assert_that!(session.client().get_value(key), none());
+    session.client_mut().insert(key.to_owned(), "hey").unwrap();
+    assert_that!(session.client().get_raw(key), none());
 
-    session
-        .server_mut()
-        .set(key.to_owned(), "yo")
-        .await
-        .unwrap();
-    assert_that!(session.server().get_value(key).await.unwrap(), none());
+    session.insert(key.to_owned(), "yo").await.unwrap();
+    assert_that!(session.get_raw(key).await.unwrap(), none());
 
     // Clears are no-ops
     session.client_mut().clear();
-    session.server_mut().clear().await.unwrap();
+    session.clear().await.unwrap();
 }
 
 #[tokio::test]
@@ -392,7 +352,7 @@ async fn client_get_methods_on_mut_and_non_mut_are_equivalent() {
     let key = "key".to_string();
     let value = "hey";
 
-    session.client_mut().set(key.clone(), value).unwrap();
+    session.client_mut().insert(key.clone(), value).unwrap();
 
     let stored_value: String = session.client().get(&key).unwrap().unwrap();
     assert_that!(&stored_value, eq(&value));
@@ -401,39 +361,8 @@ async fn client_get_methods_on_mut_and_non_mut_are_equivalent() {
 
     session.client_mut().remove::<String>(&key).unwrap();
 
-    assert_that!(session.client().get_value(&key), none());
+    assert_that!(session.client().get_raw(&key), none());
     assert!(session.client().is_empty());
-    assert_that!(session.client_mut().get_value(&key), none());
+    assert_that!(session.client_mut().get_raw(&key), none());
     assert!(session.client_mut().is_empty());
-}
-
-#[tokio::test]
-async fn server_get_methods_on_mut_and_non_mut_are_equivalent() {
-    let (store, config) = (store(), SessionConfig::default());
-
-    let mut session = Session::new(&store, &config, None);
-
-    let key = "key".to_string();
-    let value = "hey";
-
-    session.server_mut().set(key.clone(), value).await.unwrap();
-
-    let stored_value: String = session.server().get(&key).await.unwrap().unwrap();
-    assert_eq!(&stored_value, value);
-    let stored_value: String = session.server_mut().get(&key).await.unwrap().unwrap();
-    assert_eq!(&stored_value, value);
-
-    session.server_mut().remove::<String>(&key).await.unwrap();
-
-    assert!(session.server().get_value(&key).await.unwrap().is_none());
-    assert!(session.server().is_empty().await.unwrap());
-    assert!(
-        session
-            .server_mut()
-            .get_value(&key)
-            .await
-            .unwrap()
-            .is_none()
-    );
-    assert!(session.server_mut().is_empty().await.unwrap());
 }

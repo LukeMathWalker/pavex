@@ -1,7 +1,7 @@
 use pavex::{cookie::ResponseCookies, response::Response};
 use tracing::Span;
 
-use crate::{Session, state::errors::FinalizeError};
+use crate::{Session, errors::FinalizeError};
 
 /// A post-processing middleware to attach a session cookie to the outgoing response, if needed.
 ///

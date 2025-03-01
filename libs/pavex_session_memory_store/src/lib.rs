@@ -303,7 +303,7 @@ mod kit {
         /// By default, it's set to [`finalize_session`].
         /// The error is handled by [`FinalizeError::into_response`].
         ///
-        /// [`FinalizeError::into_response`]: pavex_session::state::errors::FinalizeError::into_response
+        /// [`FinalizeError::into_response`]: pavex_session::errors::FinalizeError::into_response
         /// [`finalize_session`]: pavex_session::finalize_session
         pub session_finalizer: Option<PostProcessingMiddleware>,
     }
