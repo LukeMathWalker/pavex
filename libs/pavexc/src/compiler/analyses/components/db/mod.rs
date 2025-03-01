@@ -4,6 +4,7 @@ use crate::compiler::analyses::components::{
     unregistered::UnregisteredComponent,
 };
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
+use crate::compiler::analyses::config_types::ConfigTypeDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::into_error::register_error_new_transformer;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -11,8 +12,8 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
 use crate::compiler::component::{
-    Constructor, ConstructorValidationError, ErrorHandler, ErrorObserver, PostProcessingMiddleware,
-    PreProcessingMiddleware, RequestHandler, WrappingMiddleware,
+    Constructor, ConstructorValidationError, DefaultStrategy, ErrorHandler, ErrorObserver,
+    PostProcessingMiddleware, PreProcessingMiddleware, RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
@@ -43,6 +44,7 @@ pub(crate) type ComponentId = la_arena::Idx<Component>;
 pub(crate) struct ComponentDb {
     user_component_db: UserComponentDb,
     prebuilt_type_db: PrebuiltTypeDb,
+    config_type_db: ConfigTypeDb,
     interner: Interner<Component>,
     match_err_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
@@ -53,6 +55,10 @@ pub(crate) struct ComponentDb {
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
     id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// For each configuration type, determine if it should be defaulted or not.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    config_id2default_strategy: HashMap<ComponentId, DefaultStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -129,6 +135,7 @@ impl ComponentDb {
         framework_item_db: &FrameworkItemDb,
         computation_db: &mut ComputationDb,
         prebuilt_type_db: PrebuiltTypeDb,
+        config_type_db: ConfigTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -159,6 +166,7 @@ impl ComponentDb {
         let mut self_ = Self {
             user_component_db,
             prebuilt_type_db,
+            config_type_db,
             interner: Interner::new(),
             match_err_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
@@ -166,6 +174,7 @@ impl ComponentDb {
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
             id2cloning_strategy: Default::default(),
+            config_id2default_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
             handler_id2error_observer_ids: Default::default(),
             transformer_id2info: Default::default(),
@@ -253,6 +262,7 @@ impl ComponentDb {
             );
 
             self_.process_prebuilt_types(computation_db);
+            self_.process_config_types(computation_db);
 
             for fallible_id in needs_error_handler {
                 Self::missing_error_handler(
@@ -466,7 +476,38 @@ impl ComponentDb {
                         computation_db,
                     );
                 }
-                _ => {}
+                UserConfigType { user_component_id } => {
+                    let user_component = &self.user_component_db[user_component_id];
+                    let config = &self.config_type_db[user_component_id];
+                    let cloning_strategy = self
+                        .user_component_db
+                        .get_cloning_strategy(user_component_id)
+                        .unwrap();
+                    self.id2cloning_strategy.insert(id, *cloning_strategy);
+                    let default_strategy = self
+                        .user_component_db
+                        .get_default_strategy(user_component_id)
+                        .unwrap();
+                    self.config_id2default_strategy
+                        .insert(id, *default_strategy);
+                    self.get_or_intern(
+                        UnregisteredComponent::SyntheticConstructor {
+                            computation_id: computation_db.get_or_intern(Constructor(
+                                Computation::PrebuiltType(Cow::Owned(config.ty().to_owned())),
+                            )),
+                            scope_id: user_component.scope_id(),
+                            lifecycle: self.user_component_db.get_lifecycle(user_component_id),
+                            cloning_strategy: cloning_strategy.to_owned(),
+                            derived_from: Some(id),
+                        },
+                        computation_db,
+                    );
+                }
+                RequestHandler { .. }
+                | SyntheticWrappingMiddleware { .. }
+                | UserWrappingMiddleware { .. }
+                | UserPostProcessingMiddleware { .. }
+                | UserPreProcessingMiddleware { .. } => {}
             }
         }
 
@@ -624,6 +665,22 @@ impl ComponentDb {
         for user_component_id in ids {
             self.get_or_intern(
                 UnregisteredComponent::UserPrebuiltType { user_component_id },
+                computation_db,
+            );
+        }
+    }
+
+    /// Validate all user-registered config types.
+    /// We add their information to the relevant metadata stores.
+    fn process_config_types(&mut self, computation_db: &mut ComputationDb) {
+        let ids = self
+            .user_component_db
+            .config_types()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in ids {
+            self.get_or_intern(
+                UnregisteredComponent::UserConfigType { user_component_id },
                 computation_db,
             );
         }
@@ -866,20 +923,14 @@ impl ComponentDb {
             .iter()
             .filter_map(|(id, c)| {
                 use crate::compiler::analyses::user_components::UserComponent::*;
-                match c {
-                    ErrorHandler {
-                        fallible_callable_identifiers_id,
-                        ..
-                    } => Some((id, *fallible_callable_identifiers_id)),
-                    ErrorObserver { .. }
-                    | Fallback { .. }
-                    | PrebuiltType { .. }
-                    | RequestHandler { .. }
-                    | Constructor { .. }
-                    | PostProcessingMiddleware { .. }
-                    | PreProcessingMiddleware { .. }
-                    | WrappingMiddleware { .. } => None,
-                }
+                let ErrorHandler {
+                    fallible_callable_identifiers_id,
+                    ..
+                } = c
+                else {
+                    return None;
+                };
+                Some((id, *fallible_callable_identifiers_id))
             })
             .collect::<Vec<_>>();
         for (error_handler_user_component_id, fallible_user_component_id) in iter {
@@ -1092,6 +1143,7 @@ impl ComponentDb {
                     }
                     PrebuiltType { .. }
                     | PreProcessingMiddleware { .. }
+                    | ConfigType { .. }
                     | Constructor { .. }
                     | ErrorObserver { .. } => None,
                 }
@@ -1419,6 +1471,13 @@ impl ComponentDb {
         self.id2cloning_strategy[&component_id]
     }
 
+    #[track_caller]
+    /// Given the id of a component, return the corresponding [`DefaultStrategy`].
+    /// It panics if called for a component that's not a configuration type.
+    pub fn default_strategy(&self, component_id: ComponentId) -> DefaultStrategy {
+        self.config_id2default_strategy[&component_id]
+    }
+
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
     pub fn constructors<'a>(
         &'a self,
@@ -1462,6 +1521,7 @@ impl ComponentDb {
             }
             | Component::ErrorObserver { user_component_id }
             | Component::PrebuiltType { user_component_id }
+            | Component::ConfigType { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::Constructor {
                 source_id: SourceId::ComputationId(..),
@@ -1553,6 +1613,10 @@ impl ComponentDb {
                 let ty = &self.prebuilt_type_db[*user_component_id];
                 HydratedComponent::PrebuiltType(Cow::Borrowed(ty))
             }
+            Component::ConfigType { user_component_id } => {
+                let ty = &self.config_type_db[*user_component_id];
+                HydratedComponent::ConfigType(ty.to_owned())
+            }
         }
     }
 
@@ -1571,6 +1635,7 @@ impl ComponentDb {
         match &self[component_id] {
             Component::RequestHandler { user_component_id }
             | Component::PrebuiltType { user_component_id }
+            | Component::ConfigType { user_component_id }
             | Component::ErrorObserver { user_component_id } => {
                 self.user_component_db[*user_component_id].scope_id()
             }
@@ -1687,6 +1752,7 @@ impl ComponentDb {
                 | HydratedComponent::PreProcessingMiddleware(..)
                 | HydratedComponent::ErrorObserver(..)
                 | HydratedComponent::PrebuiltType(..)
+                | HydratedComponent::ConfigType(..)
                 | HydratedComponent::Transformer(..) => {
                     todo!()
                 }
@@ -1731,6 +1797,7 @@ impl ComponentDb {
             | HydratedComponent::PostProcessingMiddleware(_)
             | HydratedComponent::PreProcessingMiddleware(_)
             | HydratedComponent::PrebuiltType(_)
+            | HydratedComponent::ConfigType(_)
             | HydratedComponent::Transformer(..) => {
                 todo!()
             }

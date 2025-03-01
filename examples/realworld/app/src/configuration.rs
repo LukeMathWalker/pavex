@@ -1,40 +1,47 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use pavex::cookie::ProcessorConfig;
+use pavex::server::IncomingStream;
 use pavex::{blueprint::Blueprint, f, t};
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
-#[derive(serde::Deserialize, Debug, Clone)]
-/// The configuration object holding all the values required
-/// to configure the application.
-pub struct ApplicationConfig {
-    pub database: DatabaseConfig,
-    pub auth: AuthConfig,
-    #[serde(default)]
-    pub cookie: ProcessorConfig,
+pub fn register(bp: &mut Blueprint) {
+    bp.config("server", t!(self::ServerConfig));
+    bp.config("database", t!(self::DatabaseConfig));
+    bp.config("auth", t!(self::AuthConfig));
+    bp.singleton(f!(self::DatabaseConfig::get_pool));
 }
 
-impl ApplicationConfig {
-    pub fn database_config(&self) -> &DatabaseConfig {
-        &self.database
-    }
+/// Configuration for the HTTP server used to expose our API
+/// to users.
+#[derive(serde::Deserialize, Debug, Clone)]
+pub struct ServerConfig {
+    /// The port that the server must listen on.
+    ///
+    /// Set the `PX_SERVER__PORT` environment variable to override its value.
+    #[serde(deserialize_with = "serde_aux::field_attributes::deserialize_number_from_string")]
+    pub port: u16,
+    /// The network interface that the server must be bound to.
+    ///
+    /// E.g. `0.0.0.0` for listening to incoming requests from
+    /// all sources.
+    ///
+    /// Set the `PX_SERVER__IP` environment variable to override its value.
+    pub ip: std::net::IpAddr,
+    /// The timeout for graceful shutdown of the server.
+    ///
+    /// E.g. `1 minute` for a 1 minute timeout.
+    ///
+    /// Set the `PX_SERVER__GRACEFUL_SHUTDOWN_TIMEOUT` environment variable to override its value.
+    #[serde(with = "humantime_serde")]
+    pub graceful_shutdown_timeout: std::time::Duration,
+}
 
-    pub fn auth_config(&self) -> &AuthConfig {
-        &self.auth
-    }
-
-    pub fn cookie_config(&self) -> ProcessorConfig {
-        self.cookie.clone()
-    }
-
-    pub fn register(bp: &mut Blueprint) {
-        bp.prebuilt(t!(self::ApplicationConfig));
-        bp.transient(f!(self::ApplicationConfig::database_config));
-        bp.transient(f!(self::ApplicationConfig::auth_config));
-        bp.singleton(f!(self::ApplicationConfig::cookie_config));
-        bp.singleton(f!(self::DatabaseConfig::get_pool));
-        bp.singleton(f!(self::AuthConfig::decoding_key));
+impl ServerConfig {
+    /// Bind a TCP listener according to the specified parameters.
+    pub async fn listener(&self) -> Result<IncomingStream, std::io::Error> {
+        let addr = std::net::SocketAddr::new(self.ip, self.port);
+        IncomingStream::bind(addr).await
     }
 }
 

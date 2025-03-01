@@ -28,6 +28,9 @@ pub(crate) enum UnregisteredComponent {
     UserPrebuiltType {
         user_component_id: UserComponentId,
     },
+    UserConfigType {
+        user_component_id: UserComponentId,
+    },
     SyntheticWrappingMiddleware {
         computation_id: ComputationId,
         scope_id: ScopeId,
@@ -150,6 +153,9 @@ impl UnregisteredComponent {
                     user_component_id: *user_component_id,
                 }
             }
+            UnregisteredComponent::UserConfigType { user_component_id } => Component::ConfigType {
+                user_component_id: *user_component_id,
+            },
         }
     }
 
@@ -162,7 +168,7 @@ impl UnregisteredComponent {
             | SyntheticWrappingMiddleware { .. }
             | RequestHandler { .. } => Lifecycle::RequestScoped,
             ErrorObserver { .. } => Lifecycle::Transient,
-            UserPrebuiltType { .. } => Lifecycle::Singleton,
+            UserConfigType { .. } | UserPrebuiltType { .. } => Lifecycle::Singleton,
             SyntheticConstructor { lifecycle, .. } => lifecycle.to_owned(),
             ErrorHandler {
                 error_matcher_id: id,

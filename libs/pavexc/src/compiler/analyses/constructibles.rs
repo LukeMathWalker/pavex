@@ -144,6 +144,7 @@ impl ConstructibleDb {
                         }
                         HydratedComponent::Constructor(_)
                         | HydratedComponent::PrebuiltType(_)
+                        | HydratedComponent::ConfigType(_)
                         | HydratedComponent::PreProcessingMiddleware(_)
                         | HydratedComponent::RequestHandler(_) => {}
                     }
@@ -663,7 +664,7 @@ impl ConstructibleDb {
             Some(AnnotatedSnippet::new(def.named_source(), label))
         }
 
-        let component_kind = user_component_db[user_component_id].callable_type();
+        let component_kind = user_component_db[user_component_id].kind();
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
         let label = source.as_ref().and_then(|source| {
@@ -695,7 +696,7 @@ impl ConstructibleDb {
             ))
             .help(format!(
                 "Alternatively, use `Blueprint::prebuilt` to add a new input parameter of type `{unconstructible_type:?}` \
-                to the (generated) `build_application_state`."
+                to the (generated) `ApplicationState::new` method."
             ))
             .build();
         diagnostics.push(diagnostic.into());
@@ -725,7 +726,7 @@ impl ConstructibleDb {
             Some(AnnotatedSnippet::new(def.named_source(), label))
         }
 
-        let component_kind = user_component_db[user_component_id].callable_type();
+        let component_kind = user_component_db[user_component_id].kind();
         let callable = &computation_db[user_component_id];
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
@@ -780,7 +781,7 @@ impl ConstructibleDb {
             Some(AnnotatedSnippet::new(def.named_source(), label))
         }
 
-        let component_kind = user_component_db[user_component_id].callable_type();
+        let component_kind = user_component_db[user_component_id].kind();
         let callable = &computation_db[user_component_id];
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);
@@ -834,7 +835,7 @@ impl ConstructibleDb {
             Some(AnnotatedSnippet::new(def.named_source(), label))
         }
 
-        let component_kind = user_component_db[user_component_id].callable_type();
+        let component_kind = user_component_db[user_component_id].kind();
         let callable = &computation_db[user_component_id];
         let location = user_component_db.get_location(user_component_id);
         let source = try_source!(location, package_graph, diagnostics);

@@ -1,6 +1,7 @@
+use pavex::config::ConfigLoader;
 use pavex::server::Server;
-use server::configuration::{ApplicationProfile, Config};
-use server_sdk::{build_application_state, run};
+use server::configuration::Profile;
+use server_sdk::{ApplicationConfig, ApplicationState, run};
 use std::sync::Once;
 use tracing::subscriber::set_global_default;
 use tracing_subscriber::EnvFilter;
@@ -15,10 +16,6 @@ impl TestApi {
         Self::init_telemetry();
         let config = Self::get_config();
 
-        let application_state = build_application_state(&config.app)
-            .await
-            .expect("Failed to build the application state");
-
         let tcp_listener = config
             .server
             .listener()
@@ -28,18 +25,25 @@ impl TestApi {
             .local_addr()
             .expect("The server TCP listener doesn't have a local socket address");
         let server_builder = Server::new().listen(tcp_listener);
+        let api_address = format!("http://{}:{}", config.server.ip, address.port());
+
+        let application_state = ApplicationState::new(config)
+            .await
+            .expect("Failed to build the application state");
 
         tokio::spawn(async move { run(server_builder, application_state).await });
 
         TestApi {
-            api_address: format!("http://{}:{}", config.server.ip, address.port()),
+            api_address,
             api_client: reqwest::Client::new(),
         }
     }
 
-    fn get_config() -> Config {
-        let mut config =
-            Config::load(Some(ApplicationProfile::Dev)).expect("Failed to load test configuration");
+    fn get_config() -> ApplicationConfig {
+        let mut config: ApplicationConfig = ConfigLoader::new()
+            .profile(Profile::Dev)
+            .load()
+            .expect("Failed to load test configuration");
 
         // We bind the server to a random port to avoid port conflicts when running tests in parallel.
         config.server.port = 0;
@@ -47,8 +51,8 @@ impl TestApi {
         // We generate the key pair on the fly rather than hardcoding it in the
         // configuration file.
         let key_pair = jwt_simple::algorithms::Ed25519KeyPair::generate();
-        config.app.auth.eddsa_public_key_pem = key_pair.public_key().to_pem();
-        config.app.auth.eddsa_private_key_pem = secrecy::Secret::new(key_pair.to_pem());
+        config.auth.eddsa_public_key_pem = key_pair.public_key().to_pem();
+        config.auth.eddsa_private_key_pem = secrecy::Secret::new(key_pair.to_pem());
         config
     }
 

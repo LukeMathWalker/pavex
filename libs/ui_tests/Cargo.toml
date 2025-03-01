@@ -21,6 +21,18 @@ members = [
   "blueprint/common/components_can_fail/generated_app",
   "blueprint/common/output_type_must_implement_into_response",
   "blueprint/common/output_type_must_implement_into_response/generated_app",
+  "blueprint/config/config_conflicts",
+  "blueprint/config/config_conflicts/generated_app",
+  "blueprint/config/config_does_not_need_to_be_send_and_sync_if_only_used_at_build_time",
+  "blueprint/config/config_does_not_need_to_be_send_and_sync_if_only_used_at_build_time/generated_app",
+  "blueprint/config/config_must_be_clone",
+  "blueprint/config/config_must_be_clone/generated_app",
+  "blueprint/config/config_works",
+  "blueprint/config/config_works/generated_app",
+  "blueprint/config/invalid_config",
+  "blueprint/config/invalid_config/generated_app",
+  "blueprint/config/invalid_config_keys",
+  "blueprint/config/invalid_config_keys/generated_app",
   "blueprint/constructors/a_warning_is_emitted_for_unused_constructors",
   "blueprint/constructors/a_warning_is_emitted_for_unused_constructors/generated_app",
   "blueprint/constructors/constructor_error_spans_are_correct_for_prebuilt_constructors",
@@ -321,5 +333,6 @@ edition = "2024"
 pavex = { path = "../pavex" }
 pavex_cli_client = { path = "../pavex_cli_client" }
 workspace_hack = { path = "workspace_hack" }
-tokio = "1"
 reqwest = "0.12"
+tokio = "1"
+serde = { version = "1", features = ["derive"] }

@@ -17,9 +17,10 @@ readme = "README.md"
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 
 [features]
-default = ["server", "server_request_id", "time", "cookie"]
+default = ["server", "server_request_id", "time", "cookie", "config"]
 
 server = ["dep:hyper", "dep:hyper-util", "dep:socket2", "tokio/net"]
+config = ["dep:figment"]
 cookie = ["dep:biscotti", "time"]
 server_request_id = ["dep:uuid"]
 time = ["dep:time"]
@@ -42,6 +43,9 @@ ubyte = { workspace = true, features = ["serde"] }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.78" }
 pavex_reflection = { path = "../pavex_reflection", version = "=0.1.78" }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.78" }
+
+# Configuration
+figment = { workspace = true, features = ["env", "yaml"], optional = true }
 
 # Route parameters
 matchit = { workspace = true }

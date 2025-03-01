@@ -224,7 +224,8 @@ impl SessionStorageBackend for InMemorySessionStore {
 mod kit {
     use pavex::{
         blueprint::{
-            Blueprint, constructor::Constructor, linter::Lint, middleware::PostProcessingMiddleware,
+            Blueprint, config::ConfigType, constructor::Constructor, linter::Lint,
+            middleware::PostProcessingMiddleware,
         },
         f,
     };
@@ -273,15 +274,12 @@ mod kit {
         /// [`IncomingSession`]: pavex_session::IncomingSession
         /// [`IncomingSession::extract`]: pavex_session::IncomingSession::extract
         pub incoming_session: Option<Constructor>,
-        /// The constructor for [`SessionConfig`].
+        /// Register [`SessionConfig`] as a configuration type.
         ///
-        /// By default, it's `None`.
-        /// You can use [`with_default_config`] to set it [`SessionConfig::new`].
+        /// By default, it uses `session` as configuration key.
         ///
         /// [`SessionConfig`]: pavex_session::SessionConfig
-        /// [`SessionConfig::new`]: pavex_session::SessionConfig::new
-        /// [`with_default_config`]: InMemorySessionKit::with_default_config
-        pub session_config: Option<Constructor>,
+        pub session_config: Option<ConfigType>,
         /// The constructor for [`InMemorySessionStore`].
         ///
         /// By default, it uses [`InMemorySessionStore::new`].
@@ -296,6 +294,7 @@ mod kit {
         ///
         /// [`SessionStore`]: pavex_session::SessionStore
         /// [`SessionStore::new`]: pavex_session::SessionStore::new
+        /// [`InMemorySessionStore`]: crate::InMemorySessionStore
         pub session_store: Option<Constructor>,
         /// A post-processing middleware to sync the session state with the session store
         /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
@@ -342,14 +341,10 @@ mod kit {
             }
         }
 
-        /// Set the [`SessionConfig`] constructor to [`SessionConfig::new`].
-        ///
-        /// [`SessionConfig`]: pavex_session::SessionConfig
-        /// [`SessionConfig::new`]: pavex_session::SessionConfig::new
-        pub fn with_default_config(mut self) -> Self {
-            let constructor =
-                Constructor::singleton(f!(pavex_session::SessionConfig::new)).ignore(Lint::Unused);
-            self.session_config = Some(constructor);
+        #[doc(hidden)]
+        #[deprecated(note = "This call is no longer necessary. \
+            The session configuration will automatically use its default values if left unspecified.")]
+        pub fn with_default_config(self) -> Self {
             self
         }
 

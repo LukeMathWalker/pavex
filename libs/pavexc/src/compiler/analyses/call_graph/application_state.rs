@@ -224,6 +224,7 @@ pub(crate) fn application_state_call_graph(
                     HydratedComponent::PreProcessingMiddleware(pp) => &pp.callable,
                     HydratedComponent::ErrorObserver(_)
                     | HydratedComponent::Transformer(..)
+                    | HydratedComponent::ConfigType(..)
                     | HydratedComponent::PrebuiltType(..) => {
                         unreachable!()
                     }

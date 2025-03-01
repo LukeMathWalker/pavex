@@ -1,4 +1,5 @@
 app/
+configuration/
 server/
 server_sdk/
 workspace_hack/

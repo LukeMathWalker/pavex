@@ -1,0 +1,4 @@
+```rust title="src/server.rs"
+    // [...]
+    bp.config("server", t!(self::ServerConfig));
+```

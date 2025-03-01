@@ -11,6 +11,7 @@ pub struct ServerSdkDeps {
     hyper: (PackageId, Ident),
     thiserror: (PackageId, Ident),
     matchit: (PackageId, Ident),
+    serde: (PackageId, Ident),
 }
 
 impl ServerSdkDeps {
@@ -38,12 +39,16 @@ impl ServerSdkDeps {
         let matchit_pkg_id = codegen_deps["matchit"].clone();
         let matchit_import_name = import_name(&matchit_pkg_id);
 
+        let serde_pkg_id = codegen_deps["serde"].clone();
+        let serde_import_name = import_name(&serde_pkg_id);
+
         Self {
             pavex: (pavex_pkg_id, pavex_import_name),
             http: (http_pkg_id, http_import_name),
             hyper: (hyper_pkg_id, hyper_import_name),
             thiserror: (thiserror_pkg_id, thiserror_import_name),
             matchit: (matchit_pkg_id, matchit_import_name),
+            serde: (serde_pkg_id, serde_import_name),
         }
     }
 
@@ -65,5 +70,9 @@ impl ServerSdkDeps {
 
     pub fn matchit_ident(&self) -> &Ident {
         &self.matchit.1
+    }
+
+    pub fn serde_ident(&self) -> &Ident {
+        &self.serde.1
     }
 }

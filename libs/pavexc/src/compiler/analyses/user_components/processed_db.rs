@@ -10,12 +10,16 @@ use pavex_bp_schema::{
 use pavex_cli_diagnostic::anyhow2miette;
 
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::config_types::ConfigTypeDb;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
-use crate::compiler::component::{PrebuiltType, PrebuiltTypeValidationError};
+use crate::compiler::component::{
+    ConfigType, ConfigTypeValidationError, DefaultStrategy, PrebuiltType,
+    PrebuiltTypeValidationError,
+};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{CallableResolutionError, TypeResolutionError, resolve_type_path};
 use crate::diagnostic::{
@@ -58,6 +62,10 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
     id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Determine if a configuration type should have a default.
+    ///
+    /// Invariants: there is an entry for configuration type.
+    config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -81,6 +89,7 @@ impl UserComponentDb {
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
         prebuilt_type_db: &mut PrebuiltTypeDb,
+        config_type_db: &mut ConfigTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -107,6 +116,7 @@ impl UserComponentDb {
             &raw_db,
             computation_db,
             prebuilt_type_db,
+            config_type_db,
             package_graph,
             krate_collection,
             diagnostics,
@@ -120,6 +130,7 @@ impl UserComponentDb {
             id2cloning_strategy,
             id2lifecycle,
             identifiers_interner,
+            config_id2default_strategy,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
             fallback_id2domain_guard: _,
@@ -135,6 +146,7 @@ impl UserComponentDb {
                 id2locations,
                 id2cloning_strategy,
                 id2lifecycle,
+                config_id2default_strategy,
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
                 scope_graph,
@@ -162,12 +174,24 @@ impl UserComponentDb {
             .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
     }
 
+    /// Iterate over all the prebuilt types in the database, returning their id and the
+    /// associated `UserComponent`.
     pub fn prebuilt_types(
         &self,
     ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::PrebuiltType { .. }))
+    }
+
+    /// Iterate over all the config types in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn config_types(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::ConfigType { .. }))
     }
 
     /// Iterate over all the request handler components in the database, returning their id and the
@@ -244,6 +268,13 @@ impl UserComponentDb {
         self.id2cloning_strategy.get(&id)
     }
 
+    /// Return the default strategy of the configuration component with the given id.
+    /// This is going to be `Some(..)` for configuration components,
+    /// and `None` for all other components.
+    pub fn get_default_strategy(&self, id: UserComponentId) -> Option<&DefaultStrategy> {
+        self.config_id2default_strategy.get(&id)
+    }
+
     /// Return the scope tree that was built from the application blueprint.
     pub fn scope_graph(&self) -> &ScopeGraph {
         &self.scope_graph
@@ -310,6 +341,7 @@ impl UserComponentDb {
         raw_db: &RawUserComponentDb,
         computation_db: &mut ComputationDb,
         prebuilt_type_db: &mut PrebuiltTypeDb,
+        config_type_db: &mut ConfigTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -339,18 +371,33 @@ impl UserComponentDb {
                         diagnostics,
                     ),
                 };
-            } else if let Err(e) = computation_db.resolve_and_intern(
-                krate_collection,
-                resolved_path,
-                Some(raw_id),
-            ) {
-                Self::cannot_resolve_callable_path(
-                    e,
-                    raw_id,
-                    raw_db,
-                    package_graph,
-                    diagnostics,
-                );
+            } else if let UserComponent::ConfigType { key, .. } = &user_component {
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match ConfigType::new(ty, key.into()) {
+                        Ok(config) => {
+                            config_type_db.get_or_intern(config, raw_id);
+                        }
+                        Err(e) => Self::invalid_config_type(
+                            e,
+                            resolved_path,
+                            raw_id,
+                            raw_db,
+                            package_graph,
+                            diagnostics,
+                        ),
+                    },
+                    Err(e) => Self::cannot_resolve_type_path(
+                        e,
+                        raw_id,
+                        raw_db,
+                        package_graph,
+                        diagnostics,
+                    ),
+                };
+            } else if let Err(e) =
+                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
+            {
+                Self::cannot_resolve_callable_path(e, raw_id, raw_db, package_graph, diagnostics);
             }
         }
     }
@@ -403,7 +450,7 @@ impl UserComponentDb {
                         write!(&mut error_msg, ".").unwrap();
                     }
                 };
-                "Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.".to_string()
+                "Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(t!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.".to_string()
             }
             PrebuiltTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
                 let generic_type_parameters = ty.unassigned_generic_type_parameters();
@@ -428,7 +475,7 @@ impl UserComponentDb {
                     .unwrap();
                     write!(&mut error_msg, ".").unwrap();
                 }
-                "Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string()
+                "Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string()
             }
         };
         let e = anyhow::anyhow!(e).context(error_msg);
@@ -436,6 +483,118 @@ impl UserComponentDb {
             .optional_source(source)
             .optional_label(label)
             .help(help)
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn invalid_config_type(
+        e: ConfigTypeValidationError,
+        resolved_path: &ResolvedPath,
+        component_id: UserComponentId,
+        component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        use std::fmt::Write as _;
+
+        let location = component_db.get_location(component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source.as_ref().and_then(|source| {
+            use ConfigTypeValidationError::*;
+
+            match &e {
+                CannotHaveAnyLifetimeParameters { .. }
+                | CannotHaveUnassignedGenericTypeParameters { .. } => {
+                    diagnostic::get_f_macro_invocation_span(source, location)
+                        .labeled("The config type was registered here".to_string())
+                }
+                InvalidKey { .. } => diagnostic::get_config_key_span(source, location)
+                    .labeled("The config key was registered here".to_string()),
+            }
+        });
+        let mut error_msg = e.to_string();
+        let help: Option<String> = match &e {
+            ConfigTypeValidationError::InvalidKey { .. } => None,
+            ConfigTypeValidationError::CannotHaveAnyLifetimeParameters { ty } => {
+                let named = ty.named_lifetime_parameters();
+                let (elided, static_) = ty
+                    .lifetime_parameters()
+                    .into_iter()
+                    .filter(|l| l.is_static() || l.is_elided())
+                    .partition::<Vec<_>, _>(|l| l.is_elided());
+                write!(&mut error_msg, "\n`{resolved_path}` has ").unwrap();
+                let mut parts = Vec::new();
+                if !named.is_empty() {
+                    let n = named.len();
+                    let part = if n == 1 {
+                        let lifetime = &named[0];
+                        format!("1 named lifetime parameter (`'{lifetime}'`)")
+                    } else {
+                        let mut part = String::new();
+                        write!(&mut part, "{n} named lifetime parameters (").unwrap();
+                        comma_separated_list(&mut part, named.iter(), |s| format!("`'{s}`"), "and")
+                            .unwrap();
+                        part.push(')');
+                        part
+                    };
+                    parts.push(part);
+                }
+                if !elided.is_empty() {
+                    let n = elided.len();
+                    let part = if n == 1 {
+                        "1 elided lifetime parameter".to_string()
+                    } else {
+                        format!("{n} elided lifetime parameters")
+                    };
+                    parts.push(part);
+                }
+                if !static_.is_empty() {
+                    let n = static_.len();
+                    let part = if n == 1 {
+                        "1 static lifetime parameter".to_string()
+                    } else {
+                        format!("{n} static lifetime parameters")
+                    };
+                    parts.push(part);
+                }
+                comma_separated_list(&mut error_msg, parts.iter(), |s| s.to_owned(), "and")
+                    .unwrap();
+                error_msg.push('.');
+
+                Some("Remove all lifetime parameters from the definition of your configuration type."
+                    .to_string())
+            }
+            ConfigTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
+                let generic_type_parameters = ty.unassigned_generic_type_parameters();
+                if generic_type_parameters.len() == 1 {
+                    write!(
+                            &mut error_msg,
+                            "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
+                            generic_type_parameters[0]
+                        ).unwrap();
+                } else {
+                    write!(
+                            &mut error_msg,
+                            "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
+                            generic_type_parameters.len(),
+                        ).unwrap();
+                    comma_separated_list(
+                        &mut error_msg,
+                        generic_type_parameters.iter(),
+                        |s| format!("`{s}`"),
+                        "and",
+                    )
+                    .unwrap();
+                    write!(&mut error_msg, ".").unwrap();
+                }
+                Some("Set the generic parameters to concrete types when registering the type as configuration. E.g. `bp.config(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string())
+            }
+        };
+        let e = anyhow::anyhow!(e).context(error_msg);
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label)
+            .optional_help(help)
             .build();
         diagnostics.push(diagnostic.into());
     }
@@ -470,7 +629,7 @@ impl UserComponentDb {
     ) {
         let location = component_db.get_location(component_id);
         let component = &component_db[component_id];
-        let callable_type = component.callable_type();
+        let callable_type = component.kind();
         let source = try_source!(location, package_graph, diagnostics);
         match e {
             CallableResolutionError::UnknownCallable(_) => {

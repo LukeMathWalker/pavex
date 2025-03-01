@@ -157,7 +157,7 @@ If a constructor has both input-driven and output-driven generic parameters,
 you need to explicitly specify the concrete type for all generic parameters
 when registering the constructor.
 
-[f!]: ../../api_reference/pavex/macro.f!.html
+[f!]: /api_reference/pavex/macro.f!.html
 [unambiguous path]: #unambiguous-paths
 
 [^ufcs]: Check out the [relevant RFC](https://github.com/rust-lang/rfcs/blob/master/text/0132-ufcs.md) if you're curious.

@@ -12,7 +12,7 @@ use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt};
 ///
 /// It should only be called once!
 pub fn init_telemetry(subscriber: impl Subscriber + Sync + Send) -> Result<(), anyhow::Error> {
-    set_panic_hook();
+    std::panic::set_hook(Box::new(tracing_panic::panic_hook));
     set_global_default(subscriber).context("Failed to set a `tracing` global subscriber")
 }
 
@@ -37,17 +37,4 @@ where
         .with(env_filter)
         .with(JsonStorageLayer)
         .with(formatting_layer)
-}
-
-fn set_panic_hook() {
-    std::panic::set_hook(Box::new(|panic_info| {
-        let payload = panic_info.payload().downcast_ref::<&str>();
-        let location = panic_info.location().map(|l| l.to_string());
-
-        tracing::error!(
-            panic.payload = payload,
-            panic.location = location,
-            "Uncaught panic",
-        );
-    }));
 }

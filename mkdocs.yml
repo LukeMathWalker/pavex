@@ -81,7 +81,11 @@ nav:
   - "Guide":
       - guide/index.md
       - "Fundamentals":
-          - "Project structure": guide/project_structure.md
+          - "Project structure":
+              - guide/project_structure/index.md
+              - guide/project_structure/app.md
+              - guide/project_structure/server_sdk.md
+              - guide/project_structure/server.md
           - "Routing":
               - guide/routing/index.md
               - guide/routing/method_guards.md
@@ -124,6 +128,11 @@ nav:
               - guide/middleware/wrapping.md
               - guide/middleware/scoping.md
               - guide/middleware/execution_order.md
+          - "Configuration":
+              - guide/configuration/index.md
+              - guide/configuration/entries.md
+              - guide/configuration/loading.md
+              - guide/configuration/application_config.md
           - "Errors":
               - guide/errors/index.md
               - guide/errors/error_handlers.md
@@ -139,7 +148,7 @@ nav:
               - guide/sessions/installation.md
               - guide/sessions/data.md
 
-  - "API Reference": api_reference/pavex/
+  - "API Reference": api_reference/pavex/index.html
 exclude_docs: |
   README.md
   Dockerfile
@@ -151,5 +160,7 @@ extra_css:
   - content_tab.css
 validation:
   omitted_files: warn
-  absolute_links: warn
+  absolute_links: relative_to_docs
   unrecognized_links: warn
+not_in_nav: |
+  api_reference/*

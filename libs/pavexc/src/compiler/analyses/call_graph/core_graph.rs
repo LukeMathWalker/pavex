@@ -192,7 +192,7 @@ where
                     HydratedComponent::Constructor(constructor) => {
                         constructor.input_types().to_vec()
                     }
-                    HydratedComponent::PrebuiltType(..) => {
+                    HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(..) => {
                         vec![]
                     }
                     HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),

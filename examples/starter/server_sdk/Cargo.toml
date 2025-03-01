@@ -22,4 +22,5 @@ hyper = { version = "1", default-features = false }
 matchit = { version = "0.8", default-features = false }
 pavex = { version = "0.1", path = "../../../libs/pavex", default-features = false }
 pavex_tracing = { version = "0.1", path = "../../../libs/pavex_tracing", default-features = false }
+serde = { version = "1", default-features = false }
 thiserror = { version = "2", default-features = false }

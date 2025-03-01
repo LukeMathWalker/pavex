@@ -1,0 +1,94 @@
+[31;1mERROR[0m:
+  [31m×[0m Configuration types can't have any lifetime parameter.
+  [31m│[0m `app::A` has 1 named lifetime parameter (`'a'`).
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:46:1]
+  [31m│[0m  [2m46[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m47[0m │     bp.config("a", t!(crate::A));
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m48[0m │     bp.config("b", t!(crate::B));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m Configuration types can't have unassigned generic type parameters.
+  [31m│[0m `app::B` has a generic type parameter, `T`, that you haven't
+  [31m│[0m assigned a concrete type to.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:47:1]
+  [31m│[0m  [2m47[0m │     bp.config("a", t!(crate::A));
+  [31m│[0m  [2m48[0m │     bp.config("b", t!(crate::B));
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m49[0m │     bp.config("c", t!(crate::C));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSet the generic parameters to concrete types when
+  [31m│[0m         registering the type as configuration. E.g. `bp.config(t!
+  [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.
+[31;1mERROR[0m:
+  [31m×[0m Configuration types can't have any lifetime parameter.
+  [31m│[0m `app::C` has 3 named lifetime parameters (`'a`, `'b` and `'c`).
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:48:1]
+  [31m│[0m  [2m48[0m │     bp.config("b", t!(crate::B));
+  [31m│[0m  [2m49[0m │     bp.config("c", t!(crate::C));
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m50[0m │     bp.config("d", t!(crate::D));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m Configuration types can't have unassigned generic type parameters.
+  [31m│[0m `app::D` has 3 generic type parameters that you haven't assigned
+  [31m│[0m concrete types to: `T`, `S` and `Z`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:49:1]
+  [31m│[0m  [2m49[0m │     bp.config("c", t!(crate::C));
+  [31m│[0m  [2m50[0m │     bp.config("d", t!(crate::D));
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m51[0m │     // We constrain the lifetime to 'static, so
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSet the generic parameters to concrete types when
+  [31m│[0m         registering the type as configuration. E.g. `bp.config(t!
+  [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.
+[31;1mERROR[0m:
+  [31m×[0m Configuration types can't have any lifetime parameter.
+  [31m│[0m `app::E::<'static>` has 1 static lifetime parameter.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:52:1]
+  [31m│[0m  [2m52[0m │     // that there are no unconstrained lifetimes in `E`.
+  [31m│[0m  [2m53[0m │     bp.config("e", t!(crate::E<'static>));
+  [31m│[0m     · [35;1m                   ──────────┬──────────[0m
+  [31m│[0m     ·                              [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m54[0m │     // Some static, some elided.
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m Configuration types can't have any lifetime parameter.
+  [31m│[0m `app::F::<'static, _>` has 1 elided lifetime parameter and 1
+  [31m│[0m static lifetime parameter.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:54:1]
+  [31m│[0m  [2m54[0m │     // Some static, some elided.
+  [31m│[0m  [2m55[0m │     bp.config("f", t!(crate::F<'static, '_>));
+  [31m│[0m     · [35;1m                   ────────────┬────────────[0m
+  [31m│[0m     ·                                [35;1m╰── The config type was registered here[0m
+  [31m│[0m  [2m56[0m │     // Key is not a valid Rust identifier
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys must begin with a letter.
+  [31m│[0m `12c` starts with `1` which is not a letter.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config/src/lib.rs[0m:56:1]
+  [31m│[0m  [2m56[0m │     // Key is not a valid Rust identifier
+  [31m│[0m  [2m57[0m │     bp.config("12c", t!(std::string::String));
+  [31m│[0m     · [35;1m              ──┬──[0m
+  [31m│[0m     ·                 [35;1m╰── The config key was registered here[0m
+  [31m│[0m  [2m58[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ╰────

@@ -36,5 +36,5 @@ to perform more advanced processing—e.g. parsing query parameters or [path par
     Pavex takes care of the conversion automatically; you can access [`RequestHead::target`][RequestHead::target]
     without having to worry about it.
 
-[RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::target]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
+[RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
+[RequestHead::target]: /api_reference/pavex/request/struct.RequestHead.html#structfield.target

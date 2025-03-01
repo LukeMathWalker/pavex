@@ -48,6 +48,8 @@ jsonwebtoken = "8"
 
 # Configuration
 serde-aux = "4"
+humantime-serde = "1.1"
+
 workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]

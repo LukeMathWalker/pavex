@@ -10,7 +10,7 @@ The request handler is in charge of building the response that will be sent back
 
 ## Registration
 
-You must provide an **[unambiguous path]** to the request handler, wrapped in the [`f!`][f] macro.
+You must provide an **[unambiguous path]** to the request handler, wrapped in the [`f!`][f!] macro.
 
 ```rust hl_lines="6"
 --8<-- "doc_examples/guide/routing/request_handlers/intro/src/blueprint.rs"
@@ -106,13 +106,13 @@ As a rule of thumb:
 
 If you want to learn more about what "blocking" means in async Rust, check out [Alice Rhyl's excellent article](https://ryhl.io/blog/async-what-is-blocking/).
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::route]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.route
-[IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
-[StatusCode]: ../../api_reference/pavex/http/struct.StatusCode.html
-[Response]: ../../api_reference/pavex/response/struct.Response.html
-[ResponseHead]: ../../api_reference/pavex/response/struct.ResponseHead.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::route]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.route
+[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
+[StatusCode]: /api_reference/pavex/http/struct.StatusCode.html
+[Response]: /api_reference/pavex/response/struct.Response.html
+[ResponseHead]: /api_reference/pavex/response/struct.ResponseHead.html
 [spawn_blocking]: https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
-[f!]: ../../api_reference/pavex/macro.f.html
+[f!]: /api_reference/pavex/macro.f.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
 [unambiguous path]: ../dependency_injection/cookbook.md#unambiguous-paths

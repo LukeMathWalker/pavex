@@ -26,7 +26,6 @@ the directory containing this README file):
 ```bash
 docker run --rm -it -p 8001:8000 \
   -v ${PWD}:/docs \
-  -v "${PWD}/libs/target/doc:/docs/docs/api_reference" \
   pavex-docs
 ```
 
@@ -38,5 +37,5 @@ If you want to generate or update the API reference,
 you'll need to run the following command from the root of the repository:
 
 ```bash
-cd libs && cargo doc --no-deps --package pavex
+pushd libs && cargo api_ref && cp -r target/doc/* ../docs/api_reference
 ```

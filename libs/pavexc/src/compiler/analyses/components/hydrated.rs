@@ -1,7 +1,7 @@
 use crate::compiler::analyses::components::component::TransformerInfo;
 use crate::compiler::component::{
-    Constructor, ErrorObserver, PostProcessingMiddleware, PreProcessingMiddleware, RequestHandler,
-    WrappingMiddleware,
+    ConfigType, Constructor, ErrorObserver, PostProcessingMiddleware, PreProcessingMiddleware,
+    RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::Computation;
 use crate::language::ResolvedType;
@@ -18,6 +18,7 @@ pub(crate) enum HydratedComponent<'a> {
     Transformer(Computation<'a>, TransformerInfo),
     ErrorObserver(ErrorObserver<'a>),
     PrebuiltType(Cow<'a, ResolvedType>),
+    ConfigType(ConfigType),
 }
 
 impl<'a> HydratedComponent<'a> {
@@ -30,7 +31,9 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::PostProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
             HydratedComponent::PreProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
             HydratedComponent::ErrorObserver(eo) => Cow::Borrowed(eo.input_types()),
-            HydratedComponent::PrebuiltType(_) => Cow::Owned(vec![]),
+            HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(_) => {
+                Cow::Owned(vec![])
+            }
         }
     }
 
@@ -41,6 +44,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::WrappingMiddleware(e) => Some(e.output_type()),
             HydratedComponent::PostProcessingMiddleware(p) => Some(p.output_type()),
             HydratedComponent::PreProcessingMiddleware(p) => Some(p.output_type()),
+            HydratedComponent::ConfigType(t) => Some(t.ty()),
             HydratedComponent::PrebuiltType(t) => Some(t),
             // TODO: we are not enforcing that the output type of a transformer is not
             //  the unit type. In particular, you can successfully register a `Result<T, ()>`
@@ -66,8 +70,12 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::ErrorObserver(eo) => eo.callable.clone().into(),
             HydratedComponent::PrebuiltType(si) => {
                 unreachable!(
-                    "Prebuilt types (such as {:?}) do not have a computation associated with them",
-                    si
+                    "Prebuilt types (such as {si:?}) do not have a computation associated with them",
+                )
+            }
+            HydratedComponent::ConfigType(t) => {
+                unreachable!(
+                    "Config types (such as {t:?}) do not have a computation associated with them",
                 )
             }
         }
@@ -97,6 +105,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::PrebuiltType(t) => {
                 HydratedComponent::PrebuiltType(Cow::Owned(t.into_owned()))
             }
+            HydratedComponent::ConfigType(t) => HydratedComponent::ConfigType(t),
         }
     }
 }

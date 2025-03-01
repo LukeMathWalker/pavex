@@ -5,7 +5,7 @@ commands:
 snippets:
   - name: "postgres"
     source_path: "src/blueprint.rs"
-    ranges: ["0..12", "17.."]
+    ranges: ["0..10", "14.."]
   - name: "server_insert"
     source_path: "src/ops/insert.rs"
     ranges: ["0..6", "8.."]

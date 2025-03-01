@@ -10,6 +10,7 @@ use indexmap::IndexMap;
 use pavex_bp_schema::Blueprint;
 use pavex_cli_diagnostic::anyhow2miette;
 
+use crate::compiler::analyses::application_config::ApplicationConfig;
 use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
     ApplicationStateCallGraph, application_state_call_graph,
@@ -17,6 +18,7 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::cloning::clonables_can_be_cloned;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::config_types::ConfigTypeDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -40,6 +42,7 @@ pub struct App {
     application_state_call_graph: ApplicationStateCallGraph,
     framework_item_db: FrameworkItemDb,
     application_state: ApplicationState,
+    application_config: ApplicationConfig,
     codegen_deps: HashMap<String, guppy::PackageId>,
     component_db: ComponentDb,
     computation_db: ComputationDb,
@@ -85,10 +88,12 @@ impl App {
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
         let mut prebuilt_type_db = PrebuiltTypeDb::new();
+        let mut config_type_db = ConfigTypeDb::new();
         let Ok((router, user_component_db)) = UserComponentDb::build(
             &bp,
             &mut computation_db,
             &mut prebuilt_type_db,
+            &mut config_type_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -102,6 +107,7 @@ impl App {
             &framework_item_db,
             &mut computation_db,
             prebuilt_type_db,
+            config_type_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -158,6 +164,12 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
+        let application_config = ApplicationConfig::new(
+            &component_db,
+            &computation_db,
+            &package_graph,
+            &mut diagnostics,
+        );
         exit_on_errors!(diagnostics);
 
         let application_state = ApplicationState::new(
@@ -203,6 +215,7 @@ impl App {
                 application_state_call_graph,
                 framework_item_db,
                 application_state,
+                application_config,
                 codegen_deps,
             },
             diagnostics,
@@ -219,6 +232,7 @@ impl App {
             &self.package_graph,
             self.handler_id2pipeline.values(),
             &self.application_state_call_graph.call_graph.call_graph,
+            &self.application_config,
             &framework_bindings,
             &self.codegen_deps,
             &self.component_db,
@@ -231,6 +245,7 @@ impl App {
             &framework_bindings,
             &package_ids2deps,
             &self.application_state,
+            &self.application_config,
             &self.codegen_deps,
             &self.component_db,
             &self.computation_db,
@@ -249,6 +264,7 @@ impl App {
             &self.package_graph,
             self.handler_id2pipeline.values(),
             &self.application_state_call_graph.call_graph.call_graph,
+            &self.application_config,
             &self.framework_item_db.bindings(),
             &self.codegen_deps,
             &self.component_db,
@@ -363,11 +379,17 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .find(|p| p.name() == "matchit" && p.version().major == 0 && p.version().minor == 8)
         .expect("Expected to find `matchit@0.8` in the package graph, but it was not there.")
         .id();
+    let serde = package_graph
+        .packages()
+        .find(|p| p.name() == "serde" && p.version().major == 1)
+        .expect("Expected to find `serde@1` in the package graph, but it was not there.")
+        .id();
 
     name2id.insert("http".to_string(), http.clone());
     name2id.insert("hyper".to_string(), hyper.clone());
     name2id.insert("matchit".to_string(), matchit.clone());
     name2id.insert("pavex".to_string(), pavex.clone());
     name2id.insert("thiserror".to_string(), thiserror.clone());
+    name2id.insert("serde".to_string(), serde.clone());
     name2id
 }

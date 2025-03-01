@@ -11,6 +11,9 @@ pub(crate) enum Component {
     PrebuiltType {
         user_component_id: UserComponentId,
     },
+    ConfigType {
+        user_component_id: UserComponentId,
+    },
     WrappingMiddleware {
         source_id: SourceId,
     },
@@ -37,6 +40,7 @@ impl Component {
     pub(crate) fn source_id(&self) -> SourceId {
         match self {
             Component::PrebuiltType { user_component_id }
+            | Component::ConfigType { user_component_id }
             | Component::RequestHandler { user_component_id } => (*user_component_id).into(),
             Component::WrappingMiddleware { source_id }
             | Component::PostProcessingMiddleware { source_id }

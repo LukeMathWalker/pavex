@@ -23,8 +23,8 @@ RUN cargo build --release --package server --bin server
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/server bin
-COPY server/configuration server/configuration
-ENV APP_PROFILE=production
+COPY server/configuration configuration
+ENV PX_PROFILE=production
 # Enable backtraces to simplify debugging
 # production panics.
 ENV RUST_BACKTRACE=1

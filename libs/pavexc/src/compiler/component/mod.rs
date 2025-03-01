@@ -1,3 +1,4 @@
+mod config_type;
 mod constructor;
 mod error_handler;
 mod error_observer;
@@ -10,7 +11,7 @@ mod wrapping_middleware;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic::{
-    AnnotatedSnippet, CallableDefinition, CallableType, CompilerDiagnostic, OptionalSourceSpanExt,
+    AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt,
     SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedPath, ResolvedType};
@@ -19,6 +20,7 @@ use crate::{diagnostic, try_source};
 use guppy::graph::PackageGraph;
 use syn::spanned::Spanned;
 
+pub(crate) use config_type::{ConfigKey, ConfigType, ConfigTypeValidationError, DefaultStrategy};
 pub(crate) use constructor::{Constructor, ConstructorValidationError};
 pub(crate) use error_handler::{ErrorHandler, ErrorHandlerValidationError};
 pub(crate) use error_observer::{ErrorObserver, ErrorObserverValidationError};
@@ -61,7 +63,7 @@ impl CannotTakeMutReferenceError {
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
-        callable_type: CallableType,
+        callable_type: ComponentKind,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         fn get_snippet(

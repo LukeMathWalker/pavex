@@ -3,7 +3,7 @@
 A **prebuilt type** is a type that Pavex expects **you** to provide.\
 Whenever your mark a type as prebuilt, you're telling Pavex: "I'll build
 this type on my own, and then pass an instance over to you".
-In particular, you'll be passing that instance to [`build_application_state`](application_state.md), the function that Pavex generates to build the [`ApplicationState`](application_state.md) type.
+In particular, you'll be passing that instance to [`ApplicationState::new`](application_state.md), the constructor that Pavex generates for [`ApplicationState`](application_state.md).
 
 ## Registration
 
@@ -22,32 +22,33 @@ You must provide an [unambiguous path](cookbook.md) to the type, wrapped in the 
 ## The signature changes
 
 Whenever you mark a type as prebuilt, the signature of the code-generated
-[`build_application_state`](application_state.md) function will change to include that type as an input parameter.\
-In the generated server SDK for the example in the previous section, the signature of `build_application_state` will change to:
+[`ApplicationState::new`](application_state.md) method will change to include that type as an input parameter.\
+In the generated server SDK for the example in the previous section, the signature of `ApplicationState::new` will change to:
 
 --8<-- "doc_examples/guide/dependency_injection/prebuilt/01-build_state.snap"
 
-Since the signature of `build_application_state` changes, the calling code in [your server crate](../project_structure.md#the-server-crate) will have to change accordingly.
-This may be surprising at first, since you don't often touch the code inside [the server crate](../project_structure.md#the-server-crate), but it's entirely expected. Don't worry: you just have to follow the compiler's suggestions to get back
+Since the signature of `ApplicationState::new` changes, the calling code in [your server crate][server_crate] will have to change accordingly.
+This may be surprising at first, since you don't often touch the code inside [the server crate][server_crate], but it's entirely expected. Don't worry: you just have to follow the compiler's suggestions to get back
 on track.
 
 !!! info "Immutability"
 
-    The only crate you're **never** supposed to modify is the [server SDK crate](../project_structure.md#the-server-sdk), the one that Pavex generates for you. 
-    The [server crate](../project_structure.md#the-server-crate), on the other hand, is yours to modify as you see fit.
+    The only crate you're **never** supposed to modify is the [server SDK crate](/guide/project_structure/server_sdk.md), the one that Pavex generates for you. 
+    The [server crate][server_crate], on the other hand, is yours to modify as you see fit.
 
 ## Lifecycle
 
-If a prebuilt input is only needed to construct [singletons][Lifecycle::Singleton], it'll be discarded after [`build_application_state`](application_state.md) returns.
+If a prebuilt input is only needed to construct [singletons][Lifecycle::Singleton], it'll be discarded after [`ApplicationState::new`](application_state.md) returns.
 
 If it's needed to process requests (e.g. as an input for a middleware), it'll be added as a field to [`ApplicationState`](application_state.md).
 In this case, Pavex will treat it as a [singleton][Lifecycle::Singleton] and
 require it to implement the [`Send`][Send] and [`Sync`][Sync] traits.
 
-[Lifecycle::Singleton]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
+[Lifecycle::Singleton]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 [Send]: https://doc.rust-lang.org/std/marker/trait.Send.html
 [Sync]: https://doc.rust-lang.org/std/marker/trait.Sync.html
-[t]: ../../../api_reference/pavex/macro.t.html
-[f]: ../../../api_reference/pavex/macro.f.html
-[Blueprint::prebuilt]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.prebuilt.html
-[Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
+[t]: /api_reference/pavex/macro.t.html
+[f]: /api_reference/pavex/macro.f.html
+[Blueprint::prebuilt]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.prebuilt
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[server_crate]: /guide/project_structure/server.md

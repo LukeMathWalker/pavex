@@ -55,9 +55,9 @@ in your day-to-day Pavex work.
 
 You can always inject both types if you need to look at the entire request at once.
 
-[RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::version]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.version
-[RequestHead::method]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.method
-[RequestHead::headers]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.headers
-[RequestHead::target]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
-[RawIncomingBody]: ../../api_reference/pavex/request/body/struct.RawIncomingBody.html
+[RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
+[RequestHead::version]: /api_reference/pavex/request/struct.RequestHead.html#structfield.version
+[RequestHead::method]: /api_reference/pavex/request/struct.RequestHead.html#structfield.method
+[RequestHead::headers]: /api_reference/pavex/request/struct.RequestHead.html#structfield.headers
+[RequestHead::target]: /api_reference/pavex/request/struct.RequestHead.html#structfield.target
+[RawIncomingBody]: /api_reference/pavex/request/body/struct.RawIncomingBody.html

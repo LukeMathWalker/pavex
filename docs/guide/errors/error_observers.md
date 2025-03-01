@@ -80,10 +80,11 @@ Error observers can be either synchronous or asynchronous.\
 Check out the ["Sync vs async"](../routing/request_handlers.md#sync-or-async) guide for more details
 on the differences between the two and how to choose the right one for your use case.
 
-[pavex::Error]: ../../api_reference/pavex/struct.Error.html
-[pavex::Error::inner_ref]: ../../api_reference/pavex/struct.Error.html#method.inner_ref
-[Blueprint::error_observer]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.error_observer
-[f]: ../../api_reference/pavex/macro.f.html
+[unambiguous path]: /guide/dependency_injection/cookbook.md#unambiguous-paths
+[pavex::Error]: /api_reference/pavex/struct.Error.html
+[pavex::Error::inner_ref]: /api_reference/pavex/struct.Error.html#method.inner_ref
+[Blueprint::error_observer]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.error_observer
+[f]: /api_reference/pavex/macro.f.html
 [std::error::Error]: https://doc.rust-lang.org/std/error/trait.Error.html
 [std::error::Error::source]: https://doc.rust-lang.org/std/error/trait.Error.html#method.source
 [std::fmt::Display]: https://doc.rust-lang.org/std/fmt/trait.Display.html

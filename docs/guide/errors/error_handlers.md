@@ -89,7 +89,7 @@ Error handlers are commonly synchronous, but Pavex supports asynchronous error h
 Check out the ["Sync vs async"](../routing/request_handlers.md#sync-or-async) guide for more details
 on the differences between the two and how to choose the right one for your use case.
 
-[IntoResponse]: ../../../api_reference/pavex/response/trait.IntoResponse.html
-[Response]: ../../../api_reference/pavex/response/struct.Response.html
-[f]: ../../../api_reference/pavex/macro.f.html
+[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
+[Response]: /api_reference/pavex/response/struct.Response.html
+[f]: /api_reference/pavex/macro.f.html
 [unambiguous path]: ../dependency_injection/cookbook.md#unambiguous-paths

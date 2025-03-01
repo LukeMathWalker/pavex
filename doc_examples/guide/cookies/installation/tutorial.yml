@@ -1,8 +1,4 @@
 starter_project_folder: "project"
-commands:
-  - command: "cargo px c -q"
-    expected_outcome: "failure"
-    expected_output_at: "missing_process_config.snap"
 snippets:
   - name: "kit"
     source_path: "src/blueprint.rs"

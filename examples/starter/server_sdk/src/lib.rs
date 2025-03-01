@@ -6,16 +6,34 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
-pub struct ApplicationState {
-    pub app_config: app::configuration::AppConfig,
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {
+    pub greet: app::configuration::GreetConfig,
+    pub server: app::configuration::ServerConfig,
 }
-pub async fn build_application_state(
-    v0: app::configuration::AppConfig,
-) -> crate::ApplicationState {
-    crate::ApplicationState {
-        app_config: v0,
+pub struct ApplicationState {
+    pub greet_config: app::configuration::GreetConfig,
+}
+impl ApplicationState {
+    pub async fn new(
+        app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Ok(Self::_new(app_config.greet).await)
+    }
+    async fn _new(v0: app::configuration::GreetConfig) -> crate::ApplicationState {
+        crate::ApplicationState {
+            greet_config: v0,
+        }
     }
 }
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(app_config).await
+}
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationStateError {}
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
@@ -89,7 +107,7 @@ impl Router {
                                 url_params,
                                 &request_head,
                                 matched_route_template,
-                                &state.app_config,
+                                &state.greet_config,
                             )
                             .await
                     }
@@ -242,14 +260,14 @@ pub mod route_1 {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
         s_1: &'c pavex::request::RequestHead,
         s_2: pavex::request::path::MatchedPathPattern,
-        s_3: &'d app::configuration::AppConfig,
+        s_3: &'d app::configuration::GreetConfig,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
     async fn stage_1<'a, 'b, 'c, 'd>(
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        s_1: &'c app::configuration::AppConfig,
+        s_1: &'c app::configuration::GreetConfig,
         s_2: &'d pavex::request::RequestHead,
         s_3: pavex::request::path::MatchedPathPattern,
     ) -> pavex::response::Response {
@@ -259,7 +277,7 @@ pub mod route_1 {
     async fn stage_2<'a, 'b, 'c, 'd>(
         s_0: &'a pavex_tracing::RootSpan,
         s_1: pavex::request::path::RawPathParams<'b, 'c>,
-        s_2: &'d app::configuration::AppConfig,
+        s_2: &'d app::configuration::GreetConfig,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2).await;
         let response = post_processing_0(response, s_0).await;
@@ -269,7 +287,7 @@ pub mod route_1 {
         v0: pavex::request::path::RawPathParams<'_, '_>,
         v1: &pavex::request::RequestHead,
         v2: pavex::request::path::MatchedPathPattern,
-        v3: &app::configuration::AppConfig,
+        v3: &app::configuration::GreetConfig,
     ) -> pavex::response::Response {
         let v4 = crate::route_1::Next0 {
             s_0: v0,
@@ -286,7 +304,7 @@ pub mod route_1 {
         v0: pavex::request::path::RawPathParams<'_, '_>,
         v1: &pavex::request::RequestHead,
         v2: pavex::request::path::MatchedPathPattern,
-        v3: &app::configuration::AppConfig,
+        v3: &app::configuration::GreetConfig,
     ) -> pavex::response::Response {
         let v4 = pavex::telemetry::ServerRequestId::generate();
         let v5 = app::telemetry::root_span(v1, v2, v4);
@@ -304,7 +322,7 @@ pub mod route_1 {
     async fn handler(
         v0: &pavex_tracing::RootSpan,
         v1: pavex::request::path::RawPathParams<'_, '_>,
-        v2: &app::configuration::AppConfig,
+        v2: &app::configuration::GreetConfig,
     ) -> pavex::response::Response {
         let v3 = pavex::request::path::PathParams::extract(v1);
         let v4 = match v3 {
@@ -322,9 +340,8 @@ pub mod route_1 {
                 };
             }
         };
-        let v5 = app::configuration::AppConfig::greet_config(v2);
-        let v6 = app::routes::greet::get(v4, v5);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        let v5 = app::routes::greet::get(v4, v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     async fn post_processing_0(
         v0: pavex::response::Response,
@@ -338,12 +355,12 @@ pub mod route_1 {
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        s_1: &'c app::configuration::AppConfig,
+        s_1: &'c app::configuration::GreetConfig,
         s_2: &'d pavex::request::RequestHead,
         s_3: pavex::request::path::MatchedPathPattern,
         next: fn(
             pavex::request::path::RawPathParams<'a, 'b>,
-            &'c app::configuration::AppConfig,
+            &'c app::configuration::GreetConfig,
             &'d pavex::request::RequestHead,
             pavex::request::path::MatchedPathPattern,
         ) -> T,
@@ -364,11 +381,11 @@ pub mod route_1 {
     {
         s_0: &'a pavex_tracing::RootSpan,
         s_1: pavex::request::path::RawPathParams<'b, 'c>,
-        s_2: &'d app::configuration::AppConfig,
+        s_2: &'d app::configuration::GreetConfig,
         next: fn(
             &'a pavex_tracing::RootSpan,
             pavex::request::path::RawPathParams<'b, 'c>,
-            &'d app::configuration::AppConfig,
+            &'d app::configuration::GreetConfig,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next1<'a, 'b, 'c, 'd, T>

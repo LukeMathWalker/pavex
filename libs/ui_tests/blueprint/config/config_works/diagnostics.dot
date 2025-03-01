@@ -1,0 +1,57 @@
+digraph "GET / - 0" {
+    0 [ label = "5| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>) -> pavex::response::Response"]
+    1 [ label = "4| pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>"]
+    2 [ label = "3| crate::route_0::Next0(&'a app_b5d21f5b::B<alloc::string::String>, alloc::vec::Vec<alloc::string::String>, &'b app_b5d21f5b::A) -> crate::route_0::Next0<'a, 'b>"]
+    3 [ label = "2| &app_b5d21f5b::A"]
+    4 [ label = "0| alloc::vec::Vec<alloc::string::String>"]
+    6 [ label = "6| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "1| &app_b5d21f5b::B<alloc::string::String>"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 2 [ ]
+    3 -> 2 [ ]
+    0 -> 6 [ ]
+    7 -> 2 [ ]
+}
+
+digraph "GET / - 1" {
+    0 [ label = "3| app_b5d21f5b::handler(&app_b5d21f5b::A, &app_b5d21f5b::B<alloc::string::String>, alloc::vec::Vec<alloc::string::String>) -> pavex::response::Response"]
+    1 [ label = "2| &app_b5d21f5b::B<alloc::string::String>"]
+    3 [ label = "0| alloc::vec::Vec<alloc::string::String>"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "1| &app_b5d21f5b::A"]
+    3 -> 0 [ ]
+    1 -> 0 [ ]
+    0 -> 4 [ ]
+    5 -> 0 [ ]
+}
+
+digraph "* * - 0" {
+    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "1| crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "0| &pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* * - 1" {
+    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "0| &pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "3| crate::ApplicationState(app_b5d21f5b::A, app_b5d21f5b::B<alloc::string::String>, alloc::vec::Vec<alloc::string::String>) -> crate::ApplicationState"]
+    1 [ label = "2| app_b5d21f5b::A"]
+    2 [ label = "1| app_b5d21f5b::B<alloc::string::String>"]
+    3 [ label = "0| alloc::vec::Vec<alloc::string::String>"]
+    3 -> 0 [ ]
+    2 -> 0 [ ]
+    1 -> 0 [ ]
+}

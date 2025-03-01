@@ -8,7 +8,7 @@ use hyper::Request;
 use hyper_util::rt::TokioIo;
 use tokio::io::AsyncWriteExt;
 
-use application::{build_application_state, run};
+use application::{ApplicationState, ApplicationConfig, run};
 
 async fn spawn_test_server() -> u16 {
     static TELEMETRY: std::sync::Once = std::sync::Once::new();
@@ -27,7 +27,7 @@ async fn spawn_test_server() -> u16 {
     let incoming_stream: pavex::server::IncomingStream =
         listener.try_into().expect("Failed to convert listener");
     let server = pavex::server::Server::new().listen(incoming_stream);
-    let application_state = build_application_state().await;
+    let application_state = ApplicationState::new(ApplicationConfig {}).await.unwrap();
     tokio::task::spawn(run(server, application_state).into_future());
     port
 }
