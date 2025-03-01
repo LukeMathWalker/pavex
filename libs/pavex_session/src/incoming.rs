@@ -1,15 +1,13 @@
-use crate::{SessionId, config::SessionCookieConfig, wire::WireClientState};
+use crate::{SessionId, State, config::SessionCookieConfig, wire::WireClientState};
 use pavex::cookie::RequestCookies;
 use pavex_tracing::fields::{ERROR_DETAILS, ERROR_MESSAGE, error_details, error_message};
-use serde_json::Value;
-use std::collections::HashMap;
 
 /// The session information attached to the incoming request.
 ///
 /// Built using [`IncomingSession::extract`].
 pub struct IncomingSession {
     pub(crate) id: SessionId,
-    pub(crate) client_state: HashMap<String, Value>,
+    pub(crate) client_state: State,
 }
 
 impl IncomingSession {
@@ -36,7 +34,7 @@ impl IncomingSession {
     }
 
     /// Build an [`IncomingSession`] instance from its parts.
-    pub fn from_parts(id: SessionId, state: HashMap<String, Value>) -> Self {
+    pub fn from_parts(id: SessionId, state: State) -> Self {
         Self {
             id,
             client_state: state,

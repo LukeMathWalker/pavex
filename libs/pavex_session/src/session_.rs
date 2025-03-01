@@ -15,6 +15,7 @@ use std::sync::MutexGuard;
 use crate::SessionConfig;
 use crate::SessionId;
 use crate::SessionStore;
+use crate::State;
 use crate::config::{
     MissingServerState, ServerStateCreation, SessionCookieKind, TtlExtensionTrigger,
 };
@@ -136,20 +137,20 @@ impl CurrentSessionId {
 
 #[derive(Debug, Clone)]
 enum ClientState {
-    Unchanged { state: HashMap<String, Value> },
-    Updated { state: HashMap<String, Value> },
+    Unchanged { state: State },
+    Updated { state: State },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ServerState {
     Unchanged {
-        state: HashMap<String, Value>,
+        state: State,
         ttl: std::time::Duration,
     },
     DoesNotExist,
     MarkedForDeletion,
     Changed {
-        state: HashMap<String, Value>,
+        state: State,
     },
 }
 
@@ -190,7 +191,7 @@ impl<'store> Session<'store> {
 }
 
 /// All the operations you can perform on the server-side state of your session.
-impl<'store> Session<'store> {
+impl Session<'_> {
     /// Get the value associated with `key` from the server-side state.
     ///
     /// If the value is not found, `None` is returned.\
@@ -206,7 +207,7 @@ impl<'store> Session<'store> {
             .transpose()
             .map_err(|e| {
                 ValueDeserializationError {
-                    key: key.to_owned(),
+                    key: key.to_string().into(),
                     location: ValueLocation::Server,
                     source: e,
                 }
@@ -223,16 +224,27 @@ impl<'store> Session<'store> {
     /// The provided value is serialized to JSON prior to being stored. If
     /// the serialization fails, an error is returned. If you'd prefer to
     /// take care of the serialization yourself, use [`insert_raw`][Self::insert_raw] instead.
-    pub async fn insert<T: Serialize>(
+    pub async fn insert<T, Key>(
         &mut self,
-        key: String,
+        key: Key,
         value: T,
-    ) -> Result<Option<Value>, ServerInsertError> {
-        let value = serde_json::to_value(value).map_err(|e| ValueSerializationError {
-            key: key.clone(),
-            location: ValueLocation::Server,
-            source: e,
-        })?;
+    ) -> Result<Option<Value>, ServerInsertError>
+    where
+        T: Serialize,
+        Key: Into<Cow<'static, str>>,
+    {
+        let key = key.into();
+        let value = match serde_json::to_value(value) {
+            Ok(t) => t,
+            Err(source) => {
+                return Err(ValueSerializationError {
+                    key,
+                    location: ValueLocation::Server,
+                    source,
+                }
+                .into());
+            }
+        };
         self.insert_raw(key, value).await.map_err(Into::into)
     }
 
@@ -254,7 +266,7 @@ impl<'store> Session<'store> {
             .map(serde_json::from_value)
             .transpose()
             .map_err(|source| ValueDeserializationError {
-                key: key.to_owned(),
+                key: key.to_string().into(),
                 location: ValueLocation::Server,
                 source,
             })
@@ -294,12 +306,16 @@ impl<'store> Session<'store> {
     /// The provided value must be a JSON value, which will be stored as-is, without any
     /// further manipulation. If you'd prefer to let `pavex_session` handle the serialization,
     /// use [`insert`][Self::insert] instead.
-    pub async fn insert_raw(
+    pub async fn insert_raw<Key>(
         &mut self,
-        key: String,
+        key: Key,
         value: Value,
-    ) -> Result<Option<Value>, LoadError> {
+    ) -> Result<Option<Value>, LoadError>
+    where
+        Key: Into<Cow<'static, str>>,
+    {
         let mut existing_state;
+        let key = key.into();
 
         use ServerState::*;
         match force_load_mut(self).await? {
@@ -430,7 +446,7 @@ impl<'store> Session<'store> {
 }
 
 /// Control when the server-side state is synchronized with the store.
-impl<'store> Session<'store> {
+impl Session<'_> {
     /// Sync the in-memory representation of the server-side state
     /// with the store.
     ///
@@ -707,7 +723,7 @@ impl<'store> Session<'store> {
 }
 
 /// APIs for manipulating the client-side session state.
-impl<'store> Session<'store> {
+impl Session<'_> {
     /// Read values from the client-side state attached to this session.
     pub fn client(&self) -> ClientSessionState<'_> {
         ClientSessionState(&self.client_state, &self.invalidated)
@@ -774,29 +790,43 @@ impl ClientSessionStateMut<'_> {
     ///
     /// If the key already exists, the value is updated and the old raw value is returned.
     /// If the value cannot be serialized, an error is returned.
-    pub fn insert<T: Serialize>(
+    pub fn insert<T, Key>(
         &mut self,
-        key: String,
+        key: Key,
         value: T,
-    ) -> Result<Option<Value>, ValueSerializationError> {
-        let value = serde_json::to_value(value).map_err(|source| ValueSerializationError {
-            key: key.to_owned(),
-            location: ValueLocation::Client,
-            source,
-        })?;
+    ) -> Result<Option<Value>, ValueSerializationError>
+    where
+        T: Serialize,
+        Key: Into<Cow<'static, str>>,
+    {
+        let key = key.into();
+        let value = match serde_json::to_value(value) {
+            Ok(t) => t,
+            Err(e) => {
+                return Err(ValueSerializationError {
+                    key,
+                    location: ValueLocation::Client,
+                    source: e,
+                });
+            }
+        };
         Ok(self.insert_raw(key, value))
     }
 
     /// Insert a value in the client-side state for the given key.
     ///
     /// If the key already exists, the value is updated and the old value is returned.
-    pub fn insert_raw(&mut self, key: String, value: Value) -> Option<Value> {
+    pub fn insert_raw<Key>(&mut self, key: Key, value: Value) -> Option<Value>
+    where
+        Key: Into<Cow<'static, str>>,
+    {
         if self.1.is_invalidated() {
             tracing::trace!(
                 "Attempted to insert a client-side value on a session that's been invalidated."
             );
             return None;
         }
+        let key = key.into();
         match &mut self.0 {
             ClientState::Updated { state } => state.insert(key, value),
             ClientState::Unchanged { state } => {
@@ -821,7 +851,7 @@ impl ClientSessionStateMut<'_> {
             .map(|value| serde_json::from_value(value))
             .transpose()
             .map_err(|source| ValueDeserializationError {
-                key: key.to_owned(),
+                key: key.to_string().into(),
                 location: ValueLocation::Client,
                 source,
             })
@@ -881,7 +911,7 @@ fn client_get<T: DeserializeOwned>(
         .transpose()
         .map_err(|source| ValueDeserializationError {
             location: ValueLocation::Client,
-            key: key.to_owned(),
+            key: key.to_string().into(),
             source,
         })
 }
@@ -1000,6 +1030,8 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
 
 /// Errors that can occur when interacting with the session state.
 pub mod errors {
+    use std::borrow::Cow;
+
     use pavex::response::Response;
 
     use crate::store::errors::{
@@ -1061,7 +1093,7 @@ pub mod errors {
     /// session state.
     pub struct ValueDeserializationError {
         /// The key of the value that we failed to deserialize.
-        pub key: String,
+        pub key: Cow<'static, str>,
         pub(crate) location: ValueLocation,
         #[source]
         /// The underlying deserialization error.
@@ -1077,7 +1109,7 @@ pub mod errors {
     /// session state.
     pub struct ValueSerializationError {
         /// The key of the value that we failed to serialize.
-        pub key: String,
+        pub key: Cow<'static, str>,
         pub(crate) location: ValueLocation,
         #[source]
         /// The underlying serialization error.

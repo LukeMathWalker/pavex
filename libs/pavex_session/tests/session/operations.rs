@@ -214,10 +214,7 @@ async fn server_set_fails_if_serialization_fails() {
     let (store, config) = (store(), SessionConfig::default());
     let mut session = Session::new(&store, &config, None);
 
-    let err = session
-        .insert("key".into(), Unserializable)
-        .await
-        .unwrap_err();
+    let err = session.insert("key", Unserializable).await.unwrap_err();
     assert_eq!(
         err.to_string(),
         "Failed to serialize the value that would have been associated with `key` in the server-side session state"
@@ -231,7 +228,7 @@ async fn client_set_fails_if_serialization_fails() {
 
     let err = session
         .client_mut()
-        .insert("key".into(), Unserializable)
+        .insert("key", Unserializable)
         .unwrap_err();
     assert_eq!(
         err.to_string(),
@@ -258,19 +255,10 @@ async fn clearing_empties_the_session() {
 
     let mut session = Session::new(&store, &config, None);
 
-    session
-        .client_mut()
-        .insert("client.key".into(), 12)
-        .unwrap();
-    session
-        .client_mut()
-        .insert("client.key2".into(), 21)
-        .unwrap();
-    session.insert("server.key".into(), 43).await.unwrap();
-    session
-        .insert("server.key2".into(), "Message")
-        .await
-        .unwrap();
+    session.client_mut().insert("client.key", 12).unwrap();
+    session.client_mut().insert("client.key2", 21).unwrap();
+    session.insert("server.key", 43).await.unwrap();
+    session.insert("server.key2", "Message").await.unwrap();
 
     assert!(!session.client().is_empty());
     assert!(!session.is_empty().await.unwrap());

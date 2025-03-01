@@ -7,7 +7,7 @@ pub async fn handler(session: &mut Session<'_>) -> Result<Response, Error> {
     let value = "my-user-identifier";
 
     // Insertion
-    session.client_mut().insert(key.into(), value)?;
+    session.client_mut().insert(key, value)?;
 
     // Retrieval
     let stored: Option<String> = session.client().get(key)?;

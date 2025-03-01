@@ -3,7 +3,6 @@ use pavex::response::Response;
 use pavex_session::Session;
 
 pub async fn handler(session: &mut Session<'_> /* (1)! */) -> Result<Response, Error> {
-    let auth_id = "my-user-identifier";
-    session.insert("user.id".into(), auth_id).await?;
+    session.insert("user.id", "my-user-identifier").await?;
     Ok(Response::ok())
 }

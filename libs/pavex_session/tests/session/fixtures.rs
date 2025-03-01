@@ -31,7 +31,7 @@ pub fn spy_store() -> (SessionStore, CallTracker) {
 /// A helper to set up a pre-existing session.
 pub struct SessionFixture {
     pub id: SessionId,
-    pub client_state: HashMap<String, serde_json::Value>,
+    pub client_state: HashMap<Cow<'static, str>, serde_json::Value>,
     /// If `None`, no server-side state will be created.
     pub server_state: Option<HashMap<String, serde_json::Value>>,
     /// If `None`, it'll be defaulted to a value that's high enough
@@ -58,11 +58,16 @@ impl SessionFixture {
             let ttl = self
                 .server_ttl
                 .unwrap_or_else(|| std::time::Duration::from_secs(1000));
+            let server_state = server_state
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (Cow::Owned(k), v))
+                .collect();
             store
                 .create(
                     &self.id,
                     SessionRecordRef {
-                        state: Cow::Owned(server_state.clone()),
+                        state: Cow::Owned(server_state),
                         ttl,
                     },
                 )

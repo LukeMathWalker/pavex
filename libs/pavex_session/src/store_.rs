@@ -160,7 +160,7 @@ pub trait SessionStorageBackend: std::fmt::Debug + Send + Sync {
 #[derive(Debug)]
 pub struct SessionRecordRef<'session> {
     /// The set of key-value pairs attached to a session.
-    pub state: Cow<'session, HashMap<String, Value>>,
+    pub state: Cow<'session, HashMap<Cow<'static, str>, Value>>,
     /// The session time-to-live.
     pub ttl: std::time::Duration,
 }
@@ -179,7 +179,7 @@ impl SessionRecordRef<'_> {
 #[derive(Debug)]
 pub struct SessionRecord {
     /// The set of key-value pairs attached to a session.
-    pub state: HashMap<String, Value>,
+    pub state: HashMap<Cow<'static, str>, Value>,
     /// The session time-to-live.
     pub ttl: std::time::Duration,
 }
