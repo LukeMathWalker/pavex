@@ -20,5 +20,5 @@ method:
 
 --8<-- "doc_examples/guide/request_data/connection/project-connection_peer.snap"
 
-[ConnectionInfo]: ../../../api_reference/pavex/connection/struct.ConnectionInfo.html
-[ConnectionInfo::peer_addr]: ../../../api_reference/pavex/connection/struct.ConnectionInfo.html#method.peer_addr
+[ConnectionInfo]: /api_reference/pavex/connection/struct.ConnectionInfo.html
+[ConnectionInfo::peer_addr]: /api_reference/pavex/connection/struct.ConnectionInfo.html#method.peer_addr

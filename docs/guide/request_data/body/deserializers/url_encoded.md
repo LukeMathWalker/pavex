@@ -91,8 +91,8 @@ It borrows from the buffered request body if possible, it allocates a new `Strin
 error if the field is percent-encoded, but you minimise memory usage when it is.
 
 [ApiKit]: ../../../dependency_injection/kits.md
-[BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
-[UrlEncodedBody]: ../../../../api_reference/pavex/request/body/struct.UrlEncodedBody.html
-[UrlEncodedBody::register]: ../../../../api_reference/pavex/request/body/struct.UrlEncodedBody.html#method.register
+[BufferedBody]: /api_reference/pavex/request/body/struct.BufferedBody.html
+[UrlEncodedBody]: /api_reference/pavex/request/body/struct.UrlEncodedBody.html
+[UrlEncodedBody::register]: /api_reference/pavex/request/body/struct.UrlEncodedBody.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html

@@ -6,31 +6,48 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub http_client: app::HttpClient,
+}
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+        v0: app::Config,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Self::_new(v0).await
+    }
+    async fn _new(
+        v0: app::Config,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        let v1 = app::http_client(v0);
+        let v2 = match v1 {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = crate::ApplicationStateError::HttpClient(v2);
+                    core::result::Result::Err(v3)
+                };
+            }
+        };
+        let v3 = crate::ApplicationState {
+            http_client: v2,
+        };
+        core::result::Result::Ok(v3)
+    }
+}
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+    v0: app::Config,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config, v0).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
     #[error(transparent)]
     HttpClient(app::HttpClientError),
-}
-pub async fn build_application_state(
-    v0: app::Config,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    let v1 = app::http_client(v0);
-    let v2 = match v1 {
-        Ok(ok) => ok,
-        Err(v2) => {
-            return {
-                let v3 = crate::ApplicationStateError::HttpClient(v2);
-                core::result::Result::Err(v3)
-            };
-        }
-    };
-    let v3 = crate::ApplicationState {
-        http_client: v2,
-    };
-    core::result::Result::Ok(v3)
 }
 pub fn run(
     server_builder: pavex::server::Server,

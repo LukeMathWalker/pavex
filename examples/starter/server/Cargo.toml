@@ -25,7 +25,7 @@ humantime-serde = "1.1"
 serde-aux = "4"
 
 anyhow = "1"
-pavex = { version = "0.1" }
+pavex = { version = "0.1.78" }
 tokio = { version = "1", features = ["full"] }
 server_sdk = { path = "../server_sdk" }
 app = { path = "../app" }

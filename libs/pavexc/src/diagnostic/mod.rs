@@ -7,8 +7,8 @@ pub(crate) use pavex_cli_diagnostic::{
 };
 pub(crate) use proc_macro_utils::ProcMacroSpanExt;
 pub(crate) use registration_locations::{
-    get_bp_new_span, get_domain_span, get_f_macro_invocation_span, get_nest_blueprint_span,
-    get_prefix_span, get_route_path_span,
+    get_bp_new_span, get_config_key_span, get_domain_span, get_f_macro_invocation_span,
+    get_nest_blueprint_span, get_prefix_span, get_route_path_span,
 };
 pub(crate) use source_file::{LocationExt, ParsedSourceFile, read_source_file};
 
@@ -26,7 +26,7 @@ mod source_file;
 mod utils;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum CallableType {
+pub enum ComponentKind {
     RequestHandler,
     Constructor,
     ErrorHandler,
@@ -35,19 +35,21 @@ pub enum CallableType {
     PreProcessingMiddleware,
     ErrorObserver,
     PrebuiltType,
+    ConfigType,
 }
 
-impl Display for CallableType {
+impl Display for ComponentKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CallableType::RequestHandler => "request handler",
-            CallableType::Constructor => "constructor",
-            CallableType::ErrorHandler => "error handler",
-            CallableType::WrappingMiddleware => "wrapping middleware",
-            CallableType::PostProcessingMiddleware => "post-processing middleware",
-            CallableType::PreProcessingMiddleware => "pre-processing middleware",
-            CallableType::ErrorObserver => "error observer",
-            CallableType::PrebuiltType => "prebuilt type",
+            ComponentKind::RequestHandler => "request handler",
+            ComponentKind::Constructor => "constructor",
+            ComponentKind::ErrorHandler => "error handler",
+            ComponentKind::WrappingMiddleware => "wrapping middleware",
+            ComponentKind::PostProcessingMiddleware => "post-processing middleware",
+            ComponentKind::PreProcessingMiddleware => "pre-processing middleware",
+            ComponentKind::ErrorObserver => "error observer",
+            ComponentKind::PrebuiltType => "prebuilt type",
+            ComponentKind::ConfigType => "config type",
         };
         write!(f, "{s}")
     }

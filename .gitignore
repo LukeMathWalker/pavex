@@ -20,3 +20,4 @@
 trace-*.json
 /docs/api_reference/
 .direnv/
+site

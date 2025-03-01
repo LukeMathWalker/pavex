@@ -251,8 +251,7 @@ fn emit_multiple_consumers_error(
         match user_component_id {
             None => writeln!(&mut error_msg),
             Some(user_component_id) => {
-                let callable_type =
-                    component_db.user_component_db()[user_component_id].callable_type();
+                let callable_type = component_db.user_component_db()[user_component_id].kind();
                 writeln!(&mut error_msg, ", a {callable_type}")
             }
         }
@@ -267,7 +266,7 @@ fn emit_multiple_consumers_error(
         let Some(source) = try_source!(location, package_graph, diagnostics) else {
             continue;
         };
-        let callable_type = component_db.user_component_db()[user_component_id].callable_type();
+        let callable_type = component_db.user_component_db()[user_component_id].kind();
         let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled(format!("One of the consuming {callable_type}s"));
         consuming_snippets.push(HelpWithSnippet::new(
@@ -292,7 +291,7 @@ fn emit_multiple_consumers_error(
             let location = component_db
                 .user_component_db()
                 .get_location(user_component_id);
-            let callable_type = component_db.user_component_db()[user_component_id].callable_type();
+            let callable_type = component_db.user_component_db()[user_component_id].kind();
             let source = match location.source_file(package_graph) {
                 Ok(s) => Some(s),
                 Err(e) => {

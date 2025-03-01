@@ -1,9 +1,9 @@
 use crate::configuration::ApplicationProfile;
 use anyhow::Context;
-use app::configuration::ApplicationConfig;
 use figment::Figment;
 use figment::providers::{Env, Format, Yaml};
 use pavex::server::IncomingStream;
+use server_sdk::ApplicationConfig;
 use std::net::SocketAddr;
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -30,7 +30,7 @@ impl Config {
     ///
     /// We don't rely on `figment`'s built-in support for profiles because
     /// we want to make sure that values for different profiles are not co-located in
-    /// the same configuration file.  
+    /// the same configuration file.
     /// This makes it easier to avoid leaking sensitive information by mistake (e.g.
     /// by committing configuration values for the `dev` profile to the repository).
     ///

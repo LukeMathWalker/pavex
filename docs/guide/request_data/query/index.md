@@ -15,5 +15,5 @@ Inject [`RequestHead`][RequestHead] to access the raw query via its [`target`][R
 
 1. The query string is an optional component of the request target. It may not be there!
 
-[RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
+[RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
+[RequestHead::target]: /api_reference/pavex/request/struct.RequestHead.html#structfield.target

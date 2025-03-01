@@ -130,11 +130,11 @@ The scenario we explored above is why Pavex doesn't let you mutate request-scope
 a restriction that doesn't apply to request handlers, pre-processing and post-processing middlewares.\
 It's so easy to shoot yourself in the foot that it's better to avoid `&mut` references altogether in wrapping middlewares.
 
-[f]: ../../api_reference/pavex/macro.f.html
-[IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
-[Response]: ../../api_reference/pavex/response/struct.Response.html
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Next]: ../../api_reference/pavex/middleware/struct.Next.html
+[f]: /api_reference/pavex/macro.f.html
+[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
+[Response]: /api_reference/pavex/response/struct.Response.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Next]: /api_reference/pavex/middleware/struct.Next.html
 [instrument]: https://docs.rs/tracing/0.1.40/tracing/trait.Instrument.html#method.instrument
 [timeout]: https://docs.rs/tokio/1.35.1/tokio/time/fn.timeout.html
 [Future]: https://doc.rust-lang.org/std/future/trait.Future.html

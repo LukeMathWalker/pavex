@@ -6,6 +6,8 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub app_255_f_0769_a_singleton: app::a::Singleton,
     pub app_255_f_0769_singleton: app::Singleton,
@@ -13,20 +15,35 @@ pub struct ApplicationState {
     pub generic_u64_: app::Generic<u64>,
     pub type_: app::Type,
 }
-pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::Type::new();
-    let v1 = app::Generic::new();
-    let v2 = app::Generic::new();
-    let v3 = app::Singleton::new();
-    let v4 = app::a::Singleton::new();
-    crate::ApplicationState {
-        app_255_f_0769_a_singleton: v4,
-        app_255_f_0769_singleton: v3,
-        generic_string: v2,
-        generic_u64_: v1,
-        type_: v0,
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Ok(Self::_new().await)
+    }
+    async fn _new() -> crate::ApplicationState {
+        let v0 = app::Type::new();
+        let v1 = app::Generic::new();
+        let v2 = app::Generic::new();
+        let v3 = app::Singleton::new();
+        let v4 = app::a::Singleton::new();
+        crate::ApplicationState {
+            app_255_f_0769_a_singleton: v4,
+            app_255_f_0769_singleton: v3,
+            generic_string: v2,
+            generic_u64_: v1,
+            type_: v0,
+        }
     }
 }
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config).await
+}
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationStateError {}
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,

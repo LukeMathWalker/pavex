@@ -147,7 +147,7 @@ For this reason, Pavex does not support the following types as `T` in [`PathPara
 - enums
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting path parameters.
-    Check out [the API reference](../../../api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
+    Check out [the API reference](/api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
     to learn more about the rationale behind this decision.
 
 [^wrong-name]: If a field name doesn't match a path parameter name, Pavex will detect it at compile time and return
@@ -157,11 +157,11 @@ For this reason, Pavex does not support the following types as `T` in [`PathPara
 [^structural-deserialize]: Check the documentation for [`StructuralDeserialize`][StructuralDeserialize] if you want
     to know more about the underlying mechanism.
 
-[RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
-[PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
-[PathParams::register]: ../../../api_reference/pavex/request/path/struct.PathParams.html#method.register
-[PathParamsMacro]: ../../../api_reference/pavex/request/path/attr.PathParams.html
+[RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
+[RequestHead::target]: /api_reference/pavex/request/struct.RequestHead.html#structfield.target
+[PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
+[PathParams::register]: /api_reference/pavex/request/path/struct.PathParams.html#method.register
+[PathParamsMacro]: /api_reference/pavex/request/path/attr.PathParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
-[StructuralDeserialize]: ../../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
+[StructuralDeserialize]: /api_reference/pavex/serialization/trait.StructuralDeserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html

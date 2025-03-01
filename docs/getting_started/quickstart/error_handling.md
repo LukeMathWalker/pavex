@@ -44,5 +44,5 @@ Then register the error handler with the [`Blueprint`][Blueprint]:
 
 The application should compile successfully now.
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Response]: ../../api_reference/pavex/response/struct.Response.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Response]: /api_reference/pavex/response/struct.Response.html

@@ -8,9 +8,13 @@ use guppy::PackageId;
 use guppy::graph::{ExternalSource, PackageSource};
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
-use quote::{format_ident, quote};
+use quote::quote;
 use router::codegen_router;
-use syn::{ItemEnum, ItemFn, ItemStruct};
+use state::{
+    define_application_config, define_application_state, define_application_state_error,
+    get_application_state_new, get_application_state_private_new, get_build_application_state,
+};
+use syn::{ItemFn, ItemStruct};
 
 use crate::compiler::analyses::call_graph::{
     ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
@@ -25,11 +29,15 @@ use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, ResolvedType};
 use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 
+use self::application_config::ApplicationConfig;
+
+use super::analyses::application_config;
 use super::analyses::application_state::ApplicationState;
 use super::generated_app::GeneratedManifest;
 
 mod deps;
 mod router;
+mod state;
 
 pub(crate) fn codegen_app(
     router: &Router,
@@ -38,6 +46,7 @@ pub(crate) fn codegen_app(
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
     application_state: &ApplicationState,
+    application_config: &ApplicationConfig,
     codegen_deps: &HashMap<String, PackageId>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -45,6 +54,8 @@ pub(crate) fn codegen_app(
 ) -> Result<TokenStream, anyhow::Error> {
     let sdk_deps = ServerSdkDeps::new(codegen_deps, package_id2name);
     let application_state_def = define_application_state(application_state, package_id2name);
+    let application_config_def =
+        define_application_config(application_config, package_id2name, &sdk_deps);
     if tracing::event_enabled!(tracing::Level::TRACE) {
         eprintln!(
             "Application state definition:\n{}",
@@ -55,13 +66,20 @@ pub(crate) fn codegen_app(
         &application_state_call_graph.error_variants,
         package_id2name,
         &sdk_deps,
-    );
-    let application_state_init = get_application_state_init(
+    )?;
+    let application_state_private_new = get_application_state_private_new(
         application_state_call_graph,
         package_id2name,
         component_db,
         computation_db,
     )?;
+    let application_state_new = get_application_state_new(
+        &application_state_private_new,
+        application_state_call_graph,
+        application_config,
+        package_id2name,
+    )?;
+    let application_state_init = get_build_application_state(&application_state_new)?;
 
     let define_server_state = define_server_state(&application_state_def);
 
@@ -114,9 +132,14 @@ pub(crate) fn codegen_app(
         //! All manual edits will be lost next time the code is generated.
         #alloc_extern_import
         #define_server_state
+        #application_config_def
         #application_state_def
-        #define_application_state_error
+        impl ApplicationState {
+            #application_state_new
+            #application_state_private_new
+        }
         #application_state_init
+        #define_application_state_error
         #entrypoint
         #router
         #(#handler_modules)*
@@ -156,58 +179,6 @@ fn server_startup(sdk_deps: &ServerSdkDeps) -> ItemFn {
     .unwrap()
 }
 
-fn define_application_state(
-    application_state: &ApplicationState,
-    package_id2name: &BiHashMap<PackageId, String>,
-) -> ItemStruct {
-    let bindings = application_state
-        .bindings()
-        .iter()
-        .map(|(field_name, type_)| {
-            let field_type = type_.syn_type(package_id2name);
-            (field_name, field_type)
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    let fields = bindings.iter().map(|(field_name, type_)| {
-        quote! { pub #field_name: #type_ }
-    });
-    syn::parse2(quote! {
-        pub struct ApplicationState {
-            #(#fields),*
-        }
-    })
-    .unwrap()
-}
-
-fn define_application_state_error(
-    error_types: &IndexMap<String, ResolvedType>,
-    package_id2name: &BiHashMap<PackageId, String>,
-    sdk_deps: &ServerSdkDeps,
-) -> Option<ItemEnum> {
-    let thiserror = sdk_deps.thiserror_ident();
-    if error_types.is_empty() {
-        return None;
-    }
-    let singleton_fields = error_types.iter().map(|(variant_name, type_)| {
-        let variant_type = type_.syn_type(package_id2name);
-        let variant_name = format_ident!("{}", variant_name);
-        quote! {
-            #[error(transparent)]
-            #variant_name(#variant_type)
-        }
-    });
-    Some(
-        syn::parse2(quote! {
-            #[derive(Debug, #thiserror::Error)]
-            pub enum ApplicationStateError {
-                #(#singleton_fields),*
-            }
-        })
-        .unwrap(),
-    )
-}
-
 fn define_server_state(application_state_def: &ItemStruct) -> ItemStruct {
     let dead_code = if application_state_def.fields.is_empty() {
         quote! {
@@ -224,30 +195,6 @@ fn define_server_state(application_state_def: &ItemStruct) -> ItemStruct {
         }
     })
     .unwrap()
-}
-
-#[tracing::instrument("Codegen application state initialization function", skip_all)]
-fn get_application_state_init(
-    application_state_call_graph: &ApplicationStateCallGraph,
-    package_id2name: &BiHashMap<PackageId, String>,
-    component_db: &ComponentDb,
-    computation_db: &ComputationDb,
-) -> Result<ItemFn, anyhow::Error> {
-    let mut function = application_state_call_graph.call_graph.codegen(
-        package_id2name,
-        component_db,
-        computation_db,
-    )?;
-    function.sig.ident = format_ident!("build_application_state");
-    if !application_state_call_graph.error_variants.is_empty() {
-        function.sig.output = syn::ReturnType::Type(
-            Default::default(),
-            Box::new(syn::parse2(
-                quote! { Result<crate::ApplicationState, crate::ApplicationStateError> },
-            )?),
-        );
-    }
-    Ok(function)
 }
 
 pub(crate) fn codegen_manifest<'a, I>(

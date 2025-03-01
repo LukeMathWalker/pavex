@@ -16,13 +16,13 @@ design goals and features.
 ## Going Deeper
 
 Are you already hacking on a Pavex project?\
-Get familiar with the ["Guide"](../guide/index.md) and the ["API Reference"](../api_reference/pavex/index.html) sections!
+Get familiar with the ["Guide"](../guide/index.md) and the ["API Reference"](/api_reference/pavex/index.html) sections!
 
 The ["Guide"](../guide/index.md) is organised by topic. Each section focuses on one aspect of the framework
 (e.g. routing, middlewares, etc.), with examples and code snippets.
 It's the best place to build a mental model of the framework and learn how to wield it effectively.
 
-The ["API Reference"](../api_reference/pavex/index.html), instead, contains the auto-generated
+The ["API Reference"](/api_reference/pavex/index.html), instead, contains the auto-generated
 documentation for all the first-party crates in the Pavex ecosystem.\
 It's your go-to place for the nitty-gritty details of all the types and functions
 exposed by the framework. It's the same documentation shown in your IDE when you hover over a type or function.

@@ -345,7 +345,7 @@ fn _codegen_callable_closure_body(
                         // its parent `MatchBranching` node.
                     }
                     Computation::PrebuiltType(_) => {
-                        unreachable!("Framework items should only appear as input parameters.")
+                        unreachable!("Prebuilt items should only appear as input parameters.")
                     }
                 }
             }

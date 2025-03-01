@@ -311,7 +311,7 @@ fn emit_borrow_checking_error(
                     None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
                     Some(source) => {
                         let callable_type =
-                            component_db.user_component_db()[user_component_id].callable_type();
+                            component_db.user_component_db()[user_component_id].kind();
                         let labeled_span =
                             diagnostic::get_f_macro_invocation_span(&source, location)
                                 .labeled(format!("The {callable_type} was registered here"));

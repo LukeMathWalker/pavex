@@ -55,5 +55,5 @@ You can also replace one of the constructors provided by the kit with a custom o
 [BufferedBody]: ../request_data/body/byte_wrappers.md
 [BodySizeLimit]: ../request_data/body/byte_wrappers.md#body-size-limit
 [JsonBody]: ../request_data/body/deserializers/json.md
-[ApiKit]: ../../api_reference/pavex/kit/struct.ApiKit.html
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
+[ApiKit]: /api_reference/pavex/kit/struct.ApiKit.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html

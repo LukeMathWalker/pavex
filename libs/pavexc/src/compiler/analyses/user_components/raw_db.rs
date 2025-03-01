@@ -5,17 +5,19 @@ use indexmap::IndexMap;
 use std::collections::BTreeMap;
 
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, Constructor, Domain, ErrorObserver, Fallback,
-    Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PathPrefix, PostProcessingMiddleware,
-    PreProcessingMiddleware, PrebuiltType, RawIdentifiers, RegisteredAt, Route, WrappingMiddleware,
+    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, Domain,
+    ErrorObserver, Fallback, Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PathPrefix,
+    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, RegisteredAt,
+    Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::domain::{DomainGuard, InvalidDomainConstraint};
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
+use crate::compiler::component::DefaultStrategy;
 use crate::compiler::interner::Interner;
-use crate::diagnostic::{CallableType, CompilerDiagnostic, OptionalSourceSpanExt};
+use crate::diagnostic::{CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt};
 use crate::{diagnostic, try_source};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -49,6 +51,11 @@ pub enum UserComponent {
         raw_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
+    ConfigType {
+        raw_identifiers_id: RawIdentifierId,
+        key: String,
+        scope_id: ScopeId,
+    },
     WrappingMiddleware {
         raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
@@ -71,19 +78,20 @@ impl UserComponent {
     /// Returns the tag for the "variant" of this `UserComponent`.
     ///
     /// Useful when you don't need to access the actual data attached component.
-    pub fn callable_type(&self) -> CallableType {
+    pub fn kind(&self) -> ComponentKind {
         match self {
-            UserComponent::RequestHandler { .. } => CallableType::RequestHandler,
-            UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
-            UserComponent::Constructor { .. } => CallableType::Constructor,
-            UserComponent::PrebuiltType { .. } => CallableType::PrebuiltType,
-            UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
-            UserComponent::Fallback { .. } => CallableType::RequestHandler,
-            UserComponent::ErrorObserver { .. } => CallableType::ErrorObserver,
+            UserComponent::RequestHandler { .. } => ComponentKind::RequestHandler,
+            UserComponent::ErrorHandler { .. } => ComponentKind::ErrorHandler,
+            UserComponent::Constructor { .. } => ComponentKind::Constructor,
+            UserComponent::PrebuiltType { .. } => ComponentKind::PrebuiltType,
+            UserComponent::ConfigType { .. } => ComponentKind::ConfigType,
+            UserComponent::WrappingMiddleware { .. } => ComponentKind::WrappingMiddleware,
+            UserComponent::Fallback { .. } => ComponentKind::RequestHandler,
+            UserComponent::ErrorObserver { .. } => ComponentKind::ErrorObserver,
             UserComponent::PostProcessingMiddleware { .. } => {
-                CallableType::PostProcessingMiddleware
+                ComponentKind::PostProcessingMiddleware
             }
-            UserComponent::PreProcessingMiddleware { .. } => CallableType::PreProcessingMiddleware,
+            UserComponent::PreProcessingMiddleware { .. } => ComponentKind::PreProcessingMiddleware,
         }
     }
 
@@ -100,6 +108,10 @@ impl UserComponent {
                 ..
             }
             | UserComponent::PrebuiltType {
+                raw_identifiers_id: raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::ConfigType {
                 raw_identifiers_id: raw_callable_identifiers_id,
                 ..
             }
@@ -140,6 +152,7 @@ impl UserComponent {
             | UserComponent::WrappingMiddleware { scope_id, .. }
             | UserComponent::PostProcessingMiddleware { scope_id, .. }
             | UserComponent::PrebuiltType { scope_id, .. }
+            | UserComponent::ConfigType { scope_id, .. }
             | UserComponent::PreProcessingMiddleware { scope_id, .. }
             | UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
@@ -185,10 +198,14 @@ pub(super) struct RawUserComponentDb {
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     pub(super) id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
-    /// For each constructor and prebuilt type, determine if it can be cloned or not.
+    /// Determine if a type can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor and prebuilt type.
+    /// Invariants: there is an entry for every constructor, configuration type and prebuilt type.
     pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Determine if a configuration type should have a default.
+    ///
+    /// Invariants: there is an entry for configuration type.
+    pub(super) config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -245,6 +262,7 @@ impl RawUserComponentDb {
             id2lifecycle: HashMap::new(),
             id2lints: HashMap::new(),
             id2cloning_strategy: HashMap::new(),
+            config_id2default_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
             handler_id2error_observer_ids: HashMap::new(),
             fallback_id2path_prefix: HashMap::new(),
@@ -414,6 +432,9 @@ impl RawUserComponentDb {
                 }
                 Component::PrebuiltType(si) => {
                     self.process_prebuilt_type(si, current_scope_id);
+                }
+                Component::ConfigType(t) => {
+                    self.process_config_type(t, current_scope_id);
                 }
             }
         }
@@ -753,6 +774,38 @@ impl RawUserComponentDb {
         );
     }
 
+    /// Register a config type against [`RawUserComponentDb`].
+    /// It is associated with or nested under the provided `current_scope_id`.
+    fn process_config_type(&mut self, t: &ConfigType, current_scope_id: ScopeId) {
+        const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(t.input.type_.clone());
+        let component = UserComponent::ConfigType {
+            raw_identifiers_id: raw_callable_identifiers_id,
+            key: t.key.clone(),
+            scope_id: current_scope_id,
+        };
+        let id = self.intern_component(component, LIFECYCLE, t.input.location.clone());
+        self.id2cloning_strategy.insert(
+            id,
+            t.cloning_strategy
+                .unwrap_or(CloningStrategy::CloneIfNecessary),
+        );
+        let default_strategy = t
+            .default_if_missing
+            .map(|b| {
+                if b {
+                    DefaultStrategy::DefaultIfMissing
+                } else {
+                    DefaultStrategy::Required
+                }
+            })
+            .unwrap_or(DefaultStrategy::Required);
+        self.config_id2default_strategy.insert(id, default_strategy);
+    }
+
     /// A helper function to intern a component without forgetting to do the necessary
     /// bookeeping for the metadata (location and lifecycle) that are common to all
     /// components.
@@ -884,27 +937,32 @@ impl RawUserComponentDb {
         for (id, component) in self.iter() {
             assert!(
                 self.id2lifecycle.contains_key(&id),
-                "There is no lifecycle registered for the user component #{:?}",
-                id
+                "There is no lifecycle registered for the user-provided {} #{id:?}",
+                component.kind()
             );
             assert!(
                 self.id2locations.contains_key(&id),
-                "There is no location registered for the user component #{:?}",
-                id
+                "There is no location registered for the user-provided {} #{id:?}",
+                component.kind()
             );
             match component {
-                UserComponent::Constructor { .. } => {
+                UserComponent::Constructor { .. } | UserComponent::PrebuiltType { .. } => {
                     assert!(
                         self.id2cloning_strategy.contains_key(&id),
-                        "There is no cloning strategy registered for the user-registered constructor #{:?}",
-                        id
+                        "There is no cloning strategy registered for the user-registered {} #{id:?}",
+                        component.kind(),
                     );
                 }
-                UserComponent::PrebuiltType { .. } => {
+                UserComponent::ConfigType { .. } => {
                     assert!(
                         self.id2cloning_strategy.contains_key(&id),
-                        "There is no cloning strategy registered for the user-registered prebuilt type #{:?}",
-                        id
+                        "There is no cloning strategy registered for the user-registered {} #{id:?}",
+                        component.kind(),
+                    );
+                    assert!(
+                        self.config_id2default_strategy.contains_key(&id),
+                        "There is no default strategy registered for the user-registered {} #{id:?}",
+                        component.kind(),
                     );
                 }
                 UserComponent::RequestHandler { .. } => {

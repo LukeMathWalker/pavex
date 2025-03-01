@@ -11,7 +11,7 @@ use crate::{
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
-    diagnostic::{self, CallableType, CompilerDiagnostic, OptionalSourceSpanExt},
+    diagnostic::{self, CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt},
     language::ResolvedType,
     rustdoc::CrateCollection,
     try_source,
@@ -69,14 +69,14 @@ fn missing_trait_implementation(
     let user_component_id = component_db.user_component_id(component_id).unwrap();
     let user_component_db = &component_db.user_component_db();
     let user_component = &user_component_db[user_component_id];
-    let component_kind = user_component.callable_type();
+    let component_kind = user_component.kind();
     let location = user_component_db.get_location(user_component_id);
     let source = try_source!(location, package_graph, diagnostics);
     let label = source.as_ref().and_then(|source| {
         diagnostic::get_f_macro_invocation_span(source, location)
             .labeled(format!("The {component_kind} was registered here"))
     });
-    let help = if component_kind == CallableType::PrebuiltType {
+    let help = if component_kind == ComponentKind::PrebuiltType {
         "All prebuilt types that are needed at runtime must implement the `Send` and `Sync` traits.\n\
         Pavex runs on a multi-threaded HTTP server and the application state is shared \
         across all worker threads."

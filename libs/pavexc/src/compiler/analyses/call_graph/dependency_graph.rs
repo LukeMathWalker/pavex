@@ -128,7 +128,9 @@ impl DependencyGraph {
                         HydratedComponent::Constructor(constructor) => {
                             constructor.input_types().to_vec()
                         }
-                        HydratedComponent::PrebuiltType(..) => vec![],
+                        HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(..) => {
+                            vec![]
+                        }
                         HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
                         HydratedComponent::PostProcessingMiddleware(pp) => {
                             let mut input_types = pp.input_types().to_vec();
@@ -332,7 +334,7 @@ fn cycle_error(
             Computation::Callable(c) => c.path.clone(),
             Computation::MatchResult(_) => unreachable!(),
             Computation::PrebuiltType(_) => unreachable!(
-                "Framework items do not have dependencies, so they can't be part of a cycle"
+                "Prebuilt types do not have dependencies, so they can't be part of a cycle"
             ),
         };
         let dependent_component = component_db.hydrated_component(dependent_id, computation_db);
@@ -340,7 +342,7 @@ fn cycle_error(
             Computation::Callable(c) => c.path.clone(),
             Computation::MatchResult(_) => unreachable!(),
             Computation::PrebuiltType(_) => unreachable!(
-                "Framework items do not have dependencies, so they can't be part of a cycle"
+                "Prebuilt types do not have dependencies, so they can't be part of a cycle"
             ),
         };
 

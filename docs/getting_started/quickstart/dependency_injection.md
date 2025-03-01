@@ -98,10 +98,10 @@ multiple times for the same request.
   multiple times would be wasteful.
   As a request-scoped constructor, it's done once and the outcome is reused.
 
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::request_scoped]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
-[f!]: ../../api_reference/pavex/macro.f!.html
-[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
-[ApiKit]: ../../api_reference/pavex/kit/struct.ApiKit.html
+[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::request_scoped]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
+[f!]: /api_reference/pavex/macro.f!.html
+[PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
+[ApiKit]: /api_reference/pavex/kit/struct.ApiKit.html
 [lifecycle]: ../../guide/dependency_injection/constructors.md#lifecycles
-[RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
+[RequestHead]: /api_reference/pavex/request/struct.RequestHead.html

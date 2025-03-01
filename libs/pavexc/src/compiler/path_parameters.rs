@@ -194,7 +194,7 @@ fn report_non_existing_path_parameters(
         let raw_identifiers = component_db
             .user_component_db()
             .get_raw_callable_identifiers(user_component_id);
-        let callable_type = component_db.user_component_db()[user_component_id].callable_type();
+        let callable_type = component_db.user_component_db()[user_component_id].kind();
         let location = component_db
             .user_component_db()
             .get_location(user_component_id);
@@ -327,7 +327,7 @@ fn must_be_a_plain_struct(
             continue;
         };
         let callable = &computation_db[user_component_id];
-        let callable_type = component_db.user_component_db()[user_component_id].callable_type();
+        let callable_type = component_db.user_component_db()[user_component_id].kind();
         let location = component_db
             .user_component_db()
             .get_location(user_component_id);

@@ -1,41 +1,13 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use pavex::cookie::ProcessorConfig;
 use pavex::{blueprint::Blueprint, f, t};
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
-#[derive(serde::Deserialize, Debug, Clone)]
-/// The configuration object holding all the values required
-/// to configure the application.
-pub struct ApplicationConfig {
-    pub database: DatabaseConfig,
-    pub auth: AuthConfig,
-    #[serde(default)]
-    pub cookie: ProcessorConfig,
-}
-
-impl ApplicationConfig {
-    pub fn database_config(&self) -> &DatabaseConfig {
-        &self.database
-    }
-
-    pub fn auth_config(&self) -> &AuthConfig {
-        &self.auth
-    }
-
-    pub fn cookie_config(&self) -> ProcessorConfig {
-        self.cookie.clone()
-    }
-
-    pub fn register(bp: &mut Blueprint) {
-        bp.prebuilt(t!(self::ApplicationConfig));
-        bp.transient(f!(self::ApplicationConfig::database_config));
-        bp.transient(f!(self::ApplicationConfig::auth_config));
-        bp.singleton(f!(self::ApplicationConfig::cookie_config));
-        bp.singleton(f!(self::DatabaseConfig::get_pool));
-        bp.singleton(f!(self::AuthConfig::decoding_key));
-    }
+pub fn register(bp: &mut Blueprint) {
+    bp.config("database", t!(self::DatabaseConfig));
+    bp.config("auth", t!(self::AuthConfig));
+    bp.singleton(f!(self::DatabaseConfig::get_pool));
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]

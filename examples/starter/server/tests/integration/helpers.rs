@@ -1,6 +1,6 @@
 use pavex::server::Server;
 use server::configuration::{ApplicationProfile, Config};
-use server_sdk::{build_application_state, run};
+use server_sdk::{ApplicationState, run};
 use std::sync::Once;
 use tracing::subscriber::set_global_default;
 use tracing_subscriber::EnvFilter;
@@ -14,7 +14,11 @@ impl TestApi {
     pub async fn spawn() -> Self {
         Self::init_telemetry();
         let config = Self::get_config();
-        let application_state = build_application_state(config.app).await;
+
+        let application_state = ApplicationState::new(config.app)
+            .await
+            .expect("Failed to build the application state");
+
         let tcp_listener = config
             .server
             .listener()

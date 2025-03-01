@@ -6,19 +6,36 @@ struct ServerState {
     router: Router,
     application_state: ApplicationState,
 }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub u32_: u32,
     pub u64_: u64,
 }
-pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::parent_singleton();
-    let v1 = app::singleton_dep();
-    let v2 = app::nested_singleton(v1);
-    crate::ApplicationState {
-        u32_: v2,
-        u64_: v0,
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        Ok(Self::_new().await)
+    }
+    async fn _new() -> crate::ApplicationState {
+        let v0 = app::parent_singleton();
+        let v1 = app::singleton_dep();
+        let v2 = app::nested_singleton(v1);
+        crate::ApplicationState {
+            u32_: v2,
+            u64_: v0,
+        }
     }
 }
+#[deprecated(note = "Use `ApplicationState::new` instead.")]
+pub async fn build_application_state(
+    _app_config: crate::ApplicationConfig,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    crate::ApplicationState::new(_app_config).await
+}
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationStateError {}
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,

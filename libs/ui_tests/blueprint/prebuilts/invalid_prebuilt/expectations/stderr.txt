@@ -11,9 +11,8 @@
   [31m│[0m  [2m30[0m │     bp.prebuilt(t!(crate::B));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSet the lifetime parameters to `'static` when registering the type
-  [31m│[0m         as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for
+  [31m│[0m         as prebuilt. E.g. `bp.prebuilt(t!(crate::MyType<'static>))` for
   [31m│[0m         `struct MyType<'a>(&'a str)`.
-
 [31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::B` has a generic type parameter, `T`, that you haven't
@@ -27,9 +26,8 @@
   [31m│[0m  [2m31[0m │     bp.prebuilt(t!(crate::C));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSet the generic parameters to concrete types when
-  [31m│[0m         registering the type as prebuilt. E.g. `bp.prebuilt(f!
+  [31m│[0m         registering the type as prebuilt. E.g. `bp.prebuilt(t!
   [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.
-
 [31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
   [31m│[0m `app::C` has 3 named lifetime parameters that you haven't
@@ -43,9 +41,8 @@
   [31m│[0m  [2m32[0m │     bp.prebuilt(t!(crate::D));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSet the lifetime parameters to `'static` when registering the type
-  [31m│[0m         as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for
+  [31m│[0m         as prebuilt. E.g. `bp.prebuilt(t!(crate::MyType<'static>))` for
   [31m│[0m         `struct MyType<'a>(&'a str)`.
-
 [31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::D` has 3 generic type parameters that you haven't assigned
@@ -59,5 +56,5 @@
   [31m│[0m  [2m33[0m │     bp.route(GET, "/", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSet the generic parameters to concrete types when
-  [31m│[0m         registering the type as prebuilt. E.g. `bp.prebuilt(f!
+  [31m│[0m         registering the type as prebuilt. E.g. `bp.prebuilt(t!
   [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.

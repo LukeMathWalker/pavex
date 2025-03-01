@@ -5,7 +5,7 @@ use server::{
     configuration::Config,
     telemetry::{get_subscriber, init_telemetry},
 };
-use server_sdk::{build_application_state, run};
+use server_sdk::{ApplicationState, run};
 use std::time::Duration;
 
 #[tokio::main]
@@ -33,7 +33,7 @@ async fn _main() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
     let config = Config::load(None)?;
-    let application_state = build_application_state(&config.app)
+    let application_state = ApplicationState::new(config.app)
         .await
         .context("Failed to build the application state")?;
 

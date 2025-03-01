@@ -1,4 +1,4 @@
-use crate::configuration::ApplicationConfig;
+use crate::configuration;
 use crate::routes::articles::articles_bp;
 use crate::routes::profiles::profiles_bp;
 use crate::routes::users::users_bp;
@@ -14,7 +14,7 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     ApiKit::new().register(&mut bp);
     telemetry::register(&mut bp);
-    ApplicationConfig::register(&mut bp);
+    configuration::register(&mut bp);
     CookieKit::new().register(&mut bp);
 
     bp.prefix("/articles").nest(articles_bp());

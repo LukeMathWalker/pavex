@@ -145,7 +145,7 @@ It borrows from the request's path if possible, it allocates a new `String` if i
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error if the route parameter
 is percent-encoded, but you tried to use `&str` as its field type.
 
-[QueryParams]: ../../../api_reference/pavex/request/query/struct.QueryParams.html
-[QueryParams::register]: ../../../api_reference/pavex/request/query/struct.QueryParams.html#method.register
+[QueryParams]: /api_reference/pavex/request/query/struct.QueryParams.html
+[QueryParams::register]: /api_reference/pavex/request/query/struct.QueryParams.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
