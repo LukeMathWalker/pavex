@@ -7,7 +7,7 @@ You need to go through a few steps to set it up.
 
 The core session logic lives in a standalone crate, [`pavex_session`][pavex_session].\
 Support for different session storage backends is provided by separate crates, such as
-[`pavex_session_sqlx`][pavex_session_sqlx] and [`pavex_session_memory_store`][pavex_session_in_memory_store].
+[`pavex_session_sqlx`][pavex_session_sqlx] and [`pavex_session_memory_store`][pavex_session_memory_store].
 
 Choose a storage backend that fits your needs and then add the required dependencies to the `Cargo.toml`
 of your application crate:
@@ -66,7 +66,7 @@ Check out the "Realworld" example as a reference:
 
 [pavex_session]: ../../api_reference/pavex_session/index.html
 [pavex_session_sqlx]: ../../api_reference/pavex_session_sqlx/index.html
-[pavex_session_in_memory_store]: ../../api_reference/pavex_session_in_memory_store/index.html
+[pavex_session_memory_store]: ../../api_reference/pavex_session_memory_store/index.html
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 [SessionConfig]: ../../api_reference/pavex_session/struct.SessionConfig.html
 [default settings]: ../../api_reference/pavex_session/struct.SessionConfig.html#fields
