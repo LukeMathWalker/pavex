@@ -57,14 +57,15 @@ body = """
 """
 
 commit_parsers = [
-    { message = "^feat", group = "<!-- 0 -->⛰️ Features" },
-    { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
-    { message = "^deprecated", group = "<!-- 2 --> ⚠️ Deprecations" },
-    { message = "^perf", group = "<!-- 3 -->⚡ Performance" },
-    { message = "^doc", group = "<!-- 4 -->📚 Documentation" },
-    { body = ".*security", group = "<!-- 5 -->🛡️ Security" },
-    { message = "^polish", group = "<!-- 6 -->🫧 Polishing" },
-    { message = "^test", group = "<!-- 7 -->🧪 Testing" },
+    { message = "^breaking", group = "<!-- 0 -->‼️ Breaking changes" },
+    { message = "^feat", group = "<!-- 1 -->⛰️ Features" },
+    { message = "^fix", group = "<!-- 2 -->🐛 Bug Fixes" },
+    { message = "^deprecated", group = "<!-- 3 --> ⚠️ Deprecations" },
+    { message = "^perf", group = "<!-- 4 -->⚡ Performance" },
+    { message = "^doc", group = "<!-- 5 -->📚 Documentation" },
+    { body = ".*security", group = "<!-- 6 -->🛡️ Security" },
+    { message = "^polish", group = "<!-- 7 -->🫧 Polishing" },
+    { message = "^test", group = "<!-- 8 -->🧪 Testing" },
     { message = "^.*", skip = true },
 ]
 
