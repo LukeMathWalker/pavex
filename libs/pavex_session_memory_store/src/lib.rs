@@ -245,7 +245,7 @@ mod kit {
     /// ```rust
     /// use pavex::blueprint::Blueprint;
     /// use pavex::cookie::CookieKit;
-    /// use pavex_session::SessionKit;
+    /// use pavex_session_memory_store::InMemorySessionKit;
     ///
     /// let mut bp = Blueprint::new();
     /// InMemorySessionKit::new()
