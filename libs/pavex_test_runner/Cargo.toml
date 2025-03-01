@@ -11,10 +11,6 @@ publish = false
 [package.metadata.dist]
 dist = false
 
-[[bin]]
-path = "src/main.rs"
-name = "snaps"
-
 [dependencies]
 anyhow = { workspace = true }
 ahash = { workspace = true }
