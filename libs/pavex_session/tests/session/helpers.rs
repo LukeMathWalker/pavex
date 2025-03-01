@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use pavex::cookie::ResponseCookie;
 use pavex_session::SessionId;
@@ -6,7 +6,7 @@ use pavex_session::SessionId;
 /// Parse the response cookie created by finalizing the session
 pub struct SetCookie {
     pub id: SessionId,
-    pub client_state: HashMap<String, serde_json::Value>,
+    pub client_state: HashMap<Cow<'static, str>, serde_json::Value>,
 }
 
 impl SetCookie {

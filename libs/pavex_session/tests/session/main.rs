@@ -95,7 +95,7 @@ async fn pre_existing_client_state_can_be_accessed() {
     let value = serde_json::Value::String("Value".to_owned());
     fixture.client_state = {
         let mut c = HashMap::new();
-        c.insert(key.to_owned(), value.clone());
+        c.insert(key.into(), value.clone());
         c
     };
 
@@ -122,7 +122,7 @@ async fn pre_existing_client_state_can_be_modified() {
     let value = serde_json::Value::String("Value".to_owned());
     fixture.client_state = {
         let mut c = HashMap::new();
-        c.insert(key.to_owned(), value.clone());
+        c.insert(key.into(), value.clone());
         c
     };
 
@@ -371,7 +371,7 @@ async fn server_state_is_persisted_for_a_fresh_session() {
     let (store, config) = (store(), SessionConfig::default());
     let mut session = Session::new(&store, &config, None);
 
-    session.insert("key".into(), "value").await.unwrap();
+    session.insert("key", "value").await.unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -396,9 +396,7 @@ async fn server_state_is_not_created_if_empty_when_config_demands_it() {
     let mut session = Session::new(&store, &config, None);
 
     // Set a client-side value to force session creation.
-    session
-        .client_mut()
-        .insert_raw("key".into(), "value".into());
+    session.client_mut().insert_raw("key", "value".into());
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let _ = SetCookie::parse(cookie);
@@ -415,9 +413,7 @@ async fn server_state_is_created_if_empty_when_config_demands_it() {
     let mut session = Session::new(&store, &config, None);
 
     // Set a client-side value to force session creation.
-    session
-        .client_mut()
-        .insert_raw("key".into(), "value".into());
+    session.client_mut().insert_raw("key", "value".into());
 
     let cookie = session.finalize().await.unwrap().unwrap();
     // Not a removal cookie.
@@ -479,7 +475,7 @@ async fn server_state_is_created_even_if_empty_with_default_config() {
     let mut session = Session::new(&store, &config, None);
 
     // Add client-side state to force session creation.
-    session.client_mut().insert("key".into(), "value").unwrap();
+    session.client_mut().insert("key", "value").unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -497,7 +493,7 @@ async fn server_state_is_not_created_when_empty_if_config_allows_it() {
     let mut session = Session::new(&store, &config, None);
 
     // Add client-side state to force session creation.
-    session.client_mut().insert("key".into(), "value").unwrap();
+    session.client_mut().insert("key", "value").unwrap();
 
     let cookie = session.finalize().await.unwrap().unwrap();
     let cookie = SetCookie::parse(cookie);
@@ -575,7 +571,7 @@ async fn id_cycling_succeeds_if_the_old_state_record_is_gone_and_but_the_state_h
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session.insert("yo".into(), "yo").await.unwrap();
+    session.insert("yo", "yo").await.unwrap();
     session.cycle_id();
 
     // Remove the old state.
@@ -625,10 +621,7 @@ async fn new_server_state_is_stored_against_the_new_id_when_cycled() {
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
 
-    session
-        .insert_raw("key".into(), "value".into())
-        .await
-        .unwrap();
+    session.insert_raw("key", "value".into()).await.unwrap();
     session.cycle_id();
 
     let cookie = session.finalize().await.unwrap().unwrap();

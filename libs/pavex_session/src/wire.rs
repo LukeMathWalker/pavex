@@ -1,5 +1,4 @@
-use crate::SessionId;
-use serde_json::Value;
+use crate::{SessionId, State};
 use std::{borrow::Cow, collections::HashMap};
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -10,5 +9,5 @@ pub(crate) struct WireClientState<'a> {
     #[serde(rename = "0")]
     pub(crate) session_id: SessionId,
     #[serde(rename = "1", skip_serializing_if = "HashMap::is_empty", default)]
-    pub(crate) user_values: Cow<'a, HashMap<String, Value>>,
+    pub(crate) user_values: Cow<'a, State>,
 }

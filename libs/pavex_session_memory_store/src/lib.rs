@@ -1,5 +1,5 @@
 //! An in-memory session store for `pavex_session`, geared towards testing and local development.
-use std::{collections::HashMap, num::NonZeroUsize, sync::Arc, time::Duration};
+use std::{borrow::Cow, collections::HashMap, num::NonZeroUsize, sync::Arc, time::Duration};
 use time::OffsetDateTime;
 use tokio::sync::{Mutex, MutexGuard};
 
@@ -39,7 +39,7 @@ pub type SessionStoreMemory = InMemorySessionStore;
 
 #[derive(Debug)]
 struct StoreRecord {
-    state: HashMap<String, serde_json::Value>,
+    state: HashMap<Cow<'static, str>, serde_json::Value>,
     deadline: time::OffsetDateTime,
 }
 impl StoreRecord {

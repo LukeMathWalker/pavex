@@ -8,8 +8,8 @@ snippets:
     ranges: ["0..12", "17.."]
   - name: "server_insert"
     source_path: "src/ops/insert.rs"
-    ranges: ["0..7", "9.."]
-    hl_lines: [7]
+    ranges: ["0..6", "8.."]
+    hl_lines: [6]
   - name: "server_insert_struct"
     source_path: "src/ops/insert_struct.rs"
     ranges: ["0..16", "18.."]

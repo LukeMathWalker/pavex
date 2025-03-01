@@ -79,7 +79,7 @@ async fn default_ttl_can_be_changed() {
     config.state.ttl = std::time::Duration::from_secs(ttl_seconds);
 
     let mut session = Session::new(&store, &config, None);
-    session.insert("key".into(), "value").await.unwrap();
+    session.insert("key", "value").await.unwrap();
     session.finalize().await.unwrap().unwrap();
 
     let oplog = call_tracker.operation_log().await;
@@ -92,7 +92,7 @@ async fn default_ttl() {
     let ((store, call_tracker), config) = (spy_store(), SessionConfig::default());
 
     let mut session = Session::new(&store, &config, None);
-    session.insert("key".into(), "value").await.unwrap();
+    session.insert("key", "value").await.unwrap();
     session.finalize().await.unwrap().unwrap();
 
     let oplog = call_tracker.operation_log().await;

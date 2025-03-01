@@ -130,7 +130,7 @@ server-side counterpart. Use it only for small, non-sensitive data.
 
 [^internal-representation]: Internally, each value is stored as a JSON object. This means that 
   you can store any type that can be serialized to (and deserialized from) JSON. In Rust terms,
-  the state is a `HashMap<String, serde_json::Value>`.
+  you can reason about the session state as if it were a `HashMap<String, serde_json::Value>`.
 
 [Session]: ../../api_reference/pavex_session/struct.Session.html
 [delete]: ../../api_reference/pavex_session/struct.Session.html#method.delete
