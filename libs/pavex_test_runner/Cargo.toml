@@ -37,4 +37,5 @@ once_cell = { workspace = true }
 pavexc = { path = "../pavexc" }
 guppy = { workspace = true }
 rayon = { workspace = true }
+rlimit = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }

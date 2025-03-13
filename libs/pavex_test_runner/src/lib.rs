@@ -66,6 +66,8 @@ pub fn run_tests(
 ) -> Result<Conclusion, anyhow::Error> {
     let arguments = libtest_mimic::Arguments::from_args();
 
+    let _ = increase_open_file_descriptor_limit();
+
     let mut test_name2test_data = BTreeMap::new();
     for entry in get_ui_test_directories(&tests_directory) {
         let test_name = get_test_name(&tests_directory, &entry);
@@ -215,6 +217,21 @@ pub fn run_tests(
         );
     }
     Ok(libtest_mimic::run(&arguments, trials))
+}
+
+/// Try to increase the open file descriptor limit.
+/// The default limit is usually too low for integration tests,
+/// causing tests to fail with `Too many open files` errors.
+fn increase_open_file_descriptor_limit() -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::cmp::{max, min};
+
+        let (soft, hard) = rlimit::Resource::NOFILE.get()?;
+        let target = max(soft, min(10_000, hard));
+        rlimit::Resource::NOFILE.set(target, hard)?;
+    }
+    Ok(())
 }
 
 fn compile_generated_apps(
