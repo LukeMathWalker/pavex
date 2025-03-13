@@ -133,7 +133,7 @@ impl RustdocGlobalFsCache {
         stmt.execute(params![
             project_fingerprint,
             bincode::encode_to_vec(
-                &package_ids.iter().map(|s| s.repr()).collect_vec(),
+                package_ids.iter().map(|s| s.repr()).collect_vec(),
                 BINCODE_CONFIG
             )?
         ])?;

@@ -142,15 +142,17 @@ async fn pre_existing_client_state_can_be_modified() {
 #[tokio::test]
 async fn pre_existing_client_state_can_be_cleared_without_invalidating_the_session() {
     let (store, config) = (store(), SessionConfig::default());
-    let mut fixture = SessionFixture::default();
-    fixture.client_state = {
-        // TODO: generate random client state.
-        let mut c = HashMap::new();
-        c.insert(
-            "a key".into(),
-            serde_json::Value::String("Value".to_owned()),
-        );
-        c
+    let fixture = SessionFixture {
+        client_state: {
+            // TODO: generate random client state.
+            let mut c = HashMap::new();
+            c.insert(
+                "a key".into(),
+                serde_json::Value::String("Value".to_owned()),
+            );
+            c
+        },
+        ..Default::default()
     };
 
     let incoming = fixture.setup(&store).await;
@@ -170,16 +172,18 @@ async fn pre_existing_client_state_can_be_cleared_without_invalidating_the_sessi
 async fn server_state_can_be_cleared_without_invalidating_the_session() {
     let (store, config) = (store(), SessionConfig::default());
 
-    let mut fixture = SessionFixture::default();
-    fixture.server_state = Some({
-        // TODO: generate random server state.
-        let mut c = HashMap::new();
-        c.insert(
-            "a key".into(),
-            serde_json::Value::String("Value".to_owned()),
-        );
-        c
-    });
+    let fixture = SessionFixture {
+        server_state: Some({
+            // TODO: generate random server state.
+            let mut c = HashMap::new();
+            c.insert(
+                "a key".into(),
+                serde_json::Value::String("Value".to_owned()),
+            );
+            c
+        }),
+        ..Default::default()
+    };
 
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
@@ -230,8 +234,10 @@ async fn ttl_is_updated_if_server_state_is_loaded_but_unchanged() {
     // Always extend TTL
     config.state.ttl_extension_threshold = None;
 
-    let mut fixture = SessionFixture::default();
-    fixture.server_ttl = Some(config.state.ttl);
+    let fixture = SessionFixture {
+        server_ttl: Some(config.state.ttl),
+        ..Default::default()
+    };
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
     assert!(session.is_empty().await.unwrap());
@@ -255,9 +261,11 @@ async fn ttl_is_not_updated_if_server_state_is_unchanged_but_ttl_threshold_is_no
     let ttl_extension_threshold = config.state.ttl_extension_threshold.unwrap();
     assert!(ttl_extension_threshold.inner() < 0.9);
 
-    let mut fixture = SessionFixture::default();
-    // We start at full TTL
-    fixture.server_ttl = Some(config.state.ttl);
+    let fixture = SessionFixture {
+        // We start at full TTL
+        server_ttl: Some(config.state.ttl),
+        ..Default::default()
+    };
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
     assert!(session.is_empty().await.unwrap());
@@ -305,16 +313,18 @@ async fn ttl_is_updated_if_server_state_is_unchanged_and_ttl_threshold_is_met() 
 async fn server_state_can_be_deleted_without_invalidating_the_session() {
     let ((store, call_tracker), config) = (spy_store(), SessionConfig::default());
 
-    let mut fixture = SessionFixture::default();
-    fixture.server_state = Some({
-        // TODO: generate random server state.
-        let mut c = HashMap::new();
-        c.insert(
-            "a key".into(),
-            serde_json::Value::String("Value".to_owned()),
-        );
-        c
-    });
+    let fixture = SessionFixture {
+        server_state: Some({
+            // TODO: generate random server state.
+            let mut c = HashMap::new();
+            c.insert(
+                "a key".into(),
+                serde_json::Value::String("Value".to_owned()),
+            );
+            c
+        }),
+        ..Default::default()
+    };
 
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
@@ -339,16 +349,18 @@ async fn server_state_can_be_deleted_without_invalidating_the_session() {
 async fn server_state_is_deleted_if_the_session_is_invalidated() {
     let (store, config) = (store(), SessionConfig::default());
 
-    let mut fixture = SessionFixture::default();
-    fixture.server_state = Some({
-        // TODO: generate random server state.
-        let mut c = HashMap::new();
-        c.insert(
-            "a key".into(),
-            serde_json::Value::String("Value".to_owned()),
-        );
-        c
-    });
+    let fixture = SessionFixture {
+        server_state: Some({
+            // TODO: generate random server state.
+            let mut c = HashMap::new();
+            c.insert(
+                "a key".into(),
+                serde_json::Value::String("Value".to_owned()),
+            );
+            c
+        }),
+        ..Default::default()
+    };
 
     let incoming = fixture.setup(&store).await;
     let mut session = Session::new(&store, &config, Some(incoming));
