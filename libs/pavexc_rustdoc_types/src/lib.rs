@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// This integer is incremented with every breaking change to the API,
 /// and is returned along with the JSON blob as [`Crate::format_version`].
 /// Consuming code should assert that this value matches the format version(s) that it supports.
-pub const FORMAT_VERSION: u32 = 39;
+pub const FORMAT_VERSION: u32 = 40;
 
 /// The root of the emitted JSON blob.
 ///
@@ -56,6 +56,13 @@ pub struct Crate {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ExternalCrate {
     /// The name of the crate.
+    ///
+    /// Note: This is the [*crate* name][crate-name], which may not be the same as the
+    /// [*package* name][package-name]. For example, for <https://crates.io/crates/regex-syntax>,
+    /// this field will be `regex_syntax` (which uses an `_`, not a `-`).
+    ///
+    /// [crate-name]: https://doc.rust-lang.org/stable/cargo/reference/cargo-targets.html#the-name-field
+    /// [package-name]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-name-field
     pub name: String,
     /// The root URL at which the crate's documentation lives.
     pub html_root_url: Option<String>,
@@ -109,7 +116,9 @@ pub struct Item {
     // pub docs: Option<String>,
     // /// This mapping resolves [intra-doc links](https://github.com/rust-lang/rfcs/blob/master/text/1946-intra-rustdoc-links.md) from the docstring to their IDs
     // pub links: HashMap<String, Id>,
-    /// Stringified versions of the attributes on this item (e.g. `"#[inline]"`)
+    /// Stringified versions of parsed attributes on this item.
+    /// Essentially debug printed (e.g. `#[inline]` becomes something similar to `#[attr="Inline(Hint)"]`).
+    /// Equivalent to the hir pretty-printing of attributes.
     pub attrs: Vec<String>,
     /// Information about the item’s deprecation, if present.
     pub deprecation: Option<Deprecation>,

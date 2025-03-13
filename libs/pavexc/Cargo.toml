@@ -67,7 +67,7 @@ xdg-home = { workspace = true }
 rusqlite = { workspace = true, features = ["bundled"] }
 r2d2_sqlite = { workspace = true }
 r2d2 = { workspace = true }
-bincode = { workspace = true }
+bincode = { workspace = true, features = ["serde"] }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }

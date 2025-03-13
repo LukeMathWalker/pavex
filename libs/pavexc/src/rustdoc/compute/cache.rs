@@ -34,6 +34,8 @@ pub(crate) enum RustdocCacheKey<'a> {
     ToolchainCrate(&'a str),
 }
 
+static BINCODE_CONFIG: bincode::config::Configuration = bincode::config::standard();
+
 impl<'a> RustdocCacheKey<'a> {
     pub fn new(package_id: &'a PackageId, package_graph: &'a PackageGraph) -> RustdocCacheKey<'a> {
         if crate::rustdoc::TOOLCHAIN_CRATES.contains(&package_id.repr()) {
@@ -130,7 +132,10 @@ impl RustdocGlobalFsCache {
         )?;
         stmt.execute(params![
             project_fingerprint,
-            bincode::serialize(&package_ids.iter().map(|s| s.repr()).collect_vec())?
+            bincode::encode_to_vec(
+                &package_ids.iter().map(|s| s.repr()).collect_vec(),
+                BINCODE_CONFIG
+            )?
         ])?;
 
         Ok(())
@@ -155,7 +160,8 @@ impl RustdocGlobalFsCache {
             return Ok(BTreeSet::new());
         };
 
-        let package_ids: Vec<&str> = bincode::deserialize(row.get_ref_unwrap(0).as_bytes()?)?;
+        let package_ids: Vec<&str> =
+            bincode::borrow_decode_from_slice(row.get_ref_unwrap(0).as_bytes()?, BINCODE_CONFIG)?.0;
         Ok(package_ids.into_iter().map(PackageId::new).collect())
     }
 
@@ -622,12 +628,15 @@ impl<'a> CachedData<'a> {
             item_id2delimiters.insert(item_id.0, (start, end));
         }
 
-        let id2public_import_paths = bincode::serialize(&krate.id2public_import_paths)?;
-        let id2private_import_paths = bincode::serialize(&krate.id2private_import_paths)?;
-        let import_path2id = bincode::serialize(&krate.import_path2id)?;
-        let re_exports = bincode::serialize(&krate.re_exports)?;
-        let external_crates = bincode::serialize(&crate_data.external_crates)?;
-        let paths = bincode::serialize(&crate_data.paths)?;
+        let id2public_import_paths =
+            bincode::serde::encode_to_vec(&krate.id2public_import_paths, BINCODE_CONFIG)?;
+        let id2private_import_paths =
+            bincode::serde::encode_to_vec(&krate.id2private_import_paths, BINCODE_CONFIG)?;
+        let import_path2id = bincode::serde::encode_to_vec(&krate.import_path2id, BINCODE_CONFIG)?;
+        let re_exports = bincode::serde::encode_to_vec(&krate.re_exports, BINCODE_CONFIG)?;
+        let external_crates =
+            bincode::serde::encode_to_vec(&crate_data.external_crates, BINCODE_CONFIG)?;
+        let paths = bincode::serde::encode_to_vec(&crate_data.paths, BINCODE_CONFIG)?;
 
         Ok(CachedData {
             root_item_id: crate_data.root_item_id.0,
@@ -635,7 +644,10 @@ impl<'a> CachedData<'a> {
             paths: Cow::Owned(paths),
             format_version: crate_data.format_version as i64,
             items: Cow::Owned(items),
-            item_id2delimiters: Cow::Owned(bincode::serialize(&item_id2delimiters)?),
+            item_id2delimiters: Cow::Owned(bincode::serde::encode_to_vec(
+                &item_id2delimiters,
+                BINCODE_CONFIG,
+            )?),
             id2public_import_paths: Cow::Owned(id2public_import_paths),
             id2private_import_paths: Cow::Owned(id2private_import_paths),
             import_path2id: Cow::Owned(import_path2id),
@@ -653,19 +665,27 @@ impl<'a> CachedData<'a> {
     ) -> Result<crate::rustdoc::Crate, anyhow::Error> {
         let span = tracing::trace_span!("Deserialize delimiters");
         let _guard = span.enter();
-        let item_id2delimiters: HashMap<rustdoc_types::Id, (usize, usize)> =
-            bincode::deserialize(&self.item_id2delimiters)
-                .context("Failed to deserialize item_id2delimiters")?;
+        let item_id2delimiters =
+            bincode::serde::decode_from_slice(&self.item_id2delimiters, BINCODE_CONFIG)
+                .context("Failed to deserialize item_id2delimiters")?
+                .0;
         drop(_guard);
 
         let span = tracing::trace_span!("Deserialize paths");
         let _guard = span.enter();
-        let paths = bincode::deserialize(&self.paths)?;
+        let paths = bincode::serde::decode_from_slice(&self.paths, BINCODE_CONFIG)
+            .context("Failed to deserialize paths")?
+            .0;
         drop(_guard);
 
         let crate_data = CrateData {
             root_item_id: rustdoc_types::Id(self.root_item_id.to_owned()),
-            external_crates: bincode::deserialize(&self.external_crates)?,
+            external_crates: bincode::serde::decode_from_slice(
+                &self.external_crates,
+                BINCODE_CONFIG,
+            )
+            .context("Failed to deserialize external_crates")?
+            .0,
             paths,
             format_version: self.format_version.try_into()?,
             index: CrateItemIndex::Lazy(LazyCrateItemIndex {
@@ -680,18 +700,24 @@ impl<'a> CachedData<'a> {
 
         let span = tracing::trace_span!("Deserialize import_path2id");
         let _guard = span.enter();
-        let import_path2id: HashMap<Vec<String>, rustdoc_types::Id> =
-            bincode::deserialize(&self.import_path2id)
-                .context("Failed to deserialize import_path2id")?;
+        let import_path2id =
+            bincode::serde::decode_from_slice(&self.import_path2id, BINCODE_CONFIG)
+                .context("Failed to deserialize import_path2id")?
+                .0;
         drop(_guard);
 
-        let re_exports =
-            bincode::deserialize(&self.re_exports).context("Failed to deserialize re-exports")?;
+        let re_exports = bincode::serde::decode_from_slice(&self.re_exports, BINCODE_CONFIG)
+            .context("Failed to deserialize re-exports")?
+            .0;
 
-        let id2public_import_paths = bincode::deserialize(&self.id2public_import_paths)
-            .context("Failed to deserialize id2public_import_paths")?;
-        let id2private_import_paths = bincode::deserialize(&self.id2private_import_paths)
-            .context("Failed to deserialize id2private_import_paths")?;
+        let id2public_import_paths =
+            bincode::serde::decode_from_slice(&self.id2public_import_paths, BINCODE_CONFIG)
+                .context("Failed to deserialize id2public_import_paths")?
+                .0;
+        let id2private_import_paths =
+            bincode::serde::decode_from_slice(&self.id2private_import_paths, BINCODE_CONFIG)
+                .context("Failed to deserialize id2private_import_paths")?
+                .0;
 
         let krate = crate::rustdoc::Crate {
             core,
