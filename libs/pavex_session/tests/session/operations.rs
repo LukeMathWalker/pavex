@@ -284,13 +284,13 @@ async fn removing_a_non_existing_key_does_not_error() {
 
     let key = "my_key";
 
-    let removed: Option<String> = session.client_mut().remove(&key).unwrap();
+    let removed: Option<String> = session.client_mut().remove(key).unwrap();
     assert_that!(removed, none());
-    let removed: Option<String> = session.remove(&key).await.unwrap();
+    let removed: Option<String> = session.remove(key).await.unwrap();
     assert_that!(removed, none());
 
-    assert_that!(session.client_mut().remove_raw(&key), none());
-    assert_that!(session.remove_raw(&key).await.unwrap(), none());
+    assert_that!(session.client_mut().remove_raw(key), none());
+    assert_that!(session.remove_raw(key).await.unwrap(), none());
 }
 
 #[tokio::test]

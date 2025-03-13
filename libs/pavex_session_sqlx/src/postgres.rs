@@ -20,7 +20,7 @@ use sqlx::{
     PgPool,
     postgres::{PgDatabaseError, PgQueryResult},
 };
-use std::{i64, num::NonZeroUsize, usize};
+use std::num::NonZeroUsize;
 
 #[derive(Debug, Clone)]
 /// A server-side session store using Postgres as its backend.
