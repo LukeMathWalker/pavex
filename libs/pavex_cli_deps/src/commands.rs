@@ -37,7 +37,15 @@ pub fn is_rustup_toolchain_installed(toolchain: &RustupToolchain) -> Result<(), 
 /// Install a Rust toolchain via `rustup`.
 pub fn install_rustup_toolchain(toolchain: &RustupToolchain) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
-    cmd.arg("toolchain").arg("install").arg(&toolchain.name);
+    cmd.arg("toolchain")
+        .arg("install")
+        .arg(&toolchain.name)
+        .arg("--profile")
+        .arg("minimal")
+        // We try to install everything in one go,
+        // rather than shelling out to `rustup` multiple times.
+        .arg("--component")
+        .arg("rust-docs-json");
     let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
         .stdout(Stdio::inherit())
