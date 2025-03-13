@@ -261,9 +261,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64ct"
-version = "1.7.1"
+version = "1.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb97d56060ee67d285efb8001fec9d2a4c710c32efd2e14b5cbb5ba71930fc2d"
+checksum = "89e25b6adfb930f02d1981565a6e5d9c547ac15a96606256d3b59040e5cd4ca3"
 
 [[package]]
 name = "better-panic"
@@ -303,21 +303,21 @@ dependencies = [
 
 [[package]]
 name = "biscotti"
-version = "0.3.6"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a83a83f429ff9578701494c63eb61e659677927d00333ed0fa9d2a2224afe5d"
+checksum = "1d3be68d54a8c249f8b28bceddf39790b42c4a6cfee43c7e3691073f2ddbbbe6"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
  "base64 0.22.1",
  "hkdf",
  "hmac",
+ "jiff",
  "percent-encoding",
- "rand 0.8.5",
+ "rand 0.9.0",
  "serde",
  "sha2",
  "subtle",
- "time",
 ]
 
 [[package]]
@@ -818,7 +818,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4"
 dependencies = [
  "powerfmt",
- "serde",
 ]
 
 [[package]]
@@ -1498,22 +1497,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
-name = "humantime"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b112acc8b3adf4b107a8ec20977da0273a8c386765a3ec0229bd500a1443f9f"
-
-[[package]]
-name = "humantime-serde"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
-dependencies = [
- "humantime",
- "serde",
-]
-
-[[package]]
 name = "hyper"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1847,6 +1830,58 @@ name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
+
+[[package]]
+name = "jiff"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d699bc6dfc879fb1bf9bdff0d4c56f0884fc6f0d0eb0fba397a6d00cd9a6b85e"
+dependencies = [
+ "jiff-static",
+ "jiff-tzdb-platform",
+ "log",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "jiff-sqlx"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cad0aaf716e798876e02217ae420bd730370a175ffd59870018c4aa4daa1513e"
+dependencies = [
+ "jiff",
+ "sqlx-core",
+ "sqlx-postgres",
+]
+
+[[package]]
+name = "jiff-static"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d16e75759ee0aa64c57a56acbf43916987b20c77373cb7e808979e02b93c9f9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "jiff-tzdb"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "962e1dfe9b2d75a84536cf5bf5eaaa4319aa7906c7160134a22883ac316d5f31"
+
+[[package]]
+name = "jiff-tzdb-platform"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a63c62e404e7b92979d2792352d885a7f8f83fd1d0d31eea582d77b2ceca697e"
+dependencies = [
+ "jiff-tzdb",
+]
 
 [[package]]
 name = "js-sys"
@@ -2309,9 +2344,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.21.0"
+version = "1.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cde51589ab56b20a6f686b2c68f7a0bd6add753d697abf720d63f8db3ab7b1ad"
+checksum = "d75b0bedcc4fe52caa0e03d9f1151a323e4aa5e2d78ba3580400cd3c9e2bc4bc"
 
 [[package]]
 name = "opaque-debug"
@@ -2447,6 +2482,7 @@ dependencies = [
  "indexmap",
  "insta",
  "itertools",
+ "jiff",
  "matchit",
  "mime",
  "paste",
@@ -2467,7 +2503,6 @@ dependencies = [
  "smallvec",
  "socket2",
  "thiserror 2.0.12",
- "time",
  "tokio",
  "tracing",
  "tracing_log_error",
@@ -2502,6 +2537,7 @@ dependencies = [
  "hex",
  "http",
  "itertools",
+ "jiff",
  "jsonwebtoken",
  "libc",
  "miette",
@@ -2532,7 +2568,6 @@ dependencies = [
  "tar",
  "tempfile",
  "thiserror 2.0.12",
- "time",
  "tokio",
  "toml",
  "tracing",
@@ -2645,7 +2680,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "googletest",
- "humantime-serde",
  "itertools",
  "pavex",
  "pavex_session_memory_store",
@@ -2655,7 +2689,6 @@ dependencies = [
  "serde_json",
  "static_assertions",
  "thiserror 2.0.12",
- "time",
  "tokio",
  "tracing",
  "uuid",
@@ -2670,7 +2703,6 @@ dependencies = [
  "pavex_session",
  "px_workspace_hack",
  "serde_json",
- "time",
  "tokio",
  "tracing",
 ]
@@ -2681,6 +2713,7 @@ version = "0.1.78"
 dependencies = [
  "anyhow",
  "async-trait",
+ "jiff-sqlx",
  "pavex",
  "pavex_session",
  "pavex_session_sqlx",
@@ -2688,7 +2721,6 @@ dependencies = [
  "px_workspace_hack",
  "serde_json",
  "sqlx",
- "time",
  "tokio",
  "tracing",
 ]
@@ -3042,6 +3074,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "350e9b48cbc6b0e028b0473b114454c6316e57336ee184ceab6e53f72c178b3e"
 
 [[package]]
+name = "portable-atomic-util"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8a2f0d8d040d7848a709caf78912debcc3f33ee4b3cac47d73d1e1069e83507"
+dependencies = [
+ "portable-atomic",
+]
+
+[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3058,9 +3099,9 @@ dependencies = [
 
 [[package]]
 name = "prettyplease"
-version = "0.2.30"
+version = "0.2.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1ccf34da56fc294e7d4ccf69a85992b7dfb826b7cf57bac6a70bba3494cc08a"
+checksum = "5316f57387668042f561aae71480de936257848f9c43ce528e311d89a07cadeb"
 dependencies = [
  "proc-macro2",
  "syn",
@@ -3111,7 +3152,6 @@ dependencies = [
  "console",
  "crossbeam-utils",
  "crypto-common",
- "deranged",
  "digest",
  "either",
  "fixedbitset",
@@ -3126,6 +3166,8 @@ dependencies = [
  "hashbrown 0.15.2",
  "hmac",
  "indexmap",
+ "jiff",
+ "jiff-sqlx",
  "log",
  "memchr",
  "miette",
@@ -3153,7 +3195,6 @@ dependencies = [
  "syn",
  "textwrap",
  "time",
- "time-macros",
  "tokio",
  "toml",
  "toml_edit",
@@ -4000,7 +4041,6 @@ dependencies = [
  "sha2",
  "smallvec",
  "thiserror 2.0.12",
- "time",
  "tracing",
  "url",
  "uuid",
@@ -4082,7 +4122,6 @@ dependencies = [
  "sqlx-core",
  "stringprep",
  "thiserror 2.0.12",
- "time",
  "tracing",
  "uuid",
  "whoami",
@@ -4121,7 +4160,6 @@ dependencies = [
  "sqlx-core",
  "stringprep",
  "thiserror 2.0.12",
- "time",
  "tracing",
  "uuid",
  "whoami",
@@ -4146,7 +4184,6 @@ dependencies = [
  "serde",
  "serde_urlencoded",
  "sqlx-core",
- "time",
  "tracing",
  "url",
  "uuid",
@@ -4486,9 +4523,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.13"
+version = "0.7.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7fcaa8d55a2bdd6b83ace262b016eca0d79ee02818c5c1bcdf0305114081078"
+checksum = "6b9590b93e6fcc1739458317cccd391ad3955e2bde8913edf6f95f9e65a8f034"
 dependencies = [
  "bytes",
  "futures-core",

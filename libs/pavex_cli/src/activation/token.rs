@@ -118,13 +118,14 @@ fn key_algo2algo(key_algorithm: KeyAlgorithm) -> Result<Algorithm, anyhow::Error
 /// `ValidationClaims` can't be constructed outside of this module.
 /// The only way to obtain one is via [`CliToken::validate`].
 pub struct ValidatedClaims {
-    #[serde(with = "time::serde::timestamp", rename = "iat")]
-    issued_at: time::OffsetDateTime,
+    #[serde(rename = "iat")]
+    #[serde(with = "jiff::fmt::serde::timestamp::second::required")]
+    issued_at: jiff::Timestamp,
 }
 
 impl ValidatedClaims {
     /// Get the time at which the token was issued.
-    pub fn issued_at(&self) -> &time::OffsetDateTime {
+    pub fn issued_at(&self) -> &jiff::Timestamp {
         &self.issued_at
     }
 }

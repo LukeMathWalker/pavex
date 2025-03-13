@@ -10,7 +10,7 @@ version.workspace = true
 
 [features]
 default = []
-postgres = ["sqlx/postgres"]
+postgres = ["sqlx/postgres", "jiff-sqlx/postgres"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -19,18 +19,15 @@ all-features = true
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 
 [dependencies]
+jiff-sqlx = { workspace = true }
 pavex_session = { version = "0.1.78", path = "../pavex_session" }
 pavex = { version = "0.1.78", path = "../pavex" }
-time = { workspace = true, features = ["std"] }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
-sqlx = { workspace = true, default-features = true, features = [
-    "uuid",
-    "time",
-] }
+sqlx = { workspace = true, default-features = true, features = ["uuid"] }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]

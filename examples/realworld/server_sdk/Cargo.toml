@@ -14,7 +14,7 @@ verifier_args = ["--check"]
 
 [dependencies]
 app = { version = "0.1", path = "../app", default-features = false }
-biscotti = { version = "0.3", default-features = false }
+biscotti = { version = "0.4", default-features = false }
 http = { version = "1", default-features = false }
 hyper = { version = "1", default-features = false }
 jsonwebtoken = { version = "8", default-features = false }

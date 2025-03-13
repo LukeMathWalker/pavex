@@ -1,6 +1,6 @@
 //! An in-memory session store for `pavex_session`, geared towards testing and local development.
+use pavex::time::Timestamp;
 use std::{borrow::Cow, collections::HashMap, num::NonZeroUsize, sync::Arc, time::Duration};
-use time::OffsetDateTime;
 use tokio::sync::{Mutex, MutexGuard};
 
 use pavex_session::{
@@ -40,11 +40,11 @@ pub type SessionStoreMemory = InMemorySessionStore;
 #[derive(Debug)]
 struct StoreRecord {
     state: HashMap<Cow<'static, str>, serde_json::Value>,
-    deadline: time::OffsetDateTime,
+    deadline: Timestamp,
 }
 impl StoreRecord {
     fn is_stale(&self) -> bool {
-        self.deadline <= OffsetDateTime::now_utc()
+        self.deadline <= Timestamp::now()
     }
 }
 
@@ -108,7 +108,7 @@ impl SessionStorageBackend for InMemorySessionStore {
             *id,
             StoreRecord {
                 state: record.state.into_owned(),
-                deadline: time::OffsetDateTime::now_utc() + record.ttl,
+                deadline: Timestamp::now() + record.ttl,
             },
         );
         Ok(())
@@ -127,7 +127,7 @@ impl SessionStorageBackend for InMemorySessionStore {
         let old_record = Self::get_mut_if_fresh(&mut guard, id)?;
         *old_record = StoreRecord {
             state: record.state.into_owned(),
-            deadline: time::OffsetDateTime::now_utc() + record.ttl,
+            deadline: Timestamp::now() + record.ttl,
         };
         Ok(())
     }
@@ -143,7 +143,7 @@ impl SessionStorageBackend for InMemorySessionStore {
     ) -> Result<(), UpdateTtlError> {
         let mut guard = self.0.lock().await;
         let old_record = Self::get_mut_if_fresh(&mut guard, id)?;
-        old_record.deadline = time::OffsetDateTime::now_utc() + ttl;
+        old_record.deadline = Timestamp::now() + ttl;
         Ok(())
     }
 
@@ -158,7 +158,7 @@ impl SessionStorageBackend for InMemorySessionStore {
         let outcome = match Self::get_mut_if_fresh(&mut guard, session_id) {
             Ok(old_record) => Some(SessionRecord {
                 state: old_record.state.clone(),
-                ttl: (old_record.deadline - time::OffsetDateTime::now_utc())
+                ttl: (old_record.deadline - Timestamp::now())
                     .try_into()
                     .unwrap_or(Duration::from_millis(0)),
             }),
@@ -201,7 +201,7 @@ impl SessionStorageBackend for InMemorySessionStore {
         batch_size: Option<NonZeroUsize>,
     ) -> Result<usize, DeleteExpiredError> {
         let mut guard = self.0.lock().await;
-        let now = time::OffsetDateTime::now_utc();
+        let now = Timestamp::now();
         let mut stale_ids = Vec::new();
         for (id, record) in guard.iter() {
             if record.deadline <= now {

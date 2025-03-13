@@ -3,6 +3,7 @@ use errors::{
     ValueDeserializationError, ValueLocation, ValueSerializationError,
 };
 use pavex::cookie::{RemovalCookie, ResponseCookie};
+use pavex::time::SignedDuration;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -707,12 +708,12 @@ impl Session<'_> {
                         cookie = cookie.set_http_only(true);
                     }
                     if cookie_config.kind == SessionCookieKind::Persistent {
-                        let max_age = self
+                        let max_age: SignedDuration = self
                             .config
                             .state
                             .ttl
                             .try_into()
-                            .unwrap_or(time::Duration::MAX);
+                            .unwrap_or(SignedDuration::MAX);
                         cookie = cookie.set_max_age(max_age);
                     }
                     Ok(Some(cookie))

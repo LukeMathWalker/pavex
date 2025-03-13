@@ -23,7 +23,7 @@ server = ["dep:hyper", "dep:hyper-util", "dep:socket2", "tokio/net"]
 config = ["dep:figment"]
 cookie = ["dep:biscotti", "time"]
 server_request_id = ["dep:uuid"]
-time = ["dep:time"]
+time = ["dep:jiff"]
 
 [dependencies]
 bytes = { workspace = true }
@@ -72,7 +72,7 @@ uuid = { workspace = true, features = ["v7"], optional = true }
 type-safe-id = { workspace = true }
 
 # Time facilities
-time = { workspace = true, features = ["serde", "std"], optional = true }
+jiff = { workspace = true, features = ["serde"], optional = true }
 
 tokio = { workspace = true, features = ["sync", "rt", "time"] }
 hyper = { workspace = true, features = ["full"], optional = true }

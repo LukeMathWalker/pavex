@@ -1,6 +1,6 @@
 use googletest::matcher::{self, Matcher, MatcherBase};
 use pavex::cookie::ResponseCookie;
-use time::OffsetDateTime;
+use pavex::time::{Timestamp, tz::TimeZone};
 
 /// Check if the cookie deletes the client-side state, thus invalidating the session.
 pub fn is_removal_cookie() -> RemovalCookieMatcher {
@@ -14,11 +14,8 @@ impl Matcher<&ResponseCookie<'static>> for RemovalCookieMatcher {
     fn matches(&self, actual: &ResponseCookie<'static>) -> matcher::MatcherResult {
         if let Some(expires) = actual.expires() {
             if let Some(expires) = expires.datetime() {
-                let date = time::Date::from_calendar_date(1970, time::Month::January, 1).unwrap();
-                let time = time::Time::from_hms(0, 0, 0).unwrap();
-                let offset = time::UtcOffset::from_whole_seconds(0).unwrap();
-                let unix_start_datetime = OffsetDateTime::new_in_offset(date, time, offset);
-                return (expires == unix_start_datetime).into();
+                let unix_epoch = Timestamp::UNIX_EPOCH.to_zoned(TimeZone::UTC);
+                return (expires == unix_epoch).into();
             }
         }
         matcher::MatcherResult::NoMatch

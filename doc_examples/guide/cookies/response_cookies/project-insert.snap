@@ -1,10 +1,10 @@
 ```rust title="src/core/routes.rs"
 use pavex::cookie::{ResponseCookie, ResponseCookies};
 use pavex::response::Response;
-use pavex::time::{format_description::well_known::Iso8601, OffsetDateTime};
+use pavex::time::Zoned;
 
 pub fn handler(response_cookies: &mut ResponseCookies) -> Response {
-    let now = OffsetDateTime::now_utc().format(&Iso8601::DEFAULT).unwrap();
+    let now = Zoned::now().to_string();
     let cookie = ResponseCookie::new("last_visited", now)
         // We restrict the cookie to a specific path.
         .set_path("/web");
