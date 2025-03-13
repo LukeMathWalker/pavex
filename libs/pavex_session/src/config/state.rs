@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
@@ -17,7 +19,7 @@ pub struct SessionStateConfig {
     ///
     /// [`SessionCookieConfig::kind`]: super::SessionCookieConfig::kind
     /// [`SessionCookieKind::Persistent`]: super::SessionCookieKind::Persistent
-    #[serde(with = "humantime_serde", default = "default_ttl")]
+    #[serde(deserialize_with = "deserialize_ttl", default = "default_ttl")]
     pub ttl: std::time::Duration,
     /// The event that triggers the extension of the time-to-live
     /// of the current session.
@@ -70,6 +72,25 @@ impl Default for SessionStateConfig {
             missing_server_state: Default::default(),
         }
     }
+}
+
+fn deserialize_ttl<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let span = pavex::time::Span::deserialize(deserializer)?;
+    if span.is_negative() {
+        return Err(serde::de::Error::custom(
+            "The session state TTL cannot be negative",
+        ));
+    }
+    if span.is_zero() {
+        return Err(serde::de::Error::custom(
+            "The session state TTL cannot be zero",
+        ));
+    }
+    let ttl = span.try_into().map_err(serde::de::Error::custom)?;
+    Ok(ttl)
 }
 
 fn default_ttl() -> std::time::Duration {

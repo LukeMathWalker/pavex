@@ -1,9 +1,11 @@
 //! Types related to [`PostgresSessionStore`].
+use jiff_sqlx::ToSqlx;
 use pavex::blueprint::constructor::Constructor;
 use pavex::blueprint::linter::Lint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
 use pavex::blueprint::{Blueprint, config::ConfigType};
 use pavex::f;
+use pavex::time::Timestamp;
 use pavex_session::{
     SessionId,
     store::{
@@ -102,7 +104,7 @@ impl SessionStorageBackend for PostgresSessionStore {
         id: &SessionId,
         record: SessionRecordRef<'_>,
     ) -> Result<(), CreateError> {
-        let deadline = time::OffsetDateTime::now_utc() + record.ttl;
+        let deadline = Timestamp::now() + record.ttl;
         let state = serde_json::to_value(record.state)?;
         let query = sqlx::query(
             "INSERT INTO sessions (id, deadline, state) \
@@ -112,7 +114,7 @@ impl SessionStorageBackend for PostgresSessionStore {
             WHERE sessions.deadline < (now() AT TIME ZONE 'UTC')",
         )
         .bind(id.inner())
-        .bind(deadline)
+        .bind(deadline.to_sqlx())
         .bind(state);
 
         match query.execute(&self.0).await {
@@ -138,14 +140,14 @@ impl SessionStorageBackend for PostgresSessionStore {
         id: &SessionId,
         record: SessionRecordRef<'_>,
     ) -> Result<(), UpdateError> {
-        let new_deadline = time::OffsetDateTime::now_utc() + record.ttl;
+        let new_deadline = Timestamp::now() + record.ttl;
         let new_state = serde_json::to_value(record.state)?;
         let query = sqlx::query(
             "UPDATE sessions \
             SET deadline = $1, state = $2 \
             WHERE id = $3 AND deadline > (now() AT TIME ZONE 'UTC')",
         )
-        .bind(new_deadline)
+        .bind(new_deadline.to_sqlx())
         .bind(new_state)
         .bind(id.inner());
 
@@ -164,13 +166,13 @@ impl SessionStorageBackend for PostgresSessionStore {
         id: &SessionId,
         ttl: std::time::Duration,
     ) -> Result<(), UpdateTtlError> {
-        let new_deadline = time::OffsetDateTime::now_utc() + ttl;
+        let new_deadline = Timestamp::now() + ttl;
         let query = sqlx::query(
             "UPDATE sessions \
             SET deadline = $1 \
             WHERE id = $2 AND deadline > (now() AT TIME ZONE 'UTC')",
         )
-        .bind(new_deadline)
+        .bind(new_deadline.to_sqlx())
         .bind(id.inner());
         match query.execute(&self.0).await {
             Ok(r) => as_unknown_id_error(&r, id).map_err(Into::into),
@@ -198,15 +200,16 @@ impl SessionStorageBackend for PostgresSessionStore {
             use anyhow::Context as _;
             use sqlx::Row as _;
 
-            let deadline: time::OffsetDateTime = r
-                .try_get(0)
+            let deadline = r
+                .try_get::<jiff_sqlx::Timestamp, _>(0)
                 .context("Failed to deserialize the retrieved session deadline")
-                .map_err(LoadError::DeserializationError)?;
+                .map_err(LoadError::DeserializationError)?
+                .to_jiff();
             let state: serde_json::Value = r
                 .try_get(1)
                 .context("Failed to deserialize the retrieved session state")
                 .map_err(LoadError::DeserializationError)?;
-            let ttl = deadline - time::OffsetDateTime::now_utc();
+            let ttl = deadline - Timestamp::now();
             Ok(SessionRecord {
                 // This conversion only fails if the duration is negative, which should not happen
                 ttl: ttl.try_into().unwrap_or(std::time::Duration::ZERO),

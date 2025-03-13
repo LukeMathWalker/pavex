@@ -3,10 +3,10 @@ use crate::command::Command;
 use crate::locator::PavexLocator;
 use crate::state::State;
 use anyhow::Context;
+use jiff::{SignedDuration, Timestamp};
 use jsonwebtoken::jwk::JwkSet;
 use pavex_cli_diagnostic::anyhow2miette;
 use redact::Secret;
-use time::Duration;
 use token_cache::CliTokenDiskCache;
 use tracing_log_error::log_error;
 
@@ -74,9 +74,7 @@ pub fn background_token_refresh(
     activation_key: Secret<String>,
     locator: &PavexLocator,
 ) {
-    if time::OffsetDateTime::now_utc() - latest_claims.issued_at().to_owned()
-        < Duration::minutes(10)
-    {
+    if *latest_claims.issued_at() + SignedDuration::from_mins(10) > Timestamp::now() {
         // The token is super fresh, no need to refresh it.
         return;
     }

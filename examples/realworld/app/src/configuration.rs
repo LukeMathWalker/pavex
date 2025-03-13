@@ -1,7 +1,9 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use pavex::server::IncomingStream;
+use pavex::time::SignedDuration;
 use pavex::{blueprint::Blueprint, f, t};
 use secrecy::{ExposeSecret, Secret};
+use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
@@ -33,8 +35,22 @@ pub struct ServerConfig {
     /// E.g. `1 minute` for a 1 minute timeout.
     ///
     /// Set the `PX_SERVER__GRACEFUL_SHUTDOWN_TIMEOUT` environment variable to override its value.
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "deserialize_shutdown")]
     pub graceful_shutdown_timeout: std::time::Duration,
+}
+
+fn deserialize_shutdown<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let duration = SignedDuration::deserialize(deserializer)?;
+    if duration.is_negative() {
+        Err(serde::de::Error::custom(
+            "graceful shutdown timeout must be positive",
+        ))
+    } else {
+        duration.try_into().map_err(serde::de::Error::custom)
+    }
 }
 
 impl ServerConfig {

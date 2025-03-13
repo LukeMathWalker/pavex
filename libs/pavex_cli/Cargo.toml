@@ -70,7 +70,7 @@ redact = { workspace = true, features = ["serde"] }
 jsonwebtoken = { workspace = true }
 ring = { workspace = true }
 pem = { workspace = true }
-time = { workspace = true }
+jiff = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]

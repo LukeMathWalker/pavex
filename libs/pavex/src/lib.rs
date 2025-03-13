@@ -32,6 +32,6 @@ pub mod unit;
 pub mod time {
     //! Utilities to work with dates, timestamps and datetimes.
     //!
-    //! It's a re-export of the [`time@0.3`](https://docs.rs/time/0.3) crate.
-    pub use time::*;
+    //! It's a re-export of the [`jiff@0.2`](https://docs.rs/jiff/0.2) crate.
+    pub use jiff::*;
 }

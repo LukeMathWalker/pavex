@@ -13,7 +13,6 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 [dependencies]
 pavex_session = { version = "0.1.78", path = "../pavex_session" }
 pavex = { version = "0.1.78", path = "../pavex" }
-time = { workspace = true, features = ["std"] }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }

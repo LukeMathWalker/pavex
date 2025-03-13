@@ -20,8 +20,6 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 uuid = { workspace = true, features = ["v4", "serde"] }
 tracing = { workspace = true }
-humantime-serde = { workspace = true }
-time = { workspace = true, features = ["std"] }
 tokio = { workspace = true, features = ["rt"] }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
