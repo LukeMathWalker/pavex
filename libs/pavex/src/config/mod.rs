@@ -247,7 +247,7 @@ where
     ///
     /// # Guide
     ///
-    /// Check out [the guide](https://pavex.dev/docs/guide/configuration/loading.md)
+    /// Check out [the guide](https://pavex.dev/docs/guide/configuration/loading/)
     /// for an overview of Pavex's configuration hierarchy, as well as a detailed
     /// explanation of the naming convention used for environment variables.
     pub fn load<Config>(self) -> Result<Config, errors::ConfigLoadError>
