@@ -11,3 +11,4 @@ version.workspace = true
 miette = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
