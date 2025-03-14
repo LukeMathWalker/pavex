@@ -3,7 +3,14 @@
 // and the outcome is not really platform-dependent.
 #[cfg(not(target_os = "windows"))]
 #[test]
-fn pass() {
+fn fail() {
     let t = trybuild::TestCases::new();
-    t.pass("tests/success/*.rs");
+
+    // Tests for `#[PathParams]`
+    t.pass("tests/path_params/success/*.rs");
+    t.compile_fail("tests/path_params/fail/*.rs");
+
+    // Tests for `from!`
+    t.pass("tests/from/success/*.rs");
+    t.compile_fail("tests/from/fail/*.rs");
 }

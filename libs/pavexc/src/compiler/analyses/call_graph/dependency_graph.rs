@@ -259,7 +259,7 @@ impl DependencyGraph {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<(), ()> {
         let cycles = find_cycles(&self.graph);
 
@@ -284,7 +284,7 @@ fn cycle_error(
     cycle: &[NodeIndex],
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-) -> miette::Error {
+) -> CompilerDiagnostic {
     let mut error_msg = "The dependency graph cannot contain cycles, but I just found one!\n\
         If I tried to build your dependencies, I would end up in an infinite loop.\n\n\
         The cycle looks like this:\n"
@@ -366,7 +366,6 @@ fn cycle_error(
              one of the components in the cycle.".into()
         )
         .build()
-        .into()
 }
 
 /// Return all the cycles in the graph.

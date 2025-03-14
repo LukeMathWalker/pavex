@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use pavex_bp_schema::CloningStrategy;
 
 use crate::{
@@ -10,10 +9,11 @@ use crate::{
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
-    diagnostic::{self, CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt},
+    diagnostic::{
+        self, CompilerDiagnostic, ComponentKind, OptionalLabeledSpanExt, OptionalSourceSpanExt,
+    },
     language::ResolvedType,
     rustdoc::CrateCollection,
-    try_source,
 };
 
 /// Verify that all types whose cloning strategy is set to "CloneIfNecessary" can actually
@@ -22,9 +22,8 @@ use crate::{
 pub(crate) fn clonables_can_be_cloned<'a>(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let clone = process_framework_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
@@ -52,7 +51,6 @@ pub(crate) fn clonables_can_be_cloned<'a>(
                 e,
                 output_type,
                 id,
-                package_graph,
                 component_db,
                 computation_db,
                 diagnostics,
@@ -65,10 +63,9 @@ fn must_be_clonable(
     e: MissingTraitImplementationError,
     type_: &ResolvedType,
     component_id: ComponentId,
-    package_graph: &PackageGraph,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let component_id = component_db
         .derived_from(&component_id)
@@ -77,10 +74,10 @@ fn must_be_clonable(
     let user_component_db = &component_db.user_component_db();
     let component_kind = user_component_db[user_component_id].kind();
     let location = user_component_db.get_location(user_component_id);
-    let source = try_source!(location, package_graph, diagnostics);
-    let label = source.as_ref().and_then(|source| {
-        diagnostic::get_f_macro_invocation_span(source, location)
+    let source = diagnostics.source(&location).map(|s| {
+        diagnostic::f_macro_span(s.source(), location)
             .labeled(format!("The {component_kind} was registered here"))
+            .attach(s)
     });
     let error_msg = match component_kind {
         ComponentKind::Constructor => {
@@ -116,8 +113,7 @@ fn must_be_clonable(
     });
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
-        .optional_label(label)
         .optional_help(help)
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }

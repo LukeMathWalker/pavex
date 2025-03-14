@@ -1,0 +1,7 @@
+error: You must specify at least one source when invoking `from!`
+ --> tests/from/fail/empty_path.rs:4:13
+  |
+4 |     let _ = from![];
+  |             ^^^^^^^
+  |
+  = note: this error originates in the macro `from` (in Nightly builds, run with -Z macro-backtrace for more info)

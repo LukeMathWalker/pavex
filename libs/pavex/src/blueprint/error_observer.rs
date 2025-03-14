@@ -10,6 +10,8 @@ use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::reflection::RawIdentifiers;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable};
 
+use super::reflection::WithLocation;
+
 /// The type returned by [`Blueprint::error_observer`].
 ///
 /// It allows you to further configure the behaviour of the registered error observer.
@@ -41,7 +43,7 @@ impl ErrorObserver {
     /// Check out the documentation of [`Blueprint::error_observer`] for more details
     /// on observers.
     #[track_caller]
-    pub fn new(callable: RawIdentifiers) -> Self {
+    pub fn new(callable: WithLocation<RawIdentifiers>) -> Self {
         Self {
             callable: raw_identifiers2callable(callable),
         }

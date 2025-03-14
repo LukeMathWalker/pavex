@@ -1,6 +1,7 @@
 use miette::{LabeledSpan, SourceOffset, SourceSpan};
+use pavex_cli_diagnostic::AnnotatedSource;
 
-/// Helper methods to reduce boilerplate when working with [`miette::SourceSpan`]s.  
+/// Helper methods to reduce boilerplate when working with [`miette::SourceSpan`]s.
 /// We might eventually want to upstream them.
 pub trait SourceSpanExt {
     fn labeled(self, label_msg: String) -> LabeledSpan;
@@ -9,10 +10,11 @@ pub trait SourceSpanExt {
 }
 
 /// Helper methods to reduce boilerplate when working with an optional [`miette::SourceSpan`].
-#[allow(unused)]
 pub trait OptionalSourceSpanExt {
     fn labeled(self, label_msg: String) -> Option<LabeledSpan>;
+    #[allow(unused)]
     fn unlabeled(self) -> Option<LabeledSpan>;
+    #[allow(unused)]
     fn shift(self, offset: usize) -> Option<SourceSpan>;
 }
 
@@ -27,6 +29,34 @@ impl OptionalSourceSpanExt for Option<SourceSpan> {
 
     fn shift(self, offset: usize) -> Option<SourceSpan> {
         self.map(|s| s.shift(offset))
+    }
+}
+
+/// Helper methods to reduce boilerplate when working with a [`miette::LabeledSpan`]
+/// and the respective source.
+pub trait LabeledSpanExt {
+    /// Add this labeled span to the given source.
+    fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S>;
+}
+
+impl LabeledSpanExt for LabeledSpan {
+    #[must_use]
+    fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S> {
+        s.label(self)
+    }
+}
+
+/// Helper methods to reduce boilerplate when working with an optional [`miette::LabeledSpan`]
+/// and the respective source.
+pub trait OptionalLabeledSpanExt {
+    /// Add this labeled span to the given source.
+    fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S>;
+}
+
+impl OptionalLabeledSpanExt for Option<LabeledSpan> {
+    #[must_use]
+    fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S> {
+        s.label(self)
     }
 }
 

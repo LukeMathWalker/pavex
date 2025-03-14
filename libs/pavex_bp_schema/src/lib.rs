@@ -2,12 +2,12 @@
 //!
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
-pub use pavex_reflection::{Location, RawIdentifiers, RegisteredAt};
+pub use pavex_reflection::{CreatedAt, Location, RawIdentifiers};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fmt::Formatter;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// The blueprint for a Pavex application.
 pub struct Blueprint {
     /// The location where the `Blueprint` was created.
@@ -16,7 +16,7 @@ pub struct Blueprint {
     pub components: Vec<Component>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum Component {
     Constructor(Constructor),
     WrappingMiddleware(WrappingMiddleware),
@@ -28,6 +28,7 @@ pub enum Component {
     ErrorObserver(ErrorObserver),
     PrebuiltType(PrebuiltType),
     ConfigType(ConfigType),
+    Import(Import),
 }
 
 impl From<PrebuiltType> for Component {
@@ -90,7 +91,20 @@ impl From<ErrorObserver> for Component {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+impl From<Import> for Component {
+    fn from(i: Import) -> Self {
+        Self::Import(i)
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Import {
+    pub sources: Sources,
+    pub created_at: CreatedAt,
+    pub registered_at: Location,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A route registered against a `Blueprint` via `Blueprint::route`.
 pub struct Route {
     /// The path of the route.
@@ -103,7 +117,7 @@ pub struct Route {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A request handler registered against a `Blueprint` via `Blueprint::fallback` to
 /// process requests that don't match any of the registered routes.
 pub struct Fallback {
@@ -113,7 +127,7 @@ pub struct Fallback {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// An error observer registered against a `Blueprint` via `Blueprint::error_observer` to
 /// intercept unhandled errors.
 pub struct ErrorObserver {
@@ -121,7 +135,7 @@ pub struct ErrorObserver {
     pub error_observer: Callable,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A type registered against a `Blueprint` via `Blueprint::prebuilt` to
 /// be added as an input parameter to `ApplicationState::new`.
 pub struct PrebuiltType {
@@ -131,7 +145,7 @@ pub struct PrebuiltType {
     pub cloning_strategy: Option<CloningStrategy>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A type registered against a `Blueprint` via `Blueprint::config` to
 /// become part of the overall configuration for the application.
 pub struct ConfigType {
@@ -146,7 +160,7 @@ pub struct ConfigType {
     pub default_if_missing: Option<bool>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A constructor registered against a `Blueprint` via `Blueprint::constructor`.
 pub struct Constructor {
     /// The callable in charge of constructing the desired type.
@@ -161,7 +175,7 @@ pub struct Constructor {
     pub lints: BTreeMap<Lint, LintSetting>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::wrap`.
 pub struct WrappingMiddleware {
     /// The callable that executes the middleware's logic.
@@ -170,7 +184,7 @@ pub struct WrappingMiddleware {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::post_process`.
 pub struct PostProcessingMiddleware {
     /// The callable that executes the middleware's logic.
@@ -179,7 +193,7 @@ pub struct PostProcessingMiddleware {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::pre_process`.
 pub struct PreProcessingMiddleware {
     /// The callable that executes the middleware's logic.
@@ -188,26 +202,26 @@ pub struct PreProcessingMiddleware {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A "callable" registered against a `Blueprint`—either a free function or a method,
 /// used as a request handler, error handler or constructor.
 pub struct Callable {
     /// Metadata that uniquely identifies the callable.
     pub callable: RawIdentifiers,
     /// The location where the callable was registered against the `Blueprint`.
-    pub location: Location,
+    pub registered_at: Location,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A type (enum or struct) registered against a `Blueprint`.
 pub struct Type {
     /// Metadata that uniquely identifies the type.
     pub type_: RawIdentifiers,
     /// The location where the type was registered against the `Blueprint`.
-    pub location: Location,
+    pub registered_at: Location,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A `Blueprint` that has been nested inside another `Blueprint` via `Blueprint::nest` or
 /// `Blueprint::nest_at`.
 pub struct NestedBlueprint {
@@ -221,25 +235,25 @@ pub struct NestedBlueprint {
     /// routes registered against this nested `Blueprint`.
     pub domain: Option<Domain>,
     /// The location where the `Blueprint` was nested under its parent `Blueprint`.
-    pub nesting_location: Location,
+    pub nested_at: Location,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A path modifier for a nested [`Blueprint`].
 pub struct PathPrefix {
     /// The path prefix to prepend to all routes registered against the nested [`Blueprint`].
     pub path_prefix: String,
     /// The location where the path prefix was registered.
-    pub location: Location,
+    pub registered_at: Location,
 }
 
 /// A domain routing constraint.
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     /// The domain to match.
     pub domain: String,
     /// The location where the domain constraint was registered.
-    pub location: Location,
+    pub registered_at: Location,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -295,4 +309,15 @@ pub enum Lint {
 pub enum LintSetting {
     Ignore,
     Enforce,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+/// A collection of modules to be scanned for components.
+pub enum Sources {
+    /// Use all valid sources: modules from the current crate and all its direct dependencies.
+    All,
+    /// Use only the specified modules as sources.
+    ///
+    /// Each module can be either from the current crate or from one of its direct dependencies.
+    Some(Vec<String>),
 }

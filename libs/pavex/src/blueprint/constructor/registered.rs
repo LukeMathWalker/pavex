@@ -1,7 +1,7 @@
 use crate::blueprint::constructor::CloningStrategy;
 use crate::blueprint::conversions::{cloning2cloning, lint2lint, raw_identifiers2callable};
 use crate::blueprint::linter::Lint;
-use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
 use pavex_bp_schema::{Blueprint as BlueprintSchema, LintSetting};
 use pavex_bp_schema::{Component, Constructor};
 
@@ -56,7 +56,7 @@ impl RegisteredConstructor<'_> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         let callable = raw_identifiers2callable(error_handler);
         self.constructor().error_handler = Some(callable);
         self

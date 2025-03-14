@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use ahash::{HashSet, HashSetExt};
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Outgoing;
 use petgraph::algo::has_path_connecting;
@@ -17,11 +16,11 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::diagnostic::{
-    AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
+    self, AnnotatedSource, CompilerDiagnostic, HelpWithSnippet, OptionalLabeledSpanExt,
+    OptionalSourceSpanExt,
 };
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
-use crate::{diagnostic, try_source};
 
 use super::copy::CopyChecker;
 use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
@@ -36,9 +35,8 @@ pub(super) fn multiple_consumers(
     copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
@@ -113,7 +111,6 @@ pub(super) fn multiple_consumers(
                         competing_consumer_set,
                         computation_db,
                         component_db,
-                        package_graph,
                         &call_graph,
                         diagnostics,
                     );
@@ -196,9 +193,8 @@ fn emit_multiple_consumers_error(
     consuming_node_ids: BTreeSet<NodeIndex>,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
-    package_graph: &PackageGraph,
     call_graph: &RawCallGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     use std::fmt::Write as _;
 
@@ -263,16 +259,14 @@ fn emit_multiple_consumers_error(
         let location = component_db
             .user_component_db()
             .get_location(user_component_id);
-        let Some(source) = try_source!(location, package_graph, diagnostics) else {
+        let Some(s) = diagnostics.source(&location) else {
             continue;
         };
         let callable_type = component_db.user_component_db()[user_component_id].kind();
-        let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled(format!("One of the consuming {callable_type}s"));
-        consuming_snippets.push(HelpWithSnippet::new(
-            String::new(),
-            AnnotatedSnippet::new_optional(source, labeled_span),
-        ));
+        let s = diagnostic::f_macro_span(s.source(), location)
+            .labeled(format!("One of the consuming {callable_type}s"))
+            .attach(s);
+        consuming_snippets.push(HelpWithSnippet::new(String::new(), s));
     }
     writeln!(
         &mut error_msg,
@@ -292,22 +286,13 @@ fn emit_multiple_consumers_error(
                 .user_component_db()
                 .get_location(user_component_id);
             let callable_type = component_db.user_component_db()[user_component_id].kind();
-            let source = match location.source_file(package_graph) {
-                Ok(s) => Some(s),
-                Err(e) => {
-                    diagnostics.push(e.into());
-                    None
-                }
-            };
-            let help = match source {
-                None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
-                Some(source) => {
-                    let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                        .labeled(format!("The {callable_type} was registered here"));
-                    HelpWithSnippet::new(
-                        help_msg,
-                        AnnotatedSnippet::new_optional(source, labeled_span),
-                    )
+            let help = match diagnostics.source(location) {
+                None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+                Some(s) => {
+                    let s = diagnostic::f_macro_span(s.source(), location)
+                        .labeled(format!("The {callable_type} was registered here"))
+                        .attach(s);
+                    HelpWithSnippet::new(help_msg, s).normalize()
                 }
             };
             diagnostic = diagnostic.help_with_snippet(help);
@@ -319,7 +304,7 @@ fn emit_multiple_consumers_error(
             "Considering changing the signature of the components that consume `{type_:?}` by value.\n\
             Would a shared reference, `&{type_:?}`, be enough?",
         ),
-        AnnotatedSnippet::empty(),
+        AnnotatedSource::empty(),
     );
     diagnostic = diagnostic.help_with_snippet(help);
     for snippet in consuming_snippets {
@@ -333,5 +318,5 @@ fn emit_multiple_consumers_error(
         diagnostic,
     );
 
-    diagnostics.push(diagnostic.build().into());
+    diagnostics.push(diagnostic.build());
 }

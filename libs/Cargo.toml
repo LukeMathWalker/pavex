@@ -2,6 +2,7 @@
 members = [
     "./pavex*",
     "generate_from_path",
+    "pavexc_attr_parser",
     "persist_if_changed",
     "px_workspace_hack",
 ]
@@ -33,6 +34,7 @@ clap-stdin = "0.6.0"
 config = "0.15.11"
 console = "0.15.11"
 convert_case = "0.8"
+darling = "0.20"
 xxhash-rust = "0.8.15"
 elsa = "1.11.2"
 fixedbitset = "0.5"

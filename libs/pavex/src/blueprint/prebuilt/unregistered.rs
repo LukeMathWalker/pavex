@@ -4,7 +4,7 @@ use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::CloningStrategy;
 use crate::blueprint::conversions::raw_identifiers2type;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
-use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
 
 /// A state input that has been configured but has not yet been registered with a [`Blueprint`].
 ///
@@ -30,7 +30,7 @@ impl PrebuiltType {
     /// Check out the documentation of [`Blueprint::prebuilt`] for more details
     /// on state inputs.
     #[track_caller]
-    pub fn new(type_: RawIdentifiers) -> Self {
+    pub fn new(type_: WithLocation<RawIdentifiers>) -> Self {
         Self {
             type_: raw_identifiers2type(type_),
             cloning_strategy: None,
@@ -45,13 +45,13 @@ impl PrebuiltType {
         self
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].  
+    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].
     /// Check out [`PrebuiltType::cloning`] for more details.
     pub fn clone_if_necessary(self) -> Self {
         self.cloning(CloningStrategy::CloneIfNecessary)
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].  
+    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].
     /// Check out [`PrebuiltType::cloning`] for more details.
     pub fn never_clone(self) -> Self {
         self.cloning(CloningStrategy::NeverClone)

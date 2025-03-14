@@ -2,7 +2,7 @@ use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle, RegisteredConstructor};
 use crate::blueprint::conversions::{lint2lint, raw_identifiers2callable};
 use crate::blueprint::linter::Lint;
-use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
 use pavex_bp_schema::{Callable, LintSetting};
 use std::collections::BTreeMap;
 
@@ -34,7 +34,7 @@ impl Constructor {
     /// Check out the documentation of [`Blueprint::constructor`] for more details
     /// on constructors.
     #[track_caller]
-    pub fn new(callable: RawIdentifiers, lifecycle: Lifecycle) -> Self {
+    pub fn new(callable: WithLocation<RawIdentifiers>, lifecycle: Lifecycle) -> Self {
         Self {
             callable: raw_identifiers2callable(callable),
             lifecycle,
@@ -48,7 +48,7 @@ impl Constructor {
     ///
     /// It's a shorthand for [`Constructor::new(callable, Lifecycle::Singleton)`](Constructor::new).
     #[track_caller]
-    pub fn singleton(callable: RawIdentifiers) -> Self {
+    pub fn singleton(callable: WithLocation<RawIdentifiers>) -> Self {
         Constructor::new(callable, Lifecycle::Singleton)
     }
 
@@ -56,7 +56,7 @@ impl Constructor {
     ///
     /// It's a shorthand for [`Constructor::new(callable, Lifecycle::RequestScoped)`](Constructor::new).
     #[track_caller]
-    pub fn request_scoped(callable: RawIdentifiers) -> Self {
+    pub fn request_scoped(callable: WithLocation<RawIdentifiers>) -> Self {
         Constructor::new(callable, Lifecycle::RequestScoped)
     }
 
@@ -64,7 +64,7 @@ impl Constructor {
     ///
     /// It's a shorthand for [`Constructor::new(callable, Lifecycle::Transient)`](Constructor::new).
     #[track_caller]
-    pub fn transient(callable: RawIdentifiers) -> Self {
+    pub fn transient(callable: WithLocation<RawIdentifiers>) -> Self {
         Constructor::new(callable, Lifecycle::Transient)
     }
 
@@ -72,7 +72,7 @@ impl Constructor {
     ///
     /// Check out the documentation of [`RegisteredConstructor::error_handler`] for more details.
     #[track_caller]
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         self.error_handler = Some(raw_identifiers2callable(error_handler));
         self
     }
@@ -85,13 +85,13 @@ impl Constructor {
         self
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].  
+    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].
     /// Check out [`Constructor::cloning`] for more details.
     pub fn clone_if_necessary(self) -> Self {
         self.cloning(CloningStrategy::CloneIfNecessary)
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].  
+    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].
     /// Check out [`Constructor::cloning`] for more details.
     pub fn never_clone(self) -> Self {
         self.cloning(CloningStrategy::NeverClone)

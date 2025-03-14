@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 use petgraph::visit::EdgeRef;
@@ -16,11 +15,11 @@ use crate::{
         utils::process_framework_path,
     },
     diagnostic::{
-        self, AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, OptionalSourceSpanExt,
+        self, AnnotatedSource, CompilerDiagnostic, HelpWithSnippet, OptionalLabeledSpanExt,
+        OptionalSourceSpanExt,
     },
     language::ResolvedType,
     rustdoc::CrateCollection,
-    try_source,
 };
 
 /// Verify that all singletons that need to be cloned at runtime can actually be cloned:
@@ -35,7 +34,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let copy = process_framework_path("core::marker::Copy", krate_collection);
     let ResolvedType::ResolvedPath(copy) = copy else {
@@ -104,7 +103,6 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                         is_clone,
                         id,
                         *consumer_id,
-                        krate_collection.package_graph(),
                         component_db,
                         computation_db,
                         diagnostics,
@@ -120,10 +118,9 @@ fn must_be_clonable(
     is_clone: bool,
     component_id: ComponentId,
     consumer_id: ComponentId,
-    package_graph: &PackageGraph,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let component_id = component_db
         .derived_from(&component_id)
@@ -141,10 +138,10 @@ fn must_be_clonable(
     let user_component_id = component_db.user_component_id(component_id).unwrap();
     let user_component_db = &component_db.user_component_db();
     let location = user_component_db.get_location(user_component_id);
-    let source = try_source!(location, package_graph, diagnostics);
-    let label = source.as_ref().and_then(|source| {
-        diagnostic::get_f_macro_invocation_span(source, location)
+    let source = diagnostics.source(&location).map(|s| {
+        diagnostic::f_macro_span(s.source(), location)
             .labeled("It was registered here".to_string())
+            .attach(s)
     });
     let e = anyhow::anyhow!(
         "I can't generate code that will pass the borrow checker *and* match the \
@@ -169,9 +166,8 @@ fn must_be_clonable(
     );
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
-        .optional_label(label)
         .optional_help(help)
-        .help_with_snippet(HelpWithSnippet::new(second_help, AnnotatedSnippet::empty()))
+        .help_with_snippet(HelpWithSnippet::new(second_help, AnnotatedSource::empty()))
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }

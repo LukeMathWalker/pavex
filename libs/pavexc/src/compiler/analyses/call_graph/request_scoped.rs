@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Direction;
 use std::collections::BTreeSet;
@@ -31,9 +30,8 @@ pub(crate) fn request_scoped_ordered_call_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<OrderedCallGraph, ()> {
     let Ok(CallGraph {
         call_graph,
@@ -60,7 +58,6 @@ pub(crate) fn request_scoped_ordered_call_graph(
         },
         component_db,
         computation_db,
-        package_graph,
         krate_collection,
         diagnostics,
     )
@@ -77,7 +74,7 @@ pub(crate) fn request_scoped_call_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()> {
     let mut graph_root = String::new();
     if tracing::enabled!(Level::DEBUG) {
@@ -126,7 +123,7 @@ fn _request_scoped_call_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()> {
     fn lifecycle2invocations(l: Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match l {
@@ -160,7 +157,7 @@ fn augment_preprocessing_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()> {
     assert!(component_db.is_pre_processing_middleware(root_component_id));
     // We need to add a transformer to convert all `Response` leaf nodes into

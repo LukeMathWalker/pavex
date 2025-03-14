@@ -3,7 +3,6 @@ use std::fmt::Write;
 use std::ops::Deref;
 
 use ahash::{HashMap, HashMapExt};
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Direction;
 use petgraph::graph::{EdgeIndex, NodeIndex};
@@ -19,9 +18,9 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
-use crate::diagnostic;
+use crate::diagnostic::{self, OptionalLabeledSpanExt};
 use crate::diagnostic::{
-    AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
+    AnnotatedSource, CompilerDiagnostic, HelpWithSnippet, OptionalSourceSpanExt,
 };
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
@@ -48,9 +47,8 @@ pub(super) fn move_while_borrowed(
     copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
@@ -224,7 +222,6 @@ pub(super) fn move_while_borrowed(
                             &node2captured_nodes,
                             component_db,
                             computation_db,
-                            package_graph,
                             krate_collection,
                             root_scope_id,
                             diagnostics,
@@ -288,10 +285,9 @@ fn try_clone(
     node2captured_nodes: &HashMap<NodeIndex, IndexSet<NodeIndex>>,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     root_scope_id: ScopeId,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
     if copy_checker.is_copy(call_graph, dependency_index, component_db, computation_db) {
@@ -316,7 +312,6 @@ fn try_clone(
             node2captured_nodes,
             computation_db,
             component_db,
-            package_graph,
             call_graph,
             diagnostics,
         );
@@ -345,9 +340,8 @@ fn emit_ancestor_descendant_borrow_error(
     node2captured_nodes: &HashMap<NodeIndex, IndexSet<NodeIndex>>,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
-    package_graph: &PackageGraph,
     call_graph: &RawCallGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     // Find the node that is borrowing the contended node.
     let mut downstream_borrow_node_id = None;
@@ -443,22 +437,13 @@ fn emit_ancestor_descendant_borrow_error(
             let location = component_db
                 .user_component_db()
                 .get_location(user_component_id);
-            let source = match location.source_file(package_graph) {
-                Ok(s) => Some(s),
-                Err(e) => {
-                    diagnostics.push(e.into());
-                    None
-                }
-            };
-            let help = match source {
-                None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
-                Some(source) => {
-                    let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                        .labeled("The constructor was registered here".into());
-                    HelpWithSnippet::new(
-                        help_msg,
-                        AnnotatedSnippet::new_optional(source, labeled_span),
-                    )
+            let help = match diagnostics.source(location) {
+                None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+                Some(s) => {
+                    let s = diagnostic::f_macro_span(s.source(), location)
+                        .labeled("The constructor was registered here".into())
+                        .attach(s);
+                    HelpWithSnippet::new(help_msg, s.normalize())
                 }
             };
             diagnostic = diagnostic.help_with_snippet(help);
@@ -470,7 +455,7 @@ fn emit_ancestor_descendant_borrow_error(
             "Consider changing the signature of `{consumer_path}`.\n\
             It takes `{contended_type:?}` by value. Would a shared reference, `&{contended_type:?}`, be enough?",
         ),
-        AnnotatedSnippet::empty(),
+        AnnotatedSource::empty(),
     );
     diagnostic = diagnostic.help_with_snippet(help);
 
@@ -480,7 +465,7 @@ fn emit_ancestor_descendant_borrow_error(
         computation_db,
         diagnostic,
     );
-    diagnostics.push(diagnostic.build().into());
+    diagnostics.push(diagnostic.build());
 }
 
 fn emit_tried_to_borrow_mut_while_borrowed_immutably(
@@ -490,7 +475,7 @@ fn emit_tried_to_borrow_mut_while_borrowed_immutably(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     // Find the node that is borrowing the contended node.
     let mut borrower_node_id = None;
@@ -580,13 +565,12 @@ fn emit_tried_to_borrow_mut_while_borrowed_immutably(
             "Consider changing the signature of `{mut_borrower_path}`.\n\
             It takes a mutable reference to `{contended_type:?}`. Would a shared reference, `&{contended_type:?}`, be enough?",
         ),
-        AnnotatedSnippet::empty(),
+        AnnotatedSource::empty(),
     );
     diagnostics.push(
         CompilerDiagnostic::builder(anyhow::anyhow!(error_msg))
             .help_with_snippet(help)
-            .build()
-            .into(),
+            .build(),
     );
 }
 

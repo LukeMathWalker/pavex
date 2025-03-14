@@ -1,0 +1,5 @@
+error: expected ident
+ --> tests/from/fail/invalid_module_path.rs:4:19
+  |
+4 |     let _ = from![123invalid::module];
+  |                   ^^^^^^^^^^

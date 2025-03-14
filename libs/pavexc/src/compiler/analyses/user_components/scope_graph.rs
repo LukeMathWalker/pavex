@@ -80,6 +80,9 @@ impl PartialEq<ScopeId> for &ScopeId {
 }
 
 impl ScopeId {
+    /// The id of the root scope.
+    pub const ROOT: ScopeId = ScopeId(0);
+
     /// Return `true` if the `other` scope is a parent of this scope (either directly or
     /// indirectly) or if the two scopes are equal.
     pub fn is_descendant_of(&self, other: ScopeId, scope_graph: &ScopeGraph) -> bool {
@@ -119,7 +122,7 @@ impl ScopeGraphBuilder {
     /// Create a new scope graph with a single root scope.
     fn new(root_bp_location: Location) -> Self {
         let mut graph = DiGraphMap::new();
-        let root_id = graph.add_node(0);
+        let root_id = graph.add_node(ScopeId::ROOT.0);
         let id2locations = {
             let mut id2locations = HashMap::new();
             id2locations.insert(root_id, root_bp_location);

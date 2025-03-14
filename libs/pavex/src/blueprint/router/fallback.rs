@@ -1,6 +1,6 @@
-use crate::blueprint::Blueprint;
 use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::{Blueprint, reflection::WithLocation};
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
 
 /// The type returned by [`Blueprint::fallback`].
@@ -21,7 +21,7 @@ impl RegisteredFallback<'_> {
     /// Error handlers convert the error type returned by your request handler into an HTTP response.
     ///
     /// Error handlers CANNOT consume the error type, they must take a reference to the
-    /// error as input.  
+    /// error as input.
     /// Error handlers can have additional input parameters alongside the error, as long as there
     /// are constructors registered for those parameter types.
     ///
@@ -58,7 +58,7 @@ impl RegisteredFallback<'_> {
     /// Pavex will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         let callable = raw_identifiers2callable(error_handler);
         self.fallback().error_handler = Some(callable);
         self
@@ -97,7 +97,7 @@ impl Fallback {
     /// Check out the documentation of [`Blueprint::fallback`] for more details
     /// on fallback routes.
     #[track_caller]
-    pub fn new(callable: RawIdentifiers) -> Self {
+    pub fn new(callable: WithLocation<RawIdentifiers>) -> Self {
         Self {
             callable: raw_identifiers2callable(callable),
             error_handler: None,
@@ -108,7 +108,7 @@ impl Fallback {
     ///
     /// Check out the documentation of [`RegisteredFallback::error_handler`] for more details.
     #[track_caller]
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         self.error_handler = Some(raw_identifiers2callable(error_handler));
         self
     }

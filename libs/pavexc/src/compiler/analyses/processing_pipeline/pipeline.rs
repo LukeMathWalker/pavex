@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::PackageId;
-use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use quote::quote;
@@ -24,7 +23,8 @@ use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{
-    self, AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
+    self, AnnotatedSource, CompilerDiagnostic, HelpWithSnippet, OptionalLabeledSpanExt,
+    OptionalSourceSpanExt,
 };
 use crate::language::{
     Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
@@ -131,9 +131,8 @@ impl RequestHandlerPipeline {
         component_db: &mut ComponentDb,
         constructible_db: &mut ConstructibleDb,
         framework_item_db: &FrameworkItemDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<Self, ()> {
         let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
 
@@ -333,7 +332,6 @@ impl RequestHandlerPipeline {
                     computation_db,
                     component_db,
                     constructible_db,
-                    package_graph,
                     krate_collection,
                     diagnostics,
                 )?;
@@ -580,7 +578,6 @@ impl RequestHandlerPipeline {
                         info.component_id,
                         component_db,
                         computation_db,
-                        package_graph,
                         diagnostics,
                     );
                     // We emit at most one error to minimise the likelihood of
@@ -1110,8 +1107,7 @@ fn emit_cloning_error(
     component_id: ComponentId,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let Computation::Callable(moved_by_callable) = component_db
         .hydrated_component(moved_by, computation_db)
@@ -1148,26 +1144,17 @@ fn emit_cloning_error(
         let location = component_db
             .user_component_db()
             .get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => Some(s),
-            Err(e) => {
-                diagnostics.push(e.into());
-                None
-            }
-        };
+        let source = diagnostics.source(location).map(|s| {
+            diagnostic::f_macro_span(s.source(), location)
+                .labeled("The constructor was registered here".into())
+                .attach(s)
+        });
         let help = match source {
-            None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
-            Some(source) => {
-                let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .labeled("The constructor was registered here".into());
-                HelpWithSnippet::new(
-                    help_msg,
-                    AnnotatedSnippet::new_optional(source, labeled_span),
-                )
-            }
+            None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+            Some(source) => HelpWithSnippet::new(help_msg, source).normalize(),
         };
         diagnostic = diagnostic.help_with_snippet(help);
     }
 
-    diagnostics.push(diagnostic.build().into());
+    diagnostics.push(diagnostic.build());
 }

@@ -4,6 +4,55 @@
 //!
 //! This module is not meant to be used directly by users of the framework. It is only meant to be
 //! used by Pavex's CLI.
+use std::borrow::Cow;
+
+/// Attach [location metadata](CreatedAt) to a value.
+pub struct WithLocation<T> {
+    /// The decorated value.
+    pub value: T,
+    /// The location where the value was created.
+    pub created_at: CreatedAt,
+}
+
+/// Metadata about the location where a value was created.
+///
+/// It is used by Pavex to identify in which crate of your dependency tree
+/// a value was created.
+/// Its fields are always populated by Pavex's macros—[`f!`], [`t!`] and [`from!`][super::from].
+pub struct CreatedAt {
+    /// The name of the crate where the value within [`WithLocation`] was created.
+    pub crate_name: &'static str,
+    /// The value returned by `std`'s `module_path!` macro.
+    pub module_path: &'static str,
+}
+
+/// The type returned by invocations of the [`from!`] macro.
+/// You must use the [`from!`] macro wherever an instance of `Sources` is needed.
+///
+/// [`f!`]: crate::f
+pub enum Sources {
+    /// Use all valid sources: modules from the current crate and all its direct dependencies.
+    All,
+    /// Use only the specified modules as sources.
+    ///
+    /// Each module can be either from the current crate or from one of its direct dependencies.
+    Some(Vec<Cow<'static, str>>),
+}
+
+#[macro_export]
+#[doc(hidden)]
+/// A convenience macro to create a [`WithLocation`] instance.
+macro_rules! with_location {
+    ($value:expr) => {
+        $crate::blueprint::reflection::WithLocation {
+            value: $value,
+            created_at: $crate::blueprint::reflection::CreatedAt {
+                crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
+                module_path: module_path!(),
+            },
+        }
+    };
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 /// An implementation detail of the builder.
@@ -13,10 +62,6 @@
 pub struct RawIdentifiers {
     #[doc(hidden)]
     pub import_path: &'static str,
-    #[doc(hidden)]
-    pub crate_name: &'static str,
-    #[doc(hidden)]
-    pub module_path: &'static str,
     #[doc(hidden)]
     pub macro_name: &'static str,
 }
@@ -56,12 +101,10 @@ macro_rules! f {
         #[cfg(pavex_ide_hint)]
         let x = $p();
 
-        $crate::blueprint::reflection::RawIdentifiers {
+        $crate::with_location!($crate::blueprint::reflection::RawIdentifiers {
             import_path: stringify!($p),
-            crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
-            module_path: module_path!(),
             macro_name: "f",
-        }
+        })
     }};
 }
 
@@ -89,11 +132,9 @@ macro_rules! t {
     ($t:ty) => {{
         #[cfg(pavex_ide_hint)]
         const P: $t;
-        $crate::blueprint::reflection::RawIdentifiers {
+        $crate::with_location!($crate::blueprint::reflection::RawIdentifiers {
             import_path: stringify!($t),
-            crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
-            module_path: module_path!(),
             macro_name: "t",
-        }
+        })
     }};
 }

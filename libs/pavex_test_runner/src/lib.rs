@@ -418,8 +418,11 @@ fn warm_up_rustdoc_cache(
     crates.insert("core".into());
     crates.insert("alloc".into());
     crates.insert("std".into());
-    // Hand-picked crates that we know we're going to build docs for.
+    // Packages that depend on `pavex` and will be used in UI tests
     crates.insert("pavex".into());
+    crates.insert("pavex_cli_client".into());
+    crates.insert("pavex_macros".into());
+    // Hand-picked crates that we know we're going to build docs for.
     crates.insert("tracing".into());
     crates.insert("equivalent".into());
     crates.insert("ppv-lite86".into());
@@ -431,7 +434,6 @@ fn warm_up_rustdoc_cache(
     crates.insert("yansi".into());
     crates.insert("serde".into());
     crates.insert("zerocopy".into());
-    crates.insert("pavex_macros".into());
     let package_ids = crate_collection
         .package_graph()
         .packages()

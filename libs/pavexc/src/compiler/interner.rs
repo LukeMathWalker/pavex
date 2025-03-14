@@ -8,12 +8,18 @@ pub(crate) struct Interner<T> {
     item2id: HashMap<T, la_arena::Idx<T>>,
 }
 
-impl<T> Interner<T> {
-    pub fn new() -> Self {
+impl<T> Default for Interner<T> {
+    fn default() -> Self {
         Self {
             arena: la_arena::Arena::new(),
             item2id: HashMap::new(),
         }
+    }
+}
+
+impl<T> Interner<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn iter(

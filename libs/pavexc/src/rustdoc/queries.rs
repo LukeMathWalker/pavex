@@ -552,7 +552,7 @@ pub struct Crate {
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
-pub struct SortablePath(Vec<String>);
+pub struct SortablePath(pub Vec<String>);
 
 impl Ord for SortablePath {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -875,6 +875,13 @@ impl Crate {
     /// if the type is not found.
     pub fn maybe_get_item_by_local_type_id(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, Item>> {
         self.core.krate.index.get(id)
+    }
+
+    /// Returns a map from public item IDs to their import paths.
+    pub fn public_item_id2import_paths(
+        &self,
+    ) -> &HashMap<rustdoc_types::Id, BTreeSet<SortablePath>> {
+        &self.id2public_import_paths
     }
 
     /// Types can be exposed under multiple paths.
