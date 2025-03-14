@@ -16,10 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ⛰️ Features
 
 - Configuration is now a first-class concept for Pavex (by @LukeMathWalker) - #469
-  
+
   Check out the new [configuration guide](https://pavex.dev/docs/guide/configuration/)
   to see how the new configuration system can be used to simplify your project and
-  cut down the boilerplate that was previously required to work with configuration values. 
+  cut down the boilerplate that was previously required to work with configuration values.
 
 ### Contributors
 
