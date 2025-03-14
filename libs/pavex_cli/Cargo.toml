@@ -20,12 +20,12 @@ vergen-gitcl = { workspace = true }
 anyhow = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.78" }
-pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.78" }
-pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.78" }
-pavex_cli_flock = { path = "../pavex_cli_flock", version = "0.1.78" }
-pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.1.78" }
-pavex_miette = { path = "../pavex_miette", version = "0.1.78" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.79" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.79" }
+pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.79" }
+pavex_cli_flock = { path = "../pavex_cli_flock", version = "0.1.79" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.1.79" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.79" }
 tracing_log_error = { workspace = true }
 async-trait = { workspace = true }
 http = { workspace = true }
