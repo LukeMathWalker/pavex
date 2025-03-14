@@ -3,7 +3,7 @@ use pavex_bp_schema::Type;
 use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::CloningStrategy;
 use crate::blueprint::conversions::raw_identifiers2type;
-use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
 
 use super::RegisteredConfigType;
 
@@ -32,7 +32,7 @@ impl ConfigType {
     /// Check out the documentation of [`Blueprint::config`] for more details
     /// on configuration types.
     #[track_caller]
-    pub fn new(key: &str, type_: RawIdentifiers) -> Self {
+    pub fn new(key: &str, type_: WithLocation<RawIdentifiers>) -> Self {
         Self {
             type_: raw_identifiers2type(type_),
             key: key.into(),

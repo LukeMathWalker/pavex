@@ -3,27 +3,42 @@ use std::hash::Hash;
 use ahash::{HashMap, HashMapExt};
 
 #[derive(Debug)]
+/// A simple interner to associate unique (cheap) identifiers to every distinct
+/// instance of a type `T`.
+///
+/// Comparing identifiers is cheaper than comparing the raw `T` values directly,
+/// and it allows us to avoid cloning `T` values everywhere whenever we need
+/// to reference them.
+///
+/// # Implementation notes
+///
+/// There's almost surely a more efficient way to implement this interner,
+/// but we left optimizations for later.
 pub(crate) struct Interner<T> {
     arena: la_arena::Arena<T>,
     item2id: HashMap<T, la_arena::Idx<T>>,
 }
 
-impl<T> Interner<T> {
-    pub fn new() -> Self {
+impl<T> Default for Interner<T> {
+    fn default() -> Self {
         Self {
             arena: la_arena::Arena::new(),
             item2id: HashMap::new(),
         }
     }
+}
 
+impl<T> Interner<T> {
+    /// Create a new interner.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Iterate over all interned items and their ids.
     pub fn iter(
         &self,
     ) -> impl ExactSizeIterator<Item = (la_arena::Idx<T>, &T)> + DoubleEndedIterator {
         self.arena.iter()
-    }
-
-    pub fn values(&self) -> impl ExactSizeIterator<Item = &T> + DoubleEndedIterator {
-        self.arena.values()
     }
 }
 
@@ -31,6 +46,10 @@ impl<T> Interner<T>
 where
     T: Hash + Eq + Clone,
 {
+    /// Intern a value, returning its id.
+    ///
+    /// If the value is already interned, return its id without storing an
+    /// additional copy.
     pub fn get_or_intern(&mut self, value: T) -> la_arena::Idx<T> {
         match self.item2id.get(&value) {
             Some(id) => *id,
@@ -40,11 +59,6 @@ where
                 id
             }
         }
-    }
-
-    #[allow(unused)]
-    pub fn get(&self, value: &T) -> Option<la_arena::Idx<T>> {
-        self.item2id.get(value).copied()
     }
 }
 

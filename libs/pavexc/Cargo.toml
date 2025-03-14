@@ -20,6 +20,7 @@ debug_assertions = []
 
 [dependencies]
 pavex = { path = "../pavex", version = "0.1.79" }
+pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.1.79" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.79" }
 pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.79" }
 pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.79" }

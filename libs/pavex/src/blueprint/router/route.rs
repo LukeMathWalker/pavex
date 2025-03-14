@@ -1,7 +1,7 @@
-use crate::blueprint::Blueprint;
 use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::blueprint::router::MethodGuard;
+use crate::blueprint::{Blueprint, reflection::WithLocation};
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
 
 /// The type returned by [`Blueprint::route`].
@@ -55,7 +55,7 @@ impl RegisteredRoute<'_> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         let callable = raw_identifiers2callable(error_handler);
         self.route().error_handler = Some(callable);
         self
@@ -97,7 +97,11 @@ impl Route {
     /// Check out the documentation of [`Blueprint::route`] for more details
     /// on routes.
     #[track_caller]
-    pub fn new(method_guard: MethodGuard, path: &str, callable: RawIdentifiers) -> Self {
+    pub fn new(
+        method_guard: MethodGuard,
+        path: &str,
+        callable: WithLocation<RawIdentifiers>,
+    ) -> Self {
         Self {
             callable: raw_identifiers2callable(callable),
             error_handler: None,
@@ -110,7 +114,7 @@ impl Route {
     ///
     /// Check out the documentation of [`RegisteredRoute::error_handler`] for more details.
     #[track_caller]
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         self.error_handler = Some(raw_identifiers2callable(error_handler));
         self
     }

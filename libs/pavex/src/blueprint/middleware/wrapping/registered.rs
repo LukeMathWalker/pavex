@@ -1,5 +1,5 @@
-use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::{conversions::raw_identifiers2callable, reflection::WithLocation};
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, WrappingMiddleware};
 
 /// The type returned by [`Blueprint::wrap`].
@@ -57,7 +57,7 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         let callable = raw_identifiers2callable(error_handler);
         self.wrapping_middleware().error_handler = Some(callable);
         self

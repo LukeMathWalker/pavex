@@ -47,7 +47,7 @@ impl ApplicationState {
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Self {
         let type2id = extract_runtime_singletons(
             handler_id2pipeline.values(),

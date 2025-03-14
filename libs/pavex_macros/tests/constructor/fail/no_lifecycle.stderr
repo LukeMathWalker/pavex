@@ -1,0 +1,7 @@
+error: Missing field `lifecycle`
+ --> tests/constructor/fail/no_lifecycle.rs:6:5
+  |
+6 |     #[constructor]
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `constructor` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -1,5 +1,4 @@
 use ahash::{HashMap, HashMapExt};
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Direction;
 use petgraph::stable_graph::NodeIndex;
@@ -28,9 +27,8 @@ impl OrderedCallGraph {
         call_graph: CallGraph,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<OrderedCallGraph, ()> {
         let copy_checker = CopyChecker::new(krate_collection);
         let call_graph = Self::borrow_check(
@@ -38,7 +36,6 @@ impl OrderedCallGraph {
             &copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         )?;
@@ -58,9 +55,8 @@ impl OrderedCallGraph {
         copy_checker: &CopyChecker,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<CallGraph, ()> {
         let n_diagnostics = diagnostics.len();
 
@@ -70,7 +66,6 @@ impl OrderedCallGraph {
             copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         );
@@ -79,7 +74,6 @@ impl OrderedCallGraph {
             copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         );
@@ -94,7 +88,6 @@ impl OrderedCallGraph {
             copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         );

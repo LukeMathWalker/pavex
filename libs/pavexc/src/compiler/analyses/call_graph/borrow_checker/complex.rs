@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Direction;
 use petgraph::graph::NodeIndex;
@@ -12,10 +11,8 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
-use crate::diagnostic;
-use crate::diagnostic::{
-    AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
-};
+use crate::diagnostic::TargetSpan;
+use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::rustdoc::CrateCollection;
 
 use super::copy::CopyChecker;
@@ -50,9 +47,8 @@ pub(super) fn complex_borrow_check(
     copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
@@ -200,7 +196,6 @@ pub(super) fn complex_borrow_check(
                             incoming_blocked_ids,
                             computation_db,
                             component_db,
-                            package_graph,
                             &call_graph,
                             diagnostics,
                         );
@@ -255,17 +250,15 @@ pub(super) fn complex_borrow_check(
 fn emit_borrow_checking_error(
     incoming_blocked_ids: IndexSet<NodeIndex>,
     computation_db: &ComputationDb,
-    component_db: &ComponentDb,
-    package_graph: &PackageGraph,
+    db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     for incoming_blocked_id in incoming_blocked_ids {
         let (component_id, type_) = match &call_graph[incoming_blocked_id] {
             CallGraphNode::Compute { component_id, .. } => (
                 Some(*component_id),
-                component_db
-                    .hydrated_component(*component_id, computation_db)
+                db.hydrated_component(*component_id, computation_db)
                     .output_type()
                     .cloned()
                     .unwrap(),
@@ -292,39 +285,23 @@ fn emit_borrow_checking_error(
             );
             let mut diagnostic = CompilerDiagnostic::builder(error);
 
-            if let Some(user_component_id) = component_db.user_component_id(component_id) {
+            if let Some(user_id) = db.user_component_id(component_id) {
                 let help_msg = format!(
                     "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
                         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
                 );
-                let location = component_db
-                    .user_component_db()
-                    .get_location(user_component_id);
-                let source = match location.source_file(package_graph) {
-                    Ok(s) => Some(s),
-                    Err(e) => {
-                        diagnostics.push(e.into());
-                        None
-                    }
-                };
-                let help = match source {
-                    None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
-                    Some(source) => {
-                        let callable_type =
-                            component_db.user_component_db()[user_component_id].kind();
-                        let labeled_span =
-                            diagnostic::get_f_macro_invocation_span(&source, location)
-                                .labeled(format!("The {callable_type} was registered here"));
-                        HelpWithSnippet::new(
-                            help_msg,
-                            AnnotatedSnippet::new_optional(source, labeled_span),
-                        )
-                    }
+                let kind = db.user_db()[user_id].kind();
+                let help = match diagnostics.annotated(
+                    TargetSpan::Registration(db.registration(user_id)),
+                    format!("The {kind} was registered here"),
+                ) {
+                    None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+                    Some(s) => HelpWithSnippet::new(help_msg, s).normalize(),
                 };
                 diagnostic = diagnostic.help_with_snippet(help);
             }
 
-            if let Computation::Callable(callable) = component_db
+            if let Computation::Callable(callable) = db
                 .hydrated_component(component_id, computation_db)
                 .computation()
             {
@@ -333,18 +310,18 @@ fn emit_borrow_checking_error(
                         It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
                     callable.path
                 );
-                let help = HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty());
+                let help = HelpWithSnippet::new(help_msg, AnnotatedSource::empty());
                 diagnostic = diagnostic.help_with_snippet(help);
             }
 
             diagnostic = suggest_wrapping_in_a_smart_pointer(
                 Some(component_id),
-                component_db,
+                db,
                 computation_db,
                 diagnostic,
             );
 
-            diagnostics.push(diagnostic.build().into());
+            diagnostics.push(diagnostic.build());
         };
     }
 }

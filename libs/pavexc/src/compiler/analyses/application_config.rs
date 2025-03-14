@@ -2,15 +2,13 @@ use std::collections::BTreeMap;
 
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
-use guppy::graph::PackageGraph;
 use indexmap::IndexMap;
-use pavex_cli_diagnostic::{AnnotatedSnippet, CompilerDiagnostic};
+use pavex_cli_diagnostic::CompilerDiagnostic;
 
 use crate::{
     compiler::component::{ConfigKey, DefaultStrategy},
-    diagnostic::{self, OptionalSourceSpanExt},
+    diagnostic::TargetSpan,
     language::ResolvedType,
-    try_source,
     utils::comma_separated_list,
 };
 
@@ -35,8 +33,7 @@ impl ApplicationConfig {
     pub fn new(
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        package_graph: &PackageGraph,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Self {
         let mut bindings = BiHashMap::new();
         let mut binding2default = HashMap::new();
@@ -68,13 +65,13 @@ impl ApplicationConfig {
 
         for (key, type2id) in key2types {
             if type2id.len() > 1 {
-                same_key_different_types(&key, &type2id, component_db, package_graph, diagnostics);
+                same_key_different_types(&key, &type2id, component_db, diagnostics);
             }
         }
 
         for (ty, key2ids) in type2keys {
             if key2ids.len() > 1 {
-                same_type_different_key(&ty, &key2ids, component_db, package_graph, diagnostics);
+                same_type_different_key(&ty, &key2ids, component_db, diagnostics);
             }
         }
 
@@ -98,29 +95,26 @@ impl ApplicationConfig {
 fn same_key_different_types(
     key: &ConfigKey,
     type2id: &IndexMap<ResolvedType, ComponentId>,
-    component_db: &ComponentDb,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    db: &ComponentDb,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
+    let mut counter = 0;
     let snippets: Vec<_> = type2id
         .values()
-        .enumerate()
-        .map(|(i, component_id)| {
-            let user_component_id = component_db.user_component_id(*component_id).unwrap();
-            let location = component_db
-                .user_component_db()
-                .get_location(user_component_id);
-            try_source!(location, package_graph, diagnostics).map(|source| {
-                let msg = if i == 0 {
-                    "First used here..."
-                } else if i == 1 {
-                    "...then here"
-                } else {
-                    "...and here"
-                };
-                let label = diagnostic::get_config_key_span(&source, location).labeled(msg.into());
-                AnnotatedSnippet::new_optional(source, label)
-            })
+        .map(|id| {
+            let user_id = db.user_component_id(*id)?;
+            let msg = if counter == 0 {
+                "First used here..."
+            } else if counter == 1 {
+                "...then here"
+            } else {
+                "...and here"
+            };
+            let s = diagnostics.annotated(TargetSpan::ConfigKeySpan(db.registration(user_id)), msg);
+            if s.is_some() {
+                counter += 1;
+            }
+            s
         })
         // We don't want too many snippets, they'll fill the terminal viewport
         // It's enough to show the first few
@@ -142,41 +136,37 @@ fn same_key_different_types(
     let e = anyhow::anyhow!(msg);
     let mut diagnostic = CompilerDiagnostic::builder(e);
     for snippet in snippets {
-        diagnostic = diagnostic.optional_additional_annotated_snippet(snippet);
+        diagnostic = diagnostic.optional_source(snippet);
     }
     let diagnostic = diagnostic
         .help("Choose a unique key for each configuration type.".into())
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }
 
 fn same_type_different_key(
     ty: &ResolvedType,
     key2component_id: &BTreeMap<ConfigKey, ComponentId>,
-    component_db: &ComponentDb,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    db: &ComponentDb,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
+    let mut counter = 0;
     let snippets: Vec<_> = key2component_id
         .values()
-        .enumerate()
-        .map(|(i, component_id)| {
-            let user_component_id = component_db.user_component_id(*component_id).unwrap();
-            let location = component_db
-                .user_component_db()
-                .get_location(user_component_id);
-            try_source!(location, package_graph, diagnostics).map(|source| {
-                let msg = if i == 0 {
-                    "First used here..."
-                } else if i == 1 {
-                    "...then here"
-                } else {
-                    "...and here"
-                };
-                let label =
-                    diagnostic::get_f_macro_invocation_span(&source, location).labeled(msg.into());
-                AnnotatedSnippet::new_optional(source, label)
-            })
+        .map(|id| {
+            let user_id = db.user_component_id(*id)?;
+            let msg = if counter == 0 {
+                "First used here..."
+            } else if counter == 1 {
+                "...then here"
+            } else {
+                "...and here"
+            };
+            let s = diagnostics.annotated(TargetSpan::Registration(db.registration(user_id)), msg);
+            if s.is_some() {
+                counter += 1;
+            }
+            s
         })
         // We don't want too many snippets, they'll fill the terminal viewport
         // It's enough to show the first few
@@ -199,10 +189,10 @@ fn same_type_different_key(
     let e = anyhow::anyhow!(msg);
     let mut diagnostic = CompilerDiagnostic::builder(e);
     for snippet in snippets {
-        diagnostic = diagnostic.optional_additional_annotated_snippet(snippet);
+        diagnostic = diagnostic.optional_source(snippet);
     }
     let diagnostic = diagnostic
         .help("Register the type as configuration once, with a single key.".into())
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }

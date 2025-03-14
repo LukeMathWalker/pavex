@@ -1,0 +1,5 @@
+error: Unknown literal value `request`
+ --> tests/constructor/fail/invalid_lifecycle.rs:6:31
+  |
+6 |     #[constructor(lifecycle = "request")]
+  |                               ^^^^^^^^^

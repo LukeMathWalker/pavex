@@ -15,9 +15,11 @@ use formatter::ReversedFull;
 use generate_from_path::GenerateArgs;
 use liquid_core::Value;
 use miette::Severity;
+use pavex_bp_schema::Blueprint;
 use pavex_cli_deps::{IfAutoinstallable, RustdocJson, RustupToolchain, verify_installation};
-use pavex_cli_diagnostic::anyhow2miette;
+use pavex_cli_diagnostic::AnyhowBridge;
 use pavex_cli_shell::try_init_shell;
+use pavexc::rustdoc::CrateCollection;
 use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN};
 use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
@@ -290,7 +292,7 @@ fn main() -> ExitCode {
 }
 
 fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
-    init_shell(cli.color).map_err(anyhow2miette)?;
+    init_shell(cli.color).map_err(|e| e.into_miette())?;
 
     tracing::trace!(cli = ?cli, "`pavexc` CLI options and flags");
     match cli.command {
@@ -312,8 +314,10 @@ fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
             precomputed_metadata,
             check,
         )
-        .map_err(anyhow2miette),
-        Commands::New { path, template } => scaffold_project(path, template).map_err(anyhow2miette),
+        .map_err(|e| e.into_miette().into()),
+        Commands::New { path, template } => {
+            scaffold_project(path, template).map_err(|e| e.into_miette().into())
+        }
         Commands::Self_ {
             command: SelfCommands::Setup { docs_toolchain },
         } => {
@@ -358,29 +362,30 @@ fn generate(
     precomputed_metadata: Option<PathBuf>,
     check: bool,
 ) -> Result<ExitCode, anyhow::Error> {
-    let blueprint = {
+    let blueprint: Blueprint = {
         let file = fs_err::OpenOptions::new().read(true).open(blueprint)?;
         ron::de::from_reader(&file)?
     };
     let mut reporter = DiagnosticReporter::new();
 
     let package_graph = package_graph::retrieve_or_compute_package_graph(precomputed_metadata)?;
-    let (app, issues) = match App::build(
-        blueprint,
+    let krate_collection = CrateCollection::new(
         docs_toolchain,
         package_graph,
+        blueprint.creation_location.file.clone(),
         cache_workspace_packages,
-    ) {
-        Ok((a, issues)) => {
-            for e in &issues {
+    )?;
+    let (app, sink) = match App::build(blueprint, krate_collection) {
+        Ok((a, sink)) => {
+            for e in sink.diagnostics() {
                 assert_eq!(e.severity(), Some(Severity::Warning));
             }
-            (Some(a), issues)
+            (Some(a), sink)
         }
         Err(issues) => (None, issues),
     };
 
-    for e in issues {
+    for e in sink.diagnostics() {
         reporter.print_report(&e);
     }
 

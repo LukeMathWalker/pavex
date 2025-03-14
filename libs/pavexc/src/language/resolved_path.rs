@@ -11,21 +11,22 @@ use indexmap::IndexSet;
 use itertools::Itertools;
 use quote::format_ident;
 
-use pavex_bp_schema::RawIdentifiers;
+use pavex_bp_schema::{CreatedAt, RawIdentifiers};
 use rustdoc_types::ItemEnum;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::callable_path::{
     CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
 };
+use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
-use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::{
     CORE_PACKAGE_ID, CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem,
     RustdocKindExt,
 };
 
+use super::krate_name::CrateNameResolutionError;
 use super::resolved_type::GenericLifetimeParameter;
 
 /// A resolved import path.
@@ -414,10 +415,7 @@ impl ResolvedPath {
         graph: &guppy::graph::PackageGraph,
         kind: PathKind,
     ) -> Result<Self, ParseError> {
-        fn replace_crate_in_path_with_registration_crate(
-            p: &mut CallPath,
-            identifiers: &RawIdentifiers,
-        ) {
+        fn replace_crate_in_path_with_registration_crate(p: &mut CallPath, created_at: &CreatedAt) {
             if p.leading_path_segment() == "crate" {
                 let first_segment = p
                     .segments
@@ -426,15 +424,11 @@ impl ResolvedPath {
                 // Unwrapping here is safe: there is always at least one path segment in a successfully
                 // parsed `ExprPath`.
                 // We must make sure to normalize the crate name, since it may contain hyphens.
-                first_segment.ident = format_ident!(
-                    "{}",
-                    identifiers.registered_at().crate_name.replace('-', "_")
-                );
+                first_segment.ident = format_ident!("{}", created_at.crate_name.replace('-', "_"));
             } else if p.leading_path_segment() == "self" {
                 // We make the path absolute by adding the module path to its beginning.
                 let old_segments = std::mem::take(&mut p.segments);
-                let new_segments: Vec<_> = identifiers
-                    .registered_at()
+                let new_segments: Vec<_> = created_at
                     .module_path
                     .split("::")
                     .map(|s| {
@@ -465,8 +459,7 @@ impl ResolvedPath {
                 let old_segments = std::mem::take(&mut p.segments);
                 // The path is relative to the current module.
                 // We "rebase" it to get an absolute path.
-                let module_segments: Vec<_> = identifiers
-                    .registered_at
+                let module_segments: Vec<_> = created_at
                     .module_path
                     .split("::")
                     .map(|s| {
@@ -489,7 +482,7 @@ impl ResolvedPath {
                 for generic_argument in segment.generic_arguments.iter_mut() {
                     match generic_argument {
                         CallPathGenericArgument::Type(t) => {
-                            replace_crate_in_type_with_registration_crate(t, identifiers);
+                            replace_crate_in_type_with_registration_crate(t, created_at);
                         }
                         CallPathGenericArgument::Lifetime(_) => {}
                     }
@@ -499,24 +492,24 @@ impl ResolvedPath {
 
         fn replace_crate_in_type_with_registration_crate(
             t: &mut CallPathType,
-            identifiers: &RawIdentifiers,
+            created_at: &CreatedAt,
         ) {
             match t {
                 CallPathType::ResolvedPath(p) => {
-                    replace_crate_in_path_with_registration_crate(p.path.deref_mut(), identifiers)
+                    replace_crate_in_path_with_registration_crate(p.path.deref_mut(), created_at)
                 }
                 CallPathType::Reference(r) => {
-                    replace_crate_in_type_with_registration_crate(r.inner.deref_mut(), identifiers)
+                    replace_crate_in_type_with_registration_crate(r.inner.deref_mut(), created_at)
                 }
                 CallPathType::Tuple(t) => {
                     for element in t.elements.iter_mut() {
-                        replace_crate_in_type_with_registration_crate(element, identifiers);
+                        replace_crate_in_type_with_registration_crate(element, created_at);
                     }
                 }
                 CallPathType::Slice(s) => {
                     replace_crate_in_type_with_registration_crate(
                         s.element_type.deref_mut(),
-                        identifiers,
+                        created_at,
                     );
                 }
             }
@@ -526,9 +519,12 @@ impl ResolvedPath {
             PathKind::Callable => CallPath::parse_callable_path(identifiers),
             PathKind::Type => CallPath::parse_type_path(identifiers),
         }?;
-        replace_crate_in_path_with_registration_crate(&mut path, identifiers);
+        replace_crate_in_path_with_registration_crate(&mut path, identifiers.created_at());
         if let Some(qself) = &mut path.qualified_self {
-            replace_crate_in_type_with_registration_crate(&mut qself.type_, identifiers);
+            replace_crate_in_type_with_registration_crate(
+                &mut qself.type_,
+                identifiers.created_at(),
+            );
         }
         Self::parse_call_path(&path, identifiers, graph)
     }
@@ -597,15 +593,6 @@ impl ResolvedPath {
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
-        // Keeping track of who returns a normalized crate name vs a "raw" crate name is a mess,
-        // therefore we normalize everything as a sanity measure.
-        fn normalize(crate_name: &str) -> String {
-            crate_name.replace('-', "_")
-        }
-
-        let registered_at = normalize(&identifiers.registered_at().crate_name);
-        let krate_name_candidate = normalize(&path.leading_path_segment().to_string());
-
         let mut segments = vec![];
         for raw_segment in &path.segments {
             let generic_arguments = raw_segment
@@ -629,31 +616,15 @@ impl ResolvedPath {
             None
         };
 
-        let registration_package = graph.packages()
-            .find(|p| {
-                normalize(p.name()) == registered_at
-            })
-            .expect("There is no package in the current workspace whose name matches the registration crate for these identifiers");
-        let package_id = if normalize(registration_package.name()) == krate_name_candidate {
-            registration_package.id().to_owned()
-        } else {
-            match registration_package
-                .direct_links()
-                .find(|d| normalize(d.resolved_name()) == krate_name_candidate)
-            {
-                Some(dependency) => dependency.to().id().to_owned(),
-                _ => {
-                    if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
-                        PackageId::new(krate_name_candidate.clone())
-                    } else {
-                        return Err(PathMustBeAbsolute {
-                            relative_path: path.to_string(),
-                        }
-                        .into());
-                    }
-                }
-            }
-        };
+        let package_id = dependency_name2package_id(
+            &path.leading_path_segment().to_string(),
+            &identifiers.created_at().crate_name,
+            graph,
+        )
+        .map_err(|source| PathMustBeAbsolute {
+            relative_path: path.to_string(),
+            source,
+        })?;
         Ok(Self {
             segments,
             qualified_self: qself,
@@ -1111,6 +1082,8 @@ pub enum ParseError {
 #[derive(Debug, thiserror::Error, Clone)]
 pub struct PathMustBeAbsolute {
     pub(crate) relative_path: String,
+    #[source]
+    pub(crate) source: CrateNameResolutionError,
 }
 
 impl Display for PathMustBeAbsolute {

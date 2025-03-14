@@ -552,7 +552,7 @@ pub struct Crate {
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
-pub struct SortablePath(Vec<String>);
+pub struct SortablePath(pub Vec<String>);
 
 impl Ord for SortablePath {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -877,6 +877,13 @@ impl Crate {
         self.core.krate.index.get(id)
     }
 
+    /// Returns a map from public item IDs to their import paths.
+    pub fn public_item_id2import_paths(
+        &self,
+    ) -> &HashMap<rustdoc_types::Id, BTreeSet<SortablePath>> {
+        &self.id2public_import_paths
+    }
+
     /// Types can be exposed under multiple paths.
     /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
@@ -1100,9 +1107,9 @@ pub struct GlobalItemId {
 }
 
 impl GlobalItemId {
-    fn new(raw_id: rustdoc_types::Id, package_id: PackageId) -> Self {
+    pub fn new(rustdoc_item_id: rustdoc_types::Id, package_id: PackageId) -> Self {
         Self {
-            rustdoc_item_id: raw_id,
+            rustdoc_item_id,
             package_id,
         }
     }

@@ -82,11 +82,10 @@ impl CallableDefinition {
     pub fn compute(
         callable: &Callable,
         krate_collection: &CrateCollection,
-        package_graph: &PackageGraph,
     ) -> Option<CallableDefinition> {
         let global_item_id = callable.source_coordinates.as_ref()?;
         let item = krate_collection.get_item_by_global_type_id(global_item_id);
-        Self::compute_from_item(&item, package_graph)
+        Self::compute_from_item(&item, krate_collection.package_graph())
     }
 
     pub fn named_source(&self) -> NamedSource<String> {

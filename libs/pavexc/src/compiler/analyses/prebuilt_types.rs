@@ -9,7 +9,7 @@ pub(crate) type PrebuiltTypeId = la_arena::Idx<ResolvedType>;
 
 #[derive(Debug)]
 /// A database of all the types that might be used as inputs to the generated constructor for
-/// the application state.  
+/// the application state.
 /// The primary objectives of this database:
 /// - Assigning a unique id to each input type;
 /// - Allow us to go back from the input type to the user-registered type it was derived from, if any;

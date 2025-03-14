@@ -3,7 +3,7 @@ use pavex_bp_schema::Lifecycle;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::{
     compiler::{analyses::computations::ComputationDb, computation::Computation},
-    diagnostic::{AnnotatedSnippet, CompilerDiagnosticBuilder, HelpWithSnippet},
+    diagnostic::{AnnotatedSource, CompilerDiagnosticBuilder, HelpWithSnippet},
 };
 
 pub(super) fn suggest_wrapping_in_a_smart_pointer(
@@ -24,7 +24,7 @@ pub(super) fn suggest_wrapping_in_a_smart_pointer(
                 "If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`."
             );
             let ref_counting_help =
-                HelpWithSnippet::new(ref_counting_help, AnnotatedSnippet::empty());
+                HelpWithSnippet::new(ref_counting_help, AnnotatedSource::empty());
             diagnostic = diagnostic.help_with_snippet(ref_counting_help);
         }
     }

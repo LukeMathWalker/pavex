@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 
 use crate::{
@@ -11,10 +10,9 @@ use crate::{
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
-    diagnostic::{self, CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt},
+    diagnostic::{self, CompilerDiagnostic, ComponentKind},
     language::ResolvedType,
     rustdoc::CrateCollection,
-    try_source,
 };
 
 /// Verify that all singletons needed at runtime implement `Send` and `Sync`.
@@ -25,7 +23,7 @@ pub(crate) fn runtime_singletons_are_thread_safe(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let send = process_framework_path("core::marker::Send", krate_collection);
     let sync = process_framework_path("core::marker::Sync", krate_collection);
@@ -38,7 +36,6 @@ pub(crate) fn runtime_singletons_are_thread_safe(
                 missing_trait_implementation(
                     e,
                     *component_id,
-                    krate_collection.package_graph(),
                     component_db,
                     computation_db,
                     diagnostics,
@@ -50,33 +47,26 @@ pub(crate) fn runtime_singletons_are_thread_safe(
 
 fn missing_trait_implementation(
     e: MissingTraitImplementationError,
-    component_id: ComponentId,
-    package_graph: &PackageGraph,
-    component_db: &ComponentDb,
+    id: ComponentId,
+    db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
-    let HydratedComponent::Constructor(c) =
-        component_db.hydrated_component(component_id, computation_db)
-    else {
+    let HydratedComponent::Constructor(c) = db.hydrated_component(id, computation_db) else {
         unreachable!()
     };
     let component_id = match c.0 {
-        Computation::Callable(_) => component_id,
-        Computation::MatchResult(_) => component_db.fallible_id(component_id),
-        Computation::PrebuiltType(_) => component_db.derived_from(&component_id).unwrap(),
+        Computation::Callable(_) => id,
+        Computation::MatchResult(_) => db.fallible_id(id),
+        Computation::PrebuiltType(_) => db.derived_from(&id).unwrap(),
     };
-    let user_component_id = component_db.user_component_id(component_id).unwrap();
-    let user_component_db = &component_db.user_component_db();
-    let user_component = &user_component_db[user_component_id];
-    let component_kind = user_component.kind();
-    let location = user_component_db.get_location(user_component_id);
-    let source = try_source!(location, package_graph, diagnostics);
-    let label = source.as_ref().and_then(|source| {
-        diagnostic::get_f_macro_invocation_span(source, location)
-            .labeled(format!("The {component_kind} was registered here"))
-    });
-    let help = if component_kind == ComponentKind::PrebuiltType {
+    let user_id = db.user_component_id(component_id).unwrap();
+    let kind = db.user_db()[user_id].kind();
+    let source = diagnostics.annotated(
+        diagnostic::TargetSpan::Registration(db.registration(user_id)),
+        format!("The {kind} was registered here"),
+    );
+    let help = if kind == ComponentKind::PrebuiltType {
         "All prebuilt types that are needed at runtime must implement the `Send` and `Sync` traits.\n\
         Pavex runs on a multi-threaded HTTP server and the application state is shared \
         across all worker threads."
@@ -89,8 +79,7 @@ fn missing_trait_implementation(
     };
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
-        .optional_label(label)
         .help(help)
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }

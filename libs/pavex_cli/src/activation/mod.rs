@@ -5,7 +5,7 @@ use crate::state::State;
 use anyhow::Context;
 use jiff::{SignedDuration, Timestamp};
 use jsonwebtoken::jwk::JwkSet;
-use pavex_cli_diagnostic::anyhow2miette;
+use pavex_cli_diagnostic::AnyhowBridge;
 use redact::Secret;
 use token_cache::CliTokenDiskCache;
 use tracing_log_error::log_error;
@@ -58,12 +58,12 @@ pub fn exchange_wizard_key(
         let state = State::new(locator);
         state
             .set_activation_key(activation_key)
-            .map_err(anyhow2miette)?;
+            .map_err(|e| e.into_miette())?;
         let cache = CliTokenDiskCache::new(locator.auth());
         cache
             .upsert_token(cli_token.into())
             .await
-            .map_err(anyhow2miette)?;
+            .map_err(|e| e.into_miette())?;
         Ok(())
     })
 }

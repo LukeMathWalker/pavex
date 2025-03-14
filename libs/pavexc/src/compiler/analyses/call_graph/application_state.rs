@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use ahash::{HashMap, HashMapExt};
 use convert_case::{Case, Casing};
 use guppy::PackageId;
-use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 
@@ -37,9 +36,8 @@ pub(crate) fn application_state_call_graph(
     component_db: &mut ComponentDb,
     constructible_db: &mut ConstructibleDb,
     framework_item_db: &FrameworkItemDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<ApplicationStateCallGraph, ()> {
     fn lifecycle2invocations(lifecycle: Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match lifecycle {
@@ -324,7 +322,6 @@ pub(crate) fn application_state_call_graph(
         call_graph,
         component_db,
         computation_db,
-        package_graph,
         krate_collection,
         diagnostics,
     )?;

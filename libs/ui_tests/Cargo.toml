@@ -5,6 +5,8 @@
 debug = "none"
 [workspace]
 members = [
+  "annotations/annotated_constructor_works",
+  "annotations/annotated_constructor_works/generated_app",
   "app_builder",
   "app_builder/generated_app",
   "blueprint/common/async_callable_are_supported",

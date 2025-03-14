@@ -65,7 +65,7 @@ pub(super) fn build_call_graph<F>(
     component_db: &ComponentDb,
     constructible_db: &ConstructibleDb,
     lifecycle2n_allowed_invocations: F,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()>
 where
     F: Fn(Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,

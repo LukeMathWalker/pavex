@@ -27,6 +27,7 @@ clap_builder = { version = "4", default-features = false, features = ["color", "
 console = { version = "0.15" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
+darling_core = { version = "0.20", default-features = false, features = ["suggestions"] }
 digest = { version = "0.10", features = ["mac", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
 fixedbitset = { version = "0.5" }
@@ -88,6 +89,7 @@ clap_builder = { version = "4", default-features = false, features = ["color", "
 console = { version = "0.15" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
+darling_core = { version = "0.20", default-features = false, features = ["suggestions"] }
 digest = { version = "0.10", features = ["mac", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
 fixedbitset = { version = "0.5" }

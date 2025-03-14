@@ -2641,7 +2641,9 @@ name = "pavex_macros"
 version = "0.1.79"
 dependencies = [
  "convert_case 0.8.0",
+ "darling",
  "pavex",
+ "pavexc_attr_parser",
  "proc-macro2",
  "px_workspace_hack",
  "quote",
@@ -2797,6 +2799,7 @@ dependencies = [
  "pavex_bp_schema",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
+ "pavexc_attr_parser",
  "pavexc_rustdoc_types",
  "persist_if_changed",
  "petgraph",
@@ -2827,6 +2830,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavexc_attr_parser"
+version = "0.1.79"
+dependencies = [
+ "darling",
+ "insta",
+ "itertools",
+ "pavex_bp_schema",
+ "px_workspace_hack",
+ "syn",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "pavexc_cli"
 version = "0.1.79"
 dependencies = [
@@ -2842,6 +2858,7 @@ dependencies = [
  "miette",
  "owo-colors",
  "path-absolutize",
+ "pavex_bp_schema",
  "pavex_cli_deps",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
@@ -3152,6 +3169,7 @@ dependencies = [
  "console",
  "crossbeam-utils",
  "crypto-common",
+ "darling_core",
  "digest",
  "either",
  "fixedbitset",
