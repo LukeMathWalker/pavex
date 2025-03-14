@@ -260,21 +260,21 @@ mod kit {
         ///
         /// By default, it uses [`Session::new`].
         ///
-        /// [`Session`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session
-        /// [`Session::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session#method.new
+        /// [`Session`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session.html
+        /// [`Session::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session.html#method.new
         pub session: Option<Constructor>,
         /// The constructor for [`IncomingSession`].
         ///
         /// By default, it uses [`IncomingSession::extract`].
         ///
-        /// [`IncomingSession`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession
-        /// [`IncomingSession::extract`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession#method.extract
+        /// [`IncomingSession`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession.html
+        /// [`IncomingSession::extract`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession.html#method.extract
         pub incoming_session: Option<Constructor>,
         /// Register [`SessionConfig`] as a configuration type.
         ///
         /// By default, it uses `session` as configuration key.
         ///
-        /// [`SessionConfig`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionConfig
+        /// [`SessionConfig`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionConfig.html
         pub session_config: Option<ConfigType>,
         /// The constructor for [`InMemorySessionStore`].
         ///
@@ -288,8 +288,8 @@ mod kit {
         /// By default, it uses [`SessionStore::new`] with [`InMemorySessionStore`]
         /// as its underlying storage backend.
         ///
-        /// [`SessionStore`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore
-        /// [`SessionStore::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore#method.new
+        /// [`SessionStore`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore.html
+        /// [`SessionStore::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore.html#method.new
         /// [`InMemorySessionStore`]: crate::InMemorySessionStore
         pub session_store: Option<Constructor>,
         /// A post-processing middleware to sync the session state with the session store
@@ -298,8 +298,8 @@ mod kit {
         /// By default, it's set to [`finalize_session`].
         /// The error is handled by [`FinalizeError::into_response`].
         ///
-        /// [`FinalizeError::into_response`]: https://pavex.dev/docs/api_reference/pavex_session/errors/enum.FinalizeError#method.into_response
-        /// [`finalize_session`]: https://pavex.dev/docs/api_reference/pavex_session/fn.finalize_session
+        /// [`FinalizeError::into_response`]: https://pavex.dev/docs/api_reference/pavex_session/errors/enum.FinalizeError.html#method.into_response
+        /// [`finalize_session`]: https://pavex.dev/docs/api_reference/pavex_session/fn.finalize_session.html
         pub session_finalizer: Option<PostProcessingMiddleware>,
     }
 
