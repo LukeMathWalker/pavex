@@ -20,3 +20,4 @@ indicatif = { workspace = true }
 walkdir = { workspace = true }
 sanitize-filename = { workspace = true }
 regex = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
