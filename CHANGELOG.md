@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.80](https://github.com/LukeMathWalker/pavex/compare/0.1.79...0.1.80) - 2025-03-22
+
+
+### 🐛 Bug Fixes
+- Always check if pavexc dependencies are installed (by @LukeMathWalker) - #475
+- Fix the path to the configuration folder in the Dockerfile of the starter project (by @LukeMathWalker) - #475
+
+
+### Contributors
+
+* @LukeMathWalker
+
 ## [0.1.79](https://github.com/LukeMathWalker/pavex/compare/0.1.78...0.1.79) - 2025-03-14
 
 ### ‼️ Breaking changes
