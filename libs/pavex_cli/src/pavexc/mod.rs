@@ -95,22 +95,26 @@ fn _install(
     version: &Version,
     install_source: &InstallSource,
 ) -> Result<(), anyhow::Error> {
+    let mut must_install = true;
     if let Ok(true) = pavexc_cli_path.try_exists() {
         let metadata = pavexc_cli_path
             .fs_err_metadata()
             .context("Failed to get file metadata for the `pavexc` binary")?;
         if metadata.is_file() {
-            return Ok(());
+            must_install = false;
         }
     }
 
-    if let Some(parent_dir) = pavexc_cli_path.parent() {
-        fs_err::create_dir_all(parent_dir).context("Failed to create binary cache directory")?;
+    if must_install {
+        if let Some(parent_dir) = pavexc_cli_path.parent() {
+            fs_err::create_dir_all(parent_dir)
+                .context("Failed to create binary cache directory")?;
+        }
+        install::install(pavexc_cli_path, version, install_source)?;
+        #[cfg(unix)]
+        executable::make_executable(pavexc_cli_path)?;
     }
 
-    install::install(pavexc_cli_path, version, install_source)?;
-    #[cfg(unix)]
-    executable::make_executable(pavexc_cli_path)?;
     setup::pavexc_setup(pavexc_cli_path)
         .context("Failed to install the nightly Rust toolchain required by `pavexc`")?;
     Ok(())
