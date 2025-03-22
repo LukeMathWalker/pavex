@@ -9,7 +9,7 @@ version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.79" }
+pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.80" }
 tracing = { workspace = true }
 libc = { workspace = true }
 fs-err = { workspace = true }
