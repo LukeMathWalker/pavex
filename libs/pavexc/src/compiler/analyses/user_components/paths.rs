@@ -280,7 +280,7 @@ fn cannot_resolve_type_path(
     diagnostics.push(diagnostic);
 }
 
-fn cannot_resolve_callable_path(
+pub(super) fn cannot_resolve_callable_path(
     e: CallableResolutionError,
     id: UserComponentId,
     db: &AuxiliaryData,
@@ -380,6 +380,16 @@ fn cannot_resolve_callable_path(
             diagnostics.push(CompilerDiagnostic::builder(e).build());
         }
         CallableResolutionError::GenericParameterResolutionError(_) => {
+            let source = diagnostics.annotated(
+                TargetSpan::Registration(&db.id2registration[&id]),
+                format!("The {kind} was registered here"),
+            );
+            let diagnostic = CompilerDiagnostic::builder(e)
+                .optional_source(source)
+                .build();
+            diagnostics.push(diagnostic);
+        }
+        CallableResolutionError::SelfResolutionError(_) => {
             let source = diagnostics.annotated(
                 TargetSpan::Registration(&db.id2registration[&id]),
                 format!("The {kind} was registered here"),

@@ -132,9 +132,15 @@ pub mod route_0 {
                 };
             }
         };
-        let v5 = app::d(&v4, &v0);
-        let v6 = app::handler(&v0, &v2, &v5);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        let v5 = app::H::with_e();
+        let v6 = app::H::with_a();
+        let v7 = <app::A as core::clone::Clone>::clone(&v0);
+        let v8 = app::G::new(v7);
+        let v9 = app::E::new();
+        let v10 = app::F::new(&v9);
+        let v11 = app::d(&v4, &v0);
+        let v12 = app::handler(&v0, &v2, &v11, &v9, &v10, &v8, &v6, &v5);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
     }
     struct Next0<T>
     where

@@ -24,10 +24,7 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
             return Ok(None);
         };
         let Some(component_kind) = sub_path.get_ident() else {
-            return Err(errors::UnknownPavexAttribute {
-                path: attr.path().to_owned(),
-            }
-            .into());
+            return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
         };
         let c = match component_kind.to_string().as_str() {
             "constructor" => {
@@ -36,10 +33,7 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
                 parsed.into()
             }
             _ => {
-                return Err(errors::UnknownPavexAttribute {
-                    path: attr.path().to_owned(),
-                }
-                .into());
+                return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
             }
         };
         if !component.is_none() {

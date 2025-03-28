@@ -1,18 +1,26 @@
+use std::{ops::Deref, sync::Arc};
+
 use self::computations::ComputationDb;
 
 use super::{
     ScopeId, UserComponent, UserComponentId, auxiliary::AuxiliaryData, identifiers::ResolvedPaths,
-    imports::ResolvedImport,
+    imports::ResolvedImport, paths::cannot_resolve_callable_path,
 };
 use crate::{
-    compiler::{analyses::computations, resolvers::resolve_type},
-    diagnostic::{DiagnosticSink, Registration},
+    compiler::{
+        analyses::computations,
+        resolvers::{
+            CallableResolutionError, GenericBindings, InputParameterResolutionError,
+            OutputTypeResolutionError, SelfResolutionError, resolve_type,
+        },
+    },
+    diagnostic::{DiagnosticSink, Registration, TargetSpan},
     language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
     rustdoc::{Crate, CrateCollection, GlobalItemId},
 };
-use guppy::PackageId;
 use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, RawIdentifiers};
-use pavexc_attr_parser::AnnotatedComponent;
+use pavex_cli_diagnostic::CompilerDiagnostic;
+use pavexc_attr_parser::{AnnotatedComponent, errors::AttributeParserError};
 use rustdoc_types::{Enum, Item, ItemEnum, Struct};
 
 /// An id pointing at the coordinates of an annotated component.
@@ -73,7 +81,8 @@ pub(super) fn register_imported_components(
                                     continue;
                                 }
                                 Err(e) => {
-                                    todo!("Failed to parse attributes: {}", e);
+                                    invalid_diagnostic_attribute(e, item.as_ref(), diagnostics);
+                                    continue;
                                 }
                             };
                             let user_component_id = intern_annotated(
@@ -84,7 +93,20 @@ pub(super) fn register_imported_components(
                                 scope_id,
                                 aux,
                             );
-                            let callable = rustdoc_fn2callable(&item, krate, krate_collection);
+                            let callable =
+                                match rustdoc_free_fn2callable(&item, krate, krate_collection) {
+                                    Ok(callable) => callable,
+                                    Err(e) => {
+                                        cannot_resolve_callable_path(
+                                            e,
+                                            user_component_id,
+                                            aux,
+                                            krate_collection.package_graph(),
+                                            diagnostics,
+                                        );
+                                        continue;
+                                    }
+                                };
                             computation_db
                                 .get_or_intern_with_id(callable, user_component_id.into());
                         }
@@ -110,7 +132,38 @@ pub(super) fn register_imported_components(
                     }));
                 }
                 QueueItem::ImplItem { self_, impl_, id } => {
-                    continue;
+                    let item = krate.get_item_by_local_type_id(&id);
+                    let ItemEnum::Function(_) = &item.inner else {
+                        continue;
+                    };
+                    let annotation = match pavexc_attr_parser::parse(&item.attrs) {
+                        Ok(Some(annotation)) => annotation,
+                        Ok(None) => {
+                            continue;
+                        }
+                        Err(e) => {
+                            invalid_diagnostic_attribute(e, item.as_ref(), diagnostics);
+                            continue;
+                        }
+                    };
+                    let user_component_id =
+                        intern_annotated(annotation, &item, krate, &created_at, scope_id, aux);
+                    let callable =
+                        match rustdoc_method2callable(self_, impl_, &item, krate, krate_collection)
+                        {
+                            Ok(callable) => callable,
+                            Err(e) => {
+                                cannot_resolve_callable_path(
+                                    e,
+                                    user_component_id,
+                                    aux,
+                                    krate_collection.package_graph(),
+                                    diagnostics,
+                                );
+                                continue;
+                            }
+                        };
+                    computation_db.get_or_intern_with_id(callable, user_component_id.into());
                 }
             }
         }
@@ -198,29 +251,30 @@ fn intern_annotated(
     }
 }
 
-/// Convert a function item from `rustdoc_types` into a `Callable`.
-fn rustdoc_fn2callable(item: &Item, krate: &Crate, krate_collection: &CrateCollection) -> Callable {
+/// Convert a free function from `rustdoc_types` into a `Callable`.
+fn rustdoc_free_fn2callable(
+    item: &Item,
+    krate: &Crate,
+    krate_collection: &CrateCollection,
+) -> Result<Callable, CallableResolutionError> {
     let ItemEnum::Function(inner) = &item.inner else {
         unreachable!("Expected a function item");
     };
-    let segments: Vec<_> = krate.public_item_id2import_paths()[&item.id]
-        .first()
-        .expect("No import paths for a publicly visible item.")
-        .0
-        .iter()
-        .map(|s| ResolvedPathSegment {
-            ident: s.into(),
-            generic_arguments: Vec::new(),
-        })
-        .collect();
     let path = ResolvedPath {
-        segments,
+        segments: krate.public_item_id2import_paths()[&item.id]
+            .first()
+            .expect("No import paths for a publicly visible item.")
+            .0
+            .iter()
+            .cloned()
+            .map(ResolvedPathSegment::new)
+            .collect(),
         qualified_self: None,
         package_id: krate.core.package_id.clone(),
     };
 
     let mut inputs = Vec::new();
-    for (_, input_ty) in &inner.sig.inputs {
+    for (parameter_index, (_, input_ty)) in inner.sig.inputs.iter().enumerate() {
         match resolve_type(
             input_ty,
             &krate.core.package_id,
@@ -230,7 +284,16 @@ fn rustdoc_fn2callable(item: &Item, krate: &Crate, krate_collection: &CrateColle
             Ok(t) => {
                 inputs.push(t);
             }
-            Err(e) => todo!("Failed to resolve input type: {}", e),
+            Err(e) => {
+                return Err(InputParameterResolutionError {
+                    callable_path: path.into(),
+                    callable_item: item.clone(),
+                    parameter_type: input_ty.clone(),
+                    parameter_index,
+                    source: Arc::new(e),
+                }
+                .into());
+            }
         }
     }
 
@@ -243,13 +306,21 @@ fn rustdoc_fn2callable(item: &Item, krate: &Crate, krate_collection: &CrateColle
                 &Default::default(),
             ) {
                 Ok(t) => Some(t),
-                Err(e) => todo!("Failed to resolve output type: {}", e),
+                Err(e) => {
+                    return Err(OutputTypeResolutionError {
+                        callable_path: path.into(),
+                        callable_item: item.clone(),
+                        output_type: output_ty.clone(),
+                        source: Arc::new(e),
+                    }
+                    .into());
+                }
             }
         }
         None => None,
     };
 
-    Callable {
+    Ok(Callable {
         is_async: inner.header.is_async,
         // It's a free function, there's no `self`.
         takes_self_as_ref: false,
@@ -261,5 +332,164 @@ fn rustdoc_fn2callable(item: &Item, krate: &Crate, krate_collection: &CrateColle
             rustdoc_item_id: item.id,
             package_id: krate.core.package_id.clone(),
         }),
+    })
+}
+
+fn rustdoc_method2callable(
+    self_id: rustdoc_types::Id,
+    impl_id: rustdoc_types::Id,
+    method_item: &Item,
+    krate: &Crate,
+    krate_collection: &CrateCollection,
+) -> Result<Callable, CallableResolutionError> {
+    let method_path = {
+        let self_path = &krate.public_item_id2import_paths()[&self_id]
+            .first()
+            .expect("Publicly visible item without an import path")
+            .0;
+        ResolvedPath {
+            segments: self_path
+                .iter()
+                .cloned()
+                .map(ResolvedPathSegment::new)
+                .chain(std::iter::once(ResolvedPathSegment::new(
+                    method_item.name.clone().expect("Method without a name"),
+                )))
+                .collect(),
+            qualified_self: None,
+            package_id: krate.core.package_id.clone(),
+        }
+    };
+
+    let ItemEnum::Function(inner) = &method_item.inner else {
+        unreachable!("Expected a function item");
+    };
+
+    let impl_item = krate.get_item_by_local_type_id(&impl_id);
+    let ItemEnum::Impl(impl_item) = &impl_item.inner else {
+        unreachable!("The impl item id doesn't point to an impl item")
+    };
+    let self_ty = match resolve_type(
+        &impl_item.for_,
+        &krate.core.package_id,
+        krate_collection,
+        &Default::default(),
+    ) {
+        Ok(t) => t,
+        Err(e) => {
+            return Err(SelfResolutionError {
+                path: method_path,
+                source: Arc::new(e),
+            }
+            .into());
+        }
+    };
+
+    let mut generic_bindings = GenericBindings::default();
+    generic_bindings.types.insert("Self".into(), self_ty);
+
+    let mut inputs = Vec::new();
+    let mut takes_self_as_ref = false;
+    for (parameter_index, (_, parameter_type)) in inner.sig.inputs.iter().enumerate() {
+        if parameter_index == 0 {
+            // The first parameter might be `&self` or `&mut self`.
+            // This is important to know for carrying out further analysis doing the line,
+            // e.g. undoing lifetime elision.
+            if let rustdoc_types::Type::BorrowedRef { type_, .. } = parameter_type {
+                if let rustdoc_types::Type::Generic(g) = type_.deref() {
+                    if g == "Self" {
+                        takes_self_as_ref = true;
+                    }
+                }
+            }
+        }
+
+        match resolve_type(
+            parameter_type,
+            &krate.core.package_id,
+            krate_collection,
+            &generic_bindings,
+        ) {
+            Ok(t) => {
+                inputs.push(t);
+            }
+            Err(e) => {
+                return Err(InputParameterResolutionError {
+                    callable_path: method_path,
+                    callable_item: method_item.clone(),
+                    parameter_type: parameter_type.clone(),
+                    parameter_index,
+                    source: Arc::new(e),
+                }
+                .into());
+            }
+        }
     }
+
+    let output = match &inner.sig.output {
+        Some(output_ty) => {
+            match resolve_type(
+                output_ty,
+                &krate.core.package_id,
+                krate_collection,
+                &generic_bindings,
+            ) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    return Err(OutputTypeResolutionError {
+                        callable_path: method_path,
+                        callable_item: method_item.clone(),
+                        output_type: output_ty.clone(),
+                        source: Arc::new(e),
+                    }
+                    .into());
+                }
+            }
+        }
+        None => None,
+    };
+
+    Ok(Callable {
+        is_async: inner.header.is_async,
+        takes_self_as_ref,
+        output,
+        path: method_path,
+        inputs,
+        invocation_style: InvocationStyle::FunctionCall,
+        source_coordinates: Some(GlobalItemId {
+            rustdoc_item_id: method_item.id,
+            package_id: krate.core.package_id.clone(),
+        }),
+    })
+}
+
+fn invalid_diagnostic_attribute(
+    e: AttributeParserError,
+    item: &Item,
+    diagnostics: &mut DiagnosticSink,
+) {
+    let source = item
+        .span
+        .as_ref()
+        .map(|s| {
+            diagnostics.annotated(
+                TargetSpan::Registration(&Registration::attribute(&s)),
+                "The annotated item",
+            )
+        })
+        .flatten();
+    let err_msg = match &item.name {
+        Some(name) => {
+            format!("`{name}` is annotated with a malformed `diagnostic::pavex::*` attribute.",)
+        }
+        None => "One of your items is annotated with a malformed `diagnostic::pavex::*` attribute."
+            .into(),
+    };
+    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(e.to_string()).context(err_msg))
+        .optional_source(source)
+        .help("Have you manually added the `diagnostic::pavex::*` attribute on the item? \
+            The syntax for `diagnostic::pavex::*` attributes is an implementation detail of Pavex's own macros,
+            which are guaranteed to output well-formed annotations.".into())
+        .build();
+    diagnostics.push(diagnostic);
 }

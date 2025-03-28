@@ -41,7 +41,66 @@ pub fn error_handler(_error: &pavex::Error) -> pavex::response::Response {
     todo!()
 }
 
-pub fn handler(_x: &A, _y: &B<A>, _d: &D) -> pavex::response::Response {
+pub struct E;
+
+impl E {
+    // Simple method constructor.
+    #[pavex::request_scoped]
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+pub struct F<'a> {
+    _e: &'a E,
+}
+
+impl F<'_> {
+    // With an (elided) lifetime parameter.
+    #[pavex::request_scoped]
+    pub fn new(_e: &E) -> Self {
+        todo!()
+    }
+}
+
+pub struct G<T>(T);
+
+impl<T> G<T> {
+    // With a generic parameter in the output type.
+    #[pavex::request_scoped]
+    pub fn new(_t: T) -> Self {
+        todo!()
+    }
+}
+
+pub struct H<T>(T);
+
+impl H<A> {
+    // With a generic parameter that's specified in the `impl` block definition.
+    #[pavex::request_scoped]
+    pub fn with_a() -> Self {
+        todo!()
+    }
+}
+
+impl H<E> {
+    // With a generic parameter that's specified in the `impl` block definition.
+    #[pavex::request_scoped]
+    pub fn with_e() -> Self {
+        todo!()
+    }
+}
+
+pub fn handler(
+    _x: &A,
+    _y: &B<A>,
+    _d: &D,
+    _e: &E,
+    _f: &F,
+    _g: &G<A>,
+    _h1: &H<A>,
+    _h2: &H<E>,
+) -> pavex::response::Response {
     todo!()
 }
 

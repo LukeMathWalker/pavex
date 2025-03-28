@@ -97,6 +97,16 @@ pub struct ResolvedPathSegment {
     pub generic_arguments: Vec<ResolvedPathGenericArgument>,
 }
 
+impl ResolvedPathSegment {
+    /// Create a new segment without generic arguments.
+    pub fn new(ident: String) -> Self {
+        Self {
+            ident,
+            generic_arguments: Vec::new(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum ResolvedPathGenericArgument {
     Type(ResolvedPathType),

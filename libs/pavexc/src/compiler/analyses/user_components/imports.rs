@@ -72,7 +72,10 @@ pub(super) fn resolve_imports(
                 for source in sources {
                     let mut path = match syn::parse_str::<RawModulePath>(&source) {
                         Ok(p) => p,
-                        Err(e) => todo!(),
+                        Err(e) => {
+                            invalid_module_path(e, source.into(), import, diagnostics);
+                            continue;
+                        }
                     };
                     path.into_absolute(&import.created_at);
                     let package_name = path.0.first().expect("Module path can't be empty");
@@ -252,6 +255,31 @@ fn unknown_dependency_crate(
     let diagnostic = CompilerDiagnostic::builder(CannotFindDependency { dependent: e.dependent_name.clone(), dependency: e.dependency_name.clone(), source: e })
         .optional_source(source)
         .help("Did you use the `from!` macro to register your sources? Setting `WithLocation`'s fields manually is bound to cause problems for Pavex.".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+fn invalid_module_path(
+    e: syn::Error,
+    raw_path: String,
+    import: &Import,
+    diagnostics: &mut DiagnosticSink,
+) {
+    #[derive(Debug, thiserror::Error)]
+    #[error("`{path}` is not a valid import path.")]
+    struct InvalidModulePath {
+        path: String,
+        source: syn::Error,
+    }
+
+    let source = diagnostics.source(&import.registered_at).map(|s| {
+        diagnostic::imported_sources_span(s.source(), &import.registered_at)
+            .labeled("The import was registered here".into())
+            .attach(s)
+    });
+    let diagnostic = CompilerDiagnostic::builder(InvalidModulePath { path: raw_path, source: e })
+        .optional_source(source)
+        .help("Did you use the `from!` macro to register your sources? An invalid module path should have been caught earlier.".into())
         .build();
     diagnostics.push(diagnostic);
 }

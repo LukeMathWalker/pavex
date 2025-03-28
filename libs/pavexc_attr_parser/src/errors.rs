@@ -11,24 +11,22 @@ pub enum AttributeParserError {
     MultiplePavexAttributes,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("Unknown Pavex attribute: `#[{path}(...)]`")]
 pub struct UnknownPavexAttribute {
-    pub path: syn::Path,
+    pub path: String,
 }
 
-impl std::fmt::Display for UnknownPavexAttribute {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let p = self
-            .path
+impl UnknownPavexAttribute {
+    pub fn new(path: &syn::Path) -> Self {
+        let path = path
             .segments
             .iter()
             .map(|s| format!("{}", s.ident))
             .join("::");
-        write!(f, "Unknown Pavex attribute: `#[{}(...)]`", p)
+        Self { path }
     }
 }
-
-impl std::error::Error for UnknownPavexAttribute {}
 
 #[derive(Debug, thiserror::Error)]
 #[error("{0} for `{1}` attribute")]

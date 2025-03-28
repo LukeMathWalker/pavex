@@ -19,10 +19,8 @@ use crate::compiler::{
         computations::ComputationDb, config_types::ConfigTypeDb, prebuilt_types::PrebuiltTypeDb,
     },
     component::DefaultStrategy,
-    interner::Interner,
 };
 use crate::diagnostic::Registration;
-use crate::rustdoc::GlobalItemId;
 use crate::{language::ResolvedPath, rustdoc::CrateCollection};
 
 /// A database that contains all the user components that have been registered against the
@@ -40,7 +38,6 @@ use crate::{language::ResolvedPath, rustdoc::CrateCollection};
 #[derive(Debug)]
 pub struct UserComponentDb {
     component_interner: la_arena::Arena<UserComponent>,
-    annotation_interner: Interner<GlobalItemId>,
     /// Associates each user-registered component with the scope it belongs to.
     ///
     /// Invariants: there is an entry for every single user component.
@@ -139,7 +136,6 @@ impl UserComponentDb {
         let AuxiliaryData {
             component_interner,
             id2scope_id,
-            annotation_interner,
             id2registration,
             id2lints,
             id2cloning_strategy,
@@ -147,6 +143,7 @@ impl UserComponentDb {
             config_id2default_strategy,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
+            annotation_interner: _,
             imports: _,
             identifiers_interner: _,
             fallback_id2domain_guard: _,
@@ -157,7 +154,6 @@ impl UserComponentDb {
         Ok((
             router,
             Self {
-                annotation_interner,
                 component_interner,
                 id2scope_id,
                 id2registration,
