@@ -3,11 +3,9 @@ use pavex::f;
 
 pub struct A;
 
-impl A {
-    #[pavex::constructor(lifecycle = "request_scoped")]
-    pub fn new() -> Self {
-        Self
-    }
+#[pavex::constructor(lifecycle = "request_scoped")]
+pub fn new() -> A {
+    A
 }
 
 pub fn handler(_x: &A) -> pavex::response::Response {

@@ -544,9 +544,23 @@ pub struct Crate {
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
     /// A mapping from a type id to all the public paths under which it can be imported
     /// from another crate.
+    ///
+    /// It is only guaranteed to contain:
+    ///
+    /// - Traits
+    /// - Structs
+    /// - Enums
+    /// - Functions
     pub(super) id2public_import_paths: HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
     /// A mapping from a type id to all the non-public paths under which it can be imported
     /// from within the same crate.
+    ///
+    /// It is only guaranteed to contain:
+    ///
+    /// - Traits
+    /// - Structs
+    /// - Enums
+    /// - Functions
     pub(super) id2private_import_paths: HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
 }
 

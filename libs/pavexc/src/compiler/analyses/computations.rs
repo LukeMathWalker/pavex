@@ -43,12 +43,23 @@ impl ComputationDb {
         user_component_id: Option<UserComponentId>,
     ) -> Result<ComputationId, CallableResolutionError> {
         let callable = resolve_callable(krate_collection, resolved_path)?;
+        Ok(self.get_or_intern_with_id(callable, user_component_id))
+    }
+
+    /// Intern a callable (or retrieve its id if it already exists).
+    ///
+    /// Then associate it with the given user component id.
+    pub(crate) fn get_or_intern_with_id(
+        &mut self,
+        callable: Callable,
+        user_component_id: Option<UserComponentId>,
+    ) -> ComputationId {
         let callable_id = self.interner.get_or_intern(callable.into());
         if let Some(raw_user_id) = user_component_id {
             self.component_id2callable_id
                 .insert(raw_user_id, callable_id);
         }
-        Ok(callable_id)
+        callable_id
     }
 
     /// Retrieve the id for a computation from the interner, or insert it if it doesn't exist.

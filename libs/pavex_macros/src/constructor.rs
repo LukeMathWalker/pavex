@@ -17,13 +17,20 @@ pub enum Lifecycle {
     Transient,
 }
 
+impl Lifecycle {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Lifecycle::Singleton => "singleton",
+            Lifecycle::RequestScoped => "request_scoped",
+            Lifecycle::Transient => "transient",
+        }
+    }
+}
+
 impl ToTokens for Lifecycle {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            Lifecycle::Singleton => tokens.extend(quote! { singleton }),
-            Lifecycle::RequestScoped => tokens.extend(quote! { request_scoped }),
-            Lifecycle::Transient => tokens.extend(quote! { transient }),
-        }
+        let s = self.as_str();
+        tokens.extend(quote! { #s });
     }
 }
 
@@ -33,13 +40,19 @@ pub enum CloningStrategy {
     CloneIfNecessary,
     NeverClone,
 }
+impl CloningStrategy {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            CloningStrategy::CloneIfNecessary => "clone_if_necessary",
+            CloningStrategy::NeverClone => "never_clone",
+        }
+    }
+}
 
 impl ToTokens for CloningStrategy {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            CloningStrategy::CloneIfNecessary => tokens.extend(quote! { clone_if_necessary }),
-            CloningStrategy::NeverClone => tokens.extend(quote! { never_clone }),
-        }
+        let s = self.as_str();
+        tokens.extend(quote! { #s });
     }
 }
 

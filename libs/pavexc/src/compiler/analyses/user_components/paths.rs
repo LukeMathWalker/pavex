@@ -33,7 +33,10 @@ pub(super) fn resolve_paths(
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     for (id, user_component) in raw_db.iter() {
-        let resolved_path = &id2resolved_path[&id];
+        let Some(resolved_path) = id2resolved_path.get(&id) else {
+            // Annotated components don't have a resolved path attached to them.
+            continue;
+        };
         if let UserComponent::PrebuiltType { .. } = &user_component {
             match resolve_type_path(resolved_path, krate_collection) {
                 Ok(ty) => match PrebuiltType::new(ty) {

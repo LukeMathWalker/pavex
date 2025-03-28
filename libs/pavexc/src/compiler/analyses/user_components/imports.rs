@@ -17,6 +17,7 @@ use crate::language::{
 use super::auxiliary::AuxiliaryData;
 
 /// A normalized import path.
+#[derive(Debug, Clone)]
 pub struct ResolvedImport {
     /// The path of the imported module.
     ///
