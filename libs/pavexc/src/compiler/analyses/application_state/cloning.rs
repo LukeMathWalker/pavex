@@ -129,30 +129,29 @@ fn must_be_clonable(
     };
 
     let user_id = db.user_component_id(component_id).unwrap();
+    let registration = db.registration(user_id);
     let source = diagnostics.annotated(
-        diagnostic::TargetSpan::Registration(db.registration(user_id)),
+        diagnostic::TargetSpan::Registration(registration),
         "It was registered here",
     );
+    // Match the casing of the registration mechanism that was used.
+    let clone_if_necessary = if registration.kind.from_attribute() {
+        "clone_if_necessary"
+    } else {
+        "CloneIfNecessary"
+    };
+    let type_ = type_.display_for_error();
     let e = anyhow::anyhow!(
         "I can't generate code that will pass the borrow checker *and* match the \
         instructions in your blueprint.\n\
-        `{}` consumes `{}` by value, but `{}` is a singleton and can't be moved out of `ApplicationState`.\n\
-        Cloning `{}` would fix this, but its cloning strategy is set to `NeverClone`.",
+        `{}` consumes `{type_}` by value, but `{type_}` is a singleton and can't be moved out of `ApplicationState`.",
         consumer_callable.path,
-        type_.display_for_error(),
-        type_.display_for_error(),
-        type_.display_for_error(),
     );
-    let help = is_clone.then(|| {
-        format!(
-            "Set the cloning strategy for `{}` to `CloneIfNecessary`.",
-            type_.display_for_error()
-        )
-    });
+    let help = is_clone
+        .then(|| format!("Allow Pavex to clone `{type_}` by marking it `{clone_if_necessary}`.",));
     let second_help = format!(
-        "Can `{}` take a reference to `{}`, rather than consuming it by value?",
+        "Can `{}` take a reference to `{type_}`, rather than consuming it by value?",
         consumer_callable.path,
-        type_.display_for_error()
     );
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)

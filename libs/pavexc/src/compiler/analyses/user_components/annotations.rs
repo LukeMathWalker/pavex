@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc};
+use std::{collections::BTreeSet, ops::Deref, sync::Arc};
 
 use self::computations::ComputationDb;
 
@@ -49,18 +49,23 @@ pub(super) fn register_imported_components(
                 Please report this issue at https://github.com/LukeMathWalker/pavex/issues/new."
             )
         };
-        let mut queue: Vec<_> = krate
-            .public_item_id2import_paths()
+        // We use a BTreeSet to guarantee a deterministic processing order.
+        let mut queue: BTreeSet<_> = krate
+            .import_index
             .iter()
-            .filter_map(|(id, paths)| {
-                if paths.iter().any(|path| path.0.starts_with(module_path)) {
+            .filter_map(|(id, entry)| {
+                if entry
+                    .public_paths
+                    .iter()
+                    .any(|path| path.0.starts_with(module_path))
+                {
                     Some(QueueItem::Standalone(*id))
                 } else {
                     None
                 }
             })
             .collect();
-        while let Some(queue_item) = queue.pop() {
+        while let Some(queue_item) = queue.pop_last() {
             match queue_item {
                 QueueItem::Standalone(item_id) => {
                     let item = krate.get_item_by_local_type_id(&item_id);
@@ -175,6 +180,7 @@ pub(super) fn register_imported_components(
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum QueueItem {
     /// The `id` of an enum, struct, trait or function.
     Standalone(rustdoc_types::Id),
@@ -192,6 +198,60 @@ enum QueueItem {
         /// The `id` of the `impl` block item.
         id: rustdoc_types::Id,
     },
+}
+
+/// A lot of unnecessary jumping through hoops to implement `Ord`/`PartialOrd`
+/// since `rustdoc_types::Id` doesn't implement `Ord`/`PartialOrd`.
+mod sortable_queue {
+    use super::QueueItem;
+    impl QueueItem {
+        fn as_sortable(&self) -> (SortableId, Option<SortableId>, Option<SortableId>) {
+            match self {
+                QueueItem::Standalone(id) => ((*id).into(), None, None),
+                QueueItem::Impl { self_, id } => ((*self_).into(), Some((*id).into()), None),
+                QueueItem::ImplItem { self_, impl_, id } => {
+                    ((*self_).into(), Some((*impl_).into()), Some((*id).into()))
+                }
+            }
+        }
+    }
+
+    impl PartialOrd for QueueItem {
+        fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+            let sortable_self = self.as_sortable();
+            let sortable_other = other.as_sortable();
+            sortable_self.partial_cmp(&sortable_other)
+        }
+    }
+
+    impl Ord for QueueItem {
+        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+            let sortable_self = self.as_sortable();
+            let sortable_other = other.as_sortable();
+            sortable_self.cmp(&sortable_other)
+        }
+    }
+
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    pub struct SortableId(rustdoc_types::Id);
+
+    impl From<rustdoc_types::Id> for SortableId {
+        fn from(value: rustdoc_types::Id) -> Self {
+            Self(value)
+        }
+    }
+
+    impl PartialOrd for SortableId {
+        fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+            self.0.0.partial_cmp(&other.0.0)
+        }
+    }
+
+    impl Ord for SortableId {
+        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+            self.0.0.cmp(&other.0.0)
+        }
+    }
 }
 
 /// Process the annotation and intern the associated component(s).
@@ -261,10 +321,8 @@ fn rustdoc_free_fn2callable(
         unreachable!("Expected a function item");
     };
     let path = ResolvedPath {
-        segments: krate.public_item_id2import_paths()[&item.id]
-            .first()
-            .expect("No import paths for a publicly visible item.")
-            .0
+        segments: krate.import_index[&item.id]
+            .canonical_path()
             .iter()
             .cloned()
             .map(ResolvedPathSegment::new)
@@ -343,12 +401,9 @@ fn rustdoc_method2callable(
     krate_collection: &CrateCollection,
 ) -> Result<Callable, CallableResolutionError> {
     let method_path = {
-        let self_path = &krate.public_item_id2import_paths()[&self_id]
-            .first()
-            .expect("Publicly visible item without an import path")
-            .0;
         ResolvedPath {
-            segments: self_path
+            segments: krate.import_index[&self_id]
+                .canonical_path()
                 .iter()
                 .cloned()
                 .map(ResolvedPathSegment::new)

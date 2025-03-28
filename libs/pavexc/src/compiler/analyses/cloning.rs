@@ -68,41 +68,41 @@ fn must_be_clonable(
     let id = db.derived_from(&id).unwrap_or(id);
     let user_id = db.user_component_id(id).unwrap();
     let kind = db.user_db()[user_id].kind();
+    let registration = db.registration(user_id);
     let source = diagnostics.annotated(
-        TargetSpan::Registration(db.registration(user_id)),
+        TargetSpan::Registration(registration),
         format!("The {kind} was registered here"),
     );
+    // Match the casing that you would use in each circumstance.
+    let (clone_if_necessary, never_clone) = if registration.kind.from_attribute() {
+        ("clone_if_necessary", "never_clone")
+    } else {
+        ("CloneIfNecessary", "NeverClone")
+    };
+    let output_type = type_.display_for_error();
     let error_msg = match kind {
         ComponentKind::Constructor => {
             let callable_path = &computation_db[user_id].path;
             format!(
-                "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
-                The cloning strategy for `{callable_path}` is `CloneIfNecessary`, but `{}`, its output type, doesn't implement the `Clone` trait.",
-                type_.display_for_error(),
+                "`{output_type}` doesn't implement the `Clone` trait, but its constructor, `{callable_path}`, is marked as `{clone_if_necessary}`."
             )
         }
         ComponentKind::PrebuiltType => {
             format!(
-                "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
-                The cloning strategy for `{}`, a prebuilt type, is `CloneIfNecessary`, but it doesn't implement the `Clone` trait.",
-                type_.display_for_error(),
+                "`{output_type}` doesn't implement the `Clone` trait, but it's marked as `{clone_if_necessary}`."
             )
         }
         ComponentKind::ConfigType => {
             format!(
                 "All configuration types must be clonable.\n\
-                `{}` is a configuration type, but it doesn't implement the `Clone` trait.",
-                type_.display_for_error(),
+                `{output_type}` is a configuration type, but it doesn't implement the `Clone` trait.",
             )
         }
         _ => unreachable!(),
     };
     let e = anyhow::anyhow!(e).context(error_msg);
     let help = (kind != ComponentKind::ConfigType).then(|| {
-        format!(
-            "Either set the cloning strategy to `NeverClone` or implement `Clone` for `{}`",
-            type_.display_for_error()
-        )
+        format!("Implement the `Clone` trait for `{output_type}`, or mark it as `{never_clone}`.",)
     });
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
@@ -542,26 +543,115 @@ pub struct Crate {
     /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
     /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
-    /// A mapping from a type id to all the public paths under which it can be imported
-    /// from another crate.
+    /// An in-memory index of all traits, structs, enums, and functions that were defined in the current crate.
     ///
-    /// It is only guaranteed to contain:
+    /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
+    /// for each of them.
+    pub(crate) import_index: ImportIndex,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
+pub struct ImportIndex(HashMap<rustdoc_types::Id, ImportIndexEntry>);
+
+impl Deref for ImportIndex {
+    type Target = HashMap<rustdoc_types::Id, ImportIndexEntry>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ImportIndex {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// An entry in [`ImportIndex`].
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct ImportIndexEntry {
+    /// All the public paths that can be used to import the item.
+    pub public_paths: BTreeSet<SortablePath>,
+    /// All the private paths that can be used to import the item.
+    pub private_paths: BTreeSet<SortablePath>,
+    /// The path where the item was originally defined.
     ///
-    /// - Traits
-    /// - Structs
-    /// - Enums
-    /// - Functions
-    pub(super) id2public_import_paths: HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
-    /// A mapping from a type id to all the non-public paths under which it can be imported
-    /// from within the same crate.
+    /// It may be set to `None` if we can't access the original definition.
+    /// E.g. an item defined in a private module of `std`, where we only have access
+    /// to the public API.
+    pub defined_at: Option<Vec<String>>,
+}
+
+/// The visibility of a path inside [`ImportIndexEntry`].
+pub enum EntryVisibility {
+    /// The item can be imported from outside the crate where it was defined.
+    Public,
+    /// The item can only be imported from within the crate where it was defined.
+    Private,
+}
+
+impl ImportIndexEntry {
+    /// A private constructor.
+    fn empty() -> Self {
+        Self {
+            public_paths: BTreeSet::new(),
+            private_paths: BTreeSet::new(),
+            defined_at: None,
+        }
+    }
+
+    /// Create a new entry from a path.
+    pub fn new(path: Vec<String>, visibility: EntryVisibility, is_definition: bool) -> Self {
+        let mut entry = Self::empty();
+        if is_definition {
+            entry.defined_at = Some(path.clone());
+        }
+        match visibility {
+            EntryVisibility::Public => entry.public_paths.insert(SortablePath(path)),
+            EntryVisibility::Private => entry.private_paths.insert(SortablePath(path)),
+        };
+        entry
+    }
+
+    /// Add a new private path for this item.
+    pub fn insert_private(&mut self, path: Vec<String>) {
+        self.private_paths.insert(SortablePath(path));
+    }
+
+    /// Add a new path for this item.
+    pub fn insert(&mut self, path: Vec<String>, visibility: EntryVisibility) {
+        match visibility {
+            EntryVisibility::Public => self.public_paths.insert(SortablePath(path)),
+            EntryVisibility::Private => self.private_paths.insert(SortablePath(path)),
+        };
+    }
+
+    /// Add a new public path for this item.
+    pub fn insert_public(&mut self, path: Vec<String>) {
+        self.public_paths.insert(SortablePath(path));
+    }
+
+    /// Check if there is at least one public path for this item.
+    pub fn is_public(&self) -> bool {
+        !self.public_paths.is_empty()
+    }
+
+    /// Types can be exposed under multiple paths.
+    /// This method returns a "canonical" importable path—i.e. the shortest importable path
+    /// pointing at the type you specified.
     ///
-    /// It is only guaranteed to contain:
-    ///
-    /// - Traits
-    /// - Structs
-    /// - Enums
-    /// - Functions
-    pub(super) id2private_import_paths: HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
+    /// If the type is public, this method returns the shortest public path.
+    /// If the type is private, this method returns the shortest private path.
+    pub fn canonical_path(&self) -> &[String] {
+        if let Some(SortablePath(p)) = self.public_paths.first() {
+            return p;
+        }
+        if let Some(SortablePath(p)) = self.private_paths.first() {
+            return p;
+        }
+        unreachable!("There must be at least one path associated to an import index entry")
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -715,27 +805,22 @@ impl Crate {
             })
             .collect();
 
-        let mut id2public_import_paths = HashMap::new();
-        let mut id2private_import_paths = HashMap::new();
+        let mut import_index = ImportIndex::default();
         let mut re_exports = HashMap::new();
         index_local_types(
             &krate,
             &package_id,
             IndexSet::new(),
             vec![],
-            &mut id2public_import_paths,
-            &mut id2private_import_paths,
+            &mut import_index,
             &mut re_exports,
             &krate.root,
             true,
         )?;
 
-        import_path2id.reserve(id2public_import_paths.len());
-        for (id, paths) in id2public_import_paths
-            .iter()
-            .chain(&id2private_import_paths)
-        {
-            for path in paths {
+        import_path2id.reserve(import_index.len());
+        for (id, entry) in import_index.0.iter() {
+            for path in entry.public_paths.iter().chain(entry.private_paths.iter()) {
                 if !import_path2id.contains_key(&path.0) {
                     import_path2id.insert(path.0.clone(), id.to_owned());
                 }
@@ -754,8 +839,7 @@ impl Crate {
                 },
             },
             import_path2id,
-            id2public_import_paths,
-            id2private_import_paths,
+            import_index,
             re_exports,
         })
     }
@@ -891,23 +975,13 @@ impl Crate {
         self.core.krate.index.get(id)
     }
 
-    /// Returns a map from public item IDs to their import paths.
-    pub fn public_item_id2import_paths(
-        &self,
-    ) -> &HashMap<rustdoc_types::Id, BTreeSet<SortablePath>> {
-        &self.id2public_import_paths
-    }
-
     /// Types can be exposed under multiple paths.
     /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id {
-            if let Some(paths) = self.id2public_import_paths.get(&type_id.rustdoc_item_id) {
-                return Ok(&paths.first().unwrap().0);
-            }
-            if let Some(paths) = self.id2private_import_paths.get(&type_id.rustdoc_item_id) {
-                return Ok(&paths.first().unwrap().0);
+            if let Some(entry) = self.import_index.get(&type_id.rustdoc_item_id) {
+                return Ok(entry.canonical_path());
             }
         }
         Err(anyhow::anyhow!(
@@ -926,8 +1000,7 @@ fn index_local_types<'a>(
     // It used to detect infinite loops.
     mut navigation_history: IndexSet<rustdoc_types::Id>,
     mut current_path: Vec<&'a str>,
-    public_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
-    private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
+    import_index: &mut ImportIndex,
     re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
     current_item_id: &rustdoc_types::Id,
     is_public: bool,
@@ -967,8 +1040,7 @@ fn index_local_types<'a>(
                     package_id,
                     navigation_history.clone(),
                     current_path.clone(),
-                    public_path_index,
-                    private_path_index,
+                    import_index,
                     re_exports,
                     item_id,
                     is_public,
@@ -1027,8 +1099,7 @@ fn index_local_types<'a>(
                                         package_id,
                                         navigation_history.clone(),
                                         current_path.clone(),
-                                        public_path_index,
-                                        private_path_index,
+                                        import_index,
                                         re_exports,
                                         re_exported_item_id,
                                         is_public,
@@ -1058,10 +1129,21 @@ fn index_local_types<'a>(
                                     }
                                 }
                                 // Assume it's private unless we find out otherwise later on
-                                private_path_index
-                                    .entry(*imported_id)
-                                    .or_default()
-                                    .insert(SortablePath(normalized_source_path));
+                                match import_index.get_mut(imported_id) {
+                                    Some(entry) => {
+                                        entry.insert_private(normalized_source_path);
+                                    }
+                                    None => {
+                                        import_index.insert(
+                                            *imported_id,
+                                            ImportIndexEntry::new(
+                                                normalized_source_path,
+                                                EntryVisibility::Private,
+                                                false,
+                                            ),
+                                        );
+                                    }
+                                }
                             }
 
                             index_local_types(
@@ -1069,8 +1151,7 @@ fn index_local_types<'a>(
                                 package_id,
                                 navigation_history,
                                 current_path.clone(),
-                                public_path_index,
-                                private_path_index,
+                                import_index,
                                 re_exports,
                                 imported_id,
                                 is_public,
@@ -1098,15 +1179,22 @@ fn index_local_types<'a>(
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
 
-            let index = if is_public {
-                public_path_index
+            let visibility = if is_public {
+                EntryVisibility::Public
             } else {
-                private_path_index
+                EntryVisibility::Private
             };
-            index
-                .entry(current_item_id.to_owned())
-                .or_default()
-                .insert(SortablePath(path));
+            match import_index.get_mut(current_item_id) {
+                Some(entry) => {
+                    entry.insert(path, visibility);
+                }
+                None => {
+                    import_index.insert(
+                        *current_item_id,
+                        ImportIndexEntry::new(path, visibility, false),
+                    );
+                }
+            }
         }
         _ => {}
     }

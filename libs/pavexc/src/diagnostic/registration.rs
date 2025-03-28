@@ -16,6 +16,18 @@ pub enum RegistrationKind {
     Attribute,
 }
 
+impl RegistrationKind {
+    /// Returns `true` if the registration was performed using a blueprint method.
+    pub fn from_blueprint(&self) -> bool {
+        matches!(self, RegistrationKind::Blueprint)
+    }
+
+    /// Returns `true` if the registration was performed via a proc macro attribute.
+    pub fn from_attribute(&self) -> bool {
+        matches!(self, RegistrationKind::Attribute)
+    }
+}
+
 impl Registration {
     /// The component was registered using a blueprint method.
     ///
