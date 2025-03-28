@@ -37,3 +37,6 @@ pub mod time {
 }
 
 pub use pavex_macros::constructor;
+pub use pavex_macros::request_scoped;
+pub use pavex_macros::singleton;
+pub use pavex_macros::transient;

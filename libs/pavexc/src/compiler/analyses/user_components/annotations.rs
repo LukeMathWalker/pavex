@@ -134,52 +134,7 @@ pub(super) fn register_imported_components(
                                 }
                             };
 
-                            let mut generics = Vec::new();
-                            for generic in &inner.generics.params {
-                                match &generic.kind {
-                                    rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
-                                        // Lifetimes parameters are OK.
-                                        continue;
-                                    }
-                                    rustdoc_types::GenericParamDefKind::Type {
-                                        default, ..
-                                    } => match default {
-                                        Some(default) => {
-                                            match resolve_type(
-                                                default,
-                                                &global_item_id.package_id,
-                                                krate_collection,
-                                                &Default::default(),
-                                            ) {
-                                                Ok(default) => {
-                                                    generics.push(
-                                                        ResolvedPathGenericArgument::Type(
-                                                            default.into(),
-                                                        ),
-                                                    );
-                                                }
-                                                Err(err) => {
-                                                    unimplemented!(
-                                                        "Failed to resolve default type for generic parameter: {}",
-                                                        err
-                                                    )
-                                                }
-                                            };
-                                        }
-                                        None => {
-                                            todo!(
-                                                "How do I leave a generic parameter without a default type?"
-                                            )
-                                        }
-                                    },
-                                    rustdoc_types::GenericParamDefKind::Const { .. } => {
-                                        unimplemented!("Const parameters are not supported yet.")
-                                    }
-                                }
-                            }
-
-                            let mut segments: Vec<_> = krate.public_item_id2import_paths()
-                                [&item_id]
+                            let segments: Vec<_> = krate.public_item_id2import_paths()[&item_id]
                                 .first()
                                 .expect("No import paths for a publicly visible item.")
                                 .0
@@ -189,11 +144,6 @@ pub(super) fn register_imported_components(
                                     generic_arguments: Vec::new(),
                                 })
                                 .collect();
-                            if !generics.is_empty() {
-                                if let Some(last) = segments.last_mut() {
-                                    last.generic_arguments = generics;
-                                }
-                            }
                             let path = ResolvedPath {
                                 segments,
                                 qualified_self: None,
