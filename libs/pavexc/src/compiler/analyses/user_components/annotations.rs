@@ -1,19 +1,19 @@
 use self::computations::ComputationDb;
 
 use super::{
-    UserComponent, auxiliary::AuxiliaryData, identifiers::ResolvedPaths, imports::ResolvedImport,
+    ScopeId, UserComponent, UserComponentId, auxiliary::AuxiliaryData, identifiers::ResolvedPaths,
+    imports::ResolvedImport,
 };
 use crate::{
     compiler::{analyses::computations, resolvers::resolve_type},
     diagnostic::{DiagnosticSink, Registration},
-    language::{
-        Callable, InvocationStyle, ResolvedPath, ResolvedPathGenericArgument, ResolvedPathSegment,
-    },
-    rustdoc::{CrateCollection, GlobalItemId},
+    language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
+    rustdoc::{Crate, CrateCollection, GlobalItemId},
 };
-use pavex_bp_schema::{CloningStrategy, Import, RawIdentifiers};
+use guppy::PackageId;
+use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, RawIdentifiers};
 use pavexc_attr_parser::AnnotatedComponent;
-use rustdoc_types::{Enum, ItemEnum, Struct};
+use rustdoc_types::{Enum, Item, ItemEnum, Struct};
 
 /// An id pointing at the coordinates of an annotated component.
 pub type AnnotatedItemId = la_arena::Idx<GlobalItemId>;
@@ -66,7 +66,7 @@ pub(super) fn register_imported_components(
                             // We don't have any annotation that goes directly on structs and enums (yet).
                             continue;
                         }
-                        ItemEnum::Function(inner) => {
+                        ItemEnum::Function(_) => {
                             let annotation = match pavexc_attr_parser::parse(&item.attrs) {
                                 Ok(Some(annotation)) => annotation,
                                 Ok(None) => {
@@ -76,120 +76,15 @@ pub(super) fn register_imported_components(
                                     todo!("Failed to parse attributes: {}", e);
                                 }
                             };
-                            let global_item_id =
-                                GlobalItemId::new(item_id.to_owned(), package_id.to_owned());
-                            let user_component_id = match annotation {
-                                AnnotatedComponent::Constructor {
-                                    lifecycle,
-                                    cloning_strategy,
-                                    error_handler,
-                                } => {
-                                    let constructor = UserComponent::Constructor {
-                                        source: aux
-                                            .annotation_interner
-                                            .get_or_intern(global_item_id.clone())
-                                            .into(),
-                                    };
-                                    let Some(span) = item.span.as_ref() else {
-                                        // TODO: We have empirically verified that this shouldn't happen for components annotated with our own macros,
-                                        //   but it may happen for components that are generated from other macros or tools.
-                                        //   In the future, we should handle this case more gracefully.
-                                        unreachable!(
-                                            "There is no span attached to the item for `{}` in the JSON documentation for `{}`",
-                                            item.name.as_deref().unwrap_or(""),
-                                            krate.crate_name()
-                                        );
-                                    };
-                                    let registration = Registration::attribute(span);
-                                    let constructor_id = aux.intern_component(
-                                        constructor,
-                                        scope_id,
-                                        lifecycle,
-                                        registration.clone(),
-                                    );
-                                    aux.id2cloning_strategy.insert(
-                                        constructor_id,
-                                        cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
-                                    );
-
-                                    if let Some(error_handler) = error_handler {
-                                        let identifiers = RawIdentifiers {
-                                            created_at: created_at.clone(),
-                                            import_path: error_handler,
-                                        };
-                                        let identifiers_id =
-                                            aux.identifiers_interner.get_or_intern(identifiers);
-                                        let component = UserComponent::ErrorHandler {
-                                            source: identifiers_id.into(),
-                                            fallible_id: constructor_id,
-                                        };
-                                        aux.intern_component(
-                                            component,
-                                            scope_id,
-                                            lifecycle,
-                                            registration,
-                                        );
-                                    }
-                                    constructor_id
-                                }
-                            };
-
-                            let segments: Vec<_> = krate.public_item_id2import_paths()[&item_id]
-                                .first()
-                                .expect("No import paths for a publicly visible item.")
-                                .0
-                                .iter()
-                                .map(|s| ResolvedPathSegment {
-                                    ident: s.into(),
-                                    generic_arguments: Vec::new(),
-                                })
-                                .collect();
-                            let path = ResolvedPath {
-                                segments,
-                                qualified_self: None,
-                                package_id: global_item_id.package_id.clone(),
-                            };
-
-                            let mut inputs = Vec::new();
-                            for (_, input_ty) in &inner.sig.inputs {
-                                match resolve_type(
-                                    input_ty,
-                                    &global_item_id.package_id,
-                                    krate_collection,
-                                    &Default::default(),
-                                ) {
-                                    Ok(t) => {
-                                        inputs.push(t);
-                                    }
-                                    Err(e) => todo!("Failed to resolve input type: {}", e),
-                                }
-                            }
-
-                            let output = match &inner.sig.output {
-                                Some(output_ty) => {
-                                    match resolve_type(
-                                        output_ty,
-                                        &global_item_id.package_id,
-                                        krate_collection,
-                                        &Default::default(),
-                                    ) {
-                                        Ok(t) => Some(t),
-                                        Err(e) => todo!("Failed to resolve output type: {}", e),
-                                    }
-                                }
-                                None => None,
-                            };
-
-                            let callable = Callable {
-                                is_async: inner.header.is_async,
-                                // It's a free function, there's no `self`.
-                                takes_self_as_ref: false,
-                                output,
-                                path,
-                                inputs,
-                                invocation_style: InvocationStyle::FunctionCall,
-                                source_coordinates: Some(global_item_id),
-                            };
+                            let user_component_id = intern_annotated(
+                                annotation,
+                                &item,
+                                krate,
+                                &created_at,
+                                scope_id,
+                                aux,
+                            );
+                            let callable = rustdoc_fn2callable(&item, krate, krate_collection);
                             computation_db
                                 .get_or_intern_with_id(callable, user_component_id.into());
                         }
@@ -203,9 +98,20 @@ pub(super) fn register_imported_components(
                         }
                     };
                 }
-                // We'll deal with impls later.
-                QueueItem::Impl { .. } => continue,
-                QueueItem::ImplItem { .. } => continue,
+                QueueItem::Impl { self_, id } => {
+                    let impl_item = krate.get_item_by_local_type_id(&id);
+                    let ItemEnum::Impl(impl_) = &impl_item.inner else {
+                        continue;
+                    };
+                    queue.extend(impl_.items.iter().map(|&item_id| QueueItem::ImplItem {
+                        self_,
+                        id: item_id,
+                        impl_: id,
+                    }));
+                }
+                QueueItem::ImplItem { self_, impl_, id } => {
+                    continue;
+                }
             }
         }
     }
@@ -233,4 +139,127 @@ enum QueueItem {
         /// The `id` of the `impl` block item.
         id: rustdoc_types::Id,
     },
+}
+
+/// Process the annotation and intern the associated component(s).
+/// Returns the identifier of the newly interned component.
+fn intern_annotated(
+    annotation: AnnotatedComponent,
+    item: &rustdoc_types::Item,
+    krate: &Crate,
+    created_at: &CreatedAt,
+    scope_id: ScopeId,
+    aux: &mut AuxiliaryData,
+) -> UserComponentId {
+    match annotation {
+        AnnotatedComponent::Constructor {
+            lifecycle,
+            cloning_strategy,
+            error_handler,
+        } => {
+            let constructor = UserComponent::Constructor {
+                source: aux
+                    .annotation_interner
+                    .get_or_intern(GlobalItemId::new(item.id, krate.core.package_id.to_owned()))
+                    .into(),
+            };
+            let Some(span) = item.span.as_ref() else {
+                // TODO: We have empirically verified that this shouldn't happen for components annotated with our own macros,
+                //   but it may happen for components that are generated from other macros or tools.
+                //   In the future, we should handle this case more gracefully.
+                unreachable!(
+                    "There is no span attached to the item for `{}` in the JSON documentation for `{}`",
+                    item.name.as_deref().unwrap_or(""),
+                    krate.crate_name()
+                );
+            };
+            let registration = Registration::attribute(span);
+            let constructor_id =
+                aux.intern_component(constructor, scope_id, lifecycle, registration.clone());
+            aux.id2cloning_strategy.insert(
+                constructor_id,
+                cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
+            );
+
+            if let Some(error_handler) = error_handler {
+                let identifiers = RawIdentifiers {
+                    created_at: created_at.clone(),
+                    import_path: error_handler,
+                };
+                let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
+                let component = UserComponent::ErrorHandler {
+                    source: identifiers_id.into(),
+                    fallible_id: constructor_id,
+                };
+                aux.intern_component(component, scope_id, lifecycle, registration);
+            }
+            constructor_id
+        }
+    }
+}
+
+/// Convert a function item from `rustdoc_types` into a `Callable`.
+fn rustdoc_fn2callable(item: &Item, krate: &Crate, krate_collection: &CrateCollection) -> Callable {
+    let ItemEnum::Function(inner) = &item.inner else {
+        unreachable!("Expected a function item");
+    };
+    let segments: Vec<_> = krate.public_item_id2import_paths()[&item.id]
+        .first()
+        .expect("No import paths for a publicly visible item.")
+        .0
+        .iter()
+        .map(|s| ResolvedPathSegment {
+            ident: s.into(),
+            generic_arguments: Vec::new(),
+        })
+        .collect();
+    let path = ResolvedPath {
+        segments,
+        qualified_self: None,
+        package_id: krate.core.package_id.clone(),
+    };
+
+    let mut inputs = Vec::new();
+    for (_, input_ty) in &inner.sig.inputs {
+        match resolve_type(
+            input_ty,
+            &krate.core.package_id,
+            krate_collection,
+            &Default::default(),
+        ) {
+            Ok(t) => {
+                inputs.push(t);
+            }
+            Err(e) => todo!("Failed to resolve input type: {}", e),
+        }
+    }
+
+    let output = match &inner.sig.output {
+        Some(output_ty) => {
+            match resolve_type(
+                output_ty,
+                &krate.core.package_id,
+                krate_collection,
+                &Default::default(),
+            ) {
+                Ok(t) => Some(t),
+                Err(e) => todo!("Failed to resolve output type: {}", e),
+            }
+        }
+        None => None,
+    };
+
+    Callable {
+        is_async: inner.header.is_async,
+        // It's a free function, there's no `self`.
+        takes_self_as_ref: false,
+        output,
+        path,
+        inputs,
+        invocation_style: InvocationStyle::FunctionCall,
+        source_coordinates: Some(GlobalItemId {
+            rustdoc_item_id: item.id,
+            package_id: krate.core.package_id.clone(),
+        }),
+    }
 }
