@@ -1,4 +1,4 @@
-error: Missing field `lifecycle`
+error: You must specify the lifecycle of your constructor. It can either be `singleton`, `request_scoped`, or `transient`
  --> tests/constructor/fail/no_lifecycle.rs:6:5
   |
 6 |     #[constructor]

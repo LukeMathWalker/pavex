@@ -120,8 +120,21 @@ pub mod route_0 {
     async fn handler(v0: app::A) -> pavex::response::Response {
         let v1 = <app::A as core::clone::Clone>::clone(&v0);
         let v2 = app::b(v1);
-        let v3 = app::handler(&v0, &v2);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+        let v3 = app::c(&v2);
+        let v4 = match v3 {
+            Ok(ok) => ok,
+            Err(v4) => {
+                return {
+                    let v5 = app::error_handler(&v4);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        let v5 = app::d(&v4, &v0);
+        let v6 = app::handler(&v0, &v2, &v5);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     struct Next0<T>
     where
