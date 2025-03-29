@@ -1,4 +1,3 @@
-use ahash::HashMap;
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
@@ -14,14 +13,16 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::language::ResolvedType;
 
-/// A "decorated" [`CallGraph`]—it assigns a position to each node in the graph, introducing
-/// a global ordering on the nodes.
+/// A [`CallGraph`] with nodes globally ordered according to their node index.
 /// Walking the graph according to the specified ordering guarantees that the generated code will
 /// not violate the Rust borrow checker (bugs aside).
 ///
-/// The following invariant holds: the position of a node is always lower than
-/// the position of any of its descendants (since dependencies must be built before the value
-/// that depends on them).
+/// Two invariants hold:
+///
+/// - A node is always "smaller" than than any of its descendants since dependencies must be built before the value
+///   that depends on them.
+/// - There are no "gaps" in the node indices. Every index between `0` and `self.call_graph.node_count()`
+///   is occupied by a node.
 ///
 /// Use [`OrderedCallGraph::new`] to build an [`OrderedCallGraph`] from a [`CallGraph`].
 ///
@@ -29,7 +30,6 @@ use crate::language::ResolvedType;
 pub(crate) struct OrderedCallGraph {
     pub(crate) call_graph: RawCallGraph,
     pub(crate) root_node_index: NodeIndex,
-    pub(crate) node2position: HashMap<NodeIndex, u16>,
 }
 
 impl OrderedCallGraph {
@@ -91,7 +91,7 @@ impl OrderedCallGraph {
                         "label = \"happens before\"".to_string(),
                 },
                 &|_, (id, node)| {
-                    let position = self.node2position[&id];
+                    let position = id.index();
                     match node {
                         CallGraphNode::Compute { component_id, .. } => match component_db
                             .hydrated_component(*component_id, computation_db)
@@ -174,7 +174,7 @@ impl OrderedCallGraph {
                         "label = \"happens-before\"".to_string(),
                 },
                 &|_, (id, node)| {
-                    let position = self.node2position[&id];
+                    let position = id.index();
                     match node {
                         CallGraphNode::Compute { component_id, .. } => {
                             match component_db

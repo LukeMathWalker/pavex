@@ -99,11 +99,11 @@ impl Router {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
                         route_0::entrypoint(
+                                &state.type_,
+                                &state.generic_string,
                                 &state.generic_u64_,
                                 &state.app_255_f_0769_singleton,
                                 &state.app_255_f_0769_a_singleton,
-                                &state.type_,
-                                &state.generic_string,
                             )
                             .await
                     }
@@ -122,38 +122,38 @@ impl Router {
 }
 pub mod route_0 {
     pub async fn entrypoint<'a, 'b, 'c, 'd, 'e>(
-        s_0: &'a app::Generic<u64>,
-        s_1: &'b app::Singleton,
-        s_2: &'c app::a::Singleton,
-        s_3: &'d app::Type,
-        s_4: &'e app::Generic<alloc::string::String>,
+        s_0: &'a app::Type,
+        s_1: &'b app::Generic<alloc::string::String>,
+        s_2: &'c app::Generic<u64>,
+        s_3: &'d app::Singleton,
+        s_4: &'e app::a::Singleton,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4).await;
         response
     }
     async fn stage_1<'a, 'b, 'c, 'd, 'e>(
-        s_0: &'a app::Generic<alloc::string::String>,
-        s_1: &'b app::Generic<u64>,
-        s_2: &'c app::Singleton,
-        s_3: &'d app::a::Singleton,
-        s_4: &'e app::Type,
+        s_0: &'a app::Type,
+        s_1: &'b app::Generic<alloc::string::String>,
+        s_2: &'c app::Generic<u64>,
+        s_3: &'d app::Singleton,
+        s_4: &'e app::a::Singleton,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2, s_3, s_4).await;
         response
     }
     async fn wrapping_0(
-        v0: &app::Generic<u64>,
-        v1: &app::Singleton,
-        v2: &app::a::Singleton,
-        v3: &app::Type,
-        v4: &app::Generic<alloc::string::String>,
+        v0: &app::Type,
+        v1: &app::Generic<alloc::string::String>,
+        v2: &app::Generic<u64>,
+        v3: &app::Singleton,
+        v4: &app::a::Singleton,
     ) -> pavex::response::Response {
         let v5 = crate::route_0::Next0 {
-            s_0: v4,
-            s_1: v0,
-            s_2: v1,
-            s_3: v2,
-            s_4: v3,
+            s_0: v0,
+            s_1: v1,
+            s_2: v2,
+            s_3: v3,
+            s_4: v4,
             next: stage_1,
         };
         let v6 = pavex::middleware::Next::new(v5);
@@ -161,30 +161,30 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v7)
     }
     async fn handler(
-        v0: &app::Generic<alloc::string::String>,
-        v1: &app::Generic<u64>,
-        v2: &app::Singleton,
-        v3: &app::a::Singleton,
-        v4: &app::Type,
+        v0: &app::Type,
+        v1: &app::Generic<alloc::string::String>,
+        v2: &app::Generic<u64>,
+        v3: &app::Singleton,
+        v4: &app::a::Singleton,
     ) -> pavex::response::Response {
-        let v5 = app::handler(v4, v0, v1, v2, v3);
+        let v5 = app::handler(v0, v1, v2, v3, v4);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::Generic<alloc::string::String>,
-        s_1: &'b app::Generic<u64>,
-        s_2: &'c app::Singleton,
-        s_3: &'d app::a::Singleton,
-        s_4: &'e app::Type,
+        s_0: &'a app::Type,
+        s_1: &'b app::Generic<alloc::string::String>,
+        s_2: &'c app::Generic<u64>,
+        s_3: &'d app::Singleton,
+        s_4: &'e app::a::Singleton,
         next: fn(
-            &'a app::Generic<alloc::string::String>,
-            &'b app::Generic<u64>,
-            &'c app::Singleton,
-            &'d app::a::Singleton,
-            &'e app::Type,
+            &'a app::Type,
+            &'b app::Generic<alloc::string::String>,
+            &'c app::Generic<u64>,
+            &'d app::Singleton,
+            &'e app::a::Singleton,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, 'e, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, 'e, T>

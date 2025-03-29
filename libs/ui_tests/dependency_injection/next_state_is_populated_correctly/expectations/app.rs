@@ -80,7 +80,7 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_1::entrypoint(&allowed_methods, &state.singleton).await;
+            return route_1::entrypoint(&state.singleton, &allowed_methods).await;
         };
         match matched_route.value {
             0u32 => {
@@ -93,7 +93,7 @@ impl Router {
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_1::entrypoint(&allowed_methods, &state.singleton).await
+                        route_1::entrypoint(&state.singleton, &allowed_methods).await
                     }
                 }
             }
@@ -186,8 +186,8 @@ pub mod route_0 {
 }
 pub mod route_1 {
     pub async fn entrypoint<'a, 'b>(
-        s_0: &'a pavex::router::AllowedMethods,
-        s_1: &'b app::Singleton,
+        s_0: &'a app::Singleton,
+        s_1: &'b pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1).await;
         response
@@ -196,7 +196,7 @@ pub mod route_1 {
         s_0: &'a app::Singleton,
         s_1: &'b pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_1, s_0).await;
+        let response = wrapping_1(s_0, s_1).await;
         response
     }
     async fn stage_2<'a, 'b>(
@@ -208,12 +208,12 @@ pub mod route_1 {
         response
     }
     async fn wrapping_0(
-        v0: &pavex::router::AllowedMethods,
-        v1: &app::Singleton,
+        v0: &app::Singleton,
+        v1: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v2 = crate::route_1::Next0 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v0,
+            s_1: v1,
             next: stage_1,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -221,12 +221,12 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn wrapping_1(
-        v0: &pavex::router::AllowedMethods,
-        v1: &app::Singleton,
+        v0: &app::Singleton,
+        v1: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v2 = crate::route_1::Next1 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v0,
+            s_1: v1,
             next: stage_2,
         };
         let v3 = pavex::middleware::Next::new(v2);

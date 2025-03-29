@@ -185,7 +185,7 @@ pub mod route_1 {
         s_0: &'a pavex::router::AllowedMethods,
         s_1: app::Singleton,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_1, s_0).await;
+        let response = wrapping_1(s_0, s_1).await;
         response
     }
     async fn stage_2<'a>(
@@ -208,15 +208,15 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn wrapping_1(
-        v0: app::Singleton,
-        v1: &pavex::router::AllowedMethods,
+        v0: &pavex::router::AllowedMethods,
+        v1: app::Singleton,
     ) -> pavex::response::Response {
         let v2 = crate::route_1::Next1 {
-            s_0: v1,
+            s_0: v0,
             next: stage_2,
         };
         let v3 = pavex::middleware::Next::new(v2);
-        let v4 = app::mw(v0, v3);
+        let v4 = app::mw(v1, v3);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {

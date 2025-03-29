@@ -94,9 +94,9 @@ pub(crate) fn codegen_callable_closure(
 /// A visitor that traverses a portion of the call graph, starting from a particular node.
 /// In particular:
 ///
-/// - it yields nodes according to the total order established by the `node_id2position` map.
-///   Nodes with a lower position are yielded first.
-/// - it only visits nodes:
+/// - It yields nodes according to the total order established by the node indices.
+///   Nodes with a lower index are yielded first.
+/// - It only visits nodes:
 ///   - connected to the starting node, disregarding the directionality of the edges.
 ///   - that can reach at least one sink node that's also reachable from the starting node,
 ///     taking into account the directionality of the edges.
@@ -106,7 +106,7 @@ pub(crate) fn codegen_callable_closure(
 /// [control flow graphs](https://en.wikipedia.org/wiki/Control-flow_graph).
 /// We don't actually build a CFG, but we try to approximate the concept using this
 /// visitor.
-struct BasicBlockVisitor<'a> {
+struct BasicBlockVisitor {
     /// The start node must either be:
     /// - a branching node
     /// - a sink node
@@ -118,48 +118,28 @@ struct BasicBlockVisitor<'a> {
     discovered: FixedBitSet,
     /// The map of finished nodes
     finished: FixedBitSet,
-    /// The map that assigns each node to its position, establishing a total order
-    /// on the graph nodes.
-    node_id2position: &'a HashMap<NodeIndex, u16>,
     /// The map that assigns to each node the set of sinks reachable from it.
     reachability_map: HashMap<NodeIndex, HashSet<NodeIndex>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
 struct UnvisitedNode {
     node: NodeIndex,
-    position: u16,
 }
 
-impl PartialOrd for UnvisitedNode {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.position.cmp(&other.position))
-    }
-}
-
-impl Ord for UnvisitedNode {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.position.cmp(&other.position)
-    }
-}
-
-impl<'a> BasicBlockVisitor<'a> {
+impl BasicBlockVisitor {
     /// Create a new [`PositionAwareVisitor`] using the graph's visitor map, and put
     /// `start` in the stack of nodes to visit.
-    pub(crate) fn new(ordered_call_graph: &'a OrderedCallGraph, start_node: NodeIndex) -> Self {
+    pub(crate) fn new(ordered_call_graph: &OrderedCallGraph, start_node: NodeIndex) -> Self {
         let reachability_map = compute_reachability_map(&ordered_call_graph.call_graph);
         let graph = Reversed(&ordered_call_graph.call_graph);
         let mut to_be_visited = BinaryHeap::new();
-        to_be_visited.push(Reverse(UnvisitedNode {
-            node: start_node,
-            position: ordered_call_graph.node2position[&start_node],
-        }));
+        to_be_visited.push(Reverse(UnvisitedNode { node: start_node }));
         Self {
             start: start_node,
             to_be_visited,
             discovered: graph.visit_map(),
             finished: graph.visit_map(),
-            node_id2position: &ordered_call_graph.node2position,
             reachability_map,
         }
     }
@@ -170,10 +150,8 @@ impl<'a> BasicBlockVisitor<'a> {
         self.start = start;
         self.to_be_visited.clear();
         self.discovered.clear();
-        self.to_be_visited.push(Reverse(UnvisitedNode {
-            node: start,
-            position: self.node_id2position[&start],
-        }));
+        self.to_be_visited
+            .push(Reverse(UnvisitedNode { node: start }));
     }
 
     /// Return the next node in the traversal, or `None` if the traversal is done.
@@ -181,15 +159,14 @@ impl<'a> BasicBlockVisitor<'a> {
         while let Some(nx) = self.to_be_visited.peek() {
             let nx = nx.0.node;
             if self.discovered.visit(nx) {
-                let max_position = self.node_id2position[&self.start];
+                let max_index = self.start;
                 let interesting_terminals = &self.reachability_map[&self.start];
                 // First time visiting `nx`: Push neighbors, don't pop `nx`
                 let neighbors = graph
                     .neighbors_directed(nx, Direction::Incoming)
                     .chain(graph.neighbors_directed(nx, Direction::Outgoing))
                     .filter(|&succ| {
-                        let succ_position = self.node_id2position[&succ];
-                        succ_position <= max_position
+                        succ <= max_index
                             && !self.discovered.is_visited(&succ)
                             && {
                                 // Don't start visiting new branching nodes.
@@ -205,10 +182,7 @@ impl<'a> BasicBlockVisitor<'a> {
                                 .is_some()
                     });
                 for succ in neighbors {
-                    let succ = UnvisitedNode {
-                        node: succ,
-                        position: self.node_id2position[&succ],
-                    };
+                    let succ = UnvisitedNode { node: succ };
                     self.to_be_visited.push(Reverse(succ));
                 }
             } else {
@@ -242,7 +216,6 @@ fn codegen_callable_closure_body(
     _codegen_callable_closure_body(
         ordered_call_graph.root_node_index,
         &ordered_call_graph.call_graph,
-        &ordered_call_graph.node2position,
         parameter_bindings,
         package_id2name,
         component_db,
@@ -273,7 +246,6 @@ fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, HashSet<
 fn _codegen_callable_closure_body(
     node_index: NodeIndex,
     call_graph: &RawCallGraph,
-    node_id2position: &HashMap<NodeIndex, u16>,
     parameter_bindings: &HashMap<ResolvedType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
@@ -288,7 +260,7 @@ fn _codegen_callable_closure_body(
     // no `MatchBranching` predecessors.
     // This ensures that we don't have to look-ahead when generating code for its predecessors.
     let traversal_start_index =
-        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished, node_id2position)
+        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished)
             // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
             // the terminal node.
             .unwrap_or(terminal_index);
@@ -307,9 +279,8 @@ fn _codegen_callable_closure_body(
                                 call_graph,
                                 component_db,
                                 computation_db,
-                                node_id2position,
                             ),
-                            get_node_happen_befores(current_index, call_graph, node_id2position),
+                            get_node_happen_befores(current_index, call_graph),
                             callable.as_ref(),
                             blocks,
                             variable_name_generator,
@@ -385,7 +356,6 @@ fn _codegen_callable_closure_body(
                     let match_arm_body = _codegen_callable_closure_body(
                         variant_index,
                         call_graph,
-                        node_id2position,
                         parameter_bindings,
                         package_id2name,
                         component_db,
@@ -447,7 +417,7 @@ fn _codegen_callable_closure_body(
     let body = {
         let at_most_once_constructors = at_most_once_constructor_blocks
             .iter()
-            .sorted_by_key(|(k, _)| node_id2position[k])
+            .sorted_by_key(|(k, _)| *k)
             .map(|(_, v)| v);
         let at_most_once_constructors = at_most_once_constructors.collect::<Vec<_>>();
         // Remove the wrapping block, if there is one
@@ -490,7 +460,6 @@ fn find_match_branching_ancestor(
     start_index: NodeIndex,
     call_graph: &RawCallGraph,
     ignore_set: &FixedBitSet,
-    node_id2position: &HashMap<NodeIndex, u16>,
 ) -> Option<NodeIndex> {
     let mut ancestors = DfsPostOrder::new(Reversed(call_graph), start_index);
     let mut candidates = Vec::new();
@@ -508,8 +477,7 @@ fn find_match_branching_ancestor(
     if candidates.is_empty() {
         None
     } else {
-        let (_, lowest, _) =
-            candidates.select_nth_unstable_by_key(0, |index| node_id2position[index]);
+        let (_, lowest, _) = candidates.select_nth_unstable(0);
         Some(*lowest)
     }
 }
@@ -523,7 +491,6 @@ fn get_node_type_inputs<'a, 'b: 'a>(
     call_graph: &'a RawCallGraph,
     component_db: &'b ComponentDb,
     computation_db: &'b ComputationDb,
-    node_id2position: &'a HashMap<NodeIndex, u16>,
 ) -> impl Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)> + 'a {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
@@ -548,13 +515,12 @@ fn get_node_type_inputs<'a, 'b: 'a>(
             };
             Some((edge.source(), type_, edge.weight().to_owned()))
         })
-        .sorted_by_key(|(node_index, _, _)| node_id2position[node_index])
+        .sorted_by_key(|(node_index, _, _)| *node_index)
 }
 
 fn get_node_happen_befores<'a>(
     node_index: NodeIndex,
     call_graph: &'a RawCallGraph,
-    node_id2position: &'a HashMap<NodeIndex, u16>,
 ) -> impl Iterator<Item = NodeIndex> + 'a {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
@@ -565,5 +531,5 @@ fn get_node_happen_befores<'a>(
             }
             Some(edge.source())
         })
-        .sorted_by_key(|node_index| node_id2position[node_index])
+        .sorted_by_key(|node_index| *node_index)
 }

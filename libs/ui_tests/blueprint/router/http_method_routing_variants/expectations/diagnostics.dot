@@ -1,247 +1,217 @@
 digraph "CONNECT /connect - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_0::Next0() -> crate::route_0::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
-    2 [ label = "0| crate::route_0::Next0() -> crate::route_0::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "CONNECT /connect - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "DELETE /delete - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
-    2 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "DELETE /delete - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "GET /get - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_2::Next0() -> crate::route_2::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
-    2 [ label = "0| crate::route_2::Next0() -> crate::route_2::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "GET /get - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "HEAD /head - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_3::Next0() -> crate::route_3::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_3::Next0) -> pavex::middleware::Next<crate::route_3::Next0>"]
-    2 [ label = "0| crate::route_3::Next0() -> crate::route_3::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "HEAD /head - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "OPTIONS /options - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_4::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_4::Next0() -> crate::route_4::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_4::Next0) -> pavex::middleware::Next<crate::route_4::Next0>"]
-    2 [ label = "0| crate::route_4::Next0() -> crate::route_4::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_4::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "OPTIONS /options - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "PATCH /patch - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_5::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_5::Next0() -> crate::route_5::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_5::Next0) -> pavex::middleware::Next<crate::route_5::Next0>"]
-    2 [ label = "0| crate::route_5::Next0() -> crate::route_5::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_5::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "PATCH /patch - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "POST /post - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_6::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_6::Next0() -> crate::route_6::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_6::Next0) -> pavex::middleware::Next<crate::route_6::Next0>"]
-    2 [ label = "0| crate::route_6::Next0() -> crate::route_6::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_6::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "POST /post - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "PUT /put - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_7::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_7::Next0() -> crate::route_7::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_7::Next0) -> pavex::middleware::Next<crate::route_7::Next0>"]
-    2 [ label = "0| crate::route_7::Next0() -> crate::route_7::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_7::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "PUT /put - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "TRACE /trace - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_8::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_8::Next0() -> crate::route_8::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_8::Next0) -> pavex::middleware::Next<crate::route_8::Next0>"]
-    2 [ label = "0| crate::route_8::Next0() -> crate::route_8::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_8::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "TRACE /trace - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "CONNECT | DELETE | GET | HEAD | OPTIONS | PATCH | POST | PUT | TRACE /any - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_9::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_9::Next0() -> crate::route_9::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_9::Next0) -> pavex::middleware::Next<crate::route_9::Next0>"]
-    2 [ label = "0| crate::route_9::Next0() -> crate::route_9::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_9::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "CONNECT | DELETE | GET | HEAD | OPTIONS | PATCH | POST | PUT | TRACE /any - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "* /any_w_extensions - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_10::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_10::Next0() -> crate::route_10::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_10::Next0) -> pavex::middleware::Next<crate::route_10::Next0>"]
-    2 [ label = "0| crate::route_10::Next0() -> crate::route_10::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_10::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "* /any_w_extensions - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "PATCH | POST /mixed - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_11::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_11::Next0() -> crate::route_11::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_11::Next0) -> pavex::middleware::Next<crate::route_11::Next0>"]
-    2 [ label = "0| crate::route_11::Next0() -> crate::route_11::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_11::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "PATCH | POST /mixed - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "CUSTOM /custom - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_12::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_12::Next0() -> crate::route_12::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_12::Next0) -> pavex::middleware::Next<crate::route_12::Next0>"]
-    2 [ label = "0| crate::route_12::Next0() -> crate::route_12::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_12::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "CUSTOM /custom - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "CUSTOM | GET | HEY /mixed_with_custom - 0" {
-    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_13::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_13::Next0() -> crate::route_13::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_13::Next0) -> pavex::middleware::Next<crate::route_13::Next0>"]
-    2 [ label = "0| crate::route_13::Next0() -> crate::route_13::Next0"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_13::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 3 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
 }
-
 digraph "CUSTOM | GET | HEY /mixed_with_custom - 1" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-
 digraph "* * - 0" {
-    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
-    1 [ label = "2| pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
-    2 [ label = "1| crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    2 [ label = "2| pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
     4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "0| &pavex::router::AllowedMethods"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 4 [ ]
-    5 -> 2 [ ]
+    2 -> 3 [ ]
+    1 -> 2 [ ]
+    3 -> 4 [ ]
+    0 -> 1 [ ]
 }
-
 digraph "* * - 1" {
-    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "0| &pavex::router::AllowedMethods"]
-    0 -> 2 [ ]
-    3 -> 0 [ ]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
 }
-
 digraph app_state {
     0 [ label = "0| crate::ApplicationState() -> crate::ApplicationState"]
 }
