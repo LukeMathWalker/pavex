@@ -614,6 +614,11 @@ impl ImportIndexEntry {
         entry
     }
 
+    /// Returns `true` if there is at least one public path.
+    pub fn is_public(&self) -> bool {
+        !self.public_paths.is_empty()
+    }
+
     /// Add a new private path for this item.
     pub fn insert_private(&mut self, path: Vec<String>) {
         self.private_paths.insert(SortablePath(path));
@@ -625,16 +630,6 @@ impl ImportIndexEntry {
             EntryVisibility::Public => self.public_paths.insert(SortablePath(path)),
             EntryVisibility::Private => self.private_paths.insert(SortablePath(path)),
         };
-    }
-
-    /// Add a new public path for this item.
-    pub fn insert_public(&mut self, path: Vec<String>) {
-        self.public_paths.insert(SortablePath(path));
-    }
-
-    /// Check if there is at least one public path for this item.
-    pub fn is_public(&self) -> bool {
-        !self.public_paths.is_empty()
     }
 
     /// Types can be exposed under multiple paths.
@@ -651,6 +646,18 @@ impl ImportIndexEntry {
             return p;
         }
         unreachable!("There must be at least one path associated to an import index entry")
+    }
+
+    /// Returns all paths associated with the type, both public and private.
+    pub fn paths(&self) -> impl Iterator<Item = &[String]> {
+        self.public_paths
+            .iter()
+            .map(|SortablePath(p)| p.as_slice())
+            .chain(
+                self.private_paths
+                    .iter()
+                    .map(|SortablePath(p)| p.as_slice()),
+            )
     }
 }
 
@@ -816,6 +823,7 @@ impl Crate {
             &mut re_exports,
             &krate.root,
             true,
+            false,
         )?;
 
         import_path2id.reserve(import_index.len());
@@ -1004,6 +1012,9 @@ fn index_local_types<'a>(
     re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
     current_item_id: &rustdoc_types::Id,
     is_public: bool,
+    // If `true`, we've encountered at least a `pub use`/`use` statement while
+    // navigating to this item.
+    encountered_use: bool,
 ) -> Result<(), anyhow::Error> {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
@@ -1044,6 +1055,7 @@ fn index_local_types<'a>(
                     re_exports,
                     item_id,
                     is_public,
+                    encountered_use,
                 )?;
             }
         }
@@ -1103,19 +1115,28 @@ fn index_local_types<'a>(
                                         re_exports,
                                         re_exported_item_id,
                                         is_public,
+                                        true,
                                     )?;
                                 }
                             }
                         } else {
                             navigation_history.insert(*imported_id);
 
-                            // We keep track of the source path in our indexes.
-                            // This is useful, in particular, if we don't have
-                            // access to the source module of the imported item.
-                            // This can happen when working with `std`/`alloc`/`core`
-                            // since the JSON output doesn't include private/doc-hidden
-                            // items.
-                            {
+                            if matches!(
+                                imported_item.inner,
+                                ItemEnum::Enum(_)
+                                    | ItemEnum::Struct(_)
+                                    | ItemEnum::Trait(_)
+                                    | ItemEnum::Function(_)
+                                    | ItemEnum::Primitive(_)
+                                    | ItemEnum::TypeAlias(_)
+                            ) {
+                                // We keep track of the source path in our indexes.
+                                // This is useful, in particular, if we don't have
+                                // access to the source module of the imported item.
+                                // This can happen when working with `std`/`alloc`/`core`
+                                // since the JSON output doesn't include private/doc-hidden
+                                // items.
                                 let mut normalized_source_path = vec![];
                                 let source_segments = i.source.split("::");
                                 for segment in source_segments {
@@ -1155,6 +1176,7 @@ fn index_local_types<'a>(
                                 re_exports,
                                 imported_id,
                                 is_public,
+                                true,
                             )?;
                         }
                     }
@@ -1177,21 +1199,25 @@ fn index_local_types<'a>(
                 current_path.push("primitive");
             }
             current_path.push(name);
-            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            let path: Vec<_> = current_path.into_iter().map(|s| s.to_string()).collect();
 
             let visibility = if is_public {
                 EntryVisibility::Public
             } else {
                 EntryVisibility::Private
             };
+            let is_definition = !encountered_use;
             match import_index.get_mut(current_item_id) {
                 Some(entry) => {
-                    entry.insert(path, visibility);
+                    entry.insert(path.clone(), visibility);
+                    if is_definition {
+                        entry.defined_at = Some(path);
+                    }
                 }
                 None => {
                     import_index.insert(
                         *current_item_id,
-                        ImportIndexEntry::new(path, visibility, false),
+                        ImportIndexEntry::new(path, visibility, is_definition),
                     );
                 }
             }

@@ -92,7 +92,7 @@ pub fn pre() -> Result<Processing, CustomError> {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from!(crate));
-    bp.singleton(f!(crate::constructor::raw::a))
+    bp.request_scoped(f!(crate::constructor::raw::a))
         .error_handler(f!(crate::constructor::raw::GenericError::<
             std::string::String,
         >::handle));

@@ -1,6 +1,7 @@
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
+use itertools::Itertools;
 use petgraph::stable_graph::NodeIndex;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -86,8 +87,15 @@ where
             }
         };
         let Some(fragment) = &blocks.get(&dependency_index) else {
+            let available_blocks = blocks
+                .iter()
+                .map(|(k, v)| format!("- {} (id): {}", k.index(), quote! { #v }))
+                .join("\n");
             panic!(
-                "Failed to find the code fragment for {dependency_index:?}, the node that builds `{dependency_type:?}`"
+                "Trying to generated the code to invoke {}.\n\
+                Failed to find the code fragment for {dependency_index:?}, the node that should build `{dependency_type:?}.\n\
+                Available blocks:\n{available_blocks}",
+                callable.path
             );
         };
         let mut to_be_removed = false;

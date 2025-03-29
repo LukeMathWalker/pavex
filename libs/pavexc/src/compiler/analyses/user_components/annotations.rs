@@ -18,7 +18,8 @@ use crate::{
     language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
     rustdoc::{Crate, CrateCollection, GlobalItemId},
 };
-use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, RawIdentifiers};
+use itertools::Itertools;
+use pavex_bp_schema::{CloningStrategy, CreatedAt, RawIdentifiers};
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::{AnnotatedComponent, errors::AttributeParserError};
 use rustdoc_types::{Enum, Item, ItemEnum, Struct};
@@ -41,7 +42,7 @@ pub(super) fn register_imported_components(
             path: module_path,
             package_id,
         } = import;
-        let (Import { created_at, .. }, scope_id) = aux.imports[*import_id].clone();
+        let scope_id = aux.imports[*import_id].1;
         let Some(krate) = krate_collection.get_crate_by_package_id(package_id) else {
             unreachable!(
                 "The JSON documentation for packages that may contain annotated components \
@@ -54,11 +55,7 @@ pub(super) fn register_imported_components(
             .import_index
             .iter()
             .filter_map(|(id, entry)| {
-                if entry
-                    .public_paths
-                    .iter()
-                    .any(|path| path.0.starts_with(module_path))
-                {
+                if entry.is_public() && entry.paths().any(|path| path.starts_with(module_path)) {
                     Some(QueueItem::Standalone(*id))
                 } else {
                     None
@@ -89,6 +86,15 @@ pub(super) fn register_imported_components(
                                     invalid_diagnostic_attribute(e, item.as_ref(), diagnostics);
                                     continue;
                                 }
+                            };
+                            let module_path = {
+                                let fn_path =
+                                    krate.import_index[&item.id].defined_at.as_ref().unwrap();
+                                fn_path.iter().take(fn_path.len() - 1).join("::")
+                            };
+                            let created_at = CreatedAt {
+                                crate_name: krate.crate_name(),
+                                module_path,
                             };
                             let user_component_id = intern_annotated(
                                 annotation,
@@ -150,6 +156,15 @@ pub(super) fn register_imported_components(
                             invalid_diagnostic_attribute(e, item.as_ref(), diagnostics);
                             continue;
                         }
+                    };
+                    let created_at = CreatedAt {
+                        crate_name: krate.crate_name(),
+                        // FIXME: The `impl` where this method is defined may not be within the same module
+                        // where `Self` is defined.
+                        module_path: {
+                            let self_path = krate.import_index[&self_].defined_at.as_ref().unwrap();
+                            self_path.into_iter().take(self_path.len() - 1).join("::")
+                        },
                     };
                     let user_component_id =
                         intern_annotated(annotation, &item, krate, &created_at, scope_id, aux);
