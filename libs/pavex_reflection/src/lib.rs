@@ -44,13 +44,11 @@ impl Location {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-/// All the information required to identify a component registered against a [`Blueprint`].
+/// All the information required to identify a component registered against a `Blueprint`.
 ///
 /// It is an implementation detail of the builder.
-///
-/// [`Blueprint`]: crate::blueprint::Blueprint
 pub struct RawIdentifiers {
-    /// Information on the location where the component was created—either via [`f!`]/[`t!`] using
+    /// Information on the location where the component was created—either via `f!`/`t!` using
     /// its import path or via a macro annotation on the definition of the item itself.
     pub created_at: CreatedAt,
     /// An unambiguous path to the type/callable.

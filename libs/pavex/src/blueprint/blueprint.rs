@@ -69,12 +69,74 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Import the components defined in the specified modules.
+    /// Import the constructors and error handlers defined in the target modules.
+    ///
+    /// Components that have been annotated with Pavex's macros (e.g. `#[constructor]`) aren't automatically
+    /// considered when resolving the dependency graph for your application.\
+    /// They need to be explicitly imported using one or more invocations of this method.
     ///
     /// # Guide
     ///
     /// Check out the ["Dependency Injection"](https://pavex.dev/docs/guide/dependency_injection) section of Pavex's guide
     /// for a thorough introduction to dependency injection in Pavex applications.
+    ///
+    /// # Wildcard import
+    ///
+    /// You can import all components defined in the current crate and its direct dependencies using the wildcard source, `*`:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.import(from![*]);
+    /// # }
+    /// ```
+    ///
+    /// # All local components
+    ///
+    /// Use `crate` as source to import all components defined in the current crate:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.import(from![crate]);
+    /// # }
+    /// ```
+    ///
+    /// # Specific modules
+    ///
+    /// You can restrict the import to modules:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// // It will only import components defined
+    /// // in the `crate::a` and `crate::b` modules.
+    /// bp.import(from![crate::a, crate::b]);
+    /// # }
+    /// ```
+    ///
+    /// # Dependencies
+    ///
+    /// You can import components from a dependency using the same mechanism:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// // Import components from the `pavex_session` and
+    /// // `pavex_session_sqlx` crates.
+    /// bp.import(from![pavex_session, pavex_session_sqlx]);
+    /// # }
+    /// ```
+    ///
+    /// The specified crates must be direct dependencies of the current crate.
     pub fn import(&mut self, sources: WithLocation<Sources>) -> RegisteredImport {
         let WithLocation {
             value: sources,

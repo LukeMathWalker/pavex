@@ -10,9 +10,13 @@ use std::borrow::Cow;
 ///
 /// # Stability
 ///
-/// `WithLocation` is populated by Pavex's macros—[`f!`], [`t!`] and [`from!`][super::from].
+/// `WithLocation` is populated by Pavex's macros—[`f!`], [`t!`] and [`from!`].
 /// Newer versions of Pavex may introduce, remove or modify the fields of this struct—it is considered
 /// an implementation detail of Pavex's macros and should not be used directly.
+///
+/// [`from!`]: super::from
+/// [`f!`]: crate::f
+/// [`t!`]: crate::t
 pub struct WithLocation<T> {
     /// The decorated value.
     pub value: T,
@@ -29,9 +33,13 @@ pub struct WithLocation<T> {
 ///
 /// # Stability
 ///
-/// `CreatedAt` fields are always populated by Pavex's macros—[`f!`], [`t!`] and [`from!`][super::from].
+/// `CreatedAt` fields are always populated by Pavex's macros—[`f!`], [`t!`] and [`from!`].
 /// Newer versions of Pavex may introduce, remove or modify the fields of this struct—it is considered
 /// an implementation detail of Pavex's macros and should not be used directly.
+///
+/// [`from!`]: super::from
+/// [`f!`]: crate::f
+/// [`t!`]: crate::t
 pub struct CreatedAt {
     /// The name of the Cargo package where the value within [`WithLocation`] was created.
     pub package_name: &'static str,
@@ -45,11 +53,13 @@ pub struct CreatedAt {
 ///
 /// # Stability
 ///
-/// `Sources` is always populated by the [`from!`][super::from] macro.
+/// `Sources` is always populated by the [`from!`] macro.
 /// Newer versions of Pavex may introduce, remove or modify the fields of this type—it is considered
-/// an implementation detail of [`from!`][super::from] macros and should not be used directly.
+/// an implementation detail of [`from!`] macros and should not be used directly.
 ///
 /// Invoke the [`from!`] macro wherever an instance of `Sources` is needed.
+///
+/// [`from!`]: super::from
 pub enum Sources {
     /// Use all valid sources: modules from the current crate and all its direct dependencies.
     All,
@@ -106,7 +116,7 @@ pub struct RawIdentifiers {
 ///
 /// `f!` is a short-hand for "function-like". It's the macro used to specify a function or a method
 /// to be used as a constructor, request handler, etc.
-/// Use [`t!`](crate::t), instead, to specify a type when invoking [`Blueprint::prebuilt`].
+/// Use [`t!`], instead, to specify a type when invoking [`Blueprint::prebuilt`].
 ///
 /// # Guide
 ///
@@ -117,6 +127,7 @@ pub struct RawIdentifiers {
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
 /// [`Blueprint::prebuilt`]: crate::blueprint::Blueprint::prebuilt
+/// [`t!`]: crate::t
 macro_rules! f {
     ($p:expr) => {{
         #[cfg(pavex_ide_hint)]
@@ -134,7 +145,7 @@ macro_rules! f {
 /// into [`RawIdentifiers`].
 ///
 /// `t!` is a short-hand for "type". It's the macro used by [`Blueprint::prebuilt`].
-/// You should use [`f!`](f) if you're invoking other methods on [`Blueprint`].
+/// You should use [`f!`] if you're invoking other methods on [`Blueprint`].
 ///
 /// # Guide
 ///
@@ -145,6 +156,7 @@ macro_rules! f {
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
 /// [`Blueprint::prebuilt`]: crate::blueprint::Blueprint::prebuilt
+/// [`f!`]: crate::f
 macro_rules! t {
     // This branch is used by `Blueprint::prebuilt`, where you need to specifically
     // pass a type path to the macro.

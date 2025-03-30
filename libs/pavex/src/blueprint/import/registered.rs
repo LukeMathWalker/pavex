@@ -4,7 +4,7 @@ use pavex_bp_schema::Blueprint as BlueprintSchema;
 ///
 /// It allows you to further configure the behaviour of the registered import.
 ///
-/// [`Blueprint::constructor`]: crate::blueprint::Blueprint::constructor
+/// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub struct RegisteredImport<'a> {
     #[allow(unused)]
     pub(crate) blueprint: &'a mut BlueprintSchema,

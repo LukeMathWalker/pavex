@@ -5,7 +5,7 @@
 pub use blueprint::Blueprint;
 /// Capture a list of sources to be checked by Pavex for components.
 ///
-/// It is used by [`Blueprint::include`] to determine which modules should
+/// It is used by [`Blueprint::import`] to determine which modules should
 /// be scanned for macro-annotated constructors, error handlers and configuration types.
 pub use pavex_macros::from;
 
