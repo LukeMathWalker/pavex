@@ -18,12 +18,12 @@ pub enum RegistrationKind {
 
 impl RegistrationKind {
     /// Returns `true` if the registration was performed using a blueprint method.
-    pub fn from_blueprint(&self) -> bool {
+    pub fn is_blueprint(&self) -> bool {
         matches!(self, RegistrationKind::Blueprint)
     }
 
     /// Returns `true` if the registration was performed via a proc macro attribute.
-    pub fn from_attribute(&self) -> bool {
+    pub fn is_attribute(&self) -> bool {
         matches!(self, RegistrationKind::Attribute)
     }
 }

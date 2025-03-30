@@ -70,14 +70,14 @@ pub(super) fn resolve_imports(
             }
             Sources::Some(sources) => {
                 for source in sources {
-                    let mut path = match syn::parse_str::<RawModulePath>(&source) {
+                    let mut path = match syn::parse_str::<RawModulePath>(source) {
                         Ok(p) => p,
                         Err(e) => {
                             invalid_module_path(e, source.into(), import, diagnostics);
                             continue;
                         }
                     };
-                    path.into_absolute(&import.created_at);
+                    path.make_absolute(&import.created_at);
                     let package_name = path.0.first().expect("Module path can't be empty");
                     let package_id = match dependency_name2package_id(
                         package_name,
@@ -130,7 +130,9 @@ fn sources_for_all(current_package_id: &PackageId, graph: &PackageGraph) -> BTre
 struct RawModulePath(Vec<String>);
 
 impl RawModulePath {
-    fn into_absolute(&mut self, created_at: &CreatedAt) {
+    /// Replace any relative path components (e.g. `super`, `self`, `crate`) with
+    /// their absolute counterparts.
+    fn make_absolute(&mut self, created_at: &CreatedAt) {
         let first = self
             .0
             .first()

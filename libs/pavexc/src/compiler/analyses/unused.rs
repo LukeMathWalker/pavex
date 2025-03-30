@@ -103,7 +103,7 @@ fn emit_unused_warning(
     `{}` is never invoked since no component is asking for `{output_type}` to be injected as one of its inputs.",
         &callable.path,
     );
-    let help = if registration.kind.from_blueprint() {
+    let help = if registration.kind.is_blueprint() {
         Some("If you want to ignore this warning, call `.ignore(Lint::Unused)` on the registered constructor.".to_string())
     } else {
         // TODO: Add support for ignoring lints for annotated constructors.

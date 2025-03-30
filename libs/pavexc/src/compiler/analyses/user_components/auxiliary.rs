@@ -101,12 +101,12 @@ impl AuxiliaryData {
     /// Iterate over all user components (and their ids) discovered up to this point.
     pub(super) fn iter(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator {
+    ) -> impl ExactSizeIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner.iter()
     }
 
     /// Iterate over all user components discovered up to this point.
-    pub(super) fn components(&self) -> impl Iterator<Item = &UserComponent> + ExactSizeIterator {
+    pub(super) fn components(&self) -> impl ExactSizeIterator<Item = &UserComponent> {
         self.component_interner.values()
     }
 

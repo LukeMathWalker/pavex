@@ -319,7 +319,7 @@ impl DomainRouter {
 
         let snippet1 = {
             let location = aux.domain_guard2locations[domain_1].first().unwrap();
-            diagnostics.source(&location).map(|s| {
+            diagnostics.source(location).map(|s| {
                 diagnostic::domain_span(s.source(), location)
                     .labeled("The first domain".to_string())
                     .attach(s)
@@ -327,7 +327,7 @@ impl DomainRouter {
         };
         let snippet2 = {
             let location = aux.domain_guard2locations[domain_2].first().unwrap();
-            diagnostics.source(&location).map(|s| {
+            diagnostics.source(location).map(|s| {
                 diagnostic::domain_span(s.source(), location)
                     .labeled("The second domain".to_string())
                     .attach(s)

@@ -386,7 +386,7 @@ fn generate(
     };
 
     for e in sink.diagnostics() {
-        reporter.print_report(&e);
+        reporter.print_report(e);
     }
 
     let Some(app) = app else {

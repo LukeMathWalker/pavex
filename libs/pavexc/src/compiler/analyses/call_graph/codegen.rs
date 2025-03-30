@@ -474,7 +474,7 @@ fn _codegen_callable_closure_body(
 
 /// Returns a terminal descendant of the given node—i.e. a node that is reachable from
 /// `start_index` and has no outgoing edges.
-
+///
 /// Returns `Some(node_index)` if there is an ancestor (either directly or indirectly connected
 /// to `start_index`) that is a `CallGraphNode::MatchBranching` and doesn't belong to `ignore_set`.
 /// `node` index won't have any ancestors that are themselves a `CallGraphNode::MatchBranching`.
@@ -542,10 +542,10 @@ fn get_node_type_inputs<'a, 'b: 'a>(
         .sorted_by_key(|(node_index, _, _)| *node_index)
 }
 
-fn get_node_happen_befores<'a>(
+fn get_node_happen_befores(
     node_index: NodeIndex,
-    call_graph: &'a RawCallGraph,
-) -> impl Iterator<Item = NodeIndex> + 'a {
+    call_graph: &RawCallGraph,
+) -> impl Iterator<Item = NodeIndex> + '_ {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
         .filter_map(move |edge| {

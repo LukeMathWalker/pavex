@@ -13,13 +13,13 @@ pub fn krate_name2package_id(
     name: &str,
     graph: &PackageGraph,
 ) -> Result<PackageId, UnknownCrateName> {
-    let name = normalize(&name);
+    let name = normalize(name);
     if TOOLCHAIN_CRATES.contains(&name.as_str()) {
         return Ok(PackageId::new(name));
     }
     // TODO: What if we have more than a single package with the same name?
     let Some(package) = graph.packages().find(|p| normalize(p.name()) == name) else {
-        return Err(UnknownCrateName(name.into()).into());
+        return Err(UnknownCrateName(name));
     };
     Ok(package.id().to_owned())
 }

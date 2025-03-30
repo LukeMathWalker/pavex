@@ -135,7 +135,7 @@ fn must_be_clonable(
         "It was registered here",
     );
     // Match the casing of the registration mechanism that was used.
-    let clone_if_necessary = if registration.kind.from_attribute() {
+    let clone_if_necessary = if registration.kind.is_attribute() {
         "clone_if_necessary"
     } else {
         "CloneIfNecessary"

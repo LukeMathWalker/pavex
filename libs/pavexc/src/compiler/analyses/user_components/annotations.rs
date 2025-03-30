@@ -163,7 +163,7 @@ pub(super) fn register_imported_components(
                         // where `Self` is defined.
                         module_path: {
                             let self_path = krate.import_index[&self_].defined_at.as_ref().unwrap();
-                            self_path.into_iter().take(self_path.len() - 1).join("::")
+                            self_path.iter().take(self_path.len() - 1).join("::")
                         },
                     };
                     let user_component_id =
@@ -233,9 +233,7 @@ mod sortable_queue {
 
     impl PartialOrd for QueueItem {
         fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-            let sortable_self = self.as_sortable();
-            let sortable_other = other.as_sortable();
-            sortable_self.partial_cmp(&sortable_other)
+            Some(self.cmp(other))
         }
     }
 
@@ -258,7 +256,7 @@ mod sortable_queue {
 
     impl PartialOrd for SortableId {
         fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-            self.0.0.partial_cmp(&other.0.0)
+            Some(self.cmp(other))
         }
     }
 
@@ -359,7 +357,7 @@ fn rustdoc_free_fn2callable(
             }
             Err(e) => {
                 return Err(InputParameterResolutionError {
-                    callable_path: path.into(),
+                    callable_path: path,
                     callable_item: item.clone(),
                     parameter_type: input_ty.clone(),
                     parameter_index,
@@ -381,7 +379,7 @@ fn rustdoc_free_fn2callable(
                 Ok(t) => Some(t),
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
-                        callable_path: path.into(),
+                        callable_path: path,
                         callable_item: item.clone(),
                         output_type: output_ty.clone(),
                         source: Arc::new(e),
@@ -538,16 +536,12 @@ fn invalid_diagnostic_attribute(
     item: &Item,
     diagnostics: &mut DiagnosticSink,
 ) {
-    let source = item
-        .span
-        .as_ref()
-        .map(|s| {
-            diagnostics.annotated(
-                TargetSpan::Registration(&Registration::attribute(&s)),
-                "The annotated item",
-            )
-        })
-        .flatten();
+    let source = item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s)),
+            "The annotated item",
+        )
+    });
     let err_msg = match &item.name {
         Some(name) => {
             format!("`{name}` is annotated with a malformed `diagnostic::pavex::*` attribute.",)

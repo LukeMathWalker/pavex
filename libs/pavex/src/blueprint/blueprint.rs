@@ -145,7 +145,7 @@ impl Blueprint {
         let import = Import {
             sources: sources2sources(sources),
             created_at: created_at2created_at(created_at),
-            registered_at: Location::caller().into(),
+            registered_at: Location::caller(),
         };
         let component_id = self.push_component(import);
         RegisteredImport {

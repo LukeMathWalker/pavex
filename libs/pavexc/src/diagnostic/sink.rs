@@ -109,7 +109,7 @@ pub enum TargetSpan<'a> {
     RawIdentifiers(&'a Registration),
 }
 
-impl<'a> TargetSpan<'a> {
+impl TargetSpan<'_> {
     /// The absolute path to the source file that should contain the target span.
     pub fn path(&self) -> &str {
         use TargetSpan::*;

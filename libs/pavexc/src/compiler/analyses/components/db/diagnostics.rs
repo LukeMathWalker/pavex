@@ -104,7 +104,7 @@ impl ComponentDb {
                             "All unassigned generic parameters must be used by the output type.\n\
                             `{}`, one of your constructors, breaks this rule: {free_parameters} {subject_verb} only used by its input parameters.",
                             callable.path));
-                let help = if db.registration(id).kind.from_blueprint() {
+                let help = if db.registration(id).kind.is_blueprint() {
                     Some("Assign concrete type(s) to the problematic \
                         generic parameter(s) when registering the constructor against the blueprint: \n\
                         |  bp.constructor(\n\

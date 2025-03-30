@@ -736,7 +736,7 @@ mod diagnostics {
         e: InvalidDomainConstraint,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
-        let source = diagnostics.source(&location).map(|s| {
+        let source = diagnostics.source(location).map(|s| {
             diagnostic::domain_span(s.source(), location)
                 .labeled("The invalid domain".to_string())
                 .attach(s)
@@ -749,7 +749,7 @@ mod diagnostics {
         location: &Location,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
-        let source = diagnostics.source(&location).map(|s| {
+        let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
                 .labeled("The empty prefix".to_string())
                 .attach(s)
@@ -770,7 +770,7 @@ mod diagnostics {
         location: &Location,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
-        let source = diagnostics.source(&location).map(|s| {
+        let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
                 .labeled("The prefix missing a leading '/'".to_string())
                 .attach(s)
@@ -790,7 +790,7 @@ mod diagnostics {
         location: &Location,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
-        let source = diagnostics.source(&location).map(|s| {
+        let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
                 .labeled("The prefix ending with a trailing '/'".to_string())
                 .attach(s)

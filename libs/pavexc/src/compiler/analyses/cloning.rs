@@ -74,7 +74,7 @@ fn must_be_clonable(
         format!("The {kind} was registered here"),
     );
     // Match the casing that you would use in each circumstance.
-    let (clone_if_necessary, never_clone) = if registration.kind.from_attribute() {
+    let (clone_if_necessary, never_clone) = if registration.kind.is_attribute() {
         ("clone_if_necessary", "never_clone")
     } else {
         ("CloneIfNecessary", "NeverClone")

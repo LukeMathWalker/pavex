@@ -36,7 +36,7 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
                 return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
             }
         };
-        if !component.is_none() {
+        if component.is_some() {
             return Err(errors::AttributeParserError::MultiplePavexAttributes);
         } else {
             component = Some(c);

@@ -300,13 +300,6 @@ impl UserComponentDb {
         &self.scope_graph
     }
 
-    /// Return the raw callable identifiers associated to the user component with the given id.
-    ///
-    /// This can be used to recover the original import path passed by the user when registering
-    /// this component, primarily for error reporting purposes.
-    ///
-    /// It returns `None` for annotated components.
-
     /// Return the ids of the middlewares that wrap around the request handler with the given id.
     ///
     /// It panics if the component with the given id is not a request handler.
