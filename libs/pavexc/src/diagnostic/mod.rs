@@ -3,7 +3,7 @@ pub(crate) use self::miette::{
     LabeledSpanExt, OptionalLabeledSpanExt, OptionalSourceSpanExt, SourceSpanExt,
     convert_proc_macro_span, convert_rustdoc_span,
 };
-pub(crate) use callable_definition::CallableDefinition;
+pub(crate) use callable_definition::CallableDefSource;
 pub(crate) use kind::ComponentKind;
 pub(crate) use ordinals::ZeroBasedOrdinal;
 pub(crate) use pavex_cli_diagnostic::{

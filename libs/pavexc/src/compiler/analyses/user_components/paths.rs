@@ -1,6 +1,5 @@
 use ahash::HashMap;
 use guppy::graph::PackageGraph;
-use syn::spanned::Spanned;
 
 use super::UserComponentId;
 use super::{UserComponent, auxiliary::AuxiliaryData};
@@ -15,7 +14,7 @@ use crate::{
         },
         resolvers::{CallableResolutionError, TypeResolutionError, resolve_type_path},
     },
-    diagnostic::{AnnotatedSource, CallableDefinition, CompilerDiagnostic, SourceSpanExt},
+    diagnostic::{CallableDefSource, CompilerDiagnostic},
 };
 use crate::{language::ResolvedPath, rustdoc::CrateCollection, utils::comma_separated_list};
 
@@ -301,24 +300,15 @@ pub(super) fn cannot_resolve_callable_path(
             diagnostics.push(diagnostic);
         }
         CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
-            let definition_snippet = match CallableDefinition::compute_from_item(
-                &inner_error.callable_item,
-                package_graph,
-            ) {
-                Some(def) => {
-                    let mut inputs = def.sig.inputs.iter();
-                    let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
-                    let local_span = match input {
-                        syn::FnArg::Typed(typed) => typed.ty.span(),
-                        syn::FnArg::Receiver(r) => r.span(),
-                    };
-                    let label = def
-                        .convert_local_span(local_span)
-                        .labeled("I don't know how handle this parameter".into());
-                    Some(AnnotatedSource::new(def.named_source()).label(label))
-                }
-                _ => None,
-            };
+            let definition_snippet =
+                CallableDefSource::compute_from_item(&inner_error.callable_item, package_graph)
+                    .map(|mut def| {
+                        def.label_input(
+                            inner_error.parameter_index,
+                            "I don't know how handle this parameter",
+                        );
+                        def.annotated_source
+                    });
             let source = diagnostics.annotated(
                 TargetSpan::RawIdentifiers(&db.id2registration[&id]),
                 format!("The {kind} was registered here"),
@@ -346,24 +336,12 @@ pub(super) fn cannot_resolve_callable_path(
             );
         }
         CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
-            let output_snippet = {
-                match CallableDefinition::compute_from_item(
-                    &inner_error.callable_item,
-                    package_graph,
-                ) {
-                    Some(def) => match &def.sig.output {
-                        syn::ReturnType::Default => None,
-                        syn::ReturnType::Type(_, type_) => Some(type_.span()),
-                    }
-                    .map(|s| {
-                        let label = def
-                            .convert_local_span(s)
-                            .labeled("The output type that I can't handle".into());
-                        AnnotatedSource::new(def.named_source()).label(label)
-                    }),
-                    _ => None,
-                }
-            };
+            let output_snippet =
+                CallableDefSource::compute_from_item(&inner_error.callable_item, package_graph)
+                    .map(|mut def| {
+                        def.label_output("The output type that I can't handle");
+                        def.annotated_source
+                    });
 
             let source = diagnostics.annotated(
                 TargetSpan::Registration(&db.id2registration[&id]),

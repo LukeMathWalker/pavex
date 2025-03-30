@@ -4,28 +4,30 @@ use crate::language::Callable;
 use crate::rustdoc::CrateCollection;
 use guppy::graph::PackageGraph;
 use miette::{NamedSource, SourceSpan};
+use pavex_cli_diagnostic::AnnotatedSource;
 use rustdoc_types::ItemEnum;
-use std::path::PathBuf;
+use syn::spanned::Spanned;
+
+use super::LabeledSpanExt;
 
 /// A callable (function or method) definition,
 /// parsed from the source file where it was defined.
 #[allow(dead_code)]
-pub struct CallableDefinition {
+pub struct CallableDefSource {
     pub attrs: Vec<syn::Attribute>,
     pub vis: Option<syn::Visibility>,
     pub sig: syn::Signature,
     pub block: Option<Box<syn::Block>>,
     pub span_contents: String,
     pub span_offset: usize,
-    pub source_contents: String,
-    pub source_file: PathBuf,
+    pub annotated_source: AnnotatedSource<NamedSource<String>>,
 }
 
-impl CallableDefinition {
+impl CallableDefSource {
     pub fn compute_from_item(
         item: &rustdoc_types::Item,
         package_graph: &PackageGraph,
-    ) -> Option<CallableDefinition> {
+    ) -> Option<CallableDefSource> {
         let definition_span = item.span.as_ref()?;
         let source_contents =
             diagnostic::read_source_file(&definition_span.filename, &package_graph.workspace())
@@ -67,32 +69,53 @@ impl CallableDefinition {
                 return None;
             }
         };
-        Some(CallableDefinition {
+        Some(CallableDefSource {
             attrs,
             vis,
             sig,
             block,
             span_contents,
             span_offset,
-            source_contents,
-            source_file: definition_span.filename.clone(),
+            annotated_source: AnnotatedSource::new(NamedSource::new(
+                definition_span.filename.display().to_string(),
+                source_contents,
+            )),
         })
     }
 
     pub fn compute(
         callable: &Callable,
         krate_collection: &CrateCollection,
-    ) -> Option<CallableDefinition> {
+    ) -> Option<CallableDefSource> {
         let global_item_id = callable.source_coordinates.as_ref()?;
         let item = krate_collection.get_item_by_global_type_id(global_item_id);
         Self::compute_from_item(&item, krate_collection.package_graph())
     }
 
-    pub fn named_source(&self) -> NamedSource<String> {
-        NamedSource::new(
-            self.source_file.display().to_string(),
-            self.source_contents.clone(),
-        )
+    /// Attach a label to the span of the output type for this callable.
+    pub fn label_output(&mut self, label: impl Into<String>) {
+        let output_span = match &self.sig.output {
+            syn::ReturnType::Type(_, output_type) => output_type.span(),
+            _ => self.sig.output.span(),
+        };
+        self.label(output_span, label);
+    }
+
+    /// Attach a label to the span of the n-th input parameter for this callable.
+    pub fn label_input(&mut self, n: usize, label: impl Into<String>) {
+        if let Some(input) = self.sig.inputs.iter().nth(n) {
+            let input_span = input.span();
+            self.label(input_span, label);
+        }
+    }
+
+    /// Add a label to the span of the specified item, within the annotated source.
+    ///
+    /// It takes care, internally, of adjusting line/column information.
+    pub fn label<Item: syn::spanned::Spanned>(&mut self, item: Item, label: impl Into<String>) {
+        self.convert_local_span(item.span())
+            .labeled(label.into())
+            .attach(&mut self.annotated_source);
     }
 
     /// It makes sure to adjust line/column information.

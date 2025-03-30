@@ -258,7 +258,13 @@ impl<S> AnnotatedSource<S> {
 
     /// Add an extra label to this annotated source.
     pub fn label<L: Into<Option<LabeledSpan>>>(mut self, label: L) -> Self {
-        if let Some(label) = label.into() {
+        self.label_mut(label.into());
+        self
+    }
+
+    /// Mutate the source in place, adding an extra label.
+    pub fn label_mut(&mut self, label: Option<LabeledSpan>) -> &mut Self {
+        if let Some(label) = label {
             self.labels.push(label);
         }
         self

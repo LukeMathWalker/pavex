@@ -9,8 +9,8 @@ use crate::compiler::component::{
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
 use crate::diagnostic::{
-    self, AnnotatedSource, CallableDefinition, CompilerDiagnostic, ComponentKind, LabeledSpanExt,
-    SourceSpanExt, TargetSpan, convert_proc_macro_span, convert_rustdoc_span,
+    self, AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind, SourceSpanExt,
+    TargetSpan, convert_proc_macro_span, convert_rustdoc_span,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -20,8 +20,6 @@ use indexmap::IndexSet;
 use miette::NamedSource;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
-
-use super::OptionalLabeledSpanExt;
 
 /// Utility functions to produce diagnostics.
 impl ComponentDb {
@@ -64,33 +62,23 @@ impl ComponentDb {
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let def = CallableDefinition::compute(callable, krate_collection)?;
+                    let mut def = CallableDefSource::compute(callable, krate_collection)?;
 
-                    let subject_verb = if def.sig.generics.params.len() == 1 {
+                    let params = def.sig.generics.params.clone();
+                    let subject_verb = if params.len() == 1 {
                         "it is"
                     } else {
                         "they are"
                     };
-                    let mut s = AnnotatedSource::new(def.named_source());
-                    for param in &def.sig.generics.params {
+                    for param in &params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                s = def
-                                    .convert_local_span(ty.span())
-                                    .labeled("I can't infer this..".into())
-                                    .attach(s);
+                                def.label(ty, "I can't infer this..");
                             }
                         }
                     }
-                    let output_span = match &def.sig.output {
-                        syn::ReturnType::Type(_, output_type) => output_type.span(),
-                        _ => def.sig.output.span(),
-                    };
-                    s = def
-                        .convert_local_span(output_span)
-                        .labeled(format!("..because {subject_verb} not used here"))
-                        .attach(s);
-                    Some(s)
+                    def.label_output(format!("..because {subject_verb} not used here"));
+                    Some(def.annotated_source)
                 }
 
                 let callable = &computation_db[id];
@@ -396,20 +384,16 @@ impl ComponentDb {
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let def = CallableDefinition::compute(callable, krate_collection)?;
+                    let mut def = CallableDefSource::compute(callable, krate_collection)?;
 
-                    let mut s = AnnotatedSource::new(def.named_source());
-                    for param in &def.sig.generics.params {
+                    for param in def.sig.generics.params.clone() {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                s = def
-                                    .convert_local_span(ty.span())
-                                    .labeled("The generic parameter without a concrete type".into())
-                                    .attach(s);
+                                def.label(ty, "The generic parameter without a concrete type");
                             }
                         }
                     }
-                    Some(s)
+                    Some(def.annotated_source)
                 }
 
                 let callable = &computation_db[id];
@@ -479,20 +463,15 @@ impl ComponentDb {
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let def = CallableDefinition::compute(callable, krate_collection)?;
-
-                    let mut s = AnnotatedSource::new(def.named_source());
-                    for param in &def.sig.generics.params {
+                    let mut def = CallableDefSource::compute(callable, krate_collection)?;
+                    for param in def.sig.generics.params.clone() {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                s = def
-                                    .convert_local_span(ty.span())
-                                    .labeled("The generic parameter without a concrete type".into())
-                                    .attach(s);
+                                def.label(ty, "The generic parameter without a concrete type");
                             }
                         }
                     }
-                    Some(s)
+                    Some(def.annotated_source)
                 }
 
                 let callable = &computation_db[id];
@@ -573,19 +552,15 @@ impl ComponentDb {
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let def = CallableDefinition::compute(callable, krate_collection)?;
-                    let mut s = AnnotatedSource::new(def.named_source());
-                    for param in &def.sig.generics.params {
+                    let mut def = CallableDefSource::compute(callable, krate_collection)?;
+                    for param in def.sig.generics.params.clone() {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                s = def
-                                    .convert_local_span(ty.span())
-                                    .labeled("The generic parameter without a concrete type".into())
-                                    .attach(s);
+                                def.label(ty, "The generic parameter without a concrete type");
                             }
                         }
                     }
-                    Some(s)
+                    Some(def.annotated_source)
                 }
 
                 let callable = &computation_db[id];
@@ -630,9 +605,11 @@ impl ComponentDb {
 
     pub(super) fn invalid_response_type(
         e: MissingTraitImplementationError,
-        output_type: &ResolvedType,
+        callable: &Callable,
+        output: &ResolvedType,
         id: UserComponentId,
         db: &UserComponentDb,
+        krate_collection: &CrateCollection,
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let kind = db[id].kind();
@@ -640,14 +617,21 @@ impl ComponentDb {
             TargetSpan::Registration(db.registration(id)),
             format!("The {kind} was registered here"),
         );
+        let path = &callable.path;
+        let output = output.display_for_error();
         let error = anyhow::Error::from(e).context(format!(
-            "I can't use the type returned by this {kind} to create an HTTP \
-                response.\n\
-                It doesn't implement `pavex::response::IntoResponse`."
+            "`{output}` doesn't implement `pavex::response::IntoResponse`.\n\
+            It is returned by `{path}`, one of your {kind}s.\n\
+            `IntoResponse` is used by Pavex to convert `{output}` into the HTTP response that will be returned to the caller of your API.",
         ));
-        let help = format!("Implement `pavex::response::IntoResponse` for `{output_type:?}`.");
+        let def_source = CallableDefSource::compute(callable, krate_collection).map(|mut def| {
+            def.label_output("The faulty output type");
+            def.annotated_source
+        });
+        let help = format!("Implement `IntoResponse` for `{output}`.");
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
+            .optional_source(def_source)
             .help(help)
             .build();
         diagnostics.push(diagnostic);
@@ -710,22 +694,18 @@ impl ComponentDb {
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let def = CallableDefinition::compute(
+                    let mut def = CallableDefSource::compute(
                         callable,
                         krate_collection,
                     )?;
-                    let mut s = AnnotatedSource::new(def.named_source());
-                    for param in &def.sig.generics.params {
+                    for param in def.sig.generics.params.clone() {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                s = def
-                                    .convert_local_span(ty.span())
-                                    .labeled("I can't infer this".into())
-                                    .attach(s);
+                                def.label(ty, "I can't infer this");
                             }
                         }
                     }
-                    Some(s)
+                    Some(def.annotated_source)
                 }
 
                 let callable = &computation_db[id];
@@ -770,19 +750,12 @@ impl ComponentDb {
                     callable: &Callable,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let def = CallableDefinition::compute(
+                    let mut def = CallableDefSource::compute(
                         callable,
                         krate_collection,
                     )?;
-                    let s = AnnotatedSource::new(def.named_source());
-
-                    let label = match &def.sig.output { syn::ReturnType::Type(_, ty) => {
-                        Some(def.convert_local_span(ty.span())
-                            .labeled("The output type".into()))
-                    } _ => {
-                        None
-                    }};
-                    Some(label.attach(s))
+                    def.label_output("The output type");
+                    Some(def.annotated_source)
                 }
 
                 let definition_snippet =
@@ -799,32 +772,26 @@ impl ComponentDb {
                     error_ref_input_index: usize,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let callable_definition = CallableDefinition::compute(
+                    let mut def = CallableDefSource::compute(
                         callable,
                         krate_collection,
                     )?;
-                    let error_input = callable_definition.sig.inputs[error_ref_input_index].clone();
-                    let generic_params = &callable_definition.sig.generics.params;
-                    let mut s = AnnotatedSource::new(callable_definition.named_source());
-                    let subject_verb = if generic_params.len() == 1 {
+                    let params = def.sig.generics.params.clone();
+                    let subject_verb = if params.len() == 1 {
                         "it is"
                     } else {
                         "they are"
                     };
-                    for param in generic_params {
+                    for param in params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                s = callable_definition.convert_local_span(ty.span())
-                                    .labeled("I can't infer this..".into())
-                                    .attach(s);
+                                def.label(ty, "I can't infer this..");
                             }
                         }
                     }
-                    let error_input_span = error_input.span();
-                    s = callable_definition.convert_local_span(error_input_span)
-                            .labeled(format!("..because {subject_verb} not used here"))
-                            .attach(s);
-                    Some(s)
+                    let error_input = def.sig.inputs[error_ref_input_index].clone();
+                    def.label(error_input, format!("..because {subject_verb} not used here"));
+                    Some(def.annotated_source)
                 }
 
                 let callable = &computation_db[id];

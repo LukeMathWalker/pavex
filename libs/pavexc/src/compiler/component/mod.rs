@@ -11,12 +11,11 @@ mod wrapping_middleware;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic::{
-    self, AnnotatedSource, CallableDefinition, CompilerDiagnostic, ComponentKind, SourceSpanExt,
+    self, AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind,
 };
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use miette::NamedSource;
-use syn::spanned::Spanned;
 
 pub(crate) use config_type::{ConfigKey, ConfigType, ConfigTypeValidationError, DefaultStrategy};
 pub(crate) use constructor::{Constructor, ConstructorValidationError};
@@ -68,12 +67,9 @@ impl CannotTakeMutReferenceError {
             krate_collection: &CrateCollection,
             mut_ref_input_index: usize,
         ) -> Option<AnnotatedSource<NamedSource<String>>> {
-            let def = CallableDefinition::compute(callable, krate_collection)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut input".into());
-            Some(AnnotatedSource::new(def.named_source()).label(label))
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut input");
+            Some(def.annotated_source)
         }
 
         let source = diagnostics.annotated(

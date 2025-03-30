@@ -21,7 +21,7 @@ use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
     get_ok_variant, process_framework_callable_path, process_framework_path,
 };
-use crate::diagnostic::{OptionalLabeledSpanExt, ParsedSourceFile, Registration, TargetSpan};
+use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
     Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
     TypeReference,
@@ -1127,9 +1127,11 @@ impl ComponentDb {
                 if let SourceId::UserComponentId(user_component_id) = source_id {
                     Self::invalid_response_type(
                         e,
+                        &callable,
                         &output,
                         user_component_id,
                         &self.user_db,
+                        krate_collection,
                         diagnostics,
                     );
                 }

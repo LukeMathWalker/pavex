@@ -4,7 +4,6 @@ use ahash::{HashMap, HashMapExt, HashSet};
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::NamedSource;
-use syn::spanned::Spanned;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
@@ -16,10 +15,10 @@ use crate::compiler::analyses::user_components::{
 };
 use crate::compiler::computation::Computation;
 use crate::diagnostic::{
-    self, CallableDefinition, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile,
+    self, CallableDefSource, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile,
     TargetSpan,
 };
-use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet, SourceSpanExt};
+use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
@@ -626,12 +625,12 @@ impl ConstructibleDb {
             unconstructible_type_index: usize,
             krate_collection: &CrateCollection,
         ) -> Option<AnnotatedSource<NamedSource<String>>> {
-            let def = CallableDefinition::compute(callable, krate_collection)?;
-            let input = &def.sig.inputs[unconstructible_type_index];
-            let label = def.convert_local_span(input.span()).labeled(
-                "I don't know how to construct an instance of this input parameter".into(),
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(
+                unconstructible_type_index,
+                "I don't know how to construct an instance of this input parameter",
             );
-            Some(AnnotatedSource::new(def.named_source()).label(label))
+            Some(def.annotated_source)
         }
 
         let kind = db[id].kind();
@@ -681,12 +680,9 @@ impl ConstructibleDb {
             krate_collection: &CrateCollection,
             mut_ref_input_index: usize,
         ) -> Option<AnnotatedSource<NamedSource<String>>> {
-            let def = CallableDefinition::compute(callable, krate_collection)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut singleton".into());
-            Some(AnnotatedSource::new(def.named_source()).label(label))
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut singleton");
+            Some(def.annotated_source)
         }
 
         let kind = db[id].kind();
@@ -727,12 +723,9 @@ impl ConstructibleDb {
             krate_collection: &CrateCollection,
             mut_ref_input_index: usize,
         ) -> Option<AnnotatedSource<NamedSource<String>>> {
-            let def = CallableDefinition::compute(callable, krate_collection)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut transient".into());
-            Some(AnnotatedSource::new(def.named_source()).label(label))
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut transient");
+            Some(def.annotated_source)
         }
 
         let kind = db[id].kind();
@@ -772,12 +765,9 @@ impl ConstructibleDb {
             krate_collection: &CrateCollection,
             mut_ref_input_index: usize,
         ) -> Option<AnnotatedSource<NamedSource<String>>> {
-            let def = CallableDefinition::compute(callable, krate_collection)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut reference".into());
-            Some(AnnotatedSource::new(def.named_source()).label(label))
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut reference");
+            Some(def.annotated_source)
         }
 
         let kind = db[id].kind();

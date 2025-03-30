@@ -35,14 +35,13 @@ impl OptionalSourceSpanExt for Option<SourceSpan> {
 /// Helper methods to reduce boilerplate when working with a [`miette::LabeledSpan`]
 /// and the respective source.
 pub trait LabeledSpanExt {
-    /// Add this labeled span to the given source.
-    fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S>;
+    /// Add this labeled span to the given source, mutating it in place.
+    fn attach<S>(self, s: &mut AnnotatedSource<S>);
 }
 
 impl LabeledSpanExt for LabeledSpan {
-    #[must_use]
-    fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S> {
-        s.label(self)
+    fn attach<S>(self, s: &mut AnnotatedSource<S>) {
+        s.label_mut(self.into());
     }
 }
 
