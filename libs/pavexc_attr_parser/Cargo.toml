@@ -7,7 +7,7 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.79" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.80" }
 syn = { workspace = true, features = ["full"] }
 itertools = { workspace = true }
 thiserror = { workspace = true }

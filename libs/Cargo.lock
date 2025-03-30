@@ -2831,7 +2831,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_attr_parser"
-version = "0.1.79"
+version = "0.1.80"
 dependencies = [
  "darling",
  "insta",
