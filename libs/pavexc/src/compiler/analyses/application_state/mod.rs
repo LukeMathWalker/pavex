@@ -313,7 +313,7 @@ fn extract_runtime_singletons<'a>(
     let mut type2id = IndexSet::new();
     for handler_pipeline in handler_pipelines {
         for graph in handler_pipeline.graph_iter() {
-            let root_component_id = graph.root_component_id();
+            let root_component_id = graph.root_component_id;
             let root_component_scope_id = component_db.scope_id(root_component_id);
             for required_input in graph.call_graph.required_input_types() {
                 let required_input = if let ResolvedType::Reference(t) = &required_input {

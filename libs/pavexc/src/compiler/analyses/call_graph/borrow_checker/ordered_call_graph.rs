@@ -30,17 +30,10 @@ use crate::language::ResolvedType;
 pub(crate) struct OrderedCallGraph {
     pub(crate) call_graph: RawCallGraph,
     pub(crate) root_node_index: NodeIndex,
+    pub(crate) root_component_id: ComponentId,
 }
 
 impl OrderedCallGraph {
-    /// Return the [`ComponentId`] of the callable at the root of this [`OrderedCallGraph`].
-    pub(crate) fn root_component_id(&self) -> ComponentId {
-        match &self.call_graph[self.root_node_index] {
-            CallGraphNode::Compute { component_id, .. } => *component_id,
-            _ => unreachable!(),
-        }
-    }
-
     /// Generate the code for the dependency closure of the callable at the root of this
     /// [`OrderedCallGraph`].
     ///

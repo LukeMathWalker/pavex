@@ -113,6 +113,7 @@ impl OrderedCallGraph {
         let CallGraph {
             call_graph,
             root_node_index,
+            root_component_id,
             ..
         } = call_graph;
         let mut node_id2position: BiHashMap<NodeIndex, usize> =
@@ -248,6 +249,7 @@ impl OrderedCallGraph {
         Self {
             call_graph: new_graph,
             root_node_index: new_root_index,
+            root_component_id,
         }
     }
 }

@@ -54,6 +54,7 @@ pub(super) fn complex_borrow_check(
         mut call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     } = call_graph;
 
     let mut ownership_relationships = OwnershipRelationships::compute(&call_graph);
@@ -242,6 +243,7 @@ pub(super) fn complex_borrow_check(
         call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     }
 }
 

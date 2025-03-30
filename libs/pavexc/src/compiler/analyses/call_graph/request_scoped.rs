@@ -37,6 +37,7 @@ pub(crate) fn request_scoped_ordered_call_graph(
         call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     }) = request_scoped_call_graph(
         root_component_id,
         request_scoped_prebuilt_ids,
@@ -55,6 +56,7 @@ pub(crate) fn request_scoped_ordered_call_graph(
             call_graph,
             root_node_index,
             root_scope_id,
+            root_component_id,
         },
         component_db,
         computation_db,

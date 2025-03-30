@@ -52,6 +52,7 @@ pub(super) fn move_while_borrowed(
         mut call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     } = call_graph;
 
     // We first do a forward pass to assign to each node the set of nodes that it captures
@@ -270,6 +271,7 @@ pub(super) fn move_while_borrowed(
         call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     }
 }
 

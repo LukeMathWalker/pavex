@@ -39,6 +39,7 @@ pub(super) fn multiple_consumers(
         mut call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     } = call_graph;
 
     let sink_ids = call_graph.externals(Outgoing).collect::<Vec<_>>();
@@ -161,6 +162,7 @@ pub(super) fn multiple_consumers(
         call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     }
 }
 

@@ -9,45 +9,41 @@ struct ServerState {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ApplicationConfig {}
 pub struct ApplicationState {
-    pub http_client: app::HttpClient,
+    pub singleton: app::constructor::annotated::Singleton,
 }
 impl ApplicationState {
     pub async fn new(
         _app_config: crate::ApplicationConfig,
-        v0: app::Config,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        Self::_new(v0).await
+        Self::_new().await
     }
-    async fn _new(
-        v0: app::Config,
-    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        let v1 = app::http_client(v0);
-        let v2 = match v1 {
+    async fn _new() -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+        let v0 = app::constructor::annotated::singleton();
+        let v1 = match v0 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v1) => {
                 return {
-                    let v3 = crate::ApplicationStateError::HttpClient(v2);
-                    core::result::Result::Err(v3)
+                    let v2 = crate::ApplicationStateError::Singleton(v1);
+                    core::result::Result::Err(v2)
                 };
             }
         };
-        let v3 = crate::ApplicationState {
-            http_client: v2,
+        let v2 = crate::ApplicationState {
+            singleton: v1,
         };
-        core::result::Result::Ok(v3)
+        core::result::Result::Ok(v2)
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]
 pub async fn build_application_state(
     _app_config: crate::ApplicationConfig,
-    v0: app::Config,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config, v0).await
+    crate::ApplicationState::new(_app_config).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
     #[error(transparent)]
-    HttpClient(app::HttpClientError),
+    Singleton(app::constructor::annotated::SingletonError),
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -80,7 +76,7 @@ impl Router {
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
-        router.insert("/home", 0u32).unwrap();
+        router.insert("/", 0u32).unwrap();
         router
     }
     pub async fn route(
@@ -103,7 +99,7 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(request_head, &state.http_client).await
+                        route_0::entrypoint(&state.singleton).await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -120,78 +116,71 @@ impl Router {
 }
 pub mod route_0 {
     pub async fn entrypoint<'a>(
-        s_0: pavex::request::RequestHead,
-        s_1: &'a app::HttpClient,
+        s_0: &'a app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
-        let response = wrapping_0(s_0, s_1).await;
+        let response = wrapping_0(s_0).await;
         response
     }
     async fn stage_1<'a>(
-        s_0: pavex::request::RequestHead,
-        s_1: &'a app::HttpClient,
+        s_0: &'a app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_0, s_1).await;
+        let response = wrapping_1(s_0).await;
         response
     }
     async fn stage_2<'a>(
-        s_0: pavex::request::RequestHead,
-        s_1: &'a app::HttpClient,
+        s_0: &'a app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
         let response = 'incoming: {
             if let Some(response) = pre_processing_0().await.into_response() {
                 break 'incoming response;
             }
-            handler(s_0, s_1).await
+            handler(s_0).await
         };
         let response = post_processing_0(response).await;
         response
     }
     async fn wrapping_0(
-        v0: pavex::request::RequestHead,
-        v1: &app::HttpClient,
+        v0: &app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
-        let v2 = crate::route_0::Next0 {
+        let v1 = crate::route_0::Next0 {
             s_0: v0,
-            s_1: v1,
             next: stage_1,
         };
-        let v3 = pavex::middleware::Next::new(v2);
-        let v4 = pavex::middleware::wrap_noop(v3).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     async fn wrapping_1(
-        v0: pavex::request::RequestHead,
-        v1: &app::HttpClient,
+        v0: &app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
-        let v2 = crate::route_0::Next1 {
+        let v1 = crate::route_0::Next1 {
             s_0: v0,
-            s_1: v1,
             next: stage_2,
         };
-        let v3 = pavex::middleware::Next::new(v2);
-        let v4 = app::fallible_wrapping_middleware(v3);
-        let v5 = match v4 {
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = app::wrap(v2);
+        let v4 = match v3 {
             Ok(ok) => ok,
-            Err(v5) => {
+            Err(v4) => {
                 return {
-                    let v6 = app::handle_middleware_error(&v5);
+                    let v5 = app::CustomError::into_response(&v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
+                        v5,
                     )
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn pre_processing_0() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
-        let v0 = app::fallible_pre();
+        let v0 = app::pre();
         let v1 = match v0 {
             Ok(ok) => ok,
             Err(v1) => {
                 return {
-                    let v2 = app::pre_error(&v1);
+                    let v2 = app::CustomError::into_response(&v1);
                     let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v2,
                     );
@@ -202,68 +191,73 @@ pub mod route_0 {
         v1
     }
     async fn handler(
-        v0: pavex::request::RequestHead,
-        v1: &app::HttpClient,
+        v0: &app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
-        let v2 = app::extract_path(v0);
-        let v3 = match v2 {
-            Ok(ok) => ok,
-            Err(v3) => {
-                return {
-                    let v4 = app::logger();
-                    let v5 = match v4 {
-                        Ok(ok) => ok,
-                        Err(v5) => {
-                            return {
-                                let v6 = app::handle_logger_error(&v5);
-                                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                    v6,
-                                )
-                            };
-                        }
-                    };
-                    let v6 = app::handle_extract_path_error(&v3, v5);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
-                };
-            }
-        };
-        let v4 = app::logger();
-        let v5 = match v4 {
-            Ok(ok) => ok,
-            Err(v5) => {
-                return {
-                    let v6 = app::handle_logger_error(&v5);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
-                };
-            }
-        };
-        let v6 = app::request_handler(v3, v5, v1);
-        let v7 = match v6 {
-            Ok(ok) => ok,
-            Err(v7) => {
-                return {
-                    let v8 = app::handle_handler_error(&v7);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
-                };
-            }
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v7)
-    }
-    async fn post_processing_0(
-        v0: pavex::response::Response,
-    ) -> pavex::response::Response {
-        let v1 = app::fallible_post(v0);
+        let v1 = app::constructor::raw::a();
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = app::post_error(&v2);
+                    let v3 = app::constructor::annotated::b();
+                    let v4 = match v3 {
+                        Ok(ok) => ok,
+                        Err(v4) => {
+                            return {
+                                let v5 = app::constructor::annotated::ErrorB::into_response(
+                                    &v4,
+                                );
+                                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                                    v5,
+                                )
+                            };
+                        }
+                    };
+                    let v5 = app::constructor::raw::GenericError::<
+                        std::string::String,
+                    >::handle(&v2, &v4);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        let v3 = app::constructor::annotated::b();
+        let v4 = match v3 {
+            Ok(ok) => ok,
+            Err(v4) => {
+                return {
+                    let v5 = app::constructor::annotated::ErrorB::into_response(
+                        &v4,
+                    );
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        let v5 = app::handler(&v2, &v4, v0);
+        let v6 = match v5 {
+            Ok(ok) => ok,
+            Err(v6) => {
+                return {
+                    let v7 = app::CustomError::into_response(&v6);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v7,
+                    )
+                };
+            }
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+    }
+    async fn post_processing_0(
+        v0: pavex::response::Response,
+    ) -> pavex::response::Response {
+        let v1 = app::post(v0);
+        let v2 = match v1 {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = app::CustomError::into_response(&v2);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v3,
                     )
@@ -276,9 +270,8 @@ pub mod route_0 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::RequestHead,
-        s_1: &'a app::HttpClient,
-        next: fn(pavex::request::RequestHead, &'a app::HttpClient) -> T,
+        s_0: &'a app::constructor::annotated::Singleton,
+        next: fn(&'a app::constructor::annotated::Singleton) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
@@ -287,16 +280,15 @@ pub mod route_0 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_0)
         }
     }
     struct Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::RequestHead,
-        s_1: &'a app::HttpClient,
-        next: fn(pavex::request::RequestHead, &'a app::HttpClient) -> T,
+        s_0: &'a app::constructor::annotated::Singleton,
+        next: fn(&'a app::constructor::annotated::Singleton) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next1<'a, T>
     where
@@ -305,7 +297,7 @@ pub mod route_0 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_0)
         }
     }
 }
@@ -353,12 +345,12 @@ pub mod route_1 {
             next: stage_2,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        let v3 = app::fallible_wrapping_middleware(v2);
+        let v3 = app::wrap(v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = app::handle_middleware_error(&v4);
+                    let v5 = app::CustomError::into_response(&v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v5,
                     )
@@ -370,12 +362,12 @@ pub mod route_1 {
     async fn pre_processing_0() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
-        let v0 = app::fallible_pre();
+        let v0 = app::pre();
         let v1 = match v0 {
             Ok(ok) => ok,
             Err(v1) => {
                 return {
-                    let v2 = app::pre_error(&v1);
+                    let v2 = app::CustomError::into_response(&v1);
                     let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v2,
                     );
@@ -392,12 +384,12 @@ pub mod route_1 {
     async fn post_processing_0(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
-        let v1 = app::fallible_post(v0);
+        let v1 = app::post(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = app::post_error(&v2);
+                    let v3 = app::CustomError::into_response(&v2);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v3,
                     )

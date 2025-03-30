@@ -1,7 +1,7 @@
 use std::cmp::Reverse;
-use std::collections::BinaryHeap;
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
-use ahash::{HashMap, HashMapExt, HashSet};
+use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
 use guppy::PackageId;
@@ -119,7 +119,7 @@ struct BasicBlockVisitor {
     /// The map of finished nodes
     finished: FixedBitSet,
     /// The map that assigns to each node the set of sinks reachable from it.
-    reachability_map: HashMap<NodeIndex, HashSet<NodeIndex>>,
+    id2sink_ids: HashMap<NodeIndex, BTreeSet<NodeIndex>>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
@@ -140,7 +140,7 @@ impl BasicBlockVisitor {
             to_be_visited,
             discovered: graph.visit_map(),
             finished: graph.visit_map(),
-            reachability_map,
+            id2sink_ids: reachability_map,
         }
     }
 
@@ -160,7 +160,7 @@ impl BasicBlockVisitor {
             let nx = nx.0.node;
             if self.discovered.visit(nx) {
                 let max_index = self.start;
-                let interesting_terminals = &self.reachability_map[&self.start];
+                let interesting_terminals = &self.id2sink_ids[&self.start];
                 // First time visiting `nx`: Push neighbors, don't pop `nx`
                 let neighbors = graph
                     .neighbors_directed(nx, Direction::Incoming)
@@ -177,7 +177,7 @@ impl BasicBlockVisitor {
                                 }
                             }
                             && interesting_terminals
-                                .intersection(&self.reachability_map[&succ])
+                                .intersection(&self.id2sink_ids[&succ])
                                 .next()
                                 .is_some()
                     });
@@ -203,7 +203,7 @@ impl BasicBlockVisitor {
 ///
 /// [`CallGraph`]: crate::compiler::analyses::call_graph::CallGraph
 fn codegen_callable_closure_body(
-    ordered_call_graph: &OrderedCallGraph,
+    ocg: &OrderedCallGraph,
     parameter_bindings: &HashMap<ResolvedType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
@@ -211,11 +211,14 @@ fn codegen_callable_closure_body(
     variable_name_generator: &mut VariableNameGenerator,
 ) -> Result<TokenStream, anyhow::Error> {
     let mut at_most_once_constructor_blocks = IndexMap::<NodeIndex, TokenStream>::new();
-    let mut blocks = HashMap::<NodeIndex, Fragment>::new();
-    let mut dfs = BasicBlockVisitor::new(ordered_call_graph, ordered_call_graph.root_node_index);
-    _codegen_callable_closure_body(
-        ordered_call_graph.root_node_index,
-        &ordered_call_graph.call_graph,
+    let mut blocks = BTreeMap::<NodeIndex, Fragment>::new();
+    let mut dfs = BasicBlockVisitor::new(ocg, ocg.root_node_index);
+    let n_nodes = ocg.call_graph.node_count();
+    let mut visited_at_least_once = FixedBitSet::with_capacity(n_nodes);
+    let happy_terminal = dfs.id2sink_ids[&ocg.root_node_index].clone();
+    let body = _codegen_callable_closure_body(
+        &happy_terminal,
+        &ocg.call_graph,
         parameter_bindings,
         package_id2name,
         component_db,
@@ -224,12 +227,30 @@ fn codegen_callable_closure_body(
         &mut at_most_once_constructor_blocks,
         &mut blocks,
         &mut dfs,
-    )
+        &mut visited_at_least_once,
+    )?;
+
+    // Invariants:
+    // 1. All nodes have been visited at least once
+    {
+        let mut expected = FixedBitSet::with_capacity(n_nodes);
+        for i in 0..n_nodes {
+            expected.insert(i);
+        }
+        let difference: Vec<_> = expected.difference(&visited_at_least_once).collect();
+        if !difference.is_empty() {
+            panic!(
+                "The code generation process did not visit all nodes. {} have not been visited",
+                difference.iter().join(",")
+            );
+        }
+    }
+    Ok(body)
 }
 
 /// Assign to each node in the graph the set of terminal nodes that are reachable from it.
-fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, HashSet<NodeIndex>> {
-    let mut reachability_map = HashMap::<NodeIndex, HashSet<NodeIndex>>::new();
+fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, BTreeSet<NodeIndex>> {
+    let mut reachability_map = HashMap::<NodeIndex, BTreeSet<NodeIndex>>::new();
     let terminal_nodes = graph.externals(Direction::Outgoing);
     for terminal_node in terminal_nodes {
         let mut dfs = Dfs::new(&Reversed(graph), terminal_node);
@@ -244,7 +265,7 @@ fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, HashSet<
 }
 
 fn _codegen_callable_closure_body(
-    node_index: NodeIndex,
+    target_terminals: &BTreeSet<NodeIndex>,
     call_graph: &RawCallGraph,
     parameter_bindings: &HashMap<ResolvedType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -252,10 +273,13 @@ fn _codegen_callable_closure_body(
     computation_db: &ComputationDb,
     variable_name_generator: &mut VariableNameGenerator,
     at_most_once_constructor_blocks: &mut IndexMap<NodeIndex, TokenStream>,
-    blocks: &mut HashMap<NodeIndex, Fragment>,
+    blocks: &mut BTreeMap<NodeIndex, Fragment>,
     dfs: &mut BasicBlockVisitor,
+    visited_at_least_once: &mut FixedBitSet,
 ) -> Result<TokenStream, anyhow::Error> {
-    let terminal_index = find_terminal_descendant(node_index, call_graph);
+    let terminal_index = *target_terminals
+        .first()
+        .expect("There is no target terminal node for our traversal!");
     // We want to start the code-generation process from a `MatchBranching` node with
     // no `MatchBranching` predecessors.
     // This ensures that we don't have to look-ahead when generating code for its predecessors.
@@ -266,6 +290,7 @@ fn _codegen_callable_closure_body(
             .unwrap_or(terminal_index);
     dfs.move_to(traversal_start_index);
     while let Some(current_index) = dfs.next(Reversed(call_graph)) {
+        visited_at_least_once.insert(current_index.index());
         let current_node = &call_graph[current_index];
         match current_node {
             CallGraphNode::Compute { component_id, .. } => {
@@ -353,8 +378,17 @@ fn _codegen_callable_closure_body(
                     // pick up the shared nodes once (for the first match arm), leading to issues
                     // when generating code for the second match arm (i.e. most likely a panic).
                     let mut new_dfs = dfs.clone();
+                    let mut new_target_terminals: BTreeSet<_> = target_terminals
+                        .intersection(&dfs.id2sink_ids[&variant_index])
+                        .copied()
+                        .collect();
+                    if new_target_terminals.is_empty() {
+                        // We may be entering the error arm of a match, so we need to
+                        // accommodate that terminal node.
+                        new_target_terminals = dfs.id2sink_ids[&variant_index].clone();
+                    }
                     let match_arm_body = _codegen_callable_closure_body(
-                        variant_index,
+                        &new_target_terminals,
                         call_graph,
                         parameter_bindings,
                         package_id2name,
@@ -364,6 +398,7 @@ fn _codegen_callable_closure_body(
                         &mut at_most_once_constructor_blocks,
                         &mut variant_blocks,
                         &mut new_dfs,
+                        visited_at_least_once,
                     )?;
                     let variant_type = match &call_graph[variant_index] {
                         CallGraphNode::Compute { component_id, .. } => {
@@ -439,17 +474,6 @@ fn _codegen_callable_closure_body(
 
 /// Returns a terminal descendant of the given node—i.e. a node that is reachable from
 /// `start_index` and has no outgoing edges.
-fn find_terminal_descendant(start_index: NodeIndex, call_graph: &RawCallGraph) -> NodeIndex {
-    let mut dfs = DfsPostOrder::new(call_graph, start_index);
-    while let Some(node_index) = dfs.next(call_graph) {
-        let mut successors = call_graph.neighbors_directed(node_index, Direction::Outgoing);
-        if successors.next().is_none() {
-            return node_index;
-        }
-    }
-    // `call_graph` is a DAG, so we should never reach this point.
-    unreachable!()
-}
 
 /// Returns `Some(node_index)` if there is an ancestor (either directly or indirectly connected
 /// to `start_index`) that is a `CallGraphNode::MatchBranching` and doesn't belong to `ignore_set`.

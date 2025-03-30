@@ -49,6 +49,8 @@ pub(crate) struct CallGraph {
     /// The [`ScopeId`] of the root callable.
     /// Components registered against that [`ScopeId`] should only be visible to this call graph.
     pub(crate) root_scope_id: ScopeId,
+    /// The [`ComponentId`] of the component that this call graph was built for.
+    pub(crate) root_component_id: ComponentId,
 }
 
 /// Build a [`CallGraph`] rooted in the `root_id` component.
@@ -56,7 +58,7 @@ pub(crate) struct CallGraph {
 /// many times a callable can be invoked given its [`Lifecycle`].
 /// All the graph-traversing machinery is taken care of.
 pub(super) fn build_call_graph<F>(
-    root_id: ComponentId,
+    root_component_id: ComponentId,
     // The set of long-lived components that have already been initialised and should be
     // taken as inputs rather than built again.
     prebuilt_ids: &IndexSet<ComponentId>,
@@ -72,7 +74,7 @@ where
 {
     // If the dependency graph is not acyclic, we can't build a call graph—we'd get stuck in an infinite loop.
     if DependencyGraph::build(
-        root_id,
+        root_component_id,
         computation_db,
         component_db,
         constructible_db,
@@ -85,7 +87,7 @@ where
         return Err(());
     }
 
-    let root_scope_id = component_db.scope_id(root_id);
+    let root_scope_id = component_db.scope_id(root_component_id);
     let mut call_graph = RawCallGraph::new();
 
     let component_id2invocations = |component_id: ComponentId| {
@@ -159,7 +161,8 @@ where
         }
     };
 
-    let root_node_index = add_node_for_component(&mut call_graph, &mut node_deduplicator, root_id);
+    let root_node_index =
+        add_node_for_component(&mut call_graph, &mut node_deduplicator, root_component_id);
     let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
         IndexSet::from_iter([VisitorStackElement::orphan(root_node_index)]);
     let mut processed_nodes = HashSet::new();
@@ -504,6 +507,7 @@ where
         call_graph,
         root_node_index: new_root_index,
         root_scope_id,
+        root_component_id,
     };
     Ok(call_graph)
 }
