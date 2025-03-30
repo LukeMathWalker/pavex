@@ -84,11 +84,7 @@ impl ComponentDb {
                 let callable = &computation_db[id];
                 let definition_snippet =
                     get_definition_span(callable, parameters, krate_collection);
-                let subject_verb = if parameters.len() == 1 {
-                    "it is"
-                } else {
-                    "they are"
-                };
+                let subject_verb = if parameters.len() == 1 { "is" } else { "are" };
                 let free_parameters = if parameters.len() == 1 {
                     format!("`{}`", &parameters[0])
                 } else {
@@ -105,19 +101,27 @@ impl ComponentDb {
                 let error = anyhow::anyhow!(e)
                     .context(
                         format!(
-                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
-                            I can only infer the type of an unassigned generic parameter if it appears in the output type returned by the constructor. This is \
-                            not the case for {free_parameters}, since {subject_verb} only used by the input parameters.",
+                            "All unassigned generic parameters must be used by the output type.\n\
+                            `{}`, one of your constructors, breaks this rule: {free_parameters} {subject_verb} only used by its input parameters.",
                             callable.path));
-                let d = CompilerDiagnostic::builder(error).optional_source(source)
-                    .optional_source(definition_snippet)
-                    .help(
-                        "Specify the concrete type(s) for the problematic \
+                let help = if db.registration(id).kind.from_blueprint() {
+                    Some("Assign concrete type(s) to the problematic \
                         generic parameter(s) when registering the constructor against the blueprint: \n\
                         |  bp.constructor(\n\
                         |    f!(my_crate::my_constructor::<ConcreteType>), \n\
                         |    ..\n\
-                        |  )".into())
+                        |  )".to_string())
+                } else {
+                    None
+                };
+                let d = CompilerDiagnostic::builder(error)
+                    .optional_source(source)
+                    .optional_source(definition_snippet)
+                    .help(
+                        "Can you restructure your constructor to remove those generic parameters from its signature?"
+                            .into(),
+                    )
+                    .optional_help(help)
                     // ^ TODO: add a proper code snippet here, using the actual function that needs
                     //    to be amended instead of a made signature
                     .build();

@@ -1,94 +1,150 @@
 [31;1mERROR[0m:
-  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
-  [31m│[0m parameters in `app::generic_constructor`.
-  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
-  [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T`, since it is only used by the input parameters.
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::once`, one of your constructors, breaks this rule: `T` is
+  [31m│[0m only used by its input parameters.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m28[0m │     bp.request_scoped(f!(crate::generic_constructor));
-  [31m│[0m     · [35;1m                      ───────────────┬──────────────[0m
-  [31m│[0m     ·                    [35;1mThe constructor was registered here[0m
-  [31m│[0m  [2m29[0m │     bp.request_scoped(f!(crate::doubly_generic_constructor));
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:43:1]
+  [31m│[0m  [2m43[0m │     bp.import(from![crate::annotated]);
+  [31m│[0m  [2m44[0m │     bp.request_scoped(f!(crate::once));
+  [31m│[0m     · [35;1m                      ───────┬───────[0m
+  [31m│[0m     ·                              [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::twice));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:5:1]
   [31m│[0m  [2m5[0m │
-  [31m│[0m  [2m6[0m │ pub fn generic_constructor<T>(_generic_input: GenericType<T>) -> u8 {
-  [31m│[0m    · [35;1m                           ┬[0m[33;1m                                     ─┬[0m
-  [31m│[0m    ·                            [35;1m│[0m      [33;1m..because it is not used here ──╯[0m
-  [31m│[0m    ·                            [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m6[0m │ pub fn once<T>(_generic_input: Generic<T>) -> u8 {
+  [31m│[0m    · [35;1m            ┬[0m[33;1m                                 ─┬[0m
+  [31m│[0m    ·             [35;1m│[0m  [33;1m..because it is not used here ──╯[0m
+  [31m│[0m    ·             [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m7[0m │     todo!()
   [31m│[0m    ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m [36m  help: [0mAssign concrete type(s) to the problematic generic parameter(s) when
+  [31m│[0m         registering the constructor against the blueprint:
   [31m│[0m         |  bp.constructor(
   [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
   [31m│[0m         |    ..
   [31m│[0m         |  )
-
 [31;1mERROR[0m:
-  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
-  [31m│[0m parameters in `app::doubly_generic_constructor`.
-  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
-  [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T` and `S`, since they are only used by the input parameters.
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::twice`, one of your constructors, breaks this rule: `T` and
+  [31m│[0m `S` are only used by its input parameters.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:28:1]
-  [31m│[0m  [2m28[0m │     bp.request_scoped(f!(crate::generic_constructor));
-  [31m│[0m  [2m29[0m │     bp.request_scoped(f!(crate::doubly_generic_constructor));
-  [31m│[0m     · [35;1m                      ──────────────────┬──────────────────[0m
-  [31m│[0m     ·   [35;1mThe constructor was registered here ──╯[0m
-  [31m│[0m  [2m30[0m │     bp.request_scoped(f!(crate::triply_generic_constructor));
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:44:1]
+  [31m│[0m  [2m44[0m │     bp.request_scoped(f!(crate::once));
+  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::twice));
+  [31m│[0m     · [35;1m                      ────────┬───────[0m
+  [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::thrice));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │
-  [31m│[0m  [2m10[0m │ pub fn doubly_generic_constructor<T, S>(_i1: GenericType<T>, _i2: GenericType<S>) -> u16 {
-  [31m│[0m     · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m                                               ─┬─[0m
-  [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m             [32;1m..because they are not used here ──╯[0m
-  [31m│[0m     ·                                   [35;1m│[0m  [33;1m╰── I can't infer this..[0m
-  [31m│[0m     ·                                   [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m10[0m │ pub fn twice<T, S>(_i1: Generic<T>, _i2: Generic<S>) -> u16 {
+  [31m│[0m     · [35;1m             ┬[0m[33;1m  ┬[0m[32;1m                                       ─┬─[0m
+  [31m│[0m     ·              [35;1m│[0m  [33;1m│[0m     [32;1m..because they are not used here ──╯[0m
+  [31m│[0m     ·              [35;1m│[0m  [33;1m╰── I can't infer this..[0m
+  [31m│[0m     ·              [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m11[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m [36m  help: [0mAssign concrete type(s) to the problematic generic parameter(s) when
+  [31m│[0m         registering the constructor against the blueprint:
   [31m│[0m         |  bp.constructor(
   [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
   [31m│[0m         |    ..
   [31m│[0m         |  )
-
 [31;1mERROR[0m:
-  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
-  [31m│[0m parameters in `app::triply_generic_constructor`.
-  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
-  [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T`, `S` and `U`, since they are only used by the input parameters.
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::thrice`, one of your constructors, breaks this rule: `T`,
+  [31m│[0m `S` and `U` are only used by its input parameters.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:29:1]
-  [31m│[0m  [2m29[0m │     bp.request_scoped(f!(crate::doubly_generic_constructor));
-  [31m│[0m  [2m30[0m │     bp.request_scoped(f!(crate::triply_generic_constructor));
-  [31m│[0m     · [35;1m                      ──────────────────┬──────────────────[0m
-  [31m│[0m     ·   [35;1mThe constructor was registered here ──╯[0m
-  [31m│[0m  [2m31[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:45:1]
+  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::twice));
+  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::thrice));
+  [31m│[0m     · [35;1m                      ────────┬────────[0m
+  [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m47[0m │     bp.route(GET, "/", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:13:1]
   [31m│[0m  [2m13[0m │
-  [31m│[0m  [2m14[0m │ pub fn triply_generic_constructor<T, S, U>(
-  [31m│[0m     · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
-  [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m
-  [31m│[0m     ·                                   [35;1m│[0m  [33;1m╰── I can't infer this..[0m
-  [31m│[0m     ·                                   [35;1m╰── I can't infer this..[0m
-  [31m│[0m  [2m15[0m │     _i1: GenericType<T>,
-  [31m│[0m  [2m16[0m │     _i2: GenericType<S>,
-  [31m│[0m  [2m17[0m │     _i3: GenericType<U>,
-  [31m│[0m  [2m18[0m │ ) -> u32 {
-  [31m│[0m     · [35;1m     ─┬─[0m
-  [31m│[0m     ·       [35;1m╰── ..because they are not used here[0m
-  [31m│[0m  [2m19[0m │     todo!()
+  [31m│[0m  [2m14[0m │ pub fn thrice<T, S, U>(_i1: Generic<T>, _i2: Generic<S>, _i3: Generic<U>) -> u32 {
+  [31m│[0m     · [35;1m              ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m[35;1m                                                        ─┬─[0m
+  [31m│[0m     ·               [35;1m│[0m  [33;1m│[0m  [32;1m│[0m                      [35;1m..because they are not used here ──╯[0m
+  [31m│[0m     ·               [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m
+  [31m│[0m     ·               [35;1m│[0m  [33;1m╰── I can't infer this..[0m
+  [31m│[0m     ·               [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m15[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m [36m  help: [0mAssign concrete type(s) to the problematic generic parameter(s) when
+  [31m│[0m         registering the constructor against the blueprint:
   [31m│[0m         |  bp.constructor(
   [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
   [31m│[0m         |    ..
   [31m│[0m         |  )
+[31;1mERROR[0m:
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::annotated::thrice`, one of your constructors, breaks this
+  [31m│[0m rule: `T`, `S` and `U` are only used by its input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:30:1]
+  [31m│[0m  [2m30[0m │
+  [31m│[0m  [2m31[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
+  [31m│[0m  [2m32[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn thrice<T, S, U>(_i1: Generic<T>, _i2: Generic<S>, _i3: Generic<U>) -> bool {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [31m│[0m  [2m33[0m │             todo!()
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:31:1]
+  [31m│[0m  [2m31[0m │     #[pavex::singleton]
+  [31m│[0m  [2m32[0m │     pub fn thrice<T, S, U>(_i1: Generic<T>, _i2: Generic<S>, _i3: Generic<U>) -> bool {
+  [31m│[0m     · [35;1m                  ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m[35;1m                                                        ──┬─[0m
+  [31m│[0m     ·                   [35;1m│[0m  [33;1m│[0m  [32;1m│[0m                       [35;1m..because they are not used here ──╯[0m
+  [31m│[0m     ·                   [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m
+  [31m│[0m     ·                   [35;1m│[0m  [33;1m╰── I can't infer this..[0m
+  [31m│[0m     ·                   [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m33[0m │         todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mCan you restructure your constructor to remove those generic
+  [31m│[0m         parameters from its signature?
+[31;1mERROR[0m:
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::annotated::twice`, one of your constructors, breaks this
+  [31m│[0m rule: `T` and `S` are only used by its input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:25:1]
+  [31m│[0m  [2m25[0m │
+  [31m│[0m  [2m26[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::transient]
+  [31m│[0m  [2m27[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn twice<T, S>(_i1: Generic<T>, _i2: Generic<S>) -> u128 {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [31m│[0m  [2m28[0m │             todo!()
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:26:1]
+  [31m│[0m  [2m26[0m │     #[pavex::transient]
+  [31m│[0m  [2m27[0m │     pub fn twice<T, S>(_i1: Generic<T>, _i2: Generic<S>) -> u128 {
+  [31m│[0m     · [35;1m                 ┬[0m[33;1m  ┬[0m[32;1m                                       ──┬─[0m
+  [31m│[0m     ·                  [35;1m│[0m  [33;1m│[0m      [32;1m..because they are not used here ──╯[0m
+  [31m│[0m     ·                  [35;1m│[0m  [33;1m╰── I can't infer this..[0m
+  [31m│[0m     ·                  [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m28[0m │         todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mCan you restructure your constructor to remove those generic
+  [31m│[0m         parameters from its signature?
+[31;1mERROR[0m:
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::annotated::once`, one of your constructors, breaks this
+  [31m│[0m rule: `T` is only used by its input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:20:1]
+  [31m│[0m  [2m20[0m │
+  [31m│[0m  [2m21[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::request_scoped]
+  [31m│[0m  [2m22[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn once<T>(_generic_input: Generic<T>) -> u64 {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [31m│[0m  [2m23[0m │             todo!()
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:21:1]
+  [31m│[0m  [2m21[0m │     #[pavex::request_scoped]
+  [31m│[0m  [2m22[0m │     pub fn once<T>(_generic_input: Generic<T>) -> u64 {
+  [31m│[0m     · [35;1m                ┬[0m[33;1m                                 ─┬─[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m..because it is not used here ──╯[0m
+  [31m│[0m     ·                 [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m23[0m │         todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mCan you restructure your constructor to remove those generic
+  [31m│[0m         parameters from its signature?
