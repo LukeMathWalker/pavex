@@ -11,6 +11,6 @@
   [31m│[0m     ·                          [35;1m╰── The singleton was registered here[0m
   [31m│[0m  [2m28[0m │     bp.route(GET, "/", f!(self::handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mIf your type holds a reference to data that's owned by another
+  [31m│[0m   [36mhelp:[0m If your type holds a reference to data that's owned by another
   [31m│[0m         singleton component, register its constructor as transient rather
   [31m│[0m         than singleton.

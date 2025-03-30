@@ -20,7 +20,7 @@
   [31m│[0m     ·                                   [35;1m╰── A constructor was registered here[0m
   [31m│[0m  [2m29[0m │     bp.route(GET, "/child", f!(crate::handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mIf you want a single instance of `u64`, remove constructors for
-  [31m│[0m         `u64` until there is only one left.
+  [31m│[0m   [36mhelp:[0m If you want a single instance of `u64`, remove constructors for `u64`
+  [31m│[0m         until there is only one left.
   [31m│[0m         If you want different instances, consider creating separate newtypes
   [31m│[0m         that wrap a `u64`.

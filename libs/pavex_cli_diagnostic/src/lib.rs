@@ -9,8 +9,7 @@ pub use utils::{AnyhowBridge, InteropError};
 /// A builder for a [`CompilerDiagnostic`].
 pub struct CompilerDiagnosticBuilder {
     severity: Severity,
-    help: Option<String>,
-    help_with_snippet: Option<Vec<HelpWithSnippet<NamedSource<String>>>>,
+    helps: Option<Vec<HelpWithSnippet<NamedSource<String>>>>,
     error_source: anyhow::Error,
     annotated_sources: Vec<AnnotatedSource<NamedSource<String>>>,
 }
@@ -19,8 +18,7 @@ impl CompilerDiagnosticBuilder {
     fn new(error: impl Into<anyhow::Error>) -> Self {
         Self {
             severity: Severity::Error,
-            help: None,
-            help_with_snippet: None,
+            helps: None,
             error_source: error.into(),
             annotated_sources: Vec::new(),
         }
@@ -90,11 +88,9 @@ impl CompilerDiagnosticBuilder {
         mut self,
         help: HelpWithSnippet<S>,
     ) -> Self {
-        let mut annotated_snippets = self
-            .help_with_snippet
-            .unwrap_or_else(|| Vec::with_capacity(1));
+        let mut annotated_snippets = self.helps.unwrap_or_else(|| Vec::with_capacity(1));
         annotated_snippets.push(help.normalize());
-        self.help_with_snippet = Some(annotated_snippets);
+        self.helps = Some(annotated_snippets);
         self
     }
 
@@ -102,17 +98,15 @@ impl CompilerDiagnosticBuilder {
     ///
     /// Help messages are rendered at the very end of the diagnostic, after the error message
     /// and all code snippets.
-    pub fn help(mut self, help: String) -> Self {
-        self.help = Some(help);
-        self
+    pub fn help(self, help: String) -> Self {
+        self.help_with_snippet(HelpWithSnippet::new(help, AnnotatedSource::empty()))
     }
 
     /// Finalize the builder and return a [`CompilerDiagnostic`].
     pub fn build(self) -> CompilerDiagnostic {
         let Self {
             severity,
-            help,
-            help_with_snippet,
+            helps,
             error_source,
             mut annotated_sources,
         } = self;
@@ -151,7 +145,7 @@ impl CompilerDiagnosticBuilder {
             source_code: primary_source.source_code,
             severity,
             labels: Some(primary_source.labels),
-            help,
+            help: None,
             error_source,
         };
 
@@ -159,15 +153,18 @@ impl CompilerDiagnosticBuilder {
             primary,
             related: Some(
                 related
-                    .chain(help_with_snippet.unwrap_or_default().into_iter().map(|s| {
-                        SimpleDiagnostic {
-                            source_code: s.snippet.source_code,
-                            severity: Severity::Advice,
-                            labels: Some(s.snippet.labels),
-                            help: None,
-                            error_source: anyhow::anyhow!("{}", s.help),
-                        }
-                    }))
+                    .chain(
+                        helps
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(|s| SimpleDiagnostic {
+                                source_code: s.snippet.source_code,
+                                severity: Severity::Advice,
+                                labels: Some(s.snippet.labels),
+                                help: None,
+                                error_source: anyhow::anyhow!("{}", s.help),
+                            }),
+                    )
                     .collect(),
             ),
         }

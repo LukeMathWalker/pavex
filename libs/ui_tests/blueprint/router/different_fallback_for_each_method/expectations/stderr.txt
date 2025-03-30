@@ -25,5 +25,5 @@
   [31m│[0m     ·                               [35;1m╰── The second fallback[0m
   [31m│[0m  [2m25[0m │         bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mAdjust your blueprint to have the same fallback handler for all `/
+  [31m│[0m   [36mhelp:[0m Adjust your blueprint to have the same fallback handler for all `/
   [31m│[0m         id` routes.

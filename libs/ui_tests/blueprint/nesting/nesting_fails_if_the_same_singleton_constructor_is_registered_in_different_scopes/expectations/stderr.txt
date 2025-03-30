@@ -31,5 +31,5 @@
   [31m│[0m          ·            [35;1mRegister your constructor against the root blueprint[0m
   [31m│[0m        [2m8[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
   [31m│[0m          ╰────
-  [31m│[0m [36m  help: [0mIf you want different instances, consider creating separate newtypes
+  [31m│[0m   [36mhelp:[0m If you want different instances, consider creating separate newtypes
   [31m│[0m         that wrap a `u64`.

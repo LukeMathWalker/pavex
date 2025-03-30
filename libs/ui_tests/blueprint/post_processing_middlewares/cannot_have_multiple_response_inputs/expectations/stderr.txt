@@ -10,4 +10,4 @@
   [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
   [31m│[0m  [2m16[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove the extra `Response` input parameters until only one is left.
+  [31m│[0m   [36mhelp:[0m Remove the extra `Response` input parameters until only one is left.

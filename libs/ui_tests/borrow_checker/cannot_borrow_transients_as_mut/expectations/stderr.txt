@@ -19,4 +19,4 @@
   [31m│[0m     ·                     [35;1m╰── The &mut transient[0m
   [31m│[0m  [2m13[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mTake the type by value, or use a `&` reference.
+  [31m│[0m   [36mhelp:[0m Take the type by value, or use a `&` reference.

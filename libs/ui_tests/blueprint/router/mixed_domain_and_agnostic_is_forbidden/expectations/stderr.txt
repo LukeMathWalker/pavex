@@ -18,6 +18,6 @@
   [31m│[0m     ·                       [35;1m╰── A handler without a domain restriction[0m
   [31m│[0m  [2m18[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mTo avoid routing ambiguity, you must either:
+  [31m│[0m   [36mhelp:[0m To avoid routing ambiguity, you must either:
   [31m│[0m         - Add a domain guard to all handlers that don't have one
   [31m│[0m         - Remove domain guards from all handlers that have one

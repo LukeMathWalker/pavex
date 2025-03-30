@@ -9,7 +9,7 @@
   [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
   [31m│[0m  [2m48[0m │     bp.config("b", t!(crate::B));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
 [31;1mERROR[0m:
   [31m×[0m Configuration types can't have unassigned generic type parameters.
@@ -23,7 +23,7 @@
   [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
   [31m│[0m  [2m49[0m │     bp.config("c", t!(crate::C));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSet the generic parameters to concrete types when
+  [31m│[0m   [36mhelp:[0m Set the generic parameters to concrete types when
   [31m│[0m         registering the type as configuration. E.g. `bp.config(t!
   [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.
 [31;1mERROR[0m:
@@ -37,7 +37,7 @@
   [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
   [31m│[0m  [2m50[0m │     bp.config("d", t!(crate::D));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
 [31;1mERROR[0m:
   [31m×[0m Configuration types can't have unassigned generic type parameters.
@@ -51,7 +51,7 @@
   [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
   [31m│[0m  [2m51[0m │     // We constrain the lifetime to 'static, so
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSet the generic parameters to concrete types when
+  [31m│[0m   [36mhelp:[0m Set the generic parameters to concrete types when
   [31m│[0m         registering the type as configuration. E.g. `bp.config(t!
   [31m│[0m         (crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.
 [31;1mERROR[0m:
@@ -65,7 +65,7 @@
   [31m│[0m     ·                              [35;1m╰── The config type was registered here[0m
   [31m│[0m  [2m54[0m │     // Some static, some elided.
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
 [31;1mERROR[0m:
   [31m×[0m Configuration types can't have any lifetime parameter.
@@ -79,7 +79,7 @@
   [31m│[0m     ·                                [35;1m╰── The config type was registered here[0m
   [31m│[0m  [2m56[0m │     // Key is not a valid Rust identifier
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove all lifetime parameters from the definition of your
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
 [31;1mERROR[0m:
   [31m×[0m Configuration keys must begin with a letter.

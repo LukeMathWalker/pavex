@@ -12,10 +12,10 @@
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
   [31m│[0m  [2m59[0m │     bp.route(GET, "/", f!(crate::handler));
   [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::C` by marking it
+  [31m│[0m         `CloneIfNecessary`.
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::C`,
   [31m│[0m         rather than consuming it by value?
-  [31m│[0m [36m  help: [0mAllow Pavex to clone `app::C` by marking it
-  [31m│[0m         `CloneIfNecessary`.
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
@@ -30,10 +30,10 @@
   [31m│[0m     ·                       [35;1m╰── It was registered here[0m
   [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
   [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::B` by marking it
+  [31m│[0m         `CloneIfNecessary`.
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::B`,
   [31m│[0m         rather than consuming it by value?
-  [31m│[0m [36m  help: [0mAllow Pavex to clone `app::B` by marking it
-  [31m│[0m         `CloneIfNecessary`.
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
@@ -48,10 +48,10 @@
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
   [31m│[0m  [2m58[0m │     bp.singleton(f!(crate::singleton2));
   [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::A` by marking it
+  [31m│[0m         `CloneIfNecessary`.
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::A`,
   [31m│[0m         rather than consuming it by value?
-  [31m│[0m [36m  help: [0mAllow Pavex to clone `app::A` by marking it
-  [31m│[0m         `CloneIfNecessary`.
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
@@ -66,10 +66,10 @@
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
   [31m│[0m  [2m45[0m │             todo!()
   [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::B` by marking it
+  [31m│[0m         `clone_if_necessary`.
   [31m│[0m   [36mhelp:[0m Can `app::annotated::handler` take a reference to
   [31m│[0m         `app::annotated::B`, rather than consuming it by value?
-  [31m│[0m [36m  help: [0mAllow Pavex to clone `app::annotated::B` by marking it
-  [31m│[0m         `clone_if_necessary`.
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
@@ -84,7 +84,7 @@
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
   [31m│[0m  [2m40[0m │             todo!()
   [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::A` by marking it
+  [31m│[0m         `clone_if_necessary`.
   [31m│[0m   [36mhelp:[0m Can `app::annotated::handler` take a reference to
   [31m│[0m         `app::annotated::A`, rather than consuming it by value?
-  [31m│[0m [36m  help: [0mAllow Pavex to clone `app::annotated::A` by marking it
-  [31m│[0m         `clone_if_necessary`.

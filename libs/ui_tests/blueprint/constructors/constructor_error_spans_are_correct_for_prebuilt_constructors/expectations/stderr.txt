@@ -1,9 +1,7 @@
 [31;1mERROR[0m:
-  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
-  [31m│[0m parameters in `app::generic_constructor`.
-  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
-  [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T`, since it is only used by the input parameters.
+  [31m×[0m All unassigned generic parameters must be used by the output type.
+  [31m│[0m `app::generic_constructor`, one of your constructors, breaks this
+  [31m│[0m rule: `T` is only used by its input parameters.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructor_error_spans_are_correct_for_prebuilt_constructors/src/lib.rs[0m:19:1]
   [31m│[0m  [2m19[0m │     let mut bp = Blueprint::new();
@@ -20,8 +18,10 @@
   [31m│[0m     ·                            [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m11[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m   [36mhelp:[0m Can you restructure your constructor to remove those generic
+  [31m│[0m         parameters from its signature?
+  [31m│[0m   [36mhelp:[0m Assign concrete type(s) to the problematic generic parameter(s) when
+  [31m│[0m         registering the constructor against the blueprint:
   [31m│[0m         |  bp.constructor(
   [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
   [31m│[0m         |    ..

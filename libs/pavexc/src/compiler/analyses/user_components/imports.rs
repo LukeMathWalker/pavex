@@ -239,9 +239,7 @@ fn unknown_dependency_crate(
 ) {
     #[derive(Debug, thiserror::Error)]
     #[error(
-        "`{dependent}` has no dependency named `{dependency}`, according to your dependency tree.\n\
-        You tried to import items from `{dependency}`, but I can't resolve those items unless I can match `{dependency}` \
-        to a package in your dependency tree."
+        "You tried to import items from `{dependency}`, but `{dependent}` has no direct dependency named `{dependency}`."
     )]
     struct CannotFindDependency {
         dependent: String,
@@ -254,10 +252,18 @@ fn unknown_dependency_crate(
             .labeled("The import was registered here".into())
             .attach(s)
     });
-    let diagnostic = CompilerDiagnostic::builder(CannotFindDependency { dependent: e.dependent_name.clone(), dependency: e.dependency_name.clone(), source: e })
-        .optional_source(source)
-        .help("Did you use the `from!` macro to register your sources? Setting `WithLocation`'s fields manually is bound to cause problems for Pavex.".into())
-        .build();
+    let diagnostic = CompilerDiagnostic::builder(CannotFindDependency {
+        dependent: e.dependent_name.clone(),
+        dependency: e.dependency_name.clone(),
+        source: e,
+    })
+    .optional_source(source)
+    .help("Check your `Cargo.toml` file for typos or missing dependencies.".into())
+    .help(
+        "The path must start with either `crate` or `super` if you want to import a local module."
+            .into(),
+    )
+    .build();
     diagnostics.push(diagnostic);
 }
 

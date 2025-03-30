@@ -16,7 +16,7 @@
   [31m│[0m     ·                                         [35;1m╰── The &mut input[0m
   [31m│[0m  [2m27[0m │ where
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mInjected inputs can only be taken by value or via a shared reference
+  [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
   [31m│[0m         mutability (e.g. `RefCell`).
 [31;1mERROR[0m:
@@ -37,7 +37,7 @@
   [31m│[0m     ·                                         [35;1m╰── The &mut input[0m
   [31m│[0m  [2m34[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mInjected inputs can only be taken by value or via a shared reference
+  [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
   [31m│[0m         mutability (e.g. `RefCell`).
 [31;1mERROR[0m:
@@ -58,7 +58,7 @@
   [31m│[0m     ·                              [35;1m╰── The &mut input[0m
   [31m│[0m  [2m10[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mInjected inputs can only be taken by value or via a shared reference
+  [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
   [31m│[0m         mutability (e.g. `RefCell`).
 [31;1mERROR[0m:
@@ -79,7 +79,7 @@
   [31m│[0m     ·                          [35;1m╰── The &mut input[0m
   [31m│[0m  [2m18[0m │         todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mInjected inputs can only be taken by value or via a shared reference
+  [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
   [31m│[0m         mutability (e.g. `RefCell`).
 [31;1mERROR[0m:
@@ -100,6 +100,6 @@
   [31m│[0m     ·                                              [35;1m╰── The &mut input[0m
   [31m│[0m  [2m23[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mInjected inputs can only be taken by value or via a shared reference
+  [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
   [31m│[0m         mutability (e.g. `RefCell`).

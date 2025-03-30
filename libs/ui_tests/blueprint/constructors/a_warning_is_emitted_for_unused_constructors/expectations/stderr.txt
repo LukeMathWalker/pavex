@@ -11,7 +11,7 @@
   [33m│[0m     ·                 [35;1mThe unused constructor was registered here[0m
   [33m│[0m  [2m29[0m │     bp
   [33m│[0m     ╰────
-  [33m│[0m [36m  help: [0mIf you want to ignore this warning, call `.ignore(Lint::Unused)` on
+  [33m│[0m   [36mhelp:[0m If you want to ignore this warning, call `.ignore(Lint::Unused)` on
   [33m│[0m         the registered constructor.
 [33;1mWARNING[0m:
   [33m⚠[0m You registered a constructor for `app::AnnotatedUnused`, but it's

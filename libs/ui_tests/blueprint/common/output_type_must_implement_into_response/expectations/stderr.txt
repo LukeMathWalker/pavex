@@ -19,7 +19,7 @@
   [31m│[0m     ·                                                 [35;1m╰── The faulty output type[0m
   [31m│[0m  [2m26[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -41,7 +41,7 @@
   [31m│[0m     ·                         [35;1mThe faulty output type ──╯[0m
   [31m│[0m  [2m34[0m │ where
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -64,7 +64,7 @@
   [31m│[0m     ·                            [35;1mThe faulty output type ──╯[0m
   [31m│[0m  [2m41[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -87,7 +87,7 @@
   [31m│[0m     ·                                               [35;1m╰── The faulty output type[0m
   [31m│[0m  [2m30[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -110,7 +110,7 @@
   [31m│[0m     ·                                               [35;1m╰── The faulty output type[0m
   [31m│[0m  [2m30[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -133,7 +133,7 @@
   [31m│[0m     ·                                               [35;1m╰── The faulty output type[0m
   [31m│[0m  [2m30[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -156,7 +156,7 @@
   [31m│[0m     ·                                               [35;1m╰── The faulty output type[0m
   [31m│[0m  [2m30[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
   [31m×[0m `app::BrokenOutput` doesn't implement
   [31m│[0m `pavex::response::IntoResponse`.
@@ -179,4 +179,4 @@
   [31m│[0m     ·                                               [35;1m╰── The faulty output type[0m
   [31m│[0m  [2m30[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `IntoResponse` for `app::BrokenOutput`.
+  [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.

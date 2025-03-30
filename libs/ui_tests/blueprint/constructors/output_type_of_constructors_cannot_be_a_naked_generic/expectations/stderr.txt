@@ -19,10 +19,9 @@
   [31m│[0m    ·                      [35;1m╰── The invalid output type[0m
   [31m│[0m  [2m2[0m │     todo!()
   [31m│[0m    ╰────
-  [31m│[0m [36m  help: [0mCan you return a concrete type as output?
-  [31m│[0m         Or wrap the generic parameter in a non-generic container? For
-  [31m│[0m         example, `T` in `Vec<T>` is not considered to be a naked parameter.
-
+  [31m│[0m   [36mhelp:[0m Can you return a concrete type as output?
+  [31m│[0m         Or wrap the generic parameter in a non-generic container? For example,
+  [31m│[0m         `T` in `Vec<T>` is not considered to be a naked parameter.
 [31;1mERROR[0m:
   [31m×[0m You can't return a naked generic parameter from a constructor, like `T` in
   [31m│[0m `app::fallible_naked`.
@@ -44,6 +43,6 @@
   [31m│[0m    ·                                           [35;1m╰── The invalid output type[0m
   [31m│[0m  [2m2[0m │     todo!()
   [31m│[0m    ╰────
-  [31m│[0m [36m  help: [0mCan you return a concrete type as output?
-  [31m│[0m         Or wrap the generic parameter in a non-generic container? For
-  [31m│[0m         example, `T` in `Vec<T>` is not considered to be a naked parameter.
+  [31m│[0m   [36mhelp:[0m Can you return a concrete type as output?
+  [31m│[0m         Or wrap the generic parameter in a non-generic container? For example,
+  [31m│[0m         `T` in `Vec<T>` is not considered to be a naked parameter.
