@@ -2782,6 +2782,7 @@ dependencies = [
  "cargo-like-utils",
  "cargo-manifest",
  "convert_case 0.8.0",
+ "darling",
  "elsa",
  "fixedbitset",
  "fs-err",

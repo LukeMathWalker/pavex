@@ -22,7 +22,7 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
-use crate::diagnostic::{self, AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
+use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
     Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
     ResolvedType, TypeReference,
@@ -1140,7 +1140,7 @@ fn emit_cloning_error(
         );
         let kind = db.user_db()[user_id].kind();
         let source = diagnostics.annotated(
-            diagnostic::TargetSpan::Registration(db.registration(user_id)),
+            db.registration_target(user_id),
             format!("The {kind} was registered here"),
         );
         let help = match source {

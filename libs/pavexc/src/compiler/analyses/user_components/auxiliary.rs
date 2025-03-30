@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     compiler::{analyses::domain::DomainGuard, component::DefaultStrategy, interner::Interner},
-    diagnostic::Registration,
+    diagnostic::{Registration, TargetSpan},
     rustdoc::GlobalItemId,
 };
 use ahash::HashMap;
@@ -99,9 +99,7 @@ impl AuxiliaryData {
     }
 
     /// Iterate over all user components (and their ids) discovered up to this point.
-    pub(super) fn iter(
-        &self,
-    ) -> impl ExactSizeIterator<Item = (UserComponentId, &UserComponent)> {
+    pub(super) fn iter(&self) -> impl ExactSizeIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner.iter()
     }
 
@@ -192,6 +190,10 @@ impl AuxiliaryData {
                 | ErrorObserver { .. } => {}
             }
         }
+    }
+
+    pub(crate) fn registration_target(&self, id: &UserComponentId) -> TargetSpan {
+        TargetSpan::Registration(&self.id2registration[id], self[id].kind())
     }
 }
 

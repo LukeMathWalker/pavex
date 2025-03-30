@@ -10,7 +10,7 @@ use crate::{
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
-    diagnostic::{self, CompilerDiagnostic, ComponentKind},
+    diagnostic::{CompilerDiagnostic, ComponentKind},
     language::ResolvedType,
     rustdoc::CrateCollection,
 };
@@ -63,7 +63,7 @@ fn missing_trait_implementation(
     let user_id = db.user_component_id(component_id).unwrap();
     let kind = db.user_db()[user_id].kind();
     let source = diagnostics.annotated(
-        diagnostic::TargetSpan::Registration(db.registration(user_id)),
+        db.registration_target(user_id),
         format!("The {kind} was registered here"),
     );
     let help = if kind == ComponentKind::PrebuiltType {

@@ -162,7 +162,7 @@ fn same_type_different_key(
             } else {
                 "...and here"
             };
-            let s = diagnostics.annotated(TargetSpan::Registration(db.registration(user_id)), msg);
+            let s = diagnostics.annotated(db.registration_target(user_id), msg);
             if s.is_some() {
                 counter += 1;
             }

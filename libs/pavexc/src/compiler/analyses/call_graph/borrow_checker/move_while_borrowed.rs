@@ -18,7 +18,6 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
-use crate::diagnostic::{self};
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
@@ -435,7 +434,7 @@ fn emit_ancestor_descendant_borrow_error(
                 You can do so by invoking `.clone_if_necessary()` after having registered your constructor.",
             );
             let help = match diagnostics.annotated(
-                diagnostic::TargetSpan::Registration(db.registration(user_id)),
+                db.registration_target(user_id),
                 "The constructor was registered here",
             ) {
                 None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),

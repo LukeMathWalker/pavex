@@ -15,7 +15,7 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
-use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet, TargetSpan};
+use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
 
@@ -252,10 +252,9 @@ fn emit_multiple_consumers_error(
         let Some(user_component_id) = user_id else {
             continue;
         };
-        let location = db.registration(user_component_id);
         let kind = db.user_db()[user_component_id].kind();
         let Some(s) = diagnostics.annotated(
-            TargetSpan::Registration(location),
+            db.registration_target(user_component_id),
             format!("One of the consuming {kind}s"),
         ) else {
             continue;
@@ -278,7 +277,7 @@ fn emit_multiple_consumers_error(
             );
             let kind = db.user_db()[user_id].kind();
             let help = match diagnostics.annotated(
-                TargetSpan::Registration(db.registration(user_id)),
+                db.registration_target(user_id),
                 format!("The {kind} was registered here"),
             ) {
                 None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),

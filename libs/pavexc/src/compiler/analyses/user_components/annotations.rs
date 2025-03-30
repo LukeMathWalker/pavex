@@ -14,7 +14,7 @@ use crate::{
             OutputTypeResolutionError, SelfResolutionError, resolve_type,
         },
     },
-    diagnostic::{DiagnosticSink, Registration, TargetSpan},
+    diagnostic::{ComponentKind, DiagnosticSink, Registration, TargetSpan},
     language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
     rustdoc::{Crate, CrateCollection, GlobalItemId},
 };
@@ -538,7 +538,7 @@ fn invalid_diagnostic_attribute(
 ) {
     let source = item.span.as_ref().and_then(|s| {
         diagnostics.annotated(
-            TargetSpan::Registration(&Registration::attribute(s)),
+            TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
             "The annotated item",
         )
     });

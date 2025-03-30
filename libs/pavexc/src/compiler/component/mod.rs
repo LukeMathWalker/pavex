@@ -10,9 +10,7 @@ mod wrapping_middleware;
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
-use crate::diagnostic::{
-    self, AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind,
-};
+use crate::diagnostic::{AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind};
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use miette::NamedSource;
@@ -73,7 +71,7 @@ impl CannotTakeMutReferenceError {
         }
 
         let source = diagnostics.annotated(
-            diagnostic::TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {callable_type} was registered here"),
         );
 

@@ -5,7 +5,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::get_ok_variant;
-use crate::diagnostic::{self, CompilerDiagnostic, DiagnosticSink};
+use crate::diagnostic::{CompilerDiagnostic, DiagnosticSink};
 use indexmap::IndexSet;
 use miette::Severity;
 use pavex_bp_schema::{Lint, LintSetting};
@@ -78,9 +78,8 @@ fn emit_unused_warning(
     let Some(user_id) = db.user_component_id(id) else {
         return;
     };
-    let registration = db.registration(user_id);
     let source = diagnostics.annotated(
-        diagnostic::TargetSpan::Registration(registration),
+        db.registration_target(user_id),
         "The unused constructor was registered here",
     );
     let HydratedComponent::Constructor(constructor) = db.hydrated_component(id, computation_db)
@@ -103,7 +102,7 @@ fn emit_unused_warning(
     `{}` is never invoked since no component is asking for `{output_type}` to be injected as one of its inputs.",
         &callable.path,
     );
-    let help = if registration.kind.is_blueprint() {
+    let help = if db.registration(user_id).kind.is_blueprint() {
         Some("If you want to ignore this warning, call `.ignore(Lint::Unused)` on the registered constructor.".to_string())
     } else {
         // TODO: Add support for ignoring lints for annotated constructors.

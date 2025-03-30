@@ -115,6 +115,9 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
 }
 
 pub fn constructor(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    if let Err(e) = reject_invalid_input(input.clone(), "#[pavex::constructor]") {
+        return e;
+    }
     let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
         Ok(attrs) => attrs,
         Err(err) => return err.to_compile_error().into(),
@@ -135,20 +138,33 @@ pub fn constructor(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
 /// An annotation for a request-scoped constructor.
 pub fn request_scoped(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    shorthand(metadata, input, Lifecycle::RequestScoped)
+    shorthand(
+        metadata,
+        input,
+        Lifecycle::RequestScoped,
+        "#[pavex::request_scoped]",
+    )
 }
 
 /// An annotation for a transient constructor.
 pub fn transient(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    shorthand(metadata, input, Lifecycle::Transient)
+    shorthand(metadata, input, Lifecycle::Transient, "#[pavex::transient]")
 }
 
 /// An annotation for a singleton constructor.
 pub fn singleton(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    shorthand(metadata, input, Lifecycle::Singleton)
+    shorthand(metadata, input, Lifecycle::Singleton, "#[pavex::singleton]")
 }
 
-fn shorthand(metadata: TokenStream, input: TokenStream, lifecycle: Lifecycle) -> TokenStream {
+fn shorthand(
+    metadata: TokenStream,
+    input: TokenStream,
+    lifecycle: Lifecycle,
+    macro_attr: &'static str,
+) -> TokenStream {
+    if let Err(e) = reject_invalid_input(input.clone(), macro_attr) {
+        return e;
+    }
     let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
         Ok(attrs) => attrs,
         Err(err) => return err.to_compile_error().into(),
@@ -203,4 +219,22 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
         #input
     }
     .into()
+}
+
+fn reject_invalid_input(input: TokenStream, macro_attr: &'static str) -> Result<(), TokenStream> {
+    // Check if the input is a function
+    if syn::parse::<syn::ItemFn>(input.clone()).is_ok() {
+        return Ok(());
+    };
+    if syn::parse::<syn::ImplItemFn>(input.clone()).is_ok() {
+        return Ok(());
+    }
+
+    // Neither ItemFn nor ImplItemFn - return an error
+    let msg = format!("{macro_attr} can only be applied to functions and methods.");
+    Err(
+        syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
+            .to_compile_error()
+            .into(),
+    )
 }

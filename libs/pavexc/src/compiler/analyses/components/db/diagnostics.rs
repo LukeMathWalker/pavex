@@ -10,7 +10,7 @@ use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
 use crate::diagnostic::{
     self, AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind, SourceSpanExt,
-    TargetSpan, convert_proc_macro_span, convert_rustdoc_span,
+    convert_proc_macro_span, convert_rustdoc_span,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -32,7 +32,7 @@ impl ComponentDb {
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The constructor was registered here",
         );
         match e {
@@ -213,7 +213,7 @@ impl ComponentDb {
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The request handler was registered here",
         );
         match e {
@@ -343,7 +343,7 @@ impl ComponentDb {
         use crate::compiler::component::WrappingMiddlewareValidationError::*;
 
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The wrapping middleware was registered here",
         );
         match e {
@@ -451,7 +451,7 @@ impl ComponentDb {
         use crate::compiler::component::PreProcessingMiddlewareValidationError::*;
 
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The pre-processing middleware was registered here",
         );
         match e {
@@ -528,7 +528,7 @@ impl ComponentDb {
         use crate::compiler::component::PostProcessingMiddlewareValidationError::*;
 
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The post-processing middleware was registered here",
         );
         match e {
@@ -618,7 +618,7 @@ impl ComponentDb {
     ) {
         let kind = db[id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {kind} was registered here"),
         );
         let path = &callable.path;
@@ -650,7 +650,7 @@ impl ComponentDb {
     ) {
         let kind = db[id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {kind} was registered here"),
         );
         let error = anyhow::Error::from(e).context(format!(
@@ -675,7 +675,7 @@ impl ComponentDb {
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The error observer was registered here",
         );
         match e {
@@ -737,7 +737,7 @@ impl ComponentDb {
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The error handler was registered here",
         );
         match e {
@@ -847,7 +847,7 @@ impl ComponentDb {
     ) {
         let fallible_kind = db[fallible_id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(error_handler_id)),
+            db.registration_target(error_handler_id),
             "The unnecessary error handler was registered here",
         );
         let error = anyhow::anyhow!(
@@ -871,7 +871,7 @@ impl ComponentDb {
     ) {
         debug_assert_eq!(db[fallible_id].kind(), ComponentKind::Constructor);
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(error_handler_id)),
+            db.registration_target(error_handler_id),
             "The unnecessary error handler was registered here",
         );
         let error = anyhow::anyhow!(
@@ -892,7 +892,7 @@ impl ComponentDb {
     ) {
         let fallible_kind = db[fallible_id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(fallible_id)),
+            db.registration_target(fallible_id),
             format!("The fallible {fallible_kind} was registered here"),
         );
         let error = anyhow::anyhow!(
@@ -915,7 +915,7 @@ impl ComponentDb {
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The singleton was registered here",
         );
         let error = anyhow::anyhow!(
@@ -940,7 +940,7 @@ impl ComponentDb {
         diagnostics: &mut diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             "The singleton was registered here",
         );
         let error = anyhow::anyhow!(

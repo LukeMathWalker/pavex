@@ -946,7 +946,7 @@ fn push_fallback_method_ambiguity_diagnostic(
                 unreachable!()
             };
             let snippet = diagnostics.annotated(
-                TargetSpan::Registration(&db.id2registration[fallback_id]),
+                db.registration_target(fallback_id),
                 format!("The {} fallback", ZeroBasedOrdinal::from(i)),
             );
             if let Some(snippet) = snippet {
@@ -1067,7 +1067,7 @@ fn push_router_conflict_diagnostic(
     ));
     for (i, id) in ids.iter().enumerate() {
         builder = builder.optional_source(diagnostics.annotated(
-            TargetSpan::Registration(&db.id2registration[*id]),
+            db.registration_target(id),
             format!("The {} conflicting handler", ZeroBasedOrdinal(i)),
         ));
     }

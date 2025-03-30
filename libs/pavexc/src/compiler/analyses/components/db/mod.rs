@@ -1578,6 +1578,11 @@ impl ComponentDb {
         self.user_db.registration(id)
     }
 
+    /// Return a [`TargetSpan`] for the given user component, aimed at its registration.
+    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan {
+        TargetSpan::Registration(self.registration(id), self.user_db[id].kind())
+    }
+
     /// Return the [`ScopeGraph`] that backs the [`ScopeId`]s for this component database.
     pub fn scope_graph(&self) -> &ScopeGraph {
         self.user_db.scope_graph()
@@ -1612,7 +1617,7 @@ impl ComponentDb {
         label: String,
     ) -> Option<AnnotatedSource<ParsedSourceFile>> {
         let user_id = self.user_component_id(id)?;
-        diagnostics.annotated(TargetSpan::Registration(self.registration(user_id)), label)
+        diagnostics.annotated(self.registration_target(user_id), label)
     }
 }
 

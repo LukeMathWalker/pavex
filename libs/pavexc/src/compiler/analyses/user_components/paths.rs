@@ -80,7 +80,7 @@ fn invalid_prebuilt_type(
     use std::fmt::Write as _;
 
     let source = diagnostics.annotated(
-        TargetSpan::Registration(&db.id2registration[&id]),
+        db.registration_target(&id),
         "The prebuilt type was registered here",
     );
     let mut error_msg = e.to_string();
@@ -165,7 +165,7 @@ fn invalid_config_type(
     let (target_span, label_msg) = match &e {
         CannotHaveAnyLifetimeParameters { .. }
         | CannotHaveUnassignedGenericTypeParameters { .. } => (
-            TargetSpan::Registration(registration),
+            db.registration_target(&id),
             "The config type was registered here",
         ),
         InvalidKey { .. } => (
@@ -268,8 +268,9 @@ fn cannot_resolve_type_path(
     db: &AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
+    let component = &db[id];
     let source = diagnostics.annotated(
-        TargetSpan::RawIdentifiers(&db.id2registration[&id]),
+        TargetSpan::RawIdentifiers(&db.id2registration[&id], component.kind()),
         "The type that we can't resolve",
     );
     let diagnostic = CompilerDiagnostic::builder(e)
@@ -291,7 +292,7 @@ pub(super) fn cannot_resolve_callable_path(
     match e {
         CallableResolutionError::UnknownCallable(_) => {
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id]),
+                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
                 format!("The {kind} that we can't resolve"),
             );
             let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
@@ -310,7 +311,7 @@ pub(super) fn cannot_resolve_callable_path(
                         def.annotated_source
                     });
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id]),
+                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
                 format!("The {kind} was registered here"),
             );
             let diagnostic = CompilerDiagnostic::builder(e.clone())
@@ -321,7 +322,7 @@ pub(super) fn cannot_resolve_callable_path(
         }
         CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id]),
+                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
                 format!("It was registered as a {kind} here"),
             );
             let message = format!(
@@ -344,7 +345,7 @@ pub(super) fn cannot_resolve_callable_path(
                     });
 
             let source = diagnostics.annotated(
-                TargetSpan::Registration(&db.id2registration[&id]),
+                db.registration_target(&id),
                 format!("The {kind} was registered here"),
             );
             diagnostics.push(
@@ -359,7 +360,7 @@ pub(super) fn cannot_resolve_callable_path(
         }
         CallableResolutionError::GenericParameterResolutionError(_) => {
             let source = diagnostics.annotated(
-                TargetSpan::Registration(&db.id2registration[&id]),
+                db.registration_target(&id),
                 format!("The {kind} was registered here"),
             );
             let diagnostic = CompilerDiagnostic::builder(e)
@@ -369,7 +370,7 @@ pub(super) fn cannot_resolve_callable_path(
         }
         CallableResolutionError::SelfResolutionError(_) => {
             let source = diagnostics.annotated(
-                TargetSpan::Registration(&db.id2registration[&id]),
+                db.registration_target(&id),
                 format!("The {kind} was registered here"),
             );
             let diagnostic = CompilerDiagnostic::builder(e)

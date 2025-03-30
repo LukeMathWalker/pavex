@@ -9,7 +9,7 @@ use crate::{
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
-    diagnostic::{CompilerDiagnostic, ComponentKind, TargetSpan},
+    diagnostic::{CompilerDiagnostic, ComponentKind},
     language::ResolvedType,
     rustdoc::CrateCollection,
 };
@@ -70,7 +70,7 @@ fn must_be_clonable(
     let kind = db.user_db()[user_id].kind();
     let registration = db.registration(user_id);
     let source = diagnostics.annotated(
-        TargetSpan::Registration(registration),
+        db.registration_target(user_id),
         format!("The {kind} was registered here"),
     );
     // Match the casing that you would use in each circumstance.

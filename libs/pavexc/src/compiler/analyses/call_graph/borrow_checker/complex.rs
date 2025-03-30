@@ -11,7 +11,6 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
-use crate::diagnostic::TargetSpan;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::rustdoc::CrateCollection;
 
@@ -294,7 +293,7 @@ fn emit_borrow_checking_error(
                 );
                 let kind = db.user_db()[user_id].kind();
                 let help = match diagnostics.annotated(
-                    TargetSpan::Registration(db.registration(user_id)),
+                    db.registration_target(user_id),
                     format!("The {kind} was registered here"),
                 ) {
                     None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),

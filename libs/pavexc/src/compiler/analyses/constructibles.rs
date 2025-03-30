@@ -16,7 +16,6 @@ use crate::compiler::analyses::user_components::{
 use crate::compiler::computation::Computation;
 use crate::diagnostic::{
     self, CallableDefSource, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile,
-    TargetSpan,
 };
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{Callable, ResolvedType};
@@ -635,7 +634,7 @@ impl ConstructibleDb {
 
         let kind = db[id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {kind} was registered here"),
         );
 
@@ -688,7 +687,7 @@ impl ConstructibleDb {
         let kind = db[id].kind();
         let callable = &computation_db[id];
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {kind} was registered here"),
         );
 
@@ -731,7 +730,7 @@ impl ConstructibleDb {
         let kind = db[id].kind();
         let callable = &computation_db[id];
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {kind} was registered here"),
         );
 
@@ -773,7 +772,7 @@ impl ConstructibleDb {
         let kind = db[id].kind();
         let callable = &computation_db[id];
         let source = diagnostics.annotated(
-            TargetSpan::Registration(db.registration(id)),
+            db.registration_target(id),
             format!("The {kind} was registered here"),
         );
 

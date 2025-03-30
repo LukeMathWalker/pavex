@@ -20,7 +20,7 @@ use crate::compiler::{
     },
     component::DefaultStrategy,
 };
-use crate::diagnostic::Registration;
+use crate::diagnostic::{Registration, TargetSpan};
 use crate::{language::ResolvedPath, rustdoc::CrateCollection};
 
 /// A database that contains all the user components that have been registered against the
@@ -279,6 +279,14 @@ impl UserComponentDb {
     /// includes a span from the source file where the component was registered.
     pub fn registration(&self, id: UserComponentId) -> &Registration {
         &self.id2registration[&id]
+    }
+
+    /// Return the target metadata for the component with the given id.
+    ///
+    /// It's the primary entrypoint when you're building a diagnostic that
+    /// includes a span from the source file where the component was registered.
+    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan {
+        TargetSpan::Registration(self.registration(id), self[id].kind())
     }
 
     /// Return the cloning strategy of the component with the given id.

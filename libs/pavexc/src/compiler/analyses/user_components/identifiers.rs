@@ -3,7 +3,7 @@ use guppy::graph::PackageGraph;
 
 use crate::compiler::analyses::user_components::UserComponentId;
 use crate::diagnostic::CompilerDiagnostic;
-use crate::diagnostic::{ComponentKind, TargetSpan};
+use crate::diagnostic::ComponentKind;
 use crate::language::{ParseError, PathKind, ResolvedPath};
 
 use super::auxiliary::AuxiliaryData;
@@ -82,10 +82,7 @@ fn invalid_identifiers(
         ParseError::InvalidPath(_) => "The invalid path",
         ParseError::PathMustBeAbsolute(_) => "The relative path",
     };
-    let source = diagnostics.annotated(
-        TargetSpan::Registration(&db.id2registration[&id]),
-        label_msg,
-    );
+    let source = diagnostics.annotated(db.registration_target(&id), label_msg);
     let help = match &e {
         ParseError::InvalidPath(inner) => {
             inner.raw_identifiers.import_path.strip_suffix("()").map(|stripped| format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))

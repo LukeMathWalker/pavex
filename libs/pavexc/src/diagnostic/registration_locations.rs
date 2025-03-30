@@ -9,7 +9,7 @@ use syn::{Expr, ExprCall, ExprMethodCall, ImplItemFn, ItemFn, Stmt};
 
 use pavex_bp_schema::Location;
 
-use super::{Registration, RegistrationKind};
+use super::{ComponentKind, Registration, RegistrationKind};
 use crate::diagnostic::{ParsedSourceFile, ProcMacroSpanExt, convert_proc_macro_span};
 
 /// Returns a span covering the registration location.
@@ -21,19 +21,62 @@ use crate::diagnostic::{ParsedSourceFile, ProcMacroSpanExt, convert_proc_macro_s
 pub(crate) fn registration_span(
     source: &ParsedSourceFile,
     registration: &Registration,
+    kind: ComponentKind,
 ) -> Option<SourceSpan> {
     match registration.kind {
         RegistrationKind::Blueprint => f_macro_span(source, &registration.location),
-        RegistrationKind::Attribute => attribute_span(source, &registration.location),
+        RegistrationKind::Attribute => attribute_span(source, &registration.location, kind),
     }
 }
 
 /// A span covering the attribute (e.g. `#[pavex::constructor]`) as well as the function/method
 /// signature.
-pub(crate) fn attribute_span(source: &ParsedSourceFile, location: &Location) -> Option<SourceSpan> {
+pub(crate) fn attribute_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+    kind: ComponentKind,
+) -> Option<SourceSpan> {
+    if kind == ComponentKind::ErrorHandler {
+        attribute_error_handler_span(source, location)
+    } else {
+        let raw_source = &source.contents;
+        let span = find_callable_def(location, &source.parsed)?.attrs_and_sig_span();
+        Some(convert_proc_macro_span(raw_source, span))
+    }
+}
+
+pub(crate) fn attribute_error_handler_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    use darling::FromMeta;
+
     let raw_source = &source.contents;
-    let span = find_callable_def(location, &source.parsed)?.attrs_and_sig_span();
-    Some(convert_proc_macro_span(raw_source, span))
+    let def = find_callable_def(location, &source.parsed)?;
+    let attrs = match &def {
+        CallableDef::Method(m) => &m.attrs,
+        CallableDef::Function(f) => &f.attrs,
+    };
+
+    #[derive(darling::FromMeta)]
+    struct Property {
+        error_handler: darling::util::SpannedValue<String>,
+    }
+
+    for attr in attrs {
+        if let Ok(property) = Property::from_meta(&attr.meta) {
+            return Some(convert_proc_macro_span(
+                raw_source,
+                property.error_handler.span(),
+            ));
+        }
+    }
+
+    // Fall back to the full sign+attr span if we can't find a precise one.
+    Some(convert_proc_macro_span(
+        raw_source,
+        def.attrs_and_sig_span(),
+    ))
 }
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the

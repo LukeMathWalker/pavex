@@ -15,7 +15,7 @@ use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic::CompilerDiagnostic;
-use crate::diagnostic::{DiagnosticSink, TargetSpan};
+use crate::diagnostic::DiagnosticSink;
 use crate::language::{GenericArgument, ResolvedType};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
@@ -187,7 +187,7 @@ fn report_non_existing_path_parameters(
         let callable = &computation_db[user_id];
         let kind = component_db.user_db()[user_id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(component_db.registration(user_id)),
+            component_db.registration_target(user_id),
             format!("The {kind} asking for `PathParams<{extracted_type:?}>`",),
         );
 
@@ -307,7 +307,7 @@ fn must_be_a_plain_struct(
         let callable = &computation_db[user_id];
         let kind = component_db.user_db()[user_id].kind();
         let source = diagnostics.annotated(
-            TargetSpan::Registration(component_db.registration(user_id)),
+            component_db.registration_target(user_id),
             format!("The {kind} asking for `PathParams<{extracted_type:?}>`",),
         );
         let error = anyhow!(

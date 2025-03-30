@@ -18,6 +18,6 @@
   [31m│[0m  [2m12[0m │     if let UserAgent::Unknown = user_agent {
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `app::user_agent::UserAgent`.
-  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
+  [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input
   [31m│[0m         parameter of type `app::user_agent::UserAgent` to the (generated)
   [31m│[0m         `ApplicationState::new` method.

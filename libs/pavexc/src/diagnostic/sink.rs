@@ -3,7 +3,7 @@ use pavex_bp_schema::Location;
 use pavex_cli_diagnostic::AnnotatedSource;
 
 use super::{
-    OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile, Registration,
+    ComponentKind, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile, Registration,
     RegistrationKind, config_key_span, f_macro_span, imported_sources_span,
     registration_locations::attribute_span, registration_span, route_path_span,
 };
@@ -67,17 +67,19 @@ impl DiagnosticSink {
     ) -> Option<AnnotatedSource<ParsedSourceFile>> {
         let s = target.parse_source(self)?;
         let label = match target {
-            TargetSpan::Registration(registration) => registration_span(s.source(), registration),
+            TargetSpan::Registration(registration, kind) => {
+                registration_span(s.source(), registration, kind)
+            }
             TargetSpan::RoutePath(registration) => {
                 route_path_span(s.source(), &registration.location)
             }
             TargetSpan::ConfigKeySpan(registration) => {
                 config_key_span(s.source(), &registration.location)
             }
-            TargetSpan::RawIdentifiers(registration) => match registration.kind {
+            TargetSpan::RawIdentifiers(registration, kind) => match registration.kind {
                 RegistrationKind::Attribute => {
                     // TODO: Refine the span to point at the specific attribute/property we care about.
-                    attribute_span(s.source(), &registration.location)
+                    attribute_span(s.source(), &registration.location, kind)
                 }
                 RegistrationKind::Blueprint => f_macro_span(s.source(), &registration.location),
             },
@@ -93,7 +95,7 @@ impl DiagnosticSink {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TargetSpan<'a> {
     /// A span covering the entire registration expression.
-    Registration(&'a Registration),
+    Registration(&'a Registration, ComponentKind),
     /// A span covering the route path for a route registration.
     RoutePath(&'a Registration),
     /// A span covering the imported sources for an import.
@@ -106,7 +108,7 @@ pub enum TargetSpan<'a> {
     /// This works for both blueprint invocations and macro attributes that
     /// may include raw identifiers as arguments (e.g. an error handler specified
     /// inside a `#[pavex::constructor]` attribute).
-    RawIdentifiers(&'a Registration),
+    RawIdentifiers(&'a Registration, ComponentKind),
 }
 
 impl TargetSpan<'_> {
@@ -115,11 +117,11 @@ impl TargetSpan<'_> {
         use TargetSpan::*;
 
         match self {
-            Registration(registration)
+            Registration(registration, ..)
             | RoutePath(registration)
             | ImportedSources(registration)
             | ConfigKeySpan(registration)
-            | RawIdentifiers(registration) => &registration.location.file,
+            | RawIdentifiers(registration, ..) => &registration.location.file,
         }
     }
 

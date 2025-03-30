@@ -14,7 +14,7 @@ use crate::{
         traits::assert_trait_is_implemented,
         utils::process_framework_path,
     },
-    diagnostic::{self, AnnotatedSource, CompilerDiagnostic, HelpWithSnippet},
+    diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet},
     language::ResolvedType,
     rustdoc::CrateCollection,
 };
@@ -129,13 +129,9 @@ fn must_be_clonable(
     };
 
     let user_id = db.user_component_id(component_id).unwrap();
-    let registration = db.registration(user_id);
-    let source = diagnostics.annotated(
-        diagnostic::TargetSpan::Registration(registration),
-        "It was registered here",
-    );
+    let source = diagnostics.annotated(db.registration_target(user_id), "It was registered here");
     // Match the casing of the registration mechanism that was used.
-    let clone_if_necessary = if registration.kind.is_attribute() {
+    let clone_if_necessary = if db.registration(user_id).kind.is_attribute() {
         "clone_if_necessary"
     } else {
         "CloneIfNecessary"
