@@ -10,6 +10,7 @@ struct ServerState {
 pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub str_: &'static str,
+    pub u8_: &'static u8,
 }
 impl ApplicationState {
     pub async fn new(
@@ -18,9 +19,11 @@ impl ApplicationState {
         Ok(Self::_new().await)
     }
     async fn _new() -> crate::ApplicationState {
-        let v0 = app::static_str();
+        let v0 = app::static_u8();
+        let v1 = app::static_str();
         crate::ApplicationState {
-            str_: v0,
+            str_: v1,
+            u8_: v0,
         }
     }
 }
@@ -63,7 +66,7 @@ impl Router {
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
-        router.insert("/handler", 0u32).unwrap();
+        router.insert("/", 0u32).unwrap();
         router
     }
     pub async fn route(
@@ -86,7 +89,7 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(state.str_.clone()).await
+                        route_0::entrypoint(state.str_, state.u8_).await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -102,33 +105,38 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint(s_0: &'static str) -> pavex::response::Response {
-        let response = wrapping_0(s_0).await;
+    pub async fn entrypoint(
+        s_0: &'static str,
+        s_1: &'static u8,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0, s_1).await;
         response
     }
-    async fn stage_1(s_0: &'static str) -> pavex::response::Response {
-        let response = handler(s_0).await;
+    async fn stage_1(s_0: &'static u8, s_1: &'static str) -> pavex::response::Response {
+        let response = handler(s_0, s_1).await;
         response
     }
-    async fn wrapping_0(v0: &'static str) -> pavex::response::Response {
-        let v1 = crate::route_0::Next0 {
-            s_0: v0,
+    async fn wrapping_0(v0: &'static str, v1: &'static u8) -> pavex::response::Response {
+        let v2 = crate::route_0::Next0 {
+            s_0: v1,
+            s_1: v0,
             next: stage_1,
         };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = pavex::middleware::wrap_noop(v2).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+        let v3 = pavex::middleware::Next::new(v2);
+        let v4 = pavex::middleware::wrap_noop(v3).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    async fn handler(v0: &'static str) -> pavex::response::Response {
-        let v1 = app::handler(v0);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    async fn handler(v0: &'static u8, v1: &'static str) -> pavex::response::Response {
+        let v2 = app::handler(v1, v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'static str,
-        next: fn(&'static str) -> T,
+        s_0: &'static u8,
+        s_1: &'static str,
+        next: fn(&'static u8, &'static str) -> T,
     }
     impl<T> std::future::IntoFuture for Next0<T>
     where
@@ -137,7 +145,7 @@ pub mod route_0 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
