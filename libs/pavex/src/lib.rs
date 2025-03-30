@@ -29,6 +29,7 @@ pub mod serialization;
 pub mod server;
 pub mod telemetry;
 pub mod unit;
+#[cfg(feature = "time")]
 pub mod time {
     //! Utilities to work with dates, timestamps and datetimes.
     //!

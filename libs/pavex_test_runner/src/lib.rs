@@ -283,22 +283,27 @@ fn compile_generated_apps(
             .1;
         let package_name = package_name_and_version
             .split_once('@')
-            .expect("Missing version")
-            .0;
-        assert!(
-            generated_crate_names.contains(package_name),
-            "Error compiling a crate that's not one of ours, {}",
-            msg.package_id.repr
-        );
-        let errors = crate_names2error
-            .entry(package_name.to_owned())
-            .or_default();
-        writeln!(
-            errors,
-            "{}",
-            msg.message.rendered.unwrap_or(msg.message.message)
-        )
-        .unwrap();
+            .map(|v| v.0)
+            .unwrap_or_default();
+
+        if !generated_crate_names.contains(package_name) {
+            eprintln!(
+                "Error compiling a crate that's not one of ours, {}.\n\
+                {}",
+                msg.package_id.repr,
+                msg.message.rendered.unwrap_or(msg.message.message)
+            );
+        } else {
+            let errors = crate_names2error
+                .entry(package_name.to_owned())
+                .or_default();
+            writeln!(
+                errors,
+                "{}",
+                msg.message.rendered.unwrap_or(msg.message.message)
+            )
+            .unwrap();
+        }
     }
     let mut trials = Vec::new();
     let mut further = BTreeMap::new();

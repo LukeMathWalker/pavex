@@ -4,6 +4,7 @@ use crate::blueprint::linter::Lint;
 use crate::request::body::{BodySizeLimit, BufferedBody, JsonBody, UrlEncodedBody};
 use crate::request::path::PathParams;
 use crate::request::query::QueryParams;
+#[cfg(feature = "server_request_id")]
 use crate::telemetry::ServerRequestId;
 
 #[derive(Clone, Debug)]
@@ -21,7 +22,7 @@ use crate::telemetry::ServerRequestId;
 /// ```rust
 /// use pavex::blueprint::Blueprint;
 /// use pavex::kit::ApiKit;
-///  
+///
 /// let mut bp = Blueprint::new();
 /// let kit = ApiKit::new().register(&mut bp);
 /// ```
@@ -40,6 +41,7 @@ pub struct ApiKit {
     pub buffered_body: Option<Constructor>,
     /// The [default constructor](BodySizeLimit::default_constructor) for [`BodySizeLimit`].
     pub body_size_limit: Option<Constructor>,
+    #[cfg(feature = "server_request_id")]
     /// The [default constructor](ServerRequestId::default_constructor) for [`ServerRequestId`].
     pub server_request_id: Option<Constructor>,
 }
@@ -60,6 +62,7 @@ impl ApiKit {
             url_encoded_body: Some(UrlEncodedBody::default_constructor().ignore(Lint::Unused)),
             buffered_body: Some(BufferedBody::default_constructor().ignore(Lint::Unused)),
             body_size_limit: Some(BodySizeLimit::default_constructor().ignore(Lint::Unused)),
+            #[cfg(feature = "server_request_id")]
             server_request_id: Some(ServerRequestId::default_constructor().ignore(Lint::Unused)),
         }
     }
@@ -86,6 +89,7 @@ impl ApiKit {
         if let Some(body_size_limit) = self.body_size_limit {
             body_size_limit.register(bp);
         }
+        #[cfg(feature = "server_request_id")]
         if let Some(server_request_id) = self.server_request_id {
             server_request_id.register(bp);
         }

@@ -78,13 +78,14 @@ fn emit_unused_warning(
     let Some(user_id) = db.user_component_id(id) else {
         return;
     };
+    let registration = db.registration(user_id);
     let source = diagnostics.annotated(
-        diagnostic::TargetSpan::Registration(db.registration(user_id)),
+        diagnostic::TargetSpan::Registration(registration),
         "The unused constructor was registered here",
     );
     let HydratedComponent::Constructor(constructor) = db.hydrated_component(id, computation_db)
     else {
-        unreachable!()
+        return;
     };
     let output_type = constructor.output_type();
     let output_type = if output_type.is_result() {
@@ -93,21 +94,24 @@ fn emit_unused_warning(
         output_type
     };
     let Computation::Callable(callable) = &constructor.0 else {
-        unreachable!()
+        return;
     };
+    let output_type = output_type.display_for_error();
     let error = anyhow::anyhow!(
-        "You registered a constructor for `{output_type:?}`, \
+        "You registered a constructor for `{output_type}`, \
     but it's never used.\n\
-    `{}` is never invoked since no component is asking for `{output_type:?}` to be injected as one of its inputs.",
-        &callable.path
+    `{}` is never invoked since no component is asking for `{output_type}` to be injected as one of its inputs.",
+        &callable.path,
     );
+    let help = if registration.kind.from_blueprint() {
+        Some("If you want to ignore this warning, call `.ignore(Lint::Unused)` on the registered constructor.".to_string())
+    } else {
+        // TODO: Add support for ignoring lints for annotated constructors.
+        None
+    };
     let builder = CompilerDiagnostic::builder(error)
         .optional_source(source)
         .severity(Severity::Warning)
-        .help(
-            "If you want to ignore this warning, call `.ignore(Lint::Unused)` \
-        on the registered constructor."
-                .to_string(),
-        );
+        .optional_help(help);
     diagnostics.push(builder.build())
 }
