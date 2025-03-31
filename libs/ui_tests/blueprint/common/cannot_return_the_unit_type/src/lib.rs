@@ -1,6 +1,22 @@
+use pavex::blueprint::from;
 use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::response::Response;
+
+#[pavex::singleton]
+pub fn annotated_constructor() {
+    todo!()
+}
+
+#[pavex::request_scoped(error_handler = "crate::error_handler")]
+pub fn fallible_annotated_unit_constructor() -> Result<(), Error> {
+    todo!()
+}
+
+#[pavex::request_scoped(error_handler = "crate::error_handler")]
+pub fn fallible_annotated_constructor() -> Result<u64, Error> {
+    todo!()
+}
 
 pub fn constructor() {
     todo!()
@@ -59,6 +75,8 @@ pub fn fallible_unit_handler() -> Result<(), Error> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.import(from![crate]);
+
     bp.singleton(f!(crate::constructor));
     bp.request_scoped(f!(crate::fallible_unit_constructor));
     bp.request_scoped(f!(crate::fallible_constructor))

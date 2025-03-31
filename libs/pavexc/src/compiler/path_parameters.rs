@@ -1,8 +1,6 @@
 use anyhow::anyhow;
-use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
-use miette::Report;
 use petgraph::Direction;
 use petgraph::graph::NodeIndex;
 use rustdoc_types::{ItemEnum, StructKind};
@@ -16,8 +14,8 @@ use crate::compiler::analyses::router::Router;
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::utils::process_framework_path;
-use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::DiagnosticSink;
 use crate::language::{GenericArgument, ResolvedType};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
@@ -34,9 +32,8 @@ pub(crate) fn verify_path_parameters(
     handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
         "pavex::serialization::StructuralDeserialize",
@@ -94,7 +91,6 @@ pub(crate) fn verify_path_parameters(
         let Ok(struct_item) = must_be_a_plain_struct(
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
             graph,
@@ -154,7 +150,6 @@ pub(crate) fn verify_path_parameters(
             report_non_existing_path_parameters(
                 component_db,
                 computation_db,
-                package_graph,
                 diagnostics,
                 path,
                 graph,
@@ -173,8 +168,7 @@ pub(crate) fn verify_path_parameters(
 fn report_non_existing_path_parameters(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<Report>,
+    diagnostics: &mut DiagnosticSink,
     path: &str,
     call_graph: &RawCallGraph,
     ok_path_params_node_id: NodeIndex,
@@ -187,25 +181,16 @@ fn report_non_existing_path_parameters(
     // an error on each of them.
     let consuming_ids = path_params_consumer_ids(call_graph, ok_path_params_node_id);
     for component_id in consuming_ids {
-        let Some(user_component_id) = component_db.user_component_id(component_id) else {
+        let Some(user_id) = component_db.user_component_id(component_id) else {
             continue;
         };
-        let callable = &computation_db[user_component_id];
-        let raw_identifiers = component_db
-            .user_component_db()
-            .get_raw_callable_identifiers(user_component_id);
-        let callable_type = component_db.user_component_db()[user_component_id].kind();
-        let location = component_db
-            .user_component_db()
-            .get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                continue;
-            }
-        };
-        let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
+        let callable = &computation_db[user_id];
+        let kind = component_db.user_db()[user_id].kind();
+        let source = diagnostics.annotated(
+            component_db.registration_target(user_id),
+            format!("The {kind} asking for `PathParams<{extracted_type:?}>`",),
+        );
+
         if path_parameter_names.is_empty() {
             let error = anyhow!(
                 "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
@@ -213,16 +198,13 @@ fn report_non_existing_path_parameters(
                 callable.path
             );
             let d = CompilerDiagnostic::builder(error)
-                .source(source)
-                .optional_label(source_span.labeled(format!(
-                    "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
-                )))
+                .optional_source(source)
                 .help(
                     "Stop trying to extract path parameters, or add them to the path pattern!"
                         .into(),
                 )
                 .build();
-            diagnostics.push(d.into());
+            diagnostics.push(d);
         } else {
             let missing_msg = if non_existing_path_parameters.len() == 1 {
                 let name = non_existing_path_parameters.first().unwrap();
@@ -257,18 +239,15 @@ fn report_non_existing_path_parameters(
                     Every struct field in `{extracted_type:?}` must be named after one of the route \
                     parameters that appear in `{path}`:\n{path_parameters}\n\n\
                     {missing_msg}. This is going to cause a runtime error!",
-                raw_identifiers.fully_qualified_path().join("::"),
+                callable.path,
             );
             let d = CompilerDiagnostic::builder(error)
-                .source(source)
-                .optional_label(source_span.labeled(format!(
-                    "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
-                )))
+                .optional_source(source)
                 .help(
                     "Remove or rename the fields that do not map to a valid path parameter.".into(),
                 )
                 .build();
-            diagnostics.push(d.into());
+            diagnostics.push(d);
         }
     }
 }
@@ -280,9 +259,8 @@ fn report_non_existing_path_parameters(
 fn must_be_a_plain_struct(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<Report>,
+    diagnostics: &mut DiagnosticSink,
     call_graph: &RawCallGraph,
     ok_path_params_node_id: NodeIndex,
     extracted_type: &ResolvedType,
@@ -323,22 +301,15 @@ fn must_be_a_plain_struct(
     let consuming_ids = path_params_consumer_ids(call_graph, ok_path_params_node_id);
 
     for component_id in consuming_ids {
-        let Some(user_component_id) = component_db.user_component_id(component_id) else {
+        let Some(user_id) = component_db.user_component_id(component_id) else {
             continue;
         };
-        let callable = &computation_db[user_component_id];
-        let callable_type = component_db.user_component_db()[user_component_id].kind();
-        let location = component_db
-            .user_component_db()
-            .get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                continue;
-            }
-        };
-        let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
+        let callable = &computation_db[user_id];
+        let kind = component_db.user_db()[user_id].kind();
+        let source = diagnostics.annotated(
+            component_db.registration_target(user_id),
+            format!("The {kind} asking for `PathParams<{extracted_type:?}>`",),
+        );
         let error = anyhow!(
             "Path parameters must be extracted using a plain struct with named fields, \
             where the name of each field matches one of the path parameters specified \
@@ -349,17 +320,14 @@ fn must_be_a_plain_struct(
             callable.path
         );
         let d = CompilerDiagnostic::builder(error)
-            .source(source)
-            .optional_label(source_span.labeled(format!(
-                "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
-            )))
+            .optional_source(source)
             .help(
                 "Use a plain struct with named fields to extract path parameters.\n\
                 Check out `PathParams`' documentation for all the details!"
                     .into(),
             )
             .build();
-        diagnostics.push(d.into());
+        diagnostics.push(d);
     }
     Err(())
 }

@@ -113,8 +113,8 @@ pub mod route_0 {
         response
     }
     async fn stage_1(
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
+        s_0: pavex::request::RequestHead,
+        s_1: app::HttpClient,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1).await;
         response
@@ -124,8 +124,8 @@ pub mod route_0 {
         v1: pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = crate::route_0::Next0 {
-            s_0: v0,
-            s_1: v1,
+            s_0: v1,
+            s_1: v0,
             next: stage_1,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -133,10 +133,10 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn handler(
-        v0: app::HttpClient,
-        v1: pavex::request::RequestHead,
+        v0: pavex::request::RequestHead,
+        v1: app::HttpClient,
     ) -> pavex::response::Response {
-        let v2 = app::extract_path(v1).await;
+        let v2 = app::extract_path(v0).await;
         let v3 = match v2 {
             Ok(ok) => ok,
             Err(v3) => {
@@ -150,16 +150,16 @@ pub mod route_0 {
             }
         };
         let v4 = app::logger();
-        let v5 = app::stream_file(v3, v4, v0);
+        let v5 = app::stream_file(v3, v4, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
-        next: fn(app::HttpClient, pavex::request::RequestHead) -> T,
+        s_0: pavex::request::RequestHead,
+        s_1: app::HttpClient,
+        next: fn(pavex::request::RequestHead, app::HttpClient) -> T,
     }
     impl<T> std::future::IntoFuture for Next0<T>
     where

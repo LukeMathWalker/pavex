@@ -5,9 +5,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::get_ok_variant;
-use crate::diagnostic::{CompilerDiagnostic, OptionalSourceSpanExt};
-use crate::{diagnostic, try_source};
-use guppy::graph::PackageGraph;
+use crate::diagnostic::{CompilerDiagnostic, DiagnosticSink};
 use indexmap::IndexSet;
 use miette::Severity;
 use pavex_bp_schema::{Lint, LintSetting};
@@ -19,8 +17,7 @@ pub(crate) fn detect_unused<'a, I>(
     application_state_call_graph: &ApplicationStateCallGraph,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<miette::Report>,
+    diagnostics: &mut DiagnosticSink,
 ) where
     I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
@@ -68,32 +65,26 @@ pub(crate) fn detect_unused<'a, I>(
             }
         }
 
-        emit_unused_warning(id, component_db, computation_db, diagnostics, package_graph);
+        emit_unused_warning(id, component_db, computation_db, diagnostics);
     }
 }
 
 fn emit_unused_warning(
-    constructor_id: ComponentId,
-    component_db: &ComponentDb,
+    id: ComponentId,
+    db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut Vec<miette::Error>,
-    package_graph: &PackageGraph,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
-    let Some(user_component_id) = component_db.user_component_id(constructor_id) else {
+    let Some(user_id) = db.user_component_id(id) else {
         return;
     };
-    let location = component_db
-        .user_component_db()
-        .get_location(user_component_id);
-    let source = try_source!(location, package_graph, diagnostics);
-    let label = source.as_ref().and_then(|source| {
-        diagnostic::get_f_macro_invocation_span(source, location)
-            .labeled("The unused constructor was registered here".into())
-    });
-    let HydratedComponent::Constructor(constructor) =
-        component_db.hydrated_component(constructor_id, computation_db)
+    let source = diagnostics.annotated(
+        db.registration_target(user_id),
+        "The unused constructor was registered here",
+    );
+    let HydratedComponent::Constructor(constructor) = db.hydrated_component(id, computation_db)
     else {
-        unreachable!()
+        return;
     };
     let output_type = constructor.output_type();
     let output_type = if output_type.is_result() {
@@ -102,22 +93,24 @@ fn emit_unused_warning(
         output_type
     };
     let Computation::Callable(callable) = &constructor.0 else {
-        unreachable!()
+        return;
     };
+    let output_type = output_type.display_for_error();
     let error = anyhow::anyhow!(
-        "You registered a constructor for `{output_type:?}`, \
+        "You registered a constructor for `{output_type}`, \
     but it's never used.\n\
-    `{}` is never invoked since no component is asking for `{output_type:?}` to be injected as one of its inputs.",
-        &callable.path
+    `{}` is never invoked since no component is asking for `{output_type}` to be injected as one of its inputs.",
+        &callable.path,
     );
+    let help = if db.registration(user_id).kind.is_blueprint() {
+        Some("If you want to ignore this warning, call `.ignore(Lint::Unused)` on the registered constructor.".to_string())
+    } else {
+        // TODO: Add support for ignoring lints for annotated constructors.
+        None
+    };
     let builder = CompilerDiagnostic::builder(error)
         .optional_source(source)
-        .optional_label(label)
         .severity(Severity::Warning)
-        .help(
-            "If you want to ignore this warning, call `.ignore(Lint::Unused)` \
-        on the registered constructor."
-                .to_string(),
-        );
-    diagnostics.push(builder.build().into())
+        .optional_help(help);
+    diagnostics.push(builder.build())
 }

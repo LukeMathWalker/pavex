@@ -102,7 +102,7 @@ pub mod route_0 {
     }
     async fn stage_1(mut s_0: app::A) -> pavex::response::Response {
         let response = wrapping_1(&mut s_0).await;
-        let response = post_processing_0(s_0, response).await;
+        let response = post_processing_0(response, s_0).await;
         response
     }
     async fn stage_2<'a>(s_0: &'a mut app::A) -> pavex::response::Response {
@@ -133,10 +133,10 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
-        v0: app::A,
-        v1: pavex::response::Response,
+        v0: pavex::response::Response,
+        v1: app::A,
     ) -> pavex::response::Response {
-        let v2 = app::post(v0, v1);
+        let v2 = app::post(v1, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<T>

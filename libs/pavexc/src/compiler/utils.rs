@@ -1,6 +1,6 @@
 use guppy::graph::PackageGraph;
 
-use pavex_bp_schema::{RawIdentifiers, RegisteredAt};
+use pavex_bp_schema::{RawIdentifiers, CreatedAt};
 
 use crate::compiler::resolvers::resolve_callable;
 use crate::language::{Callable, GenericArgument, PathKind, ResolvedPath, ResolvedType};
@@ -37,7 +37,7 @@ pub(crate) fn process_framework_path(
 ) -> ResolvedType {
     let identifiers = RawIdentifiers::from_raw_parts(
         raw_path.into(),
-        RegisteredAt {
+        CreatedAt {
             // We are relying on a little hack to anchor our search:
             // all framework types belong to crates that are direct dependencies of `pavex`.
             // TODO: find a better way in the future.
@@ -62,7 +62,7 @@ pub(crate) fn process_framework_callable_path(
 ) -> Callable {
     let identifiers = RawIdentifiers::from_raw_parts(
         raw_path.into(),
-        RegisteredAt {
+        CreatedAt {
             // We are relying on a little hack to anchor our search:
             // all framework types belong to crates that are direct dependencies of `pavex`.
             // TODO: find a better way in the future.

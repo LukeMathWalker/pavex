@@ -377,12 +377,14 @@ impl CodegenedRequestHandlerPipeline {
         let handler_function_name = &entrypoint.sig.ident;
         let input_parameters = entrypoint_input_types.iter().map(|type_| {
             let mut is_shared_reference = false;
+            let mut is_static_reference = false;
             let inner_type = match type_ {
                 ResolvedType::Reference(r) => {
                     if !r.lifetime.is_static() {
                         is_shared_reference = true;
                         &r.inner
                     } else {
+                        is_static_reference = true;
                         type_
                     }
                 }
@@ -398,6 +400,12 @@ impl CodegenedRequestHandlerPipeline {
                 if is_shared_reference {
                     quote! {
                         &#server_state_ident.#field_name
+                    }
+                } else if is_static_reference {
+                    // TODO: this branch should execute whenever `type` is `Copy`.
+                    //  Static references are just a special case of the above.
+                    quote! {
+                        #server_state_ident.#field_name
                     }
                 } else {
                     quote! {

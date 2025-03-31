@@ -9,5 +9,5 @@
   [31m│[0m     ·             [35;1mThe unnecessary error handler was registered here[0m
   [31m│[0m  [2m25[0m │     bp.route(GET, "/home", f!(crate::request_handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove the error handler, it is not needed. The constructor is
+  [31m│[0m   [36mhelp:[0m Remove the error handler, it is not needed. The constructor is
   [31m│[0m         infallible!

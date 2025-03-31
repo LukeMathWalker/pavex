@@ -18,9 +18,8 @@
   [31m│[0m  [2m26[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `u64`.
-  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
-  [31m│[0m         parameter of type `u64` to the (generated) `ApplicationState::new`
-  [31m│[0m         method.
+  [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input parameter
+  [31m│[0m         of type `u64` to the (generated) `ApplicationState::new` method.
 [31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `u32`.
   [31m│[0m I need an instance of `u32` to invoke your request handler,
@@ -41,9 +40,8 @@
   [31m│[0m  [2m26[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `u32`.
-  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
-  [31m│[0m         parameter of type `u32` to the (generated) `ApplicationState::new`
-  [31m│[0m         method.
+  [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input parameter
+  [31m│[0m         of type `u32` to the (generated) `ApplicationState::new` method.
 [31;1mERROR[0m:
   [31m×[0m I can't find a constructor for `u16`.
   [31m│[0m I need an instance of `u16` to invoke your request handler,
@@ -64,6 +62,5 @@
   [31m│[0m  [2m26[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `u16`.
-  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
-  [31m│[0m         parameter of type `u16` to the (generated) `ApplicationState::new`
-  [31m│[0m         method.
+  [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input parameter
+  [31m│[0m         of type `u16` to the (generated) `ApplicationState::new` method.

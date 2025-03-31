@@ -18,4 +18,4 @@
   [31m│[0m     ·                        [35;1m╰── The second domain[0m
   [31m│[0m  [2m16[0m │         let mut bp = Blueprint::new();
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mCan you rewrite your domain constraints so that they don't overlap?
+  [31m│[0m   [36mhelp:[0m Can you rewrite your domain constraints so that they don't overlap?

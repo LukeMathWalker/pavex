@@ -87,9 +87,9 @@ impl Router {
                 "*",
             );
             return route_2::entrypoint(
-                    &request_head,
                     matched_route_template,
                     &allowed_methods,
+                    &request_head,
                 )
                 .await;
         };
@@ -104,10 +104,10 @@ impl Router {
                             "/api/greet/{name}",
                         );
                         route_1::entrypoint(
-                                url_params,
-                                &request_head,
                                 matched_route_template,
+                                url_params,
                                 &state.greet_config,
+                                &request_head,
                             )
                             .await
                     }
@@ -120,9 +120,9 @@ impl Router {
                             "/api/greet/{name}",
                         );
                         route_2::entrypoint(
-                                &request_head,
                                 matched_route_template,
                                 &allowed_methods,
+                                &request_head,
                             )
                             .await
                     }
@@ -145,9 +145,9 @@ impl Router {
                             "/api/ping",
                         );
                         route_2::entrypoint(
-                                &request_head,
                                 matched_route_template,
                                 &allowed_methods,
+                                &request_head,
                             )
                             .await
                     }
@@ -257,10 +257,10 @@ pub mod route_0 {
 }
 pub mod route_1 {
     pub async fn entrypoint<'a, 'b, 'c, 'd>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        s_1: &'c pavex::request::RequestHead,
-        s_2: pavex::request::path::MatchedPathPattern,
-        s_3: &'d app::configuration::GreetConfig,
+        s_0: pavex::request::path::MatchedPathPattern,
+        s_1: pavex::request::path::RawPathParams<'a, 'b>,
+        s_2: &'c app::configuration::GreetConfig,
+        s_3: &'d pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
@@ -268,8 +268,8 @@ pub mod route_1 {
     async fn stage_1<'a, 'b, 'c, 'd>(
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
         s_1: &'c app::configuration::GreetConfig,
-        s_2: &'d pavex::request::RequestHead,
-        s_3: pavex::request::path::MatchedPathPattern,
+        s_2: pavex::request::path::MatchedPathPattern,
+        s_3: &'d pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let response = wrapping_1(s_0, s_2, s_3, s_1).await;
         response
@@ -279,21 +279,21 @@ pub mod route_1 {
         s_1: pavex::request::path::RawPathParams<'b, 'c>,
         s_2: &'d app::configuration::GreetConfig,
     ) -> pavex::response::Response {
-        let response = handler(s_0, s_1, s_2).await;
+        let response = handler(s_1, s_0, s_2).await;
         let response = post_processing_0(response, s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
-        v1: &pavex::request::RequestHead,
-        v2: pavex::request::path::MatchedPathPattern,
-        v3: &app::configuration::GreetConfig,
+        v0: pavex::request::path::MatchedPathPattern,
+        v1: pavex::request::path::RawPathParams<'_, '_>,
+        v2: &app::configuration::GreetConfig,
+        v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = crate::route_1::Next0 {
-            s_0: v0,
-            s_1: v3,
-            s_2: v1,
-            s_3: v2,
+            s_0: v1,
+            s_1: v2,
+            s_2: v0,
+            s_3: v3,
             next: stage_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -302,12 +302,12 @@ pub mod route_1 {
     }
     async fn wrapping_1(
         v0: pavex::request::path::RawPathParams<'_, '_>,
-        v1: &pavex::request::RequestHead,
-        v2: pavex::request::path::MatchedPathPattern,
+        v1: pavex::request::path::MatchedPathPattern,
+        v2: &pavex::request::RequestHead,
         v3: &app::configuration::GreetConfig,
     ) -> pavex::response::Response {
         let v4 = pavex::telemetry::ServerRequestId::generate();
-        let v5 = app::telemetry::root_span(v1, v2, v4);
+        let v5 = app::telemetry::root_span(v2, v1, v4);
         let v6 = crate::route_1::Next1 {
             s_0: &v5,
             s_1: v0,
@@ -320,11 +320,11 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v9)
     }
     async fn handler(
-        v0: &pavex_tracing::RootSpan,
-        v1: pavex::request::path::RawPathParams<'_, '_>,
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
         v2: &app::configuration::GreetConfig,
     ) -> pavex::response::Response {
-        let v3 = pavex::request::path::PathParams::extract(v1);
+        let v3 = pavex::request::path::PathParams::extract(v0);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
@@ -333,7 +333,7 @@ pub mod route_1 {
                         &v4,
                     );
                     let v6 = pavex::Error::new(v4);
-                    app::telemetry::error_logger(&v6, v0).await;
+                    app::telemetry::error_logger(&v6, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v5,
                     )
@@ -356,13 +356,13 @@ pub mod route_1 {
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
         s_1: &'c app::configuration::GreetConfig,
-        s_2: &'d pavex::request::RequestHead,
-        s_3: pavex::request::path::MatchedPathPattern,
+        s_2: pavex::request::path::MatchedPathPattern,
+        s_3: &'d pavex::request::RequestHead,
         next: fn(
             pavex::request::path::RawPathParams<'a, 'b>,
             &'c app::configuration::GreetConfig,
-            &'d pavex::request::RequestHead,
             pavex::request::path::MatchedPathPattern,
+            &'d pavex::request::RequestHead,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, T>
@@ -401,17 +401,17 @@ pub mod route_1 {
 }
 pub mod route_2 {
     pub async fn entrypoint<'a, 'b>(
-        s_0: &'a pavex::request::RequestHead,
-        s_1: pavex::request::path::MatchedPathPattern,
-        s_2: &'b pavex::router::AllowedMethods,
+        s_0: pavex::request::path::MatchedPathPattern,
+        s_1: &'a pavex::router::AllowedMethods,
+        s_2: &'b pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2).await;
         response
     }
     async fn stage_1<'a, 'b>(
         s_0: &'a pavex::router::AllowedMethods,
-        s_1: &'b pavex::request::RequestHead,
-        s_2: pavex::request::path::MatchedPathPattern,
+        s_1: pavex::request::path::MatchedPathPattern,
+        s_2: &'b pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let response = wrapping_1(s_1, s_2, s_0).await;
         response
@@ -425,14 +425,14 @@ pub mod route_2 {
         response
     }
     async fn wrapping_0(
-        v0: &pavex::request::RequestHead,
-        v1: pavex::request::path::MatchedPathPattern,
-        v2: &pavex::router::AllowedMethods,
+        v0: pavex::request::path::MatchedPathPattern,
+        v1: &pavex::router::AllowedMethods,
+        v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = crate::route_2::Next0 {
-            s_0: v2,
+            s_0: v1,
             s_1: v0,
-            s_2: v1,
+            s_2: v2,
             next: stage_1,
         };
         let v4 = pavex::middleware::Next::new(v3);
@@ -440,12 +440,12 @@ pub mod route_2 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     async fn wrapping_1(
-        v0: &pavex::request::RequestHead,
-        v1: pavex::request::path::MatchedPathPattern,
+        v0: pavex::request::path::MatchedPathPattern,
+        v1: &pavex::request::RequestHead,
         v2: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v3 = pavex::telemetry::ServerRequestId::generate();
-        let v4 = app::telemetry::root_span(v0, v1, v3);
+        let v4 = app::telemetry::root_span(v1, v0, v3);
         let v5 = crate::route_2::Next1 {
             s_0: &v4,
             s_1: v2,
@@ -472,12 +472,12 @@ pub mod route_2 {
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: &'a pavex::router::AllowedMethods,
-        s_1: &'b pavex::request::RequestHead,
-        s_2: pavex::request::path::MatchedPathPattern,
+        s_1: pavex::request::path::MatchedPathPattern,
+        s_2: &'b pavex::request::RequestHead,
         next: fn(
             &'a pavex::router::AllowedMethods,
-            &'b pavex::request::RequestHead,
             pavex::request::path::MatchedPathPattern,
+            &'b pavex::request::RequestHead,
         ) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>

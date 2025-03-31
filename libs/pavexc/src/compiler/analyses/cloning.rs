@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use pavex_bp_schema::CloningStrategy;
 
 use crate::{
@@ -10,10 +9,9 @@ use crate::{
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
         utils::process_framework_path,
     },
-    diagnostic::{self, CompilerDiagnostic, ComponentKind, OptionalSourceSpanExt},
+    diagnostic::{CompilerDiagnostic, ComponentKind},
     language::ResolvedType,
     rustdoc::CrateCollection,
-    try_source,
 };
 
 /// Verify that all types whose cloning strategy is set to "CloneIfNecessary" can actually
@@ -22,9 +20,8 @@ use crate::{
 pub(crate) fn clonables_can_be_cloned<'a>(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let clone = process_framework_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
@@ -52,7 +49,6 @@ pub(crate) fn clonables_can_be_cloned<'a>(
                 e,
                 output_type,
                 id,
-                package_graph,
                 component_db,
                 computation_db,
                 diagnostics,
@@ -64,60 +60,53 @@ pub(crate) fn clonables_can_be_cloned<'a>(
 fn must_be_clonable(
     e: MissingTraitImplementationError,
     type_: &ResolvedType,
-    component_id: ComponentId,
-    package_graph: &PackageGraph,
-    component_db: &ComponentDb,
+    id: ComponentId,
+    db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
-    let component_id = component_db
-        .derived_from(&component_id)
-        .unwrap_or(component_id);
-    let user_component_id = component_db.user_component_id(component_id).unwrap();
-    let user_component_db = &component_db.user_component_db();
-    let component_kind = user_component_db[user_component_id].kind();
-    let location = user_component_db.get_location(user_component_id);
-    let source = try_source!(location, package_graph, diagnostics);
-    let label = source.as_ref().and_then(|source| {
-        diagnostic::get_f_macro_invocation_span(source, location)
-            .labeled(format!("The {component_kind} was registered here"))
-    });
-    let error_msg = match component_kind {
+    let id = db.derived_from(&id).unwrap_or(id);
+    let user_id = db.user_component_id(id).unwrap();
+    let kind = db.user_db()[user_id].kind();
+    let registration = db.registration(user_id);
+    let source = diagnostics.annotated(
+        db.registration_target(user_id),
+        format!("The {kind} was registered here"),
+    );
+    // Match the casing that you would use in each circumstance.
+    let (clone_if_necessary, never_clone) = if registration.kind.is_attribute() {
+        ("clone_if_necessary", "never_clone")
+    } else {
+        ("CloneIfNecessary", "NeverClone")
+    };
+    let output_type = type_.display_for_error();
+    let error_msg = match kind {
         ComponentKind::Constructor => {
-            let callable_path = &computation_db[user_component_id].path;
+            let callable_path = &computation_db[user_id].path;
             format!(
-                "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
-                The cloning strategy for `{callable_path}` is `CloneIfNecessary`, but `{}`, its output type, doesn't implement the `Clone` trait.",
-                type_.display_for_error(),
+                "`{output_type}` doesn't implement the `Clone` trait, but its constructor, `{callable_path}`, is marked as `{clone_if_necessary}`."
             )
         }
         ComponentKind::PrebuiltType => {
             format!(
-                "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
-                The cloning strategy for `{}`, a prebuilt type, is `CloneIfNecessary`, but it doesn't implement the `Clone` trait.",
-                type_.display_for_error(),
+                "`{output_type}` doesn't implement the `Clone` trait, but it's marked as `{clone_if_necessary}`."
             )
         }
         ComponentKind::ConfigType => {
             format!(
                 "All configuration types must be clonable.\n\
-                `{}` is a configuration type, but it doesn't implement the `Clone` trait.",
-                type_.display_for_error(),
+                `{output_type}` is a configuration type, but it doesn't implement the `Clone` trait.",
             )
         }
         _ => unreachable!(),
     };
     let e = anyhow::anyhow!(e).context(error_msg);
-    let help = (component_kind != ComponentKind::ConfigType).then(|| {
-        format!(
-            "Either set the cloning strategy to `NeverClone` or implement `Clone` for `{}`",
-            type_.display_for_error()
-        )
+    let help = (kind != ComponentKind::ConfigType).then(|| {
+        format!("Implement the `Clone` trait for `{output_type}`, or mark it as `{never_clone}`.",)
     });
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
-        .optional_label(label)
         .optional_help(help)
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }

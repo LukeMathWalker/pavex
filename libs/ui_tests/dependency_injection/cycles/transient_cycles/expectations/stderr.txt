@@ -11,5 +11,5 @@
   [31m│[0m - `app::a` depends on `app::B`, which is built by
   [31m│[0m `app::b`
   [31m│[0m
-  [31m│[0m [36m  help: [0mBreak the cycle! Remove one of the 'depends-on' relationship by
+  [31m│[0m   [36mhelp:[0m Break the cycle! Remove one of the 'depends-on' relationship by
   [31m│[0m         changing the signature of one of the components in the cycle.

@@ -84,12 +84,12 @@ impl Router {
             let connection_info = connection_info
                 .expect("Required ConnectionInfo is missing");
             return route_0::entrypoint(
+                    &connection_info,
+                    &request_head,
                     &request_body,
                     &allowed_methods,
                     &matched_route_template,
                     &url_params,
-                    &connection_info,
-                    &request_head,
                 )
                 .await;
         };
@@ -106,12 +106,12 @@ impl Router {
                     "/nested{*catch_all}",
                 );
                 route_1::entrypoint(
+                        &connection_info,
+                        &request_head,
                         &request_body,
                         &allowed_methods,
                         &matched_route_template,
                         &url_params,
-                        &connection_info,
-                        &request_head,
                     )
                     .await
             }
@@ -121,42 +121,42 @@ impl Router {
 }
 pub mod route_0 {
     pub async fn entrypoint<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h>(
-        s_0: &'a pavex::request::body::RawIncomingBody,
-        s_1: &'b pavex::router::AllowedMethods,
-        s_2: &'c pavex::request::path::MatchedPathPattern,
-        s_3: &'f pavex::request::path::RawPathParams<'d, 'e>,
-        s_4: &'g pavex::connection::ConnectionInfo,
-        s_5: &'h pavex::request::RequestHead,
+        s_0: &'a pavex::connection::ConnectionInfo,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: &'c pavex::request::body::RawIncomingBody,
+        s_3: &'d pavex::router::AllowedMethods,
+        s_4: &'e pavex::request::path::MatchedPathPattern,
+        s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
     async fn stage_1<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h>(
-        s_0: &'a pavex::request::RequestHead,
-        s_1: &'b pavex::request::body::RawIncomingBody,
-        s_2: &'c pavex::router::AllowedMethods,
-        s_3: &'d pavex::request::path::MatchedPathPattern,
-        s_4: &'g pavex::request::path::RawPathParams<'e, 'f>,
-        s_5: &'h pavex::connection::ConnectionInfo,
+        s_0: &'a pavex::connection::ConnectionInfo,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: &'c pavex::request::body::RawIncomingBody,
+        s_3: &'d pavex::router::AllowedMethods,
+        s_4: &'e pavex::request::path::MatchedPathPattern,
+        s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
     async fn wrapping_0(
-        v0: &pavex::request::body::RawIncomingBody,
-        v1: &pavex::router::AllowedMethods,
-        v2: &pavex::request::path::MatchedPathPattern,
-        v3: &pavex::request::path::RawPathParams<'_, '_>,
-        v4: &pavex::connection::ConnectionInfo,
-        v5: &pavex::request::RequestHead,
+        v0: &pavex::connection::ConnectionInfo,
+        v1: &pavex::request::RequestHead,
+        v2: &pavex::request::body::RawIncomingBody,
+        v3: &pavex::router::AllowedMethods,
+        v4: &pavex::request::path::MatchedPathPattern,
+        v5: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
         let v6 = crate::route_0::Next0 {
-            s_0: v5,
-            s_1: v0,
-            s_2: v1,
-            s_3: v2,
-            s_4: v3,
-            s_5: v4,
+            s_0: v0,
+            s_1: v1,
+            s_2: v2,
+            s_3: v3,
+            s_4: v4,
+            s_5: v5,
             next: stage_1,
         };
         let v7 = pavex::middleware::Next::new(v6);
@@ -164,33 +164,33 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
     }
     async fn handler(
-        v0: &pavex::request::RequestHead,
-        v1: &pavex::request::body::RawIncomingBody,
-        v2: &pavex::router::AllowedMethods,
-        v3: &pavex::request::path::MatchedPathPattern,
-        v4: &pavex::request::path::RawPathParams<'_, '_>,
-        v5: &pavex::connection::ConnectionInfo,
+        v0: &pavex::connection::ConnectionInfo,
+        v1: &pavex::request::RequestHead,
+        v2: &pavex::request::body::RawIncomingBody,
+        v3: &pavex::router::AllowedMethods,
+        v4: &pavex::request::path::MatchedPathPattern,
+        v5: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v6 = app::handler(v5, v0, v1, v2, v3, v4);
+        let v6 = app::handler(v0, v1, v2, v3, v4, v5);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::request::RequestHead,
-        s_1: &'b pavex::request::body::RawIncomingBody,
-        s_2: &'c pavex::router::AllowedMethods,
-        s_3: &'d pavex::request::path::MatchedPathPattern,
-        s_4: &'g pavex::request::path::RawPathParams<'e, 'f>,
-        s_5: &'h pavex::connection::ConnectionInfo,
+        s_0: &'a pavex::connection::ConnectionInfo,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: &'c pavex::request::body::RawIncomingBody,
+        s_3: &'d pavex::router::AllowedMethods,
+        s_4: &'e pavex::request::path::MatchedPathPattern,
+        s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
         next: fn(
-            &'a pavex::request::RequestHead,
-            &'b pavex::request::body::RawIncomingBody,
-            &'c pavex::router::AllowedMethods,
-            &'d pavex::request::path::MatchedPathPattern,
-            &'g pavex::request::path::RawPathParams<'e, 'f>,
-            &'h pavex::connection::ConnectionInfo,
+            &'a pavex::connection::ConnectionInfo,
+            &'b pavex::request::RequestHead,
+            &'c pavex::request::body::RawIncomingBody,
+            &'d pavex::router::AllowedMethods,
+            &'e pavex::request::path::MatchedPathPattern,
+            &'h pavex::request::path::RawPathParams<'f, 'g>,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T> std::future::IntoFuture
@@ -207,42 +207,42 @@ pub mod route_0 {
 }
 pub mod route_1 {
     pub async fn entrypoint<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h>(
-        s_0: &'a pavex::request::body::RawIncomingBody,
-        s_1: &'b pavex::router::AllowedMethods,
-        s_2: &'c pavex::request::path::MatchedPathPattern,
-        s_3: &'f pavex::request::path::RawPathParams<'d, 'e>,
-        s_4: &'g pavex::connection::ConnectionInfo,
-        s_5: &'h pavex::request::RequestHead,
+        s_0: &'a pavex::connection::ConnectionInfo,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: &'c pavex::request::body::RawIncomingBody,
+        s_3: &'d pavex::router::AllowedMethods,
+        s_4: &'e pavex::request::path::MatchedPathPattern,
+        s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
     async fn stage_1<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h>(
-        s_0: &'a pavex::request::RequestHead,
-        s_1: &'b pavex::request::body::RawIncomingBody,
-        s_2: &'c pavex::router::AllowedMethods,
-        s_3: &'d pavex::request::path::MatchedPathPattern,
-        s_4: &'g pavex::request::path::RawPathParams<'e, 'f>,
-        s_5: &'h pavex::connection::ConnectionInfo,
+        s_0: &'a pavex::connection::ConnectionInfo,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: &'c pavex::request::body::RawIncomingBody,
+        s_3: &'d pavex::router::AllowedMethods,
+        s_4: &'e pavex::request::path::MatchedPathPattern,
+        s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
     async fn wrapping_0(
-        v0: &pavex::request::body::RawIncomingBody,
-        v1: &pavex::router::AllowedMethods,
-        v2: &pavex::request::path::MatchedPathPattern,
-        v3: &pavex::request::path::RawPathParams<'_, '_>,
-        v4: &pavex::connection::ConnectionInfo,
-        v5: &pavex::request::RequestHead,
+        v0: &pavex::connection::ConnectionInfo,
+        v1: &pavex::request::RequestHead,
+        v2: &pavex::request::body::RawIncomingBody,
+        v3: &pavex::router::AllowedMethods,
+        v4: &pavex::request::path::MatchedPathPattern,
+        v5: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
         let v6 = crate::route_1::Next0 {
-            s_0: v5,
-            s_1: v0,
-            s_2: v1,
-            s_3: v2,
-            s_4: v3,
-            s_5: v4,
+            s_0: v0,
+            s_1: v1,
+            s_2: v2,
+            s_3: v3,
+            s_4: v4,
+            s_5: v5,
             next: stage_1,
         };
         let v7 = pavex::middleware::Next::new(v6);
@@ -250,33 +250,33 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
     }
     async fn handler(
-        v0: &pavex::request::RequestHead,
-        v1: &pavex::request::body::RawIncomingBody,
-        v2: &pavex::router::AllowedMethods,
-        v3: &pavex::request::path::MatchedPathPattern,
-        v4: &pavex::request::path::RawPathParams<'_, '_>,
-        v5: &pavex::connection::ConnectionInfo,
+        v0: &pavex::connection::ConnectionInfo,
+        v1: &pavex::request::RequestHead,
+        v2: &pavex::request::body::RawIncomingBody,
+        v3: &pavex::router::AllowedMethods,
+        v4: &pavex::request::path::MatchedPathPattern,
+        v5: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v6 = app::handler(v5, v0, v1, v2, v3, v4);
+        let v6 = app::handler(v0, v1, v2, v3, v4, v5);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::request::RequestHead,
-        s_1: &'b pavex::request::body::RawIncomingBody,
-        s_2: &'c pavex::router::AllowedMethods,
-        s_3: &'d pavex::request::path::MatchedPathPattern,
-        s_4: &'g pavex::request::path::RawPathParams<'e, 'f>,
-        s_5: &'h pavex::connection::ConnectionInfo,
+        s_0: &'a pavex::connection::ConnectionInfo,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: &'c pavex::request::body::RawIncomingBody,
+        s_3: &'d pavex::router::AllowedMethods,
+        s_4: &'e pavex::request::path::MatchedPathPattern,
+        s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
         next: fn(
-            &'a pavex::request::RequestHead,
-            &'b pavex::request::body::RawIncomingBody,
-            &'c pavex::router::AllowedMethods,
-            &'d pavex::request::path::MatchedPathPattern,
-            &'g pavex::request::path::RawPathParams<'e, 'f>,
-            &'h pavex::connection::ConnectionInfo,
+            &'a pavex::connection::ConnectionInfo,
+            &'b pavex::request::RequestHead,
+            &'c pavex::request::body::RawIncomingBody,
+            &'d pavex::router::AllowedMethods,
+            &'e pavex::request::path::MatchedPathPattern,
+            &'h pavex::request::path::RawPathParams<'f, 'g>,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T> std::future::IntoFuture

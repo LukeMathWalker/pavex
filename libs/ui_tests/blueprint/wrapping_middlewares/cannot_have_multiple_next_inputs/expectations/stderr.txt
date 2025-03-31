@@ -10,4 +10,4 @@
   [31m│[0m     ·                   [35;1m╰── The wrapping middleware was registered here[0m
   [31m│[0m  [2m22[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove the extra `Next` input parameters until only one is left.
+  [31m│[0m   [36mhelp:[0m Remove the extra `Next` input parameters until only one is left.

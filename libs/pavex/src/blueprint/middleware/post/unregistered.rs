@@ -1,7 +1,7 @@
 use crate::blueprint::Blueprint;
 use crate::blueprint::conversions::raw_identifiers2callable;
 use crate::blueprint::middleware::RegisteredPostProcessingMiddleware;
-use crate::blueprint::reflection::RawIdentifiers;
+use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
 use pavex_bp_schema::Callable;
 
 /// A post-processing middleware that has been configured
@@ -30,7 +30,7 @@ impl PostProcessingMiddleware {
     /// Check out the documentation of [`Blueprint::post_process`] for more details
     /// on middleware.
     #[track_caller]
-    pub fn new(callable: RawIdentifiers) -> Self {
+    pub fn new(callable: WithLocation<RawIdentifiers>) -> Self {
         Self {
             callable: raw_identifiers2callable(callable),
             error_handler: None,
@@ -41,7 +41,7 @@ impl PostProcessingMiddleware {
     ///
     /// Check out the documentation of [`RegisteredPostProcessingMiddleware::error_handler`] for more details.
     #[track_caller]
-    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
         self.error_handler = Some(raw_identifiers2callable(error_handler));
         self
     }

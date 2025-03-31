@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use ahash::{HashMap, HashMapExt};
 use convert_case::{Case, Casing};
 use guppy::PackageId;
-use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 
@@ -22,7 +21,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
-use crate::compiler::computation::Computation;
+use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
     Callable, GenericArgument, InvocationStyle, PathType, ResolvedPath, ResolvedPathSegment,
     ResolvedType,
@@ -37,9 +36,8 @@ pub(crate) fn application_state_call_graph(
     component_db: &mut ComponentDb,
     constructible_db: &mut ConstructibleDb,
     framework_item_db: &FrameworkItemDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Result<ApplicationStateCallGraph, ()> {
     fn lifecycle2invocations(lifecycle: Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match lifecycle {
@@ -71,6 +69,7 @@ pub(crate) fn application_state_call_graph(
         call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     }) = build_call_graph(
         application_state_id,
         &IndexSet::new(),
@@ -93,27 +92,26 @@ pub(crate) fn application_state_call_graph(
     // Let's start by collecting the possible error types.
     let error_type2err_match_ids = {
         let mut map = IndexMap::<_, BTreeSet<ComponentId>>::new();
-        let mut output_node_indexes = call_graph
-            .externals(Direction::Outgoing)
-            .collect::<BTreeSet<_>>();
-        // We only care about errors at this point.
-        output_node_indexes.remove(&root_node_index);
-        for output_node_index in output_node_indexes {
+        for output_node_index in call_graph.externals(Direction::Outgoing) {
             let CallGraphNode::Compute { component_id, .. } = &call_graph[output_node_index] else {
                 unreachable!()
             };
             let component = component_db.hydrated_component(*component_id, computation_db);
-            assert!(
-                matches!(
-                    component,
-                    HydratedComponent::Transformer(Computation::MatchResult(_), ..),
-                ),
-                "One of the output components is not a `MatchResult` transformer: {:?}",
-                component
-            );
-            map.entry(component.output_type().unwrap().to_owned())
-                .or_default()
-                .insert(*component_id);
+            let HydratedComponent::Transformer(Computation::MatchResult(matcher), ..) = &component
+            else {
+                if output_node_index == root_node_index {
+                    continue;
+                }
+                panic!(
+                    "One of the output components is not a `MatchResult` transformer: {:?}",
+                    component
+                );
+            };
+            if matcher.variant == MatchResultVariant::Err {
+                map.entry(component.output_type().unwrap().to_owned())
+                    .or_default()
+                    .insert(*component_id);
+            }
         }
         map
     };
@@ -129,6 +127,7 @@ pub(crate) fn application_state_call_graph(
                 call_graph,
                 root_node_index,
                 root_scope_id,
+                root_component_id,
             },
             Default::default(),
         )
@@ -324,7 +323,6 @@ pub(crate) fn application_state_call_graph(
         call_graph,
         component_db,
         computation_db,
-        package_graph,
         krate_collection,
         diagnostics,
     )?;

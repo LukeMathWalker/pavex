@@ -1,7 +1,9 @@
-use ahash::{HashMap, HashMapExt};
-use guppy::graph::PackageGraph;
+use bimap::BiHashMap;
 use indexmap::IndexSet;
+use itertools::Itertools;
 use petgraph::Direction;
+
+use petgraph::prelude::StableGraph;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::compiler::analyses::call_graph::borrow_checker::complex::complex_borrow_check;
@@ -28,9 +30,8 @@ impl OrderedCallGraph {
         call_graph: CallGraph,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<OrderedCallGraph, ()> {
         let copy_checker = CopyChecker::new(krate_collection);
         let call_graph = Self::borrow_check(
@@ -38,7 +39,6 @@ impl OrderedCallGraph {
             &copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         )?;
@@ -58,9 +58,8 @@ impl OrderedCallGraph {
         copy_checker: &CopyChecker,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<CallGraph, ()> {
         let n_diagnostics = diagnostics.len();
 
@@ -70,7 +69,6 @@ impl OrderedCallGraph {
             copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         );
@@ -79,7 +77,6 @@ impl OrderedCallGraph {
             copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         );
@@ -94,7 +91,6 @@ impl OrderedCallGraph {
             copy_checker,
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             diagnostics,
         );
@@ -117,9 +113,11 @@ impl OrderedCallGraph {
         let CallGraph {
             call_graph,
             root_node_index,
+            root_component_id,
             ..
         } = call_graph;
-        let mut node_id2position = HashMap::with_capacity(call_graph.node_count());
+        let mut node_id2position: BiHashMap<NodeIndex, usize> =
+            BiHashMap::with_capacity(call_graph.node_count());
         let mut ownership_relationships = OwnershipRelationships::compute(&call_graph);
         let mut position_counter = 0;
 
@@ -130,7 +128,7 @@ impl OrderedCallGraph {
         let mut discovered_nodes = IndexSet::new();
         'fixed_point: loop {
             while let Some(node_index) = nodes_to_visit.pop() {
-                if node_id2position.contains_key(&node_index) {
+                if node_id2position.contains_left(&node_index) {
                     // We have already processed this node, we can skip it.
                     continue;
                 }
@@ -142,7 +140,7 @@ impl OrderedCallGraph {
                         call_graph
                             .neighbors_directed(node_index, Direction::Incoming)
                             .filter(|neighbour_index| {
-                                !node_id2position.contains_key(neighbour_index)
+                                !node_id2position.contains_left(neighbour_index)
                             }),
                     );
                     continue;
@@ -154,7 +152,7 @@ impl OrderedCallGraph {
                     .any(|neighbour_index| {
                         // A node is blocked if any of its dependencies:
                         // - has not been processed yet
-                        !node_id2position.contains_key(&neighbour_index) || {
+                        !node_id2position.contains_left(&neighbour_index) || {
                             // - is consumed by the current node and but it must also be borrowed
                             //   by another node that has not been processed yet.
                             let node_relationships = ownership_relationships.node(neighbour_index);
@@ -189,7 +187,7 @@ impl OrderedCallGraph {
                         call_graph
                             .neighbors_directed(node_index, Direction::Incoming)
                             .filter(|neighbour_index| {
-                                !(node_id2position.contains_key(neighbour_index)
+                                !(node_id2position.contains_left(neighbour_index)
                                     || parked_nodes.contains(neighbour_index))
                             }),
                     );
@@ -214,10 +212,44 @@ impl OrderedCallGraph {
             nodes_to_visit.extend(std::mem::take(&mut parked_nodes));
         }
 
+        // Build a new call graph where the id of a node matches its position.
+        let (new_root_index, new_graph) = {
+            let mut new_graph =
+                StableGraph::with_capacity(call_graph.node_count(), call_graph.edge_count());
+            // First we add all nodes to the graph.
+            for (&node_index, &position) in node_id2position
+                .iter()
+                .sorted_by_key(|(_, position)| *position)
+            {
+                let new_index = new_graph.add_node(call_graph[node_index].clone());
+                debug_assert_eq!(
+                    new_index.index(),
+                    position,
+                    "The index of node {} in the new graph should match its position, but it doesn't.",
+                    node_index.index()
+                );
+            }
+            // Then we add all edges to the graph.
+            for edge in call_graph.edge_indices() {
+                let source = call_graph.edge_endpoints(edge).unwrap().0;
+                let target = call_graph.edge_endpoints(edge).unwrap().1;
+                let new_source = *node_id2position.get_by_left(&source).unwrap();
+                let new_target = *node_id2position.get_by_left(&target).unwrap();
+                new_graph.add_edge(
+                    NodeIndex::new(new_source),
+                    NodeIndex::new(new_target),
+                    call_graph[edge],
+                );
+            }
+
+            let new_root_index = node_id2position.get_by_left(&root_node_index).unwrap();
+            (NodeIndex::new(*new_root_index), new_graph)
+        };
+
         Self {
-            call_graph,
-            root_node_index,
-            node2position: node_id2position,
+            call_graph: new_graph,
+            root_node_index: new_root_index,
+            root_component_id,
         }
     }
 }

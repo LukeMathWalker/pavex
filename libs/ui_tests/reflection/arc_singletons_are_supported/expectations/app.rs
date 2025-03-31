@@ -93,9 +93,9 @@ impl Router {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
                         route_0::entrypoint(
-                                &state.arc_rw_lock,
                                 &state.arc_custom,
                                 &state.arc_mutex,
+                                &state.arc_rw_lock,
                             )
                             .await
                     }
@@ -114,30 +114,30 @@ impl Router {
 }
 pub mod route_0 {
     pub async fn entrypoint<'a, 'b, 'c>(
-        s_0: &'a alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-        s_1: &'b alloc::sync::Arc<app::Custom>,
-        s_2: &'c alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        s_0: &'a alloc::sync::Arc<app::Custom>,
+        s_1: &'b alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        s_2: &'c alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2).await;
         response
     }
     async fn stage_1<'a, 'b, 'c>(
-        s_0: &'a alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
-        s_1: &'b alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-        s_2: &'c alloc::sync::Arc<app::Custom>,
+        s_0: &'a alloc::sync::Arc<app::Custom>,
+        s_1: &'b alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        s_2: &'c alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2).await;
         response
     }
     async fn wrapping_0(
-        v0: &alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-        v1: &alloc::sync::Arc<app::Custom>,
-        v2: &alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        v0: &alloc::sync::Arc<app::Custom>,
+        v1: &alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        v2: &alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
     ) -> pavex::response::Response {
         let v3 = crate::route_0::Next0 {
-            s_0: v2,
-            s_1: v0,
-            s_2: v1,
+            s_0: v0,
+            s_1: v1,
+            s_2: v2,
             next: stage_1,
         };
         let v4 = pavex::middleware::Next::new(v3);
@@ -145,24 +145,24 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     async fn handler(
-        v0: &alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
-        v1: &alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-        v2: &alloc::sync::Arc<app::Custom>,
+        v0: &alloc::sync::Arc<app::Custom>,
+        v1: &alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        v2: &alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
     ) -> pavex::response::Response {
-        let v3 = app::handler(v2, v0, v1);
+        let v3 = app::handler(v0, v1, v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
     struct Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
-        s_1: &'b alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-        s_2: &'c alloc::sync::Arc<app::Custom>,
+        s_0: &'a alloc::sync::Arc<app::Custom>,
+        s_1: &'b alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+        s_2: &'c alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
         next: fn(
-            &'a alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
-            &'b alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-            &'c alloc::sync::Arc<app::Custom>,
+            &'a alloc::sync::Arc<app::Custom>,
+            &'b alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+            &'c alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
         ) -> T,
     }
     impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>

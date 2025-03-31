@@ -14,9 +14,8 @@
   [31m│[0m     ·              [35;1mThe request handler asking for `PathParams<u32>`[0m
   [31m│[0m  [2m63[0m │     bp.route(GET, "/b/{x}/{y}", f!(crate::tuple));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
-
 [31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
@@ -33,9 +32,8 @@
   [31m│[0m     ·          [35;1mThe request handler asking for `PathParams<(u32, u32)>`[0m
   [31m│[0m  [2m64[0m │     bp.route(GET, "/c/{x}/{z}", f!(crate::slice_ref));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
-
 [31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
@@ -52,9 +50,8 @@
   [31m│[0m     ·            [35;1mThe request handler asking for `PathParams<&[u32]>`[0m
   [31m│[0m  [2m65[0m │     bp.route(GET, "/d/{x}/{y}", f!(crate::reference::<crate::MyStruct>));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
-
 [31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
@@ -71,9 +68,8 @@
   [31m│[0m     ·    [35;1mThe request handler asking for `PathParams<&app::MyStruct>`[0m
   [31m│[0m  [2m66[0m │     bp.route(GET, "/e/{x}/{y}", f!(crate::enum_));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
-
 [31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
@@ -90,9 +86,8 @@
   [31m│[0m     ·     [35;1mThe request handler asking for `PathParams<app::MyEnum>`[0m
   [31m│[0m  [2m67[0m │     bp.route(GET, "/f/{x}/{y}", f!(crate::tuple_struct));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
-
 [31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
@@ -110,9 +105,8 @@
   [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::TupleStruct>`[0m
   [31m│[0m  [2m68[0m │     bp.route(GET, "/g/{x}/{y}", f!(crate::unit_struct));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!
-
 [31;1mERROR[0m:
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
@@ -130,5 +124,5 @@
   [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::UnitStruct>`[0m
   [31m│[0m  [2m69[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m   [36mhelp:[0m Use a plain struct with named fields to extract path parameters.
   [31m│[0m         Check out `PathParams`' documentation for all the details!

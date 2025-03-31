@@ -181,8 +181,8 @@ impl UnregisteredComponent {
             UserConstructor {
                 user_component_id, ..
             } => component_db
-                .user_component_db()
-                .get_lifecycle(*user_component_id)
+                .user_db()
+                .lifecycle(*user_component_id)
                 .to_owned(),
         }
     }

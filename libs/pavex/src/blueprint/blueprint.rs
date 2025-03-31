@@ -6,19 +6,21 @@ use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, ConfigType, Constructor, Fallback, NestedBlueprint,
+    Blueprint as BlueprintSchema, ConfigType, Constructor, Fallback, Import, NestedBlueprint,
     PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
 use super::config::RegisteredConfigType;
 use super::constructor::{Lifecycle, RegisteredConstructor};
+use super::conversions::{created_at2created_at, sources2sources};
+use super::import::RegisteredImport;
 use super::middleware::{
     RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
-use super::reflection::RawIdentifiers;
+use super::reflection::{RawIdentifiers, Sources, WithLocation};
 use super::router::{MethodGuard, RegisteredRoute};
 
 /// The starting point for building an application with Pavex.
@@ -67,6 +69,100 @@ impl Blueprint {
     }
 
     #[track_caller]
+    /// Import the constructors and error handlers defined in the target modules.
+    ///
+    /// Components that have been annotated with Pavex's macros (e.g. `#[constructor]`) aren't automatically
+    /// considered when resolving the dependency graph for your application.\
+    /// They need to be explicitly imported using one or more invocations of this method.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Dependency Injection"](https://pavex.dev/docs/guide/dependency_injection) section of Pavex's guide
+    /// for a thorough introduction to dependency injection in Pavex applications.
+    ///
+    /// # Wildcard import
+    ///
+    /// You can import all components defined in the current crate and its direct dependencies using the wildcard source, `*`:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.import(from![*]);
+    /// # }
+    /// ```
+    ///
+    /// # All local components
+    ///
+    /// Use `crate` as source to import all components defined in the current crate:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.import(from![crate]);
+    /// # }
+    /// ```
+    ///
+    /// # Specific modules
+    ///
+    /// You can restrict the import to modules:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// // It will only import components defined
+    /// // in the `crate::a` and `crate::b` modules.
+    /// bp.import(from![crate::a, crate::b]);
+    /// # }
+    /// ```
+    ///
+    /// # Dependencies
+    ///
+    /// You can import components from a dependency using the same mechanism:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// // Import components from the `pavex_session` and
+    /// // `pavex_session_sqlx` crates.
+    /// bp.import(from![pavex_session, pavex_session_sqlx]);
+    /// # }
+    /// ```
+    ///
+    /// The specified crates must be direct dependencies of the current crate.
+    pub fn import(&mut self, sources: WithLocation<Sources>) -> RegisteredImport {
+        let WithLocation {
+            value: sources,
+            created_at,
+        } = sources;
+        let import = Import {
+            sources: sources2sources(sources),
+            created_at: created_at2created_at(created_at),
+            registered_at: Location::caller(),
+        };
+        let component_id = self.push_component(import);
+        RegisteredImport {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    pub(crate) fn register_import(&mut self, import: pavex_bp_schema::Import) -> RegisteredImport {
+        let component_id = self.push_component(import);
+        RegisteredImport {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    #[track_caller]
     /// Register a request handler to be invoked when an incoming request matches the specified route.
     ///
     /// If a request handler has already been registered for the same route, it will be overwritten.
@@ -99,7 +195,7 @@ impl Blueprint {
         &mut self,
         method_guard: MethodGuard,
         path: &str,
-        callable: RawIdentifiers,
+        callable: WithLocation<RawIdentifiers>,
     ) -> RegisteredRoute {
         let registered_route = Route {
             path: path.to_owned(),
@@ -137,7 +233,7 @@ impl Blueprint {
     /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
     /// section of Pavex's guide for a thorough introduction to dependency injection
     /// in Pavex applications.
-    pub fn prebuilt(&mut self, type_: RawIdentifiers) -> RegisteredPrebuiltType {
+    pub fn prebuilt(&mut self, type_: WithLocation<RawIdentifiers>) -> RegisteredPrebuiltType {
         let registered = PrebuiltType {
             input: raw_identifiers2type(type_),
             cloning_strategy: None,
@@ -179,7 +275,11 @@ impl Blueprint {
     ///
     /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
     /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
-    pub fn config(&mut self, key: &str, type_: RawIdentifiers) -> RegisteredConfigType {
+    pub fn config(
+        &mut self,
+        key: &str,
+        type_: WithLocation<RawIdentifiers>,
+    ) -> RegisteredConfigType {
         let registered = pavex_bp_schema::ConfigType {
             input: raw_identifiers2type(type_),
             key: key.to_owned(),
@@ -241,7 +341,7 @@ impl Blueprint {
     /// ```
     pub fn constructor(
         &mut self,
-        callable: RawIdentifiers,
+        callable: WithLocation<RawIdentifiers>,
         lifecycle: Lifecycle,
     ) -> RegisteredConstructor {
         let registered_constructor = Constructor {
@@ -284,7 +384,7 @@ impl Blueprint {
     /// // bp.constructor(f!(crate::logger), Lifecycle::Singleton));
     /// # }
     /// ```
-    pub fn singleton(&mut self, callable: RawIdentifiers) -> RegisteredConstructor {
+    pub fn singleton(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredConstructor {
         self.constructor(callable, Lifecycle::Singleton)
     }
 
@@ -314,7 +414,10 @@ impl Blueprint {
     /// // bp.constructor(f!(crate::logger), Lifecycle::RequestScoped));
     /// # }
     /// ```
-    pub fn request_scoped(&mut self, callable: RawIdentifiers) -> RegisteredConstructor {
+    pub fn request_scoped(
+        &mut self,
+        callable: WithLocation<RawIdentifiers>,
+    ) -> RegisteredConstructor {
         self.constructor(callable, Lifecycle::RequestScoped)
     }
 
@@ -344,7 +447,7 @@ impl Blueprint {
     /// // bp.constructor(f!(crate::logger), Lifecycle::Transient));
     /// # }
     /// ```
-    pub fn transient(&mut self, callable: RawIdentifiers) -> RegisteredConstructor {
+    pub fn transient(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredConstructor {
         self.constructor(callable, Lifecycle::Transient)
     }
 
@@ -399,7 +502,7 @@ impl Blueprint {
     /// }
     /// ```
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, callable: RawIdentifiers) -> RegisteredWrappingMiddleware {
+    pub fn wrap(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredWrappingMiddleware {
         let registered = WrappingMiddleware {
             middleware: raw_identifiers2callable(callable),
             error_handler: None,
@@ -463,7 +566,10 @@ impl Blueprint {
     /// ```
     #[doc(alias = "middleware")]
     #[doc(alias = "postprocess")]
-    pub fn post_process(&mut self, callable: RawIdentifiers) -> RegisteredPostProcessingMiddleware {
+    pub fn post_process(
+        &mut self,
+        callable: WithLocation<RawIdentifiers>,
+    ) -> RegisteredPostProcessingMiddleware {
         let registered = PostProcessingMiddleware {
             middleware: raw_identifiers2callable(callable),
             error_handler: None,
@@ -517,7 +623,10 @@ impl Blueprint {
     /// ```
     #[doc(alias = "middleware")]
     #[doc(alias = "preprocess")]
-    pub fn pre_process(&mut self, callable: RawIdentifiers) -> RegisteredPreProcessingMiddleware {
+    pub fn pre_process(
+        &mut self,
+        callable: WithLocation<RawIdentifiers>,
+    ) -> RegisteredPreProcessingMiddleware {
         let registered = PreProcessingMiddleware {
             middleware: raw_identifiers2callable(callable),
             error_handler: None,
@@ -570,7 +679,7 @@ impl Blueprint {
             blueprint: blueprint.schema,
             path_prefix: None,
             domain: None,
-            nesting_location: Location::caller(),
+            nested_at: Location::caller(),
         });
     }
 
@@ -834,7 +943,7 @@ impl Blueprint {
     /// prefix of the nested blueprint (`/route`).
     ///
     /// [`Response`]: crate::response::Response
-    pub fn fallback(&mut self, callable: RawIdentifiers) -> RegisteredFallback {
+    pub fn fallback(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredFallback {
         let registered = Fallback {
             request_handler: raw_identifiers2callable(callable),
             error_handler: None,
@@ -883,7 +992,10 @@ impl Blueprint {
     /// bp.error_observer(f!(crate::error_logger));
     /// # }
     /// ```
-    pub fn error_observer(&mut self, callable: RawIdentifiers) -> RegisteredErrorObserver {
+    pub fn error_observer(
+        &mut self,
+        callable: WithLocation<RawIdentifiers>,
+    ) -> RegisteredErrorObserver {
         let registered = pavex_bp_schema::ErrorObserver {
             error_observer: raw_identifiers2callable(callable),
         };

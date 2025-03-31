@@ -20,12 +20,14 @@ debug_assertions = []
 
 [dependencies]
 pavex = { path = "../pavex", version = "0.1.80" }
+pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.1.80" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.80" }
 pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.80" }
 pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.80" }
 rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.80", package = "pavexc_rustdoc_types" }
 cargo-like-utils = { workspace = true }
 tracing_log_error = { workspace = true }
+darling = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["unbounded_depth"] }
@@ -70,6 +72,7 @@ r2d2 = { workspace = true }
 bincode = { workspace = true, features = ["serde"] }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 insta = { workspace = true }

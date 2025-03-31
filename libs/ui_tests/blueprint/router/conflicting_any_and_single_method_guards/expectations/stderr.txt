@@ -16,5 +16,5 @@
   [31m│[0m     ·                                      [35;1m╰── The second conflicting handler[0m
   [31m│[0m  [2m19[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mYou can only register one request handler for each path+method
+  [31m│[0m   [36mhelp:[0m You can only register one request handler for each path+method
   [31m│[0m         combination. Remove all but one of the conflicting request handlers.

@@ -131,10 +131,10 @@ pub mod route_0 {
         response
     }
     async fn stage_1<'a, 'b, 'c>(
-        s_0: (bool, char, u8),
-        s_1: &'a dep_f8f62968::GenericType<bool, bool>,
-        s_2: &'b alloc::string::String,
-        s_3: &'c dep_f8f62968::ActualType,
+        s_0: &'a alloc::string::String,
+        s_1: &'b dep_f8f62968::ActualType,
+        s_2: (bool, char, u8),
+        s_3: &'c dep_f8f62968::GenericType<bool, bool>,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2, s_3).await;
         response
@@ -146,10 +146,10 @@ pub mod route_0 {
         v3: &dep_f8f62968::GenericType<bool, bool>,
     ) -> pavex::response::Response {
         let v4 = crate::route_0::Next0 {
-            s_0: v0,
-            s_1: v3,
-            s_2: v1,
-            s_3: v2,
+            s_0: v1,
+            s_1: v2,
+            s_2: v0,
+            s_3: v3,
             next: stage_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -157,29 +157,29 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     async fn handler(
-        v0: (bool, char, u8),
-        v1: &dep_f8f62968::GenericType<bool, bool>,
-        v2: &alloc::string::String,
-        v3: &dep_f8f62968::ActualType,
+        v0: &alloc::string::String,
+        v1: &dep_f8f62968::ActualType,
+        v2: (bool, char, u8),
+        v3: &dep_f8f62968::GenericType<bool, bool>,
     ) -> pavex::response::Response {
-        let v4 = app::mixed_generics(v2);
-        let v5 = dep_f8f62968::DoubleLifetimeType::<'_, '_>::new(v3, v2);
-        let v6 = app::handler_with_input_tuple(v0, v3, v1, &v5, v4);
+        let v4 = app::mixed_generics(v0);
+        let v5 = dep_f8f62968::DoubleLifetimeType::<'_, '_>::new(v1, v0);
+        let v6 = app::handler_with_input_tuple(v2, v1, v3, &v5, v4);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     struct Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: (bool, char, u8),
-        s_1: &'a dep_f8f62968::GenericType<bool, bool>,
-        s_2: &'b alloc::string::String,
-        s_3: &'c dep_f8f62968::ActualType,
+        s_0: &'a alloc::string::String,
+        s_1: &'b dep_f8f62968::ActualType,
+        s_2: (bool, char, u8),
+        s_3: &'c dep_f8f62968::GenericType<bool, bool>,
         next: fn(
+            &'a alloc::string::String,
+            &'b dep_f8f62968::ActualType,
             (bool, char, u8),
-            &'a dep_f8f62968::GenericType<bool, bool>,
-            &'b alloc::string::String,
-            &'c dep_f8f62968::ActualType,
+            &'c dep_f8f62968::GenericType<bool, bool>,
         ) -> T,
     }
     impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>

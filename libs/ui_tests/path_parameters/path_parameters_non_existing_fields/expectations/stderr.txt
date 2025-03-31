@@ -15,9 +15,7 @@
   [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::MissingOne>`[0m
   [31m│[0m  [2m43[0m │     bp.route(GET, "/b/{x}", f!(crate::missing_two));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove or rename the fields that do not map to a valid path
-  [31m│[0m         parameter.
-
+  [31m│[0m   [36mhelp:[0m Remove or rename the fields that do not map to a valid path parameter.
 [31;1mERROR[0m:
   [31m×[0m `app::missing_two` is trying to extract path parameters using
   [31m│[0m `PathParams<app::MissingTwo>`.
@@ -36,9 +34,7 @@
   [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::MissingTwo>`[0m
   [31m│[0m  [2m44[0m │     bp.route(GET, "/c", f!(crate::no_path_params));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRemove or rename the fields that do not map to a valid path
-  [31m│[0m         parameter.
-
+  [31m│[0m   [36mhelp:[0m Remove or rename the fields that do not map to a valid path parameter.
 [31;1mERROR[0m:
   [31m×[0m `app::no_path_params` is trying to extract path parameters using
   [31m│[0m `PathParams<app::NoPathParams>`.
@@ -51,5 +47,5 @@
   [31m│[0m     ·  [35;1mThe request handler asking for `PathParams<app::NoPathParams>`[0m
   [31m│[0m  [2m45[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mStop trying to extract path parameters, or add them to the path
+  [31m│[0m   [36mhelp:[0m Stop trying to extract path parameters, or add them to the path
   [31m│[0m         pattern!

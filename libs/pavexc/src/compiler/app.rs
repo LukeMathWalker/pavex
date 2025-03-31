@@ -8,7 +8,6 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexMap;
 
 use pavex_bp_schema::Blueprint;
-use pavex_cli_diagnostic::anyhow2miette;
 
 use crate::compiler::analyses::application_config::ApplicationConfig;
 use crate::compiler::analyses::application_state::ApplicationState;
@@ -29,6 +28,7 @@ use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::{codegen, path_parameters};
+use crate::diagnostic::DiagnosticSink;
 use crate::rustdoc::CrateCollection;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
@@ -58,15 +58,13 @@ impl App {
     /// report all errors to the user, but it may not be able to do so in all cases.
     pub fn build(
         bp: Blueprint,
-        docs_toolchain_name: String,
-        package_graph: PackageGraph,
-        cache_workpace_packages: bool,
-    ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
+        krate_collection: CrateCollection,
+    ) -> Result<(Self, DiagnosticSink), DiagnosticSink> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
                 if !$var.is_empty()
-                    && $var.iter().any(|e| {
+                    && $var.diagnostics().iter().any(|e| {
                         let severity = e.severity();
                         severity == Some(miette::Severity::Error) || severity.is_none()
                     })
@@ -76,16 +74,8 @@ impl App {
             };
         }
 
-        let krate_collection = CrateCollection::new(
-            docs_toolchain_name,
-            // TODO: avoid cloning here.
-            package_graph.clone(),
-            bp.creation_location.file.clone(),
-            cache_workpace_packages,
-        )
-        .map_err(|e| vec![anyhow2miette(e)])?;
         let package_graph = krate_collection.package_graph().to_owned();
-        let mut diagnostics = vec![];
+        let mut diagnostics = DiagnosticSink::new(package_graph.clone());
         let mut computation_db = ComputationDb::new();
         let mut prebuilt_type_db = PrebuiltTypeDb::new();
         let mut config_type_db = ConfigTypeDb::new();
@@ -94,7 +84,6 @@ impl App {
             &mut computation_db,
             &mut prebuilt_type_db,
             &mut config_type_db,
-            &package_graph,
             &krate_collection,
             &mut diagnostics,
         ) else {
@@ -117,7 +106,6 @@ impl App {
         let mut constructible_db = ConstructibleDb::build(
             &mut component_db,
             &mut computation_db,
-            &package_graph,
             &krate_collection,
             &framework_item_db,
             &mut diagnostics,
@@ -125,7 +113,6 @@ impl App {
         clonables_can_be_cloned(
             &component_db,
             &computation_db,
-            &package_graph,
             &krate_collection,
             &mut diagnostics,
         );
@@ -145,7 +132,6 @@ impl App {
                     &mut component_db,
                     &mut constructible_db,
                     &framework_item_db,
-                    &package_graph,
                     &krate_collection,
                     &mut diagnostics,
                 ) else {
@@ -160,16 +146,11 @@ impl App {
             &handler_id2pipeline,
             &computation_db,
             &component_db,
-            &package_graph,
             &krate_collection,
             &mut diagnostics,
         );
-        let application_config = ApplicationConfig::new(
-            &component_db,
-            &computation_db,
-            &package_graph,
-            &mut diagnostics,
-        );
+        let application_config =
+            ApplicationConfig::new(&component_db, &computation_db, &mut diagnostics);
         exit_on_errors!(diagnostics);
 
         let application_state = ApplicationState::new(
@@ -190,7 +171,6 @@ impl App {
             &mut component_db,
             &mut constructible_db,
             &framework_item_db,
-            &package_graph,
             &krate_collection,
             &mut diagnostics,
         ) else {
@@ -201,7 +181,6 @@ impl App {
             &application_state_call_graph,
             &component_db,
             &computation_db,
-            &package_graph,
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);

@@ -1,34 +1,38 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
+use super::reflection::{CreatedAt, Sources, WithLocation};
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location, Type};
-use pavex_reflection::RegisteredAt;
 
 #[track_caller]
-pub(super) fn raw_identifiers2callable(callable: RawIdentifiers) -> Callable {
+pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -> Callable {
+    let WithLocation {
+        value: callable,
+        created_at,
+    } = callable;
     if callable.macro_name != "f" {
         panic!(
             "You need to use the `f!` macro to register function-like components (e.g. a constructor).\n\
             Here you used the `t!` macro, which is reserved type-like components, like state inputs."
         )
     }
-    let registered_at = RegisteredAt {
-        crate_name: callable.crate_name.to_owned(),
-        module_path: callable.module_path.to_owned(),
-    };
     Callable {
         callable: pavex_bp_schema::RawIdentifiers {
-            registered_at,
+            created_at: created_at2created_at(created_at),
             import_path: callable.import_path.to_owned(),
         },
-        location: Location::caller(),
+        registered_at: Location::caller(),
     }
 }
 
 #[track_caller]
-pub(super) fn raw_identifiers2type(callable: RawIdentifiers) -> Type {
+pub(super) fn raw_identifiers2type(callable: WithLocation<RawIdentifiers>) -> Type {
+    let WithLocation {
+        value: callable,
+        created_at,
+    } = callable;
     if callable.macro_name != "t" {
         panic!(
             "You need to use the `t!` macro to register type-like components (e.g. a state input).\n\
@@ -36,16 +40,19 @@ pub(super) fn raw_identifiers2type(callable: RawIdentifiers) -> Type {
             like constructors or request handlers."
         )
     }
-    let registered_at = RegisteredAt {
-        crate_name: callable.crate_name.to_owned(),
-        module_path: callable.module_path.to_owned(),
-    };
     Type {
         type_: pavex_bp_schema::RawIdentifiers {
-            registered_at,
+            created_at: created_at2created_at(created_at),
             import_path: callable.import_path.to_owned(),
         },
-        location: Location::caller(),
+        registered_at: Location::caller(),
+    }
+}
+
+pub(super) fn created_at2created_at(created_at: CreatedAt) -> pavex_bp_schema::CreatedAt {
+    pavex_bp_schema::CreatedAt {
+        crate_name: created_at.package_name.to_owned(),
+        module_path: created_at.module_path.to_owned(),
     }
 }
 
@@ -78,5 +85,14 @@ pub(super) fn method_guard2method_guard(
 pub(super) fn lint2lint(lint: Lint) -> pavex_bp_schema::Lint {
     match lint {
         Lint::Unused => pavex_bp_schema::Lint::Unused,
+    }
+}
+
+pub(super) fn sources2sources(sources: Sources) -> pavex_bp_schema::Sources {
+    match sources {
+        Sources::All => pavex_bp_schema::Sources::All,
+        Sources::Some(s) => {
+            pavex_bp_schema::Sources::Some(s.into_iter().map(|s| s.into_owned()).collect())
+        }
     }
 }

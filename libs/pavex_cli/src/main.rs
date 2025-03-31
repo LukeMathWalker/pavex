@@ -1,5 +1,6 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
+use pavex_cli_diagnostic::AnyhowBridge;
 use pavex_cli_shell::{SHELL, ShellExt, try_init_shell};
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
@@ -24,7 +25,6 @@ use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::version::latest_released_version;
 use pavex_cli_deps::{CargoPx, IfAutoinstallable, Rustup, verify_installation};
-use pavex_cli_diagnostic::anyhow2miette;
 use pavexc_cli_client::Client;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
@@ -58,7 +58,7 @@ fn main() -> ExitCode {
 }
 
 fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
-    init_shell(cli.color).map_err(anyhow2miette)?;
+    init_shell(cli.color).map_err(|e| e.into_miette())?;
 
     let client = pavexc_client(&cli);
     let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
@@ -69,11 +69,11 @@ fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
         serde_json::from_str(PAVEX_CACHED_KEYSET).expect("Failed to parse the cached JWKS");
 
     if let Some(activation_key) =
-        get_activation_key_if_necessary(&cli.command, &locator).map_err(anyhow2miette)?
+        get_activation_key_if_necessary(&cli.command, &locator).map_err(|e| e.into_miette())?
     {
         let claims = check_activation(&locator, activation_key.clone(), &key_set)
             .context("Failed to check Pavex activation")
-            .map_err(anyhow2miette)?;
+            .map_err(|e| e.into_miette())?;
         background_token_refresh(&claims, &key_set, activation_key, &locator);
     }
     match cli.command {
@@ -82,21 +82,22 @@ fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
             diagnostics,
             check,
             output,
-        } => {
-            generate(client, &locator, blueprint, diagnostics, output, check).map_err(anyhow2miette)
-        }
+        } => generate(client, &locator, blueprint, diagnostics, output, check)
+            .map_err(|e| e.into_miette().into()),
         Command::New { path, template } => {
-            scaffold_project(client, &locator, path, template).map_err(anyhow2miette)
+            scaffold_project(client, &locator, path, template).map_err(|e| e.into_miette().into())
         }
         Command::Self_ { command } => {
             // You should always be able to run `self` commands, even if Pavex has
             // not been activated yet.
             match command {
-                SelfCommands::Update => update().map_err(anyhow2miette),
-                SelfCommands::Uninstall { y } => uninstall(!y, locator).map_err(anyhow2miette),
+                SelfCommands::Update => update().map_err(|e| e.into_miette().into()),
+                SelfCommands::Uninstall { y } => {
+                    uninstall(!y, locator).map_err(|e| e.into_miette().into())
+                }
                 SelfCommands::Activate { key } => {
                     activate(cli.color, &locator, key.map(|k| k.into_inner()), &key_set)
-                        .map_err(anyhow2miette)
+                        .map_err(|e| e.into_miette().into())
                 }
                 SelfCommands::Setup {
                     wizard_key,
@@ -307,7 +308,7 @@ fn setup(
                         "Pavex has not been activated yet",
                         &cargo_like_utils::shell::style::ERROR,
                     );
-                    activate(color, locator, None, key_set).map_err(anyhow2miette)?;
+                    activate(color, locator, None, key_set).map_err(|e| e.into_miette())?;
                 }
             }
         } else {

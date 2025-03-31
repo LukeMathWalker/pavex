@@ -277,6 +277,11 @@ pub(crate) fn resolve_type(
                         GenericArgs::Parenthesized { .. } => {
                             return Err(anyhow!("I don't support function pointers yet. Sorry!"));
                         }
+                        GenericArgs::ReturnTypeNotation { .. } => {
+                            return Err(anyhow!(
+                                "I don't support return-type notation yet. Sorry!"
+                            ));
+                        }
                     }
                 }
                 let t = PathType {
@@ -754,6 +759,8 @@ pub(crate) enum CallableResolutionError {
     #[error(transparent)]
     GenericParameterResolutionError(#[from] GenericParameterResolutionError),
     #[error(transparent)]
+    SelfResolutionError(#[from] SelfResolutionError),
+    #[error(transparent)]
     InputParameterResolutionError(#[from] InputParameterResolutionError),
     #[error(transparent)]
     OutputTypeResolutionError(#[from] OutputTypeResolutionError),
@@ -785,6 +792,14 @@ pub(crate) struct InputParameterResolutionError {
     pub callable_item: rustdoc_types::Item,
     pub parameter_type: Type,
     pub parameter_index: usize,
+    #[source]
+    pub source: Arc<anyhow::Error>,
+}
+
+#[derive(Debug, thiserror::Error, Clone)]
+#[error("I can't handle the `Self` type for `{path}`.")]
+pub(crate) struct SelfResolutionError {
+    pub path: ResolvedPath,
     #[source]
     pub source: Arc<anyhow::Error>,
 }

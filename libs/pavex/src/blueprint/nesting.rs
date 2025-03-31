@@ -36,7 +36,7 @@ impl<'a> NestingConditions<'a> {
         let location = Location::caller();
         self.domain = Some(Domain {
             domain: domain.into(),
-            location,
+            registered_at: location,
         });
         self
     }
@@ -51,7 +51,7 @@ impl<'a> NestingConditions<'a> {
         let location = Location::caller();
         self.path_prefix = Some(PathPrefix {
             path_prefix: prefix.into(),
-            location,
+            registered_at: location,
         });
         self
     }
@@ -183,7 +183,7 @@ impl<'a> NestingConditions<'a> {
             NestedBlueprint {
                 blueprint: bp.schema,
                 path_prefix: self.path_prefix,
-                nesting_location: Location::caller(),
+                nested_at: Location::caller(),
                 domain: self.domain,
             }
             .into(),

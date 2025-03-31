@@ -1,11 +1,19 @@
-pub use processed_db::UserComponentDb;
-pub use raw_db::{UserComponent, UserComponentId};
+pub use annotations::AnnotatedItemId;
+pub use component::{UserComponent, UserComponentId};
+pub use db::UserComponentDb;
 pub(crate) use router::{DomainRouter, PathRouter, Router};
 pub use scope_graph::{ScopeGraph, ScopeId};
+pub use source::UserComponentSource;
 
-mod processed_db;
-mod raw_db;
-mod resolved_paths;
+mod annotations;
+mod auxiliary;
+mod blueprint;
+mod component;
+mod db;
+mod identifiers;
+mod imports;
+mod paths;
 mod router;
 mod router_key;
 mod scope_graph;
+mod source;

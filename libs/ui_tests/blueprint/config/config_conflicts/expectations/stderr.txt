@@ -17,7 +17,7 @@
   [31m│[0m     ·                [35;1m╰── ...then here[0m
   [31m│[0m  [2m23[0m │
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mChoose a unique key for each configuration type.
+  [31m│[0m   [36mhelp:[0m Choose a unique key for each configuration type.
 [31;1mERROR[0m:
   [31m×[0m Each configuration type must have a unique key.
   [31m│[0m `c` has been used as key for 2 different types: `app::A` and
@@ -37,7 +37,7 @@
   [31m│[0m     ·                [35;1m╰── ...then here[0m
   [31m│[0m  [2m30[0m │
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mChoose a unique key for each configuration type.
+  [31m│[0m   [36mhelp:[0m Choose a unique key for each configuration type.
 [31;1mERROR[0m:
   [31m×[0m A type can only appear once in the application configuration.
   [31m│[0m `app::B` has been registered against 2 different keys: `a` and
@@ -57,7 +57,7 @@
   [31m│[0m     ·                         [35;1m╰── ...then here[0m
   [31m│[0m  [2m30[0m │
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister the type as configuration once, with a single key.
+  [31m│[0m   [36mhelp:[0m Register the type as configuration once, with a single key.
 [31;1mERROR[0m:
   [31m×[0m A type can only appear once in the application configuration.
   [31m│[0m `app::A` has been registered against 2 different keys: `b` and
@@ -77,4 +77,4 @@
   [31m│[0m     ·                         [35;1m╰── ...then here[0m
   [31m│[0m  [2m27[0m │
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister the type as configuration once, with a single key.
+  [31m│[0m   [36mhelp:[0m Register the type as configuration once, with a single key.

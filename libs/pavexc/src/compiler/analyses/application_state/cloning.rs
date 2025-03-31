@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 use petgraph::visit::EdgeRef;
@@ -15,12 +14,9 @@ use crate::{
         traits::assert_trait_is_implemented,
         utils::process_framework_path,
     },
-    diagnostic::{
-        self, AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, OptionalSourceSpanExt,
-    },
+    diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet},
     language::ResolvedType,
     rustdoc::CrateCollection,
-    try_source,
 };
 
 /// Verify that all singletons that need to be cloned at runtime can actually be cloned:
@@ -35,7 +31,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let copy = process_framework_path("core::marker::Copy", krate_collection);
     let ResolvedType::ResolvedPath(copy) = copy else {
@@ -104,7 +100,6 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                         is_clone,
                         id,
                         *consumer_id,
-                        krate_collection.package_graph(),
                         component_db,
                         computation_db,
                         diagnostics,
@@ -120,58 +115,44 @@ fn must_be_clonable(
     is_clone: bool,
     component_id: ComponentId,
     consumer_id: ComponentId,
-    package_graph: &PackageGraph,
-    component_db: &ComponentDb,
+    db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
-    let component_id = component_db
-        .derived_from(&component_id)
-        .unwrap_or(component_id);
-    if component_db.user_component_id(consumer_id).is_none()
-        && component_db.derived_from(&consumer_id).is_none()
-    {
+    let component_id = db.derived_from(&component_id).unwrap_or(component_id);
+    if db.user_component_id(consumer_id).is_none() && db.derived_from(&consumer_id).is_none() {
         return;
     }
-    let consumer = component_db.hydrated_component(consumer_id, computation_db);
+    let consumer = db.hydrated_component(consumer_id, computation_db);
     let Computation::Callable(consumer_callable) = consumer.computation() else {
         return;
     };
 
-    let user_component_id = component_db.user_component_id(component_id).unwrap();
-    let user_component_db = &component_db.user_component_db();
-    let location = user_component_db.get_location(user_component_id);
-    let source = try_source!(location, package_graph, diagnostics);
-    let label = source.as_ref().and_then(|source| {
-        diagnostic::get_f_macro_invocation_span(source, location)
-            .labeled("It was registered here".to_string())
-    });
+    let user_id = db.user_component_id(component_id).unwrap();
+    let source = diagnostics.annotated(db.registration_target(user_id), "It was registered here");
+    // Match the casing of the registration mechanism that was used.
+    let clone_if_necessary = if db.registration(user_id).kind.is_attribute() {
+        "clone_if_necessary"
+    } else {
+        "CloneIfNecessary"
+    };
+    let type_ = type_.display_for_error();
     let e = anyhow::anyhow!(
         "I can't generate code that will pass the borrow checker *and* match the \
         instructions in your blueprint.\n\
-        `{}` consumes `{}` by value, but `{}` is a singleton and can't be moved out of `ApplicationState`.\n\
-        Cloning `{}` would fix this, but its cloning strategy is set to `NeverClone`.",
+        `{}` consumes `{type_}` by value, but `{type_}` is a singleton and can't be moved out of `ApplicationState`.",
         consumer_callable.path,
-        type_.display_for_error(),
-        type_.display_for_error(),
-        type_.display_for_error(),
     );
-    let help = is_clone.then(|| {
-        format!(
-            "Set the cloning strategy for `{}` to `CloneIfNecessary`.",
-            type_.display_for_error()
-        )
-    });
+    let help = is_clone
+        .then(|| format!("Allow Pavex to clone `{type_}` by marking it `{clone_if_necessary}`.",));
     let second_help = format!(
-        "Can `{}` take a reference to `{}`, rather than consuming it by value?",
+        "Can `{}` take a reference to `{type_}`, rather than consuming it by value?",
         consumer_callable.path,
-        type_.display_for_error()
     );
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
-        .optional_label(label)
         .optional_help(help)
-        .help_with_snippet(HelpWithSnippet::new(second_help, AnnotatedSnippet::empty()))
+        .help_with_snippet(HelpWithSnippet::new(second_help, AnnotatedSource::empty()))
         .build();
-    diagnostics.push(diagnostic.into());
+    diagnostics.push(diagnostic);
 }

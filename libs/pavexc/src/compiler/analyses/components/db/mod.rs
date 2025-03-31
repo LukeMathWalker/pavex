@@ -21,18 +21,17 @@ use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
     get_ok_variant, process_framework_callable_path, process_framework_path,
 };
-use crate::diagnostic::ParsedSourceFile;
+use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
     Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
     TypeReference,
 };
 use crate::rustdoc::CrateCollection;
-use crate::try_source;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::SourceSpan;
 use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
+use pavex_cli_diagnostic::AnnotatedSource;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -42,7 +41,7 @@ pub(crate) type ComponentId = la_arena::Idx<Component>;
 
 #[derive(Debug)]
 pub(crate) struct ComponentDb {
-    user_component_db: UserComponentDb,
+    user_db: UserComponentDb,
     prebuilt_type_db: PrebuiltTypeDb,
     config_type_db: ConfigTypeDb,
     interner: Interner<Component>,
@@ -138,7 +137,7 @@ impl ComponentDb {
         config_type_db: ConfigTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> ComponentDb {
         // We only need to resolve these once.
         let pavex_error = process_framework_path("pavex::Error", krate_collection);
@@ -164,7 +163,7 @@ impl ComponentDb {
         };
 
         let mut self_ = Self {
-            user_component_db,
+            user_db: user_component_db,
             prebuilt_type_db,
             config_type_db,
             interner: Interner::new(),
@@ -205,21 +204,18 @@ impl ComponentDb {
             self_.process_wrapping_middlewares(
                 &mut needs_error_handler,
                 computation_db,
-                package_graph,
                 krate_collection,
                 diagnostics,
             );
             self_.process_pre_processing_middlewares(
                 &mut needs_error_handler,
                 computation_db,
-                package_graph,
                 krate_collection,
                 diagnostics,
             );
             self_.process_post_processing_middlewares(
                 &mut needs_error_handler,
                 computation_db,
-                package_graph,
                 krate_collection,
                 diagnostics,
             );
@@ -231,7 +227,6 @@ impl ComponentDb {
             self_.process_error_observers(
                 &pavex_error_ref,
                 computation_db,
-                package_graph,
                 krate_collection,
                 diagnostics,
             );
@@ -248,7 +243,6 @@ impl ComponentDb {
                 &mut needs_error_handler,
                 computation_db,
                 framework_item_db,
-                package_graph,
                 krate_collection,
                 diagnostics,
             );
@@ -256,7 +250,6 @@ impl ComponentDb {
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 computation_db,
-                package_graph,
                 krate_collection,
                 diagnostics,
             );
@@ -265,21 +258,11 @@ impl ComponentDb {
             self_.process_config_types(computation_db);
 
             for fallible_id in needs_error_handler {
-                Self::missing_error_handler(
-                    fallible_id,
-                    &self_.user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
+                Self::missing_error_handler(fallible_id, &self_.user_db, diagnostics);
             }
         }
 
-        self_.add_into_response_transformers(
-            computation_db,
-            package_graph,
-            krate_collection,
-            diagnostics,
-        );
+        self_.add_into_response_transformers(computation_db, krate_collection, diagnostics);
 
         for (id, type_) in framework_item_db.iter() {
             let component_id = self_.get_or_intern(
@@ -393,10 +376,8 @@ impl ComponentDb {
                 UserConstructor {
                     user_component_id, ..
                 } => {
-                    let cloning_strategy = self
-                        .user_component_db
-                        .get_cloning_strategy(user_component_id)
-                        .unwrap();
+                    let cloning_strategy =
+                        self.user_db.cloning_strategy(user_component_id).unwrap();
                     self.id2cloning_strategy
                         .insert(id, cloning_strategy.to_owned());
                 }
@@ -455,12 +436,9 @@ impl ComponentDb {
                     );
                 }
                 UserPrebuiltType { user_component_id } => {
-                    let user_component = &self.user_component_db[user_component_id];
                     let ty_ = &self.prebuilt_type_db[user_component_id];
-                    let cloning_strategy = self
-                        .user_component_db
-                        .get_cloning_strategy(user_component_id)
-                        .unwrap();
+                    let cloning_strategy =
+                        self.user_db.cloning_strategy(user_component_id).unwrap();
                     self.id2cloning_strategy
                         .insert(id, cloning_strategy.to_owned());
                     self.get_or_intern(
@@ -468,8 +446,8 @@ impl ComponentDb {
                             computation_id: computation_db.get_or_intern(Constructor(
                                 Computation::PrebuiltType(Cow::Owned(ty_.to_owned())),
                             )),
-                            scope_id: user_component.scope_id(),
-                            lifecycle: self.user_component_db.get_lifecycle(user_component_id),
+                            scope_id: self.user_db.scope_id(user_component_id),
+                            lifecycle: self.user_db.lifecycle(user_component_id),
                             cloning_strategy: cloning_strategy.to_owned(),
                             derived_from: Some(id),
                         },
@@ -477,17 +455,12 @@ impl ComponentDb {
                     );
                 }
                 UserConfigType { user_component_id } => {
-                    let user_component = &self.user_component_db[user_component_id];
                     let config = &self.config_type_db[user_component_id];
-                    let cloning_strategy = self
-                        .user_component_db
-                        .get_cloning_strategy(user_component_id)
-                        .unwrap();
+                    let cloning_strategy =
+                        self.user_db.cloning_strategy(user_component_id).unwrap();
                     self.id2cloning_strategy.insert(id, *cloning_strategy);
-                    let default_strategy = self
-                        .user_component_db
-                        .get_default_strategy(user_component_id)
-                        .unwrap();
+                    let default_strategy =
+                        self.user_db.default_strategy(user_component_id).unwrap();
                     self.config_id2default_strategy
                         .insert(id, *default_strategy);
                     self.get_or_intern(
@@ -495,8 +468,8 @@ impl ComponentDb {
                             computation_id: computation_db.get_or_intern(Constructor(
                                 Computation::PrebuiltType(Cow::Owned(config.ty().to_owned())),
                             )),
-                            scope_id: user_component.scope_id(),
-                            lifecycle: self.user_component_db.get_lifecycle(user_component_id),
+                            scope_id: self.user_db.scope_id(user_component_id),
+                            lifecycle: self.user_db.lifecycle(user_component_id),
                             cloning_strategy: cloning_strategy.to_owned(),
                             derived_from: Some(id),
                         },
@@ -582,12 +555,11 @@ impl ComponentDb {
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let constructor_ids = self
-            .user_component_db
+            .user_db
             .constructors()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -603,9 +575,8 @@ impl ComponentDb {
                     Self::invalid_constructor(
                         e,
                         user_component_id,
-                        &self.user_component_db,
+                        &self.user_db,
                         computation_db,
-                        package_graph,
                         krate_collection,
                         diagnostics,
                     );
@@ -624,8 +595,7 @@ impl ComponentDb {
                                 Self::non_static_reference_in_singleton(
                                     output_type,
                                     user_component_id,
-                                    &self.user_component_db,
-                                    package_graph,
+                                    &self.user_db,
                                     diagnostics,
                                 );
                             }
@@ -635,8 +605,7 @@ impl ComponentDb {
                             Self::non_static_lifetime_parameter_in_singleton(
                                 output_type,
                                 user_component_id,
-                                &self.user_component_db,
-                                package_graph,
+                                &self.user_db,
                                 diagnostics,
                             );
                         }
@@ -658,7 +627,7 @@ impl ComponentDb {
     /// We add their information to the relevant metadata stores.
     fn process_prebuilt_types(&mut self, computation_db: &mut ComputationDb) {
         let ids = self
-            .user_component_db
+            .user_db
             .prebuilt_types()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -674,7 +643,7 @@ impl ComponentDb {
     /// We add their information to the relevant metadata stores.
     fn process_config_types(&mut self, computation_db: &mut ComputationDb) {
         let ids = self
-            .user_component_db
+            .user_db
             .config_types()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -692,10 +661,10 @@ impl ComponentDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let request_handler_ids = self
-            .user_component_db
+            .user_db
             .request_handlers()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -706,7 +675,7 @@ impl ComponentDb {
                     Self::invalid_request_handler(
                         e,
                         user_component_id,
-                        &self.user_component_db,
+                        &self.user_db,
                         computation_db,
                         krate_collection,
                         package_graph,
@@ -731,12 +700,11 @@ impl ComponentDb {
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let wrapping_middleware_ids = self
-            .user_component_db
+            .user_db
             .wrapping_middlewares()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -747,10 +715,9 @@ impl ComponentDb {
                     Self::invalid_wrapping_middleware(
                         e,
                         user_component_id,
-                        &self.user_component_db,
+                        &self.user_db,
                         computation_db,
                         krate_collection,
-                        package_graph,
                         diagnostics,
                     );
                 }
@@ -772,12 +739,11 @@ impl ComponentDb {
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let middleware_ids = self
-            .user_component_db
+            .user_db
             .pre_processing_middlewares()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -788,10 +754,9 @@ impl ComponentDb {
                     Self::invalid_pre_processing_middleware(
                         e,
                         user_component_id,
-                        &self.user_component_db,
+                        &self.user_db,
                         computation_db,
                         krate_collection,
-                        package_graph,
                         diagnostics,
                     );
                 }
@@ -813,12 +778,11 @@ impl ComponentDb {
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let middleware_ids = self
-            .user_component_db
+            .user_db
             .post_processing_middlewares()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -829,10 +793,9 @@ impl ComponentDb {
                     Self::invalid_post_processing_middleware(
                         e,
                         user_component_id,
-                        &self.user_component_db,
+                        &self.user_db,
                         computation_db,
                         krate_collection,
-                        package_graph,
                         diagnostics,
                     );
                 }
@@ -854,17 +817,16 @@ impl ComponentDb {
         &mut self,
         pavex_error_ref: &ResolvedType,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let error_observer_ids = self
-            .user_component_db
+            .user_db
             .error_observers()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
         for user_component_id in error_observer_ids {
-            let user_component = &self.user_component_db[user_component_id];
+            let user_component = &self.user_db[user_component_id];
             let callable = &computation_db[user_component_id];
             let UserComponent::ErrorObserver { .. } = user_component else {
                 unreachable!()
@@ -874,10 +836,9 @@ impl ComponentDb {
                     Self::invalid_error_observer(
                         e,
                         user_component_id,
-                        &self.user_component_db,
+                        &self.user_db,
                         computation_db,
                         krate_collection,
-                        package_graph,
                         diagnostics,
                     );
                 }
@@ -914,17 +875,16 @@ impl ComponentDb {
         &mut self,
         missing_error_handlers: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let iter = self
-            .user_component_db
+            .user_db
             .iter()
             .filter_map(|(id, c)| {
                 use crate::compiler::analyses::user_components::UserComponent::*;
                 let ErrorHandler {
-                    fallible_callable_identifiers_id,
+                    fallible_id: fallible_callable_identifiers_id,
                     ..
                 } = c
                 else {
@@ -934,15 +894,12 @@ impl ComponentDb {
             })
             .collect::<Vec<_>>();
         for (error_handler_user_component_id, fallible_user_component_id) in iter {
-            let lifecycle = self
-                .user_component_db
-                .get_lifecycle(fallible_user_component_id);
+            let lifecycle = self.user_db.lifecycle(fallible_user_component_id);
             if lifecycle == Lifecycle::Singleton {
                 Self::error_handler_for_a_singleton(
                     error_handler_user_component_id,
                     fallible_user_component_id,
-                    &self.user_component_db,
-                    package_graph,
+                    &self.user_db,
                     diagnostics,
                 );
                 continue;
@@ -1011,10 +968,9 @@ impl ComponentDb {
                         Self::invalid_error_handler(
                             e,
                             error_handler_user_component_id,
-                            &self.user_component_db,
+                            &self.user_db,
                             computation_db,
                             krate_collection,
-                            package_graph,
                             diagnostics,
                         );
                     }
@@ -1023,8 +979,7 @@ impl ComponentDb {
                 Self::error_handler_for_infallible_component(
                     error_handler_user_component_id,
                     fallible_user_component_id,
-                    &self.user_component_db,
-                    package_graph,
+                    &self.user_db,
                     diagnostics,
                 );
             }
@@ -1040,7 +995,7 @@ impl ComponentDb {
         computation_db: &mut ComputationDb,
     ) {
         let request_handler_ids = self
-            .user_component_db
+            .user_db
             .request_handlers()
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
@@ -1065,10 +1020,7 @@ impl ComponentDb {
             );
             let mut middleware_chain = vec![noop_component_id];
 
-            for middleware_id in self
-                .user_component_db
-                .get_middleware_ids(request_handler_id)
-            {
+            for middleware_id in self.user_db.middleware_ids(request_handler_id) {
                 if let Some(middleware_component_id) =
                     self.user_component_id2component_id.get(middleware_id)
                 {
@@ -1085,17 +1037,14 @@ impl ComponentDb {
     /// The list only includes error observers that were successfully validated.
     /// Invalid error observers are ignored.
     fn compute_request2error_observer_chain(&mut self) {
-        for (request_handler_id, _) in self.user_component_db.request_handlers() {
+        for (request_handler_id, _) in self.user_db.request_handlers() {
             let Some(handler_component_id) =
                 self.user_component_id2component_id.get(&request_handler_id)
             else {
                 continue;
             };
             let mut chain = vec![];
-            for id in self
-                .user_component_db
-                .get_error_observer_ids(request_handler_id)
-            {
+            for id in self.user_db.error_observer_ids(request_handler_id) {
                 if let Some(component_id) = self.user_component_id2component_id.get(id) {
                     chain.push(*component_id);
                 }
@@ -1111,9 +1060,8 @@ impl ComponentDb {
     fn add_into_response_transformers(
         &mut self,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let into_response = {
             let into_response =
@@ -1179,10 +1127,11 @@ impl ComponentDb {
                 if let SourceId::UserComponentId(user_component_id) = source_id {
                     Self::invalid_response_type(
                         e,
+                        &callable,
                         &output,
                         user_component_id,
-                        &self.user_component_db,
-                        package_graph,
+                        &self.user_db,
+                        krate_collection,
                         diagnostics,
                     );
                 }
@@ -1219,8 +1168,7 @@ impl ComponentDb {
                             e,
                             &output,
                             user_component_id,
-                            &self.user_component_db,
-                            package_graph,
+                            &self.user_db,
                             diagnostics,
                         );
                     }
@@ -1348,7 +1296,7 @@ impl ComponentDb {
     /// Retrieve the lint overrides for a component.
     pub fn lints(&self, id: ComponentId) -> Option<&BTreeMap<Lint, LintSetting>> {
         let user_component_id = self.user_component_id(id)?;
-        self.user_component_db.get_lints(user_component_id)
+        self.user_db.lints(user_component_id)
     }
 
     /// The mapping from a low-level [`UserComponentId`] to its corresponding [`ComponentId`].
@@ -1621,13 +1569,23 @@ impl ComponentDb {
     }
 
     /// Return the [`UserComponentDb`] used as a seed for this component database.
-    pub fn user_component_db(&self) -> &UserComponentDb {
-        &self.user_component_db
+    pub fn user_db(&self) -> &UserComponentDb {
+        &self.user_db
+    }
+
+    /// Return the registration metadata for the given user component.
+    pub fn registration(&self, id: UserComponentId) -> &Registration {
+        self.user_db.registration(id)
+    }
+
+    /// Return a [`TargetSpan`] for the given user component, aimed at its registration.
+    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan {
+        TargetSpan::Registration(self.registration(id), self.user_db[id].kind())
     }
 
     /// Return the [`ScopeGraph`] that backs the [`ScopeId`]s for this component database.
     pub fn scope_graph(&self) -> &ScopeGraph {
-        self.user_component_db.scope_graph()
+        self.user_db.scope_graph()
     }
 
     /// Return the [`ScopeId`] of the given component.
@@ -1637,7 +1595,7 @@ impl ComponentDb {
             | Component::PrebuiltType { user_component_id }
             | Component::ConfigType { user_component_id }
             | Component::ErrorObserver { user_component_id } => {
-                self.user_component_db[*user_component_id].scope_id()
+                self.user_db.scope_id(*user_component_id)
             }
             Component::Transformer { source_id, .. }
             | Component::WrappingMiddleware { source_id }
@@ -1645,31 +1603,21 @@ impl ComponentDb {
             | Component::PreProcessingMiddleware { source_id }
             | Component::Constructor { source_id } => match source_id {
                 SourceId::ComputationId(_, scope_id) => *scope_id,
-                SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
+                SourceId::UserComponentId(id) => self.user_db.scope_id(*id),
             },
         }
     }
 
-    /// Return the source file where the component is defined and the span of its definition
-    /// within that file.
-    /// Both can be `None` (e.g. the component is synthetic and/or we can't find the definition
-    /// in the file).
+    /// Return the source file where the component is defined, if possible.
+    /// Its definition span within that file is annotated with the provided label.
     pub fn registration_span(
         &self,
-        component_id: ComponentId,
-        package_graph: &PackageGraph,
-        diagnostics: &mut Vec<miette::Error>,
-    ) -> (Option<ParsedSourceFile>, Option<SourceSpan>) {
-        let Some(user_id) = self.user_component_id(component_id) else {
-            return (None, None);
-        };
-        let user_component_db = self.user_component_db();
-        let location = user_component_db.get_location(user_id);
-        let source = try_source!(location, package_graph, diagnostics);
-        let source_span = source
-            .as_ref()
-            .and_then(|source| crate::diagnostic::get_f_macro_invocation_span(source, location));
-        (source, source_span)
+        id: ComponentId,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        label: String,
+    ) -> Option<AnnotatedSource<ParsedSourceFile>> {
+        let user_id = self.user_component_id(id)?;
+        diagnostics.annotated(self.registration_target(user_id), label)
     }
 }
 

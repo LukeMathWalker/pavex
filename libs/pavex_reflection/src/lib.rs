@@ -44,25 +44,29 @@ impl Location {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-/// All the information required to identify a component registered against a [`Blueprint`].
+/// All the information required to identify a component registered against a `Blueprint`.
 ///
 /// It is an implementation detail of the builder.
-///
-/// [`Blueprint`]: crate::blueprint::Blueprint
 pub struct RawIdentifiers {
-    /// Information on the callsite where the component was registered with the [`Blueprint`].
-    pub registered_at: RegisteredAt,
+    /// Information on the location where the component was created—either via `f!`/`t!` using
+    /// its import path or via a macro annotation on the definition of the item itself.
+    pub created_at: CreatedAt,
     /// An unambiguous path to the type/callable.
     pub import_path: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
-/// Information on the callsite where the component was registered.
-pub struct RegisteredAt {
-    /// The name of the crate that registered the component against the blueprint builder,
-    /// as it appears in the `package` section of its `Cargo.toml`.  
-    /// In particular,
-    /// it has *not* been normalised—e.g. hyphens are not replaced with underscores.  
+/// Information on the crate/module where the component was created.
+///
+/// This location matches, for example, where the `from!` or the `f!` macro were invoked.
+///
+/// It may be different from the location where the component was registered
+/// with the blueprint—i.e. where a `Blueprint` method was invoked.
+pub struct CreatedAt {
+    /// The name of the crate that created the component, as it appears in the `package.name` field
+    /// of its `Cargo.toml`.
+    ///
+    /// In particular, the name has *not* been normalised—e.g. hyphens are not replaced with underscores.
     ///
     /// This information is needed to resolve the import path unambiguously.
     ///
@@ -78,22 +82,22 @@ pub struct RegisteredAt {
     /// my_crate = { version = "0.1", registry = "custom", package = "their_crate" }
     /// ```
     pub crate_name: String,
-    /// The path to the module where the component was registered, obtained via [`module_path!`].
+    /// The path to the module where the component was created, obtained via [`module_path!`].
     pub module_path: String,
 }
 
 impl RawIdentifiers {
     #[track_caller]
-    pub fn from_raw_parts(import_path: String, registered_at: RegisteredAt) -> Self {
+    pub fn from_raw_parts(import_path: String, registered_at: CreatedAt) -> Self {
         Self {
-            registered_at,
+            created_at: registered_at,
             import_path,
         }
     }
 
-    /// Return an unambiguous fully-qualified path pointing at the callable.
+    /// Return an unambiguous fully-qualified path pointing at the item.
     ///
-    /// The returned path can be used to import the callable.
+    /// The returned path should be a valid Rust import path.
     pub fn fully_qualified_path(&self) -> Vec<String> {
         let mut segments: Vec<_> = self
             .import_path
@@ -106,13 +110,13 @@ impl RawIdentifiers {
             // Hyphens are allowed in crate names, but the Rust compiler doesn't
             // allow them in actual import paths.
             // They are "transparently" replaced with underscores.
-            segments[0] = self.registered_at.crate_name.replace('-', "_");
+            segments[0] = self.created_at.crate_name.replace('-', "_");
             segments
         } else if segments[0] == "self" {
             // The path is relative to the current module.
             // We "rebase" it to get an absolute path.
             let mut new_segments: Vec<_> = self
-                .registered_at
+                .created_at
                 .module_path
                 .split("::")
                 .map(|s| s.trim())
@@ -136,7 +140,7 @@ impl RawIdentifiers {
             // The path is relative to the current module.
             // We "rebase" it to get an absolute path.
             let module_segments: Vec<_> = self
-                .registered_at
+                .created_at
                 .module_path
                 .split("::")
                 .map(|s| s.trim())
@@ -159,7 +163,7 @@ impl RawIdentifiers {
         &self.import_path
     }
 
-    pub fn registered_at(&self) -> &RegisteredAt {
-        &self.registered_at
+    pub fn created_at(&self) -> &CreatedAt {
+        &self.created_at
     }
 }

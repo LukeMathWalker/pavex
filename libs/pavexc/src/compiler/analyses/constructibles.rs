@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
 
 use ahash::{HashMap, HashMapExt, HashSet};
-use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
-use syn::spanned::Spanned;
+use miette::NamedSource;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
@@ -15,11 +14,12 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
 };
 use crate::compiler::computation::Computation;
-use crate::diagnostic::{self, CallableDefinition, OptionalSourceSpanExt};
-use crate::diagnostic::{AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, SourceSpanExt};
+use crate::diagnostic::{
+    self, CallableDefSource, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile,
+};
+use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use crate::try_source;
 
 use super::framework_items::FrameworkItemDb;
 
@@ -52,31 +52,23 @@ impl ConstructibleDb {
     pub(crate) fn build(
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         framework_items_db: &FrameworkItemDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Self {
         let mut self_ = Self::_build(component_db, computation_db);
         self_.detect_missing_constructors(
             component_db,
             computation_db,
-            package_graph,
             krate_collection,
             framework_items_db,
             diagnostics,
         );
-        self_.verify_singleton_ambiguity(component_db, computation_db, package_graph, diagnostics);
-        self_.verify_lifecycle_of_singleton_dependencies(
-            component_db,
-            computation_db,
-            package_graph,
-            diagnostics,
-        );
+        self_.verify_singleton_ambiguity(component_db, computation_db, diagnostics);
+        self_.verify_lifecycle_of_singleton_dependencies(component_db, computation_db, diagnostics);
         self_.error_observers_cannot_depend_on_fallible_components(
             component_db,
             computation_db,
-            package_graph,
             diagnostics,
         );
 
@@ -99,10 +91,9 @@ impl ConstructibleDb {
         &mut self,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         framework_items_db: &FrameworkItemDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let mut component_ids = component_db.iter().map(|(id, _)| id).collect::<Vec<_>>();
         let mut n_component_ids = component_ids.len();
@@ -192,10 +183,9 @@ impl ConstructibleDb {
                                     {
                                         Self::mut_ref_to_singleton(
                                             user_component_id,
-                                            component_db.user_component_db(),
+                                            component_db.user_db(),
                                             input,
                                             input_index,
-                                            package_graph,
                                             krate_collection,
                                             computation_db,
                                             diagnostics,
@@ -217,10 +207,9 @@ impl ConstructibleDb {
                                         {
                                             Self::mut_ref_to_clonable_request_scoped(
                                                 user_component_id,
-                                                component_db.user_component_db(),
+                                                component_db.user_db(),
                                                 input,
                                                 input_index,
-                                                package_graph,
                                                 krate_collection,
                                                 computation_db,
                                                 diagnostics,
@@ -240,10 +229,9 @@ impl ConstructibleDb {
                                     {
                                         Self::mut_ref_to_transient(
                                             user_component_id,
-                                            component_db.user_component_db(),
+                                            component_db.user_db(),
                                             input,
                                             input_index,
-                                            package_graph,
                                             krate_collection,
                                             computation_db,
                                             diagnostics,
@@ -263,10 +251,9 @@ impl ConstructibleDb {
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         self.missing_constructor(
                             user_component_id,
-                            component_db.user_component_db(),
+                            component_db.user_db(),
                             input,
                             input_index,
-                            package_graph,
                             krate_collection,
                             computation_db,
                             diagnostics,
@@ -312,8 +299,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        package_graph: &PackageGraph,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
@@ -341,24 +327,16 @@ impl ConstructibleDb {
 
                 // For each component, we create an AnnotatedSnippet that points to the
                 // registration site for that constructor.
-                let mut snippets = Vec::new();
-                let mut source_code = None;
-                'inner: for (_, component_id) in &component_ids {
-                    let (source, source_span) =
-                        component_db.registration_span(**component_id, package_graph, diagnostics);
-                    let Some(source) = source else {
-                        continue 'inner;
-                    };
-                    let Some(source_span) = source_span else {
-                        continue 'inner;
-                    };
-                    if source_code.is_none() {
-                        source_code = Some(source.clone());
+                let mut sources = Vec::new();
+                for (_, component_id) in &component_ids {
+                    let source = component_db.registration_span(
+                        **component_id,
+                        diagnostics,
+                        "A constructor was registered here".to_string(),
+                    );
+                    if let Some(source) = source {
+                        sources.push(source);
                     }
-                    let label =
-                        source_span.labeled("A constructor was registered here".to_string());
-                    let snippet = AnnotatedSnippet::new(source, label);
-                    snippets.push(snippet);
                 }
                 let diagnostic = if n_unique_constructors > 1 {
                     let error = anyhow::anyhow!(
@@ -369,8 +347,7 @@ impl ConstructibleDb {
                         I have found {n_constructors} different constructors for `{type_:?}`:",
                     );
                     CompilerDiagnostic::builder(error)
-                        .optional_source(source_code)
-                        .additional_annotated_snippets(snippets.into_iter())
+                        .sources(sources.into_iter())
                         .help(format!(
                             "If you want a single instance of `{type_:?}`, remove \
                             constructors for `{type_:?}` until there is only one left.\n\
@@ -383,20 +360,19 @@ impl ConstructibleDb {
                         type_: &ResolvedType,
                         common_ancestor_id: ScopeId,
                         scope_graph: &ScopeGraph,
-                        package_graph: &PackageGraph,
-                        diagnostics: &mut Vec<miette::Error>,
-                    ) -> Option<HelpWithSnippet> {
+                        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+                    ) -> Option<HelpWithSnippet<ParsedSourceFile>> {
                         let location = scope_graph.get_location(common_ancestor_id).unwrap();
-                        let source = try_source!(location, package_graph, diagnostics)?;
-                        let label = if common_ancestor_id != scope_graph.root_scope_id() {
-                            diagnostic::get_nest_blueprint_span(&source, &location).labeled(
+                        let mut s = diagnostics.source(&location)?;
+                        s = if common_ancestor_id != scope_graph.root_scope_id() {
+                            diagnostic::nest_blueprint_span(s.source(), &location).labeled(
                                 "Register your constructor against the blueprint that's nested here".to_string(),
-                            )?
+                            )
                         } else {
-                            diagnostic::get_bp_new_span(&source, &location).labeled(
+                            diagnostic::bp_new_span(s.source(), &location).labeled(
                                 "Register your constructor against the root blueprint".to_string(),
-                            )?
-                        };
+                            )
+                        }.attach(s);
                         Some(HelpWithSnippet::new(
                             format!(
                                 "If you want to share a single instance of `{type_:?}`, remove \
@@ -404,7 +380,7 @@ impl ConstructibleDb {
                                     be attached to a blueprint that is a parent of all the nested \
                                     ones that need to use it."
                             ),
-                            AnnotatedSnippet::new(source, label),
+                            s,
                         ))
                     }
 
@@ -418,7 +394,6 @@ impl ConstructibleDb {
                         &type_,
                         common_ancestor_scope_id,
                         component_db.scope_graph(),
-                        package_graph,
                         diagnostics,
                     );
                     let error = anyhow::anyhow!(
@@ -430,8 +405,7 @@ impl ConstructibleDb {
                         nested blueprint?",
                     );
                     CompilerDiagnostic::builder(error)
-                        .optional_source(source_code)
-                        .additional_annotated_snippets(snippets.into_iter())
+                        .sources(sources.into_iter())
                         .optional_help_with_snippet(help_snippet)
                         .help(format!(
                             "If you want different instances, consider creating separate newtypes \
@@ -439,7 +413,7 @@ impl ConstructibleDb {
                         ))
                         .build()
                 };
-                diagnostics.push(diagnostic.into());
+                diagnostics.push(diagnostic);
             }
         }
     }
@@ -452,8 +426,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        package_graph: &PackageGraph,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         for (component_id, _) in component_db.iter() {
             if component_db.lifecycle(component_id) != Lifecycle::Singleton {
@@ -469,7 +442,6 @@ impl ConstructibleDb {
                         Self::singleton_must_not_depend_on_request_scoped(
                             component_id,
                             input_constructor_id,
-                            package_graph,
                             component_db,
                             computation_db,
                             diagnostics,
@@ -495,8 +467,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        package_graph: &PackageGraph,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         'outer: for (error_observer_id, _) in component_db.iter() {
             let HydratedComponent::ErrorObserver(eo) =
@@ -538,7 +509,6 @@ impl ConstructibleDb {
                         error_observer_id,
                         dependency_chain,
                         fallible_id,
-                        package_graph,
                         component_db,
                         computation_db,
                         diagnostics,
@@ -641,161 +611,131 @@ impl ConstructibleDb {
 
     fn missing_constructor(
         &self,
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        id: UserComponentId,
+        db: &UserComponentDb,
         unconstructible_type: &ResolvedType,
         unconstructible_type_index: usize,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         fn get_definition_info(
             callable: &Callable,
             unconstructible_type_index: usize,
-            package_graph: &PackageGraph,
             krate_collection: &CrateCollection,
-        ) -> Option<AnnotatedSnippet> {
-            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
-            let input = &def.sig.inputs[unconstructible_type_index];
-            let label = def.convert_local_span(input.span()).labeled(
-                "I don't know how to construct an instance of this input parameter".into(),
+        ) -> Option<AnnotatedSource<NamedSource<String>>> {
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(
+                unconstructible_type_index,
+                "I don't know how to construct an instance of this input parameter",
             );
-            Some(AnnotatedSnippet::new(def.named_source(), label))
+            Some(def.annotated_source)
         }
 
-        let component_kind = user_component_db[user_component_id].kind();
-        let location = user_component_db.get_location(user_component_id);
-        let source = try_source!(location, package_graph, diagnostics);
-        let label = source.as_ref().and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled(format!("The {component_kind} was registered here"))
-        });
+        let kind = db[id].kind();
+        let source = diagnostics.annotated(
+            db.registration_target(id),
+            format!("The {kind} was registered here"),
+        );
 
-        let callable = &computation_db[user_component_id];
-        let e = anyhow::anyhow!("I can't find a constructor for `{}`.\n{self:?}", unconstructible_type.display_for_error()).context(
-            format!(
-                "I can't find a constructor for `{unconstructible_type:?}`.\n\
-                I need an instance of `{unconstructible_type:?}` to invoke your {component_kind}, `{}`.",
-                callable.path
-            )
-        );
-        let definition_info = get_definition_info(
-            callable,
-            unconstructible_type_index,
-            package_graph,
-            krate_collection,
-        );
+        let callable = &computation_db[id];
+        let e = anyhow::anyhow!(
+            "I can't find a constructor for `{}`.\n{self:?}",
+            unconstructible_type.display_for_error()
+        )
+        .context(format!(
+            "I can't find a constructor for `{unconstructible_type:?}`.\n\
+                I need an instance of `{unconstructible_type:?}` to invoke your {kind}, `{}`.",
+            callable.path
+        ));
+        let definition_info =
+            get_definition_info(callable, unconstructible_type_index, krate_collection);
         let diagnostic = CompilerDiagnostic::builder(e)
             .optional_source(source)
-            .optional_label(label)
-            .optional_additional_annotated_snippet(definition_info)
+            .optional_source(definition_info)
             .help_with_snippet(HelpWithSnippet::new(
                 format!("Register a constructor for `{unconstructible_type:?}`."),
-                AnnotatedSnippet::empty(),
+                AnnotatedSource::empty(),
             ))
             .help(format!(
                 "Alternatively, use `Blueprint::prebuilt` to add a new input parameter of type `{unconstructible_type:?}` \
                 to the (generated) `ApplicationState::new` method."
             ))
             .build();
-        diagnostics.push(diagnostic.into());
+        diagnostics.push(diagnostic);
     }
 
     fn mut_ref_to_singleton(
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        id: UserComponentId,
+        db: &UserComponentDb,
         singleton_input_type: &ResolvedType,
         singleton_input_index: usize,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,
             krate_collection: &CrateCollection,
-            package_graph: &PackageGraph,
             mut_ref_input_index: usize,
-        ) -> Option<AnnotatedSnippet> {
-            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut singleton".into());
-            Some(AnnotatedSnippet::new(def.named_source(), label))
+        ) -> Option<AnnotatedSource<NamedSource<String>>> {
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut singleton");
+            Some(def.annotated_source)
         }
 
-        let component_kind = user_component_db[user_component_id].kind();
-        let callable = &computation_db[user_component_id];
-        let location = user_component_db.get_location(user_component_id);
-        let source = try_source!(location, package_graph, diagnostics);
-        let label = source.as_ref().and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled(format!("The {component_kind} was registered here"))
-        });
-
-        let definition_snippet = get_snippet(
-            &computation_db[user_component_id],
-            krate_collection,
-            package_graph,
-            singleton_input_index,
+        let kind = db[id].kind();
+        let callable = &computation_db[id];
+        let source = diagnostics.annotated(
+            db.registration_target(id),
+            format!("The {kind} was registered here"),
         );
+
+        let definition_snippet =
+            get_snippet(&computation_db[id], krate_collection, singleton_input_index);
         let error = anyhow::anyhow!(
             "You can't inject a mutable reference to a singleton (`{singleton_input_type:?}`) as an input parameter to `{}`.",
             callable.path
         );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
-            .optional_label(label)
-            .optional_additional_annotated_snippet(definition_snippet)
+            .optional_source(definition_snippet)
             .help(
                 "Singletons can only be taken via a shared reference (`&`) or by value (if cloneable). \
                 If you absolutely need to mutate a singleton, consider internal mutability (e.g. `Arc<Mutex<..>>`).".into()
             )
             .build();
-        diagnostics.push(diagnostic.into());
+        diagnostics.push(diagnostic);
     }
 
     fn mut_ref_to_transient(
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        id: UserComponentId,
+        db: &UserComponentDb,
         transient_input_type: &ResolvedType,
         transient_input_index: usize,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,
             krate_collection: &CrateCollection,
-            package_graph: &PackageGraph,
             mut_ref_input_index: usize,
-        ) -> Option<AnnotatedSnippet> {
-            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut transient".into());
-            Some(AnnotatedSnippet::new(def.named_source(), label))
+        ) -> Option<AnnotatedSource<NamedSource<String>>> {
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut transient");
+            Some(def.annotated_source)
         }
 
-        let component_kind = user_component_db[user_component_id].kind();
-        let callable = &computation_db[user_component_id];
-        let location = user_component_db.get_location(user_component_id);
-        let source = try_source!(location, package_graph, diagnostics);
-        let label = source.as_ref().and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled(format!("The {component_kind} was registered here"))
-        });
-
-        let definition_snippet = get_snippet(
-            &computation_db[user_component_id],
-            krate_collection,
-            package_graph,
-            transient_input_index,
+        let kind = db[id].kind();
+        let callable = &computation_db[id];
+        let source = diagnostics.annotated(
+            db.registration_target(id),
+            format!("The {kind} was registered here"),
         );
+
+        let definition_snippet =
+            get_snippet(&computation_db[id], krate_collection, transient_input_index);
         let error = anyhow::anyhow!(
             "You can't inject a mutable reference to a transient type (`{transient_input_type:?}`) as an input parameter to `{}`.\n\
         Transient constructors are invoked every time their output is needed—instances of transient types are never reused. \
@@ -804,52 +744,40 @@ impl ConstructibleDb {
         );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
-            .optional_label(label)
-            .optional_additional_annotated_snippet(definition_snippet)
+            .optional_source(definition_snippet)
             .help("Take the type by value, or use a `&` reference.".into())
             .build();
-        diagnostics.push(diagnostic.into());
+        diagnostics.push(diagnostic);
     }
 
     fn mut_ref_to_clonable_request_scoped(
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        id: UserComponentId,
+        db: &UserComponentDb,
         scoped_input_type: &ResolvedType,
         scoped_input_index: usize,
-        package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,
             krate_collection: &CrateCollection,
-            package_graph: &PackageGraph,
             mut_ref_input_index: usize,
-        ) -> Option<AnnotatedSnippet> {
-            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
-            let input = &def.sig.inputs[mut_ref_input_index];
-            let label = def
-                .convert_local_span(input.span())
-                .labeled("The &mut reference".into());
-            Some(AnnotatedSnippet::new(def.named_source(), label))
+        ) -> Option<AnnotatedSource<NamedSource<String>>> {
+            let mut def = CallableDefSource::compute(callable, krate_collection)?;
+            def.label_input(mut_ref_input_index, "The &mut reference");
+            Some(def.annotated_source)
         }
 
-        let component_kind = user_component_db[user_component_id].kind();
-        let callable = &computation_db[user_component_id];
-        let location = user_component_db.get_location(user_component_id);
-        let source = try_source!(location, package_graph, diagnostics);
-        let label = source.as_ref().and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled(format!("The {component_kind} was registered here"))
-        });
-
-        let definition_snippet = get_snippet(
-            &computation_db[user_component_id],
-            krate_collection,
-            package_graph,
-            scoped_input_index,
+        let kind = db[id].kind();
+        let callable = &computation_db[id];
+        let source = diagnostics.annotated(
+            db.registration_target(id),
+            format!("The {kind} was registered here"),
         );
+
+        let definition_snippet =
+            get_snippet(&computation_db[id], krate_collection, scoped_input_index);
         let ResolvedType::Reference(ref_) = scoped_input_type else {
             unreachable!()
         };
@@ -863,23 +791,21 @@ impl ConstructibleDb {
         );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
-            .optional_label(label)
-            .optional_additional_annotated_snippet(definition_snippet)
+            .optional_source(definition_snippet)
             .help(format!(
                 "Change `{:?}`'s cloning strategy to `NeverClone`.",
                 ref_.inner
             ))
             .build();
-        diagnostics.push(diagnostic.into());
+        diagnostics.push(diagnostic);
     }
 
     fn singleton_must_not_depend_on_request_scoped(
         singleton_id: ComponentId,
         dependency_id: ComponentId,
-        package_graph: &PackageGraph,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let singleton_type = component_db
             .hydrated_component(singleton_id, computation_db)
@@ -899,34 +825,27 @@ impl ConstructibleDb {
             But your singleton `{singleton_type:?}` depends on `{dependency_type:?}`, which has a {dependency_lifecycle} lifecycle.",
         );
 
-        let (source, source_span) =
-            component_db.registration_span(singleton_id, package_graph, diagnostics);
-        let mut diagnostic_builder = CompilerDiagnostic::builder(e)
-            .optional_source(source)
-            .optional_label(source_span.labeled("The singleton was registered here".into()));
-
-        if let (Some(source), source_span) =
-            component_db.registration_span(dependency_id, package_graph, diagnostics)
-        {
-            diagnostic_builder =
-                diagnostic_builder.additional_annotated_snippet(AnnotatedSnippet::new_optional(
-                    source,
-                    source_span.labeled(format!(
-                        "The {dependency_lifecycle} dependency was registered here"
-                    )),
-                ));
-        }
-        diagnostics.push(diagnostic_builder.build().into());
+        let diagnostic_builder = CompilerDiagnostic::builder(e)
+            .optional_source(component_db.registration_span(
+                singleton_id,
+                diagnostics,
+                "The singleton was registered here".into(),
+            ))
+            .optional_source(component_db.registration_span(
+                dependency_id,
+                diagnostics,
+                format!("The {dependency_lifecycle} dependency was registered here"),
+            ));
+        diagnostics.push(diagnostic_builder.build());
     }
 
     fn error_observers_must_be_infallible(
         error_observer_id: ComponentId,
         dependency_chain: IndexSet<ResolvedType>,
         fallible_id: ComponentId,
-        package_graph: &PackageGraph,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let HydratedComponent::ErrorObserver(error_observer) =
             component_db.hydrated_component(error_observer_id, computation_db)
@@ -958,12 +877,13 @@ impl ConstructibleDb {
             It depends on{err_msg}, which is built with `{fallible_constructor_path}`, a fallible constructor.",
             error_observer.callable.path,
         );
-        let (source, label) =
-            component_db.registration_span(error_observer_id, package_graph, diagnostics);
-        let diagnostic_builder = CompilerDiagnostic::builder(e)
-            .optional_source(source)
-            .optional_label(label.labeled("The error observer was registered here".into()));
-        diagnostics.push(diagnostic_builder.build().into());
+        let source = component_db.registration_span(
+            error_observer_id,
+            diagnostics,
+            "The error observer was registered here".into(),
+        );
+        let diagnostic_builder = CompilerDiagnostic::builder(e).optional_source(source);
+        diagnostics.push(diagnostic_builder.build());
     }
 }
 

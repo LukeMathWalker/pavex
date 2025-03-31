@@ -5,10 +5,10 @@
   [31m│[0m  [2m15[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m16[0m │     bp.singleton(f!(crate::new_logger::<String>));
   [31m│[0m     · [35;1m                 ───────────────┬───────────────[0m
-  [31m│[0m     ·                [35;1mThe relative import path was registered here[0m
+  [31m│[0m     ·                                 [35;1m╰── The relative path[0m
   [31m│[0m  [2m17[0m │     bp.route(GET, "/home", f!(crate::handler::<std::string::String>));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mIf it is a local import, the path must start with `crate::`,
-  [31m│[0m         `self::` or `super::`.
+  [31m│[0m   [36mhelp:[0m If it is a local import, the path must start with `crate::`, `self::`
+  [31m│[0m         or `super::`.
   [31m│[0m         If it is an import from a dependency, the path must start with the
   [31m│[0m         dependency name (e.g. `dependency::`).

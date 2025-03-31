@@ -10,4 +10,4 @@
   [31m│[0m     ·                [35;1mThe fallible constructor was registered here[0m
   [31m│[0m  [2m14[0m │ 
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mAdd an error handler via `.error_handler`
+  [31m│[0m   [36mhelp:[0m Add an error handler via `.error_handler`

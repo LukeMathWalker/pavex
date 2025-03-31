@@ -1,6 +1,9 @@
+use std::collections::BTreeMap;
+
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
+use itertools::Itertools;
 use petgraph::stable_graph::NodeIndex;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -49,7 +52,7 @@ pub(crate) fn codegen_call_block<I, J>(
     dependencies: I,
     happen_befores: J,
     callable: &Callable,
-    blocks: &mut HashMap<NodeIndex, Fragment>,
+    blocks: &mut BTreeMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> Result<Fragment, anyhow::Error>
@@ -86,11 +89,17 @@ where
             }
         };
         let Some(fragment) = &blocks.get(&dependency_index) else {
+            let available_blocks = blocks
+                .iter()
+                .map(|(k, v)| format!("- {} (id): {}", k.index(), quote! { #v }))
+                .join("\n");
             panic!(
-                "Failed to find the code fragment for {dependency_index:?}, the node that builds `{dependency_type:?}`"
+                "Trying to generated the code to invoke {}.\n\
+                Failed to find the code fragment for {dependency_index:?}, the node that should build `{dependency_type:?}.\n\
+                Available code fragments:\n{available_blocks}",
+                callable.path
             );
         };
-        let mut to_be_removed = false;
         let tokens = match fragment {
             Fragment::VariableReference(v) => match consumption_mode {
                 CallGraphEdgeMetadata::Move => Box::new(quote! { #v }),
@@ -100,7 +109,6 @@ where
             },
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
-                to_be_removed = true;
                 dependency_blocks.push(quote! {
                     let #parameter_name = #fragment;
                 });
@@ -137,11 +145,6 @@ where
         }
 
         dependency_bindings.insert(type_, tokens);
-
-        if to_be_removed {
-            // It won't be needed in the future
-            blocks.remove(&dependency_index);
-        }
     }
     let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {

@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use ahash::{HashSet, HashSetExt};
-use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Outgoing;
 use petgraph::algo::has_path_connecting;
@@ -16,12 +15,9 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
-use crate::diagnostic::{
-    AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
-};
+use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
-use crate::{diagnostic, try_source};
 
 use super::copy::CopyChecker;
 use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
@@ -36,14 +32,14 @@ pub(super) fn multiple_consumers(
     copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     } = call_graph;
 
     let sink_ids = call_graph.externals(Outgoing).collect::<Vec<_>>();
@@ -113,7 +109,6 @@ pub(super) fn multiple_consumers(
                         competing_consumer_set,
                         computation_db,
                         component_db,
-                        package_graph,
                         &call_graph,
                         diagnostics,
                     );
@@ -167,6 +162,7 @@ pub(super) fn multiple_consumers(
         call_graph,
         root_node_index,
         root_scope_id,
+        root_component_id,
     }
 }
 
@@ -195,18 +191,16 @@ fn emit_multiple_consumers_error(
     consumed_node_id: NodeIndex,
     consuming_node_ids: BTreeSet<NodeIndex>,
     computation_db: &ComputationDb,
-    component_db: &ComponentDb,
-    package_graph: &PackageGraph,
+    db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut Vec<miette::Error>,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     use std::fmt::Write as _;
 
     let (consumed_component_id, type_) = match &call_graph[consumed_node_id] {
         CallGraphNode::Compute { component_id, .. } => (
             Some(*component_id),
-            component_db
-                .hydrated_component(*component_id, computation_db)
+            db.hydrated_component(*component_id, computation_db)
                 .output_type()
                 .cloned()
                 .unwrap(),
@@ -236,43 +230,36 @@ fn emit_multiple_consumers_error(
         let Some(component_id) = &call_graph[*consuming_node_id].component_id() else {
             continue;
         };
-        let component_id = component_db
-            .derived_from(component_id)
-            .unwrap_or(*component_id);
-        let Computation::Callable(callable) = component_db
+        let component_id = db.derived_from(component_id).unwrap_or(*component_id);
+        let Computation::Callable(callable) = db
             .hydrated_component(component_id, computation_db)
             .computation()
         else {
             continue;
         };
-        let user_component_id = component_db.user_component_id(component_id);
+        let user_id = db.user_component_id(component_id);
 
         write!(&mut error_msg, "- `{}`", callable.path).unwrap();
-        match user_component_id {
+        match user_id {
             None => writeln!(&mut error_msg),
             Some(user_component_id) => {
-                let callable_type = component_db.user_component_db()[user_component_id].kind();
+                let callable_type = db.user_db()[user_component_id].kind();
                 writeln!(&mut error_msg, ", a {callable_type}")
             }
         }
         .unwrap();
 
-        let Some(user_component_id) = user_component_id else {
+        let Some(user_component_id) = user_id else {
             continue;
         };
-        let location = component_db
-            .user_component_db()
-            .get_location(user_component_id);
-        let Some(source) = try_source!(location, package_graph, diagnostics) else {
+        let kind = db.user_db()[user_component_id].kind();
+        let Some(s) = diagnostics.annotated(
+            db.registration_target(user_component_id),
+            format!("One of the consuming {kind}s"),
+        ) else {
             continue;
         };
-        let callable_type = component_db.user_component_db()[user_component_id].kind();
-        let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled(format!("One of the consuming {callable_type}s"));
-        consuming_snippets.push(HelpWithSnippet::new(
-            String::new(),
-            AnnotatedSnippet::new_optional(source, labeled_span),
-        ));
+        consuming_snippets.push(HelpWithSnippet::new(String::new(), s));
     }
     writeln!(
         &mut error_msg,
@@ -283,32 +270,18 @@ fn emit_multiple_consumers_error(
     let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
     if let Some(component_id) = consumed_component_id {
-        if let Some(user_component_id) = component_db.user_component_id(component_id) {
+        if let Some(user_id) = db.user_component_id(component_id) {
             let help_msg = format!(
                 "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
                 You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
             );
-            let location = component_db
-                .user_component_db()
-                .get_location(user_component_id);
-            let callable_type = component_db.user_component_db()[user_component_id].kind();
-            let source = match location.source_file(package_graph) {
-                Ok(s) => Some(s),
-                Err(e) => {
-                    diagnostics.push(e.into());
-                    None
-                }
-            };
-            let help = match source {
-                None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
-                Some(source) => {
-                    let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                        .labeled(format!("The {callable_type} was registered here"));
-                    HelpWithSnippet::new(
-                        help_msg,
-                        AnnotatedSnippet::new_optional(source, labeled_span),
-                    )
-                }
+            let kind = db.user_db()[user_id].kind();
+            let help = match diagnostics.annotated(
+                db.registration_target(user_id),
+                format!("The {kind} was registered here"),
+            ) {
+                None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+                Some(s) => HelpWithSnippet::new(help_msg, s).normalize(),
             };
             diagnostic = diagnostic.help_with_snippet(help);
         }
@@ -319,19 +292,15 @@ fn emit_multiple_consumers_error(
             "Considering changing the signature of the components that consume `{type_:?}` by value.\n\
             Would a shared reference, `&{type_:?}`, be enough?",
         ),
-        AnnotatedSnippet::empty(),
+        AnnotatedSource::empty(),
     );
     diagnostic = diagnostic.help_with_snippet(help);
     for snippet in consuming_snippets {
         diagnostic = diagnostic.help_with_snippet(snippet);
     }
 
-    let diagnostic = suggest_wrapping_in_a_smart_pointer(
-        consumed_component_id,
-        component_db,
-        computation_db,
-        diagnostic,
-    );
+    let diagnostic =
+        suggest_wrapping_in_a_smart_pointer(consumed_component_id, db, computation_db, diagnostic);
 
-    diagnostics.push(diagnostic.build().into());
+    diagnostics.push(diagnostic.build());
 }

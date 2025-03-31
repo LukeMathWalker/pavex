@@ -17,34 +17,34 @@ pub struct ApplicationState {
 impl ApplicationState {
     pub async fn new(
         _app_config: crate::ApplicationConfig,
-        v0: app::A,
-        v1: app::B<alloc::string::String>,
-        v2: app::C<'static>,
-        v3: alloc::vec::Vec<alloc::string::String>,
+        v0: alloc::vec::Vec<alloc::string::String>,
+        v1: app::C<'static>,
+        v2: app::B<alloc::string::String>,
+        v3: app::A,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
         Ok(Self::_new(v0, v1, v2, v3).await)
     }
     async fn _new(
-        v0: app::A,
-        v1: app::B<alloc::string::String>,
-        v2: app::C<'static>,
-        v3: alloc::vec::Vec<alloc::string::String>,
+        v0: alloc::vec::Vec<alloc::string::String>,
+        v1: app::C<'static>,
+        v2: app::B<alloc::string::String>,
+        v3: app::A,
     ) -> crate::ApplicationState {
         crate::ApplicationState {
-            a: v0,
-            b: v1,
-            c: v2,
-            vec: v3,
+            a: v3,
+            b: v2,
+            c: v1,
+            vec: v0,
         }
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]
 pub async fn build_application_state(
     _app_config: crate::ApplicationConfig,
-    v0: app::A,
-    v1: app::B<alloc::string::String>,
-    v2: app::C<'static>,
-    v3: alloc::vec::Vec<alloc::string::String>,
+    v0: alloc::vec::Vec<alloc::string::String>,
+    v1: app::C<'static>,
+    v2: app::B<alloc::string::String>,
+    v3: app::A,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
     crate::ApplicationState::new(_app_config, v0, v1, v2, v3).await
 }
@@ -105,9 +105,9 @@ impl Router {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
                         route_0::entrypoint(
-                                &state.a,
                                 state.c.clone(),
                                 state.vec.clone(),
+                                &state.a,
                                 &state.b,
                             )
                             .await
@@ -127,34 +127,34 @@ impl Router {
 }
 pub mod route_0 {
     pub async fn entrypoint<'a, 'b>(
-        s_0: &'a app::A,
-        s_1: app::C<'static>,
-        s_2: alloc::vec::Vec<alloc::string::String>,
+        s_0: app::C<'static>,
+        s_1: alloc::vec::Vec<alloc::string::String>,
+        s_2: &'a app::A,
         s_3: &'b app::B<alloc::string::String>,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
     async fn stage_1<'a, 'b>(
-        s_0: &'a app::B<alloc::string::String>,
+        s_0: alloc::vec::Vec<alloc::string::String>,
         s_1: app::C<'static>,
-        s_2: alloc::vec::Vec<alloc::string::String>,
-        s_3: &'b app::A,
+        s_2: &'a app::A,
+        s_3: &'b app::B<alloc::string::String>,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2, s_3).await;
         response
     }
     async fn wrapping_0(
-        v0: &app::A,
-        v1: app::C<'static>,
-        v2: alloc::vec::Vec<alloc::string::String>,
+        v0: app::C<'static>,
+        v1: alloc::vec::Vec<alloc::string::String>,
+        v2: &app::A,
         v3: &app::B<alloc::string::String>,
     ) -> pavex::response::Response {
         let v4 = crate::route_0::Next0 {
-            s_0: v3,
-            s_1: v1,
+            s_0: v1,
+            s_1: v0,
             s_2: v2,
-            s_3: v0,
+            s_3: v3,
             next: stage_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -162,27 +162,27 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     async fn handler(
-        v0: &app::B<alloc::string::String>,
+        v0: alloc::vec::Vec<alloc::string::String>,
         v1: app::C<'static>,
-        v2: alloc::vec::Vec<alloc::string::String>,
-        v3: &app::A,
+        v2: &app::A,
+        v3: &app::B<alloc::string::String>,
     ) -> pavex::response::Response {
-        let v4 = app::handler(v3, v0, v1, v2);
+        let v4 = app::handler(v2, v3, v1, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::B<alloc::string::String>,
+        s_0: alloc::vec::Vec<alloc::string::String>,
         s_1: app::C<'static>,
-        s_2: alloc::vec::Vec<alloc::string::String>,
-        s_3: &'b app::A,
+        s_2: &'a app::A,
+        s_3: &'b app::B<alloc::string::String>,
         next: fn(
-            &'a app::B<alloc::string::String>,
-            app::C<'static>,
             alloc::vec::Vec<alloc::string::String>,
-            &'b app::A,
+            app::C<'static>,
+            &'a app::A,
+            &'b app::B<alloc::string::String>,
         ) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>

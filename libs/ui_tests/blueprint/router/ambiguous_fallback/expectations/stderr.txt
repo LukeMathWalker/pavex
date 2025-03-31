@@ -13,9 +13,9 @@
   [31m│[0m  [2m26[0m │     });
   [31m│[0m  [2m27[0m │     bp.route(POST, "/users/yo", f!(crate::handler));
   [31m│[0m     · [35;1m                   ─────┬─────[0m
-  [31m│[0m     ·                         [35;1m╰── The route was registered here[0m
+  [31m│[0m     ·                         [35;1m╰── The path was specified here[0m
   [31m│[0m  [2m28[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mYou can fix this by registering `POST /users/yo` against the nested
-  [31m│[0m         blueprint with `/users` as prefix. All `/users`-prefixed routes
-  [31m│[0m         would then be using `app::fallback1` as fallback.
+  [31m│[0m   [36mhelp:[0m You can fix this by registering `POST /users/yo` against the nested
+  [31m│[0m         blueprint with `/users` as prefix. All `/users`-prefixed routes would
+  [31m│[0m         then be using `app::fallback1` as fallback.

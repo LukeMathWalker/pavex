@@ -17,10 +17,9 @@
   [31m│[0m    ·                [35;1m╰── I can't infer this[0m
   [31m│[0m  [2m8[0m │     todo!()
   [31m│[0m    ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the error observer against the
-  [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`
-
+  [31m│[0m   [36mhelp:[0m Specify the concrete type(s) for the problematic generic parameter(s)
+  [31m│[0m         when registering the error observer against the blueprint: `f!
+  [31m│[0m         (my_crate::my_observer::<ConcreteType>)`
 [31;1mERROR[0m:
   [31m×[0m All generic parameters must be assigned to a concrete type when you
   [31m│[0m register an error observer, I can't infer them.
@@ -41,10 +40,9 @@
   [31m│[0m     ·                 [35;1m╰── I can't infer this[0m
   [31m│[0m  [2m12[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the error observer against the
-  [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`
-
+  [31m│[0m   [36mhelp:[0m Specify the concrete type(s) for the problematic generic parameter(s)
+  [31m│[0m         when registering the error observer against the blueprint: `f!
+  [31m│[0m         (my_crate::my_observer::<ConcreteType>)`
 [31;1mERROR[0m:
   [31m×[0m All generic parameters must be assigned to a concrete type when you
   [31m│[0m register an error observer, I can't infer them.
@@ -66,6 +64,6 @@
   [31m│[0m     ·                 [35;1m╰── I can't infer this[0m
   [31m│[0m  [2m16[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
-  [31m│[0m         parameter(s) when registering the error observer against the
-  [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`
+  [31m│[0m   [36mhelp:[0m Specify the concrete type(s) for the problematic generic parameter(s)
+  [31m│[0m         when registering the error observer against the blueprint: `f!
+  [31m│[0m         (my_crate::my_observer::<ConcreteType>)`

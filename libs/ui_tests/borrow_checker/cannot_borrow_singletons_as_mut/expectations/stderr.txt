@@ -16,6 +16,6 @@
   [31m│[0m     ·                     [35;1m╰── The &mut singleton[0m
   [31m│[0m  [2m13[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mSingletons can only be taken via a shared reference (`&`) or by
-  [31m│[0m         value (if cloneable). If you absolutely need to mutate a singleton,
-  [31m│[0m         consider internal mutability (e.g. `Arc<Mutex<..>>`).
+  [31m│[0m   [36mhelp:[0m Singletons can only be taken via a shared reference (`&`) or by value
+  [31m│[0m         (if cloneable). If you absolutely need to mutate a singleton, consider
+  [31m│[0m         internal mutability (e.g. `Arc<Mutex<..>>`).

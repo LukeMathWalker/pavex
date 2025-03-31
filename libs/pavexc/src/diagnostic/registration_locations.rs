@@ -1,14 +1,83 @@
 //! Utility functions to obtain or manipulate the location where components (constructors,
 //! request handlers, etc.) have been registered by the user.
 use miette::SourceSpan;
+use proc_macro2::Span;
 use std::ops::Deref;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Expr, ExprCall, ExprMethodCall, Stmt};
+use syn::{Expr, ExprCall, ExprMethodCall, ImplItemFn, ItemFn, Stmt};
 
 use pavex_bp_schema::Location;
 
+use super::{ComponentKind, Registration, RegistrationKind};
 use crate::diagnostic::{ParsedSourceFile, ProcMacroSpanExt, convert_proc_macro_span};
+
+/// Returns a span covering the registration location.
+///
+/// For attributes, returns a span covering the attribute (e.g. `#[pavex::constructor]`) as well as the function/method
+/// signature.
+/// For blueprint registrations, returns a span pointing at the method argument that accepts the
+/// raw identifiers for that component.
+pub(crate) fn registration_span(
+    source: &ParsedSourceFile,
+    registration: &Registration,
+    kind: ComponentKind,
+) -> Option<SourceSpan> {
+    match registration.kind {
+        RegistrationKind::Blueprint => f_macro_span(source, &registration.location),
+        RegistrationKind::Attribute => attribute_span(source, &registration.location, kind),
+    }
+}
+
+/// A span covering the attribute (e.g. `#[pavex::constructor]`) as well as the function/method
+/// signature.
+pub(crate) fn attribute_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+    kind: ComponentKind,
+) -> Option<SourceSpan> {
+    if kind == ComponentKind::ErrorHandler {
+        attribute_error_handler_span(source, location)
+    } else {
+        let raw_source = &source.contents;
+        let span = find_callable_def(location, &source.parsed)?.attrs_and_sig_span();
+        Some(convert_proc_macro_span(raw_source, span))
+    }
+}
+
+pub(crate) fn attribute_error_handler_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    use darling::FromMeta;
+
+    let raw_source = &source.contents;
+    let def = find_callable_def(location, &source.parsed)?;
+    let attrs = match &def {
+        CallableDef::Method(m) => &m.attrs,
+        CallableDef::Function(f) => &f.attrs,
+    };
+
+    #[derive(darling::FromMeta)]
+    struct Property {
+        error_handler: darling::util::SpannedValue<String>,
+    }
+
+    for attr in attrs {
+        if let Ok(property) = Property::from_meta(&attr.meta) {
+            return Some(convert_proc_macro_span(
+                raw_source,
+                property.error_handler.span(),
+            ));
+        }
+    }
+
+    // Fall back to the full sign+attr span if we can't find a precise one.
+    Some(convert_proc_macro_span(
+        raw_source,
+        def.attrs_and_sig_span(),
+    ))
+}
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
 /// `.` in the method invocation for `route` and `constructor`.
@@ -30,10 +99,7 @@ use crate::diagnostic::{ParsedSourceFile, ProcMacroSpanExt, convert_proc_macro_s
 /// //             ^^^^^^^^^^^^^^^^^^^^^^^
 /// //             We want a SourceSpan that points at this for constructors
 /// ```
-pub(crate) fn get_f_macro_invocation_span(
-    source: &ParsedSourceFile,
-    location: &Location,
-) -> Option<SourceSpan> {
+pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
     match node {
@@ -160,7 +226,7 @@ pub(crate) fn get_f_macro_invocation_span(
 /// //            ^^^^^^^
 /// //            We want a SourceSpan that points at this for routes
 /// ```
-pub(crate) fn get_route_path_span(
+pub(crate) fn route_path_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
@@ -219,7 +285,7 @@ pub(crate) fn get_route_path_span(
 /// //        ^^^^^^
 /// //        We want a SourceSpan that points at this for routes
 /// ```
-pub(crate) fn get_config_key_span(
+pub(crate) fn config_key_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
@@ -278,10 +344,7 @@ pub(crate) fn get_config_key_span(
 /// //        ^^^^^^^
 /// //        We want a SourceSpan that points at this
 /// ```
-pub(crate) fn get_prefix_span(
-    source: &ParsedSourceFile,
-    location: &Location,
-) -> Option<SourceSpan> {
+pub(crate) fn prefix_span(source: &ParsedSourceFile, location: &Location) -> Option<SourceSpan> {
     let arguments = get_inherent_method_arguments("prefix", source, location)?;
     Some(convert_proc_macro_span(
         &source.contents,
@@ -306,11 +369,36 @@ pub(crate) fn get_prefix_span(
 /// //        ^^^^^^^
 /// //        We want a SourceSpan that points at this
 /// ```
-pub(crate) fn get_domain_span(
+pub(crate) fn domain_span(source: &ParsedSourceFile, location: &Location) -> Option<SourceSpan> {
+    let arguments = get_inherent_method_arguments("domain", source, location)?;
+    Some(convert_proc_macro_span(
+        &source.contents,
+        arguments.first()?.span(),
+    ))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `.` in the method invocation for `import`.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.import(from![*])
+/// //^ `location` points here!
+/// ```
+///
+/// We build a `SourceSpan` that matches the sources argument.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.import(from![*])
+/// //        ^^^^^^^
+/// //        We want a SourceSpan that points at this
+/// ```
+pub(crate) fn imported_sources_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
-    let arguments = get_inherent_method_arguments("domain", source, location)?;
+    let arguments = get_inherent_method_arguments("import", source, location)?;
     Some(convert_proc_macro_span(
         &source.contents,
         arguments.first()?.span(),
@@ -334,7 +422,7 @@ pub(crate) fn get_domain_span(
 /// //      ^^^^^^
 /// //      We want a SourceSpan that points at this for nest
 /// ```
-pub(crate) fn get_nest_blueprint_span(
+pub(crate) fn nest_blueprint_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
@@ -397,10 +485,7 @@ fn get_inherent_method_arguments(
 /// //       ^^^^^^^^^^^^^^
 /// //       We want a SourceSpan that points here
 /// ```
-pub(crate) fn get_bp_new_span(
-    source: &ParsedSourceFile,
-    location: &Location,
-) -> Option<SourceSpan> {
+pub(crate) fn bp_new_span(source: &ParsedSourceFile, location: &Location) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
     let Call::FunctionCall(node) = node else {
@@ -426,12 +511,12 @@ enum Call<'a> {
 /// is also the smallest node that contains it—exactly what we are looking for.
 fn find_method_call<'a>(location: &'a Location, file: &'a syn::File) -> Option<Call<'a>> {
     /// A visitor that locates the method call that contains the given `location`.
-    struct CallableLocator<'a> {
+    struct CallLocator<'a> {
         location: &'a Location,
         node: Option<Call<'a>>,
     }
 
-    impl<'a> Visit<'a> for CallableLocator<'a> {
+    impl<'a> Visit<'a> for CallLocator<'a> {
         fn visit_expr_call(&mut self, node: &'a ExprCall) {
             if node.span().contains(self.location) {
                 self.node = Some(Call::FunctionCall(node));
@@ -446,6 +531,78 @@ fn find_method_call<'a>(location: &'a Location, file: &'a syn::File) -> Option<C
             }
         }
 
+        fn visit_stmt(&mut self, node: &'a Stmt) {
+            // This is an optimization—it allows the visitor to skip the entire sub-tree
+            // under a top-level statement that is not relevant to our search.
+            if node.span().contains(self.location) {
+                syn::visit::visit_stmt(self, node)
+            }
+        }
+    }
+
+    let mut locator = CallLocator {
+        location,
+        node: None,
+    };
+    locator.visit_file(file);
+    locator.node
+}
+
+enum CallableDef<'a> {
+    Method(&'a ImplItemFn),
+    Function(&'a ItemFn),
+}
+
+impl CallableDef<'_> {
+    /// Return a span that includes the attributes and signature of the callable definition.
+    fn attrs_and_sig_span(&self) -> Span {
+        let (attrs, vis, sig) = match self {
+            CallableDef::Method(item) => (&item.attrs, &item.vis, &item.sig),
+            CallableDef::Function(item) => (&item.attrs, &item.vis, &item.sig),
+        };
+
+        let mut span = attrs
+            .first()
+            .map(|attr| attr.span())
+            .unwrap_or_else(|| vis.span());
+        // Expand the span to include visibility
+        span = span.join(vis.span()).unwrap_or(span);
+        // Expand to include the function signature
+        span = span.join(sig.span()).unwrap_or(span);
+
+        span
+    }
+}
+
+/// Visits the abstract syntax tree of a parsed `syn::File` to find a function definition or method
+/// definition node that contains the given `location`.
+/// It then converts the span associated with the node to a [`SourceSpan`].
+///
+/// # Ambiguity
+///
+/// There may be multiple nodes that match (e.g. a function defined inside another function).
+/// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
+/// is also the smallest node that contains it—exactly what we are looking for.
+fn find_callable_def<'a>(location: &'a Location, file: &'a syn::File) -> Option<CallableDef<'a>> {
+    /// A visitor that locates the method call that contains the given `location`.
+    struct CallableLocator<'a> {
+        location: &'a Location,
+        node: Option<CallableDef<'a>>,
+    }
+
+    impl<'a> Visit<'a> for CallableLocator<'a> {
+        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
+            if node.span().contains(self.location) {
+                self.node = Some(CallableDef::Function(node));
+                syn::visit::visit_item_fn(self, node)
+            }
+        }
+        fn visit_impl_item_fn(&mut self, node: &'a syn::ImplItemFn) {
+            if node.span().contains(self.location) {
+                self.node = Some(CallableDef::Method(node));
+                syn::visit::visit_impl_item_fn(self, node)
+            }
+        }
         fn visit_stmt(&mut self, node: &'a Stmt) {
             // This is an optimization—it allows the visitor to skip the entire sub-tree
             // under a top-level statement that is not relevant to our search.

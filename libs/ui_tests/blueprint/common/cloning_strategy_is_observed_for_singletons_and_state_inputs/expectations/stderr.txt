@@ -1,62 +1,90 @@
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
-  [31m│[0m `app::handler` consumes `app::A` by value,
-  [31m│[0m but `app::A` is a singleton and can't be moved out of
+  [31m│[0m `app::handler` consumes `app::C` by value,
+  [31m│[0m but `app::C` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
-  [31m│[0m Cloning `app::A` would fix this, but its cloning strategy is set
-  [31m│[0m to `NeverClone`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:28:1]
-  [31m│[0m  [2m28[0m │     bp.prebuilt(t!(crate::B));
-  [31m│[0m  [2m29[0m │     bp.singleton(f!(crate::singleton));
-  [31m│[0m     · [35;1m                 ──────────┬─────────[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:57:1]
+  [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
+  [31m│[0m  [2m58[0m │     bp.singleton(f!(crate::singleton2));
+  [31m│[0m     · [35;1m                 ──────────┬──────────[0m
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m30[0m │     bp.singleton(f!(crate::singleton2));
+  [31m│[0m  [2m59[0m │     bp.route(GET, "/", f!(crate::handler));
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::A`,
-  [31m│[0m         rather than consuming it by value?
-  [31m│[0m [36m  help: [0mSet the cloning strategy for `app::A` to
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::C` by marking it
   [31m│[0m         `CloneIfNecessary`.
-
+  [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::C`,
+  [31m│[0m         rather than consuming it by value?
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
   [31m│[0m `app::handler` consumes `app::B` by value,
   [31m│[0m but `app::B` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
-  [31m│[0m Cloning `app::B` would fix this, but its cloning strategy is set
-  [31m│[0m to `NeverClone`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m28[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:55:1]
+  [31m│[0m  [2m55[0m │     bp.import(from!(crate::annotated));
+  [31m│[0m  [2m56[0m │     bp.prebuilt(t!(crate::B));
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m29[0m │     bp.singleton(f!(crate::singleton));
+  [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
   [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::B` by marking it
+  [31m│[0m         `CloneIfNecessary`.
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::B`,
   [31m│[0m         rather than consuming it by value?
-  [31m│[0m [36m  help: [0mSet the cloning strategy for `app::B` to
-  [31m│[0m         `CloneIfNecessary`.
-
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
-  [31m│[0m `app::handler` consumes `app::C` by value,
-  [31m│[0m but `app::C` is a singleton and can't be moved out of
+  [31m│[0m `app::handler` consumes `app::A` by value,
+  [31m│[0m but `app::A` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
-  [31m│[0m Cloning `app::C` would fix this, but its cloning strategy is set
-  [31m│[0m to `NeverClone`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:29:1]
-  [31m│[0m  [2m29[0m │     bp.singleton(f!(crate::singleton));
-  [31m│[0m  [2m30[0m │     bp.singleton(f!(crate::singleton2));
-  [31m│[0m     · [35;1m                 ──────────┬──────────[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:56:1]
+  [31m│[0m  [2m56[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
+  [31m│[0m     · [35;1m                 ──────────┬─────────[0m
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m31[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m  [2m58[0m │     bp.singleton(f!(crate::singleton2));
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::C`,
-  [31m│[0m         rather than consuming it by value?
-  [31m│[0m [36m  help: [0mSet the cloning strategy for `app::C` to
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::A` by marking it
   [31m│[0m         `CloneIfNecessary`.
+  [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::A`,
+  [31m│[0m         rather than consuming it by value?
+[31;1mERROR[0m:
+  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
+  [31m│[0m instructions in your blueprint.
+  [31m│[0m `app::annotated::handler` consumes `app::annotated::B`
+  [31m│[0m by value, but `app::annotated::B` is a singleton and can't be
+  [31m│[0m moved out of `ApplicationState`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:42:1]
+  [31m│[0m  [2m42[0m │
+  [31m│[0m  [2m43[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
+  [31m│[0m  [2m44[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn b(_b: A) -> B {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
+  [31m│[0m  [2m45[0m │             todo!()
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::B` by marking it
+  [31m│[0m         `clone_if_necessary`.
+  [31m│[0m   [36mhelp:[0m Can `app::annotated::handler` take a reference to
+  [31m│[0m         `app::annotated::B`, rather than consuming it by value?
+[31;1mERROR[0m:
+  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
+  [31m│[0m instructions in your blueprint.
+  [31m│[0m `app::annotated::handler` consumes `app::annotated::A`
+  [31m│[0m by value, but `app::annotated::A` is a singleton and can't be
+  [31m│[0m moved out of `ApplicationState`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:37:1]
+  [31m│[0m  [2m37[0m │
+  [31m│[0m  [2m38[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
+  [31m│[0m  [2m39[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn a() -> A {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
+  [31m│[0m  [2m40[0m │             todo!()
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::A` by marking it
+  [31m│[0m         `clone_if_necessary`.
+  [31m│[0m   [36mhelp:[0m Can `app::annotated::handler` take a reference to
+  [31m│[0m         `app::annotated::A`, rather than consuming it by value?

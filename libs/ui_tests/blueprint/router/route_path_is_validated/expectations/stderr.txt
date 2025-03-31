@@ -9,5 +9,5 @@
   [31m│[0m     ·                     [35;1m╰── The path missing a leading '/'[0m
   [31m│[0m  [2m14[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mAdd a '/' at the beginning of the route path to fix this error: use
-  [31m│[0m         `/api` instead of `api`.
+  [31m│[0m   [36mhelp:[0m Add a '/' at the beginning of the route path to fix this error: use `/
+  [31m│[0m         api` instead of `api`.
