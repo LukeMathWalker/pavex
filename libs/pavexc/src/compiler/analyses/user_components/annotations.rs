@@ -161,6 +161,8 @@ pub(super) fn register_imported_components(
                         crate_name: krate.crate_name(),
                         // FIXME: The `impl` where this method is defined may not be within the same module
                         // where `Self` is defined.
+                        // See https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/Module.20items.20don't.20link.20to.20impls.20.5Brustdoc-json.5D
+                        // for a discussion on this issue.
                         module_path: {
                             let self_path = krate.import_index[&self_].defined_at.as_ref().unwrap();
                             self_path.iter().take(self_path.len() - 1).join("::")
