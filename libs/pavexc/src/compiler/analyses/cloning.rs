@@ -110,3 +110,95 @@ fn must_be_clonable(
         .build();
     diagnostics.push(diagnostic);
 }
+
+/// Check all types whose cloning strategy is set to "NeverClone" are not Copy.
+#[tracing::instrument(
+    name = "If cloning is not allowed, types should not be copyable",
+    skip_all
+)]
+pub(crate) fn never_clones_should_not_be_copyable<'a>(
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+    package_graph: &PackageGraph,
+    krate_collection: &CrateCollection,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    let copy = process_framework_path("core::marker::Copy", krate_collection);
+    let ResolvedType::ResolvedPath(copy) = copy else {
+        unreachable!()
+    };
+
+    for (id, _) in component_db.iter() {
+        let HydratedComponent::Constructor(constructor) =
+            component_db.hydrated_component(id, computation_db)
+        else {
+            continue;
+        };
+        if component_db.cloning_strategy(id) != CloningStrategy::NeverClone {
+            continue;
+        }
+        let output_type = constructor.output_type();
+        if let Ok(()) = assert_trait_is_implemented(krate_collection, output_type, &copy) {
+            should_not_be_never_clone(
+                output_type,
+                id,
+                package_graph,
+                component_db,
+                computation_db,
+                diagnostics,
+            );
+        }
+    }
+}
+
+fn should_not_be_never_clone(
+    type_: &ResolvedType,
+    component_id: ComponentId,
+    package_graph: &PackageGraph,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    let component_id = component_db
+        .derived_from(&component_id)
+        .unwrap_or(component_id);
+    let user_component_id = component_db.user_component_id(component_id).unwrap();
+    let user_component_db = &component_db.user_component_db();
+    let callable_type = user_component_db[user_component_id].callable_type();
+    let location = user_component_db.get_location(user_component_id);
+    let source = try_source!(location, package_graph, diagnostics);
+    let label = source.as_ref().and_then(|source| {
+        diagnostic::get_f_macro_invocation_span(source, location)
+            .labeled(format!("The {callable_type} was registered here"))
+    });
+    let warning_msg = match callable_type {
+        CallableType::Constructor => {
+            let callable_path = &computation_db[user_component_id].path;
+            format!(
+                    "A type should not be copyable if you set its cloning strategy to `NeverClone`.\n\
+                    The cloning strategy for `{callable_path}` is `NeverClone`, but `{}`, its output type, implements the `Copy` trait.",
+                    type_.display_for_error(),
+                )
+        }
+        CallableType::PrebuiltType => {
+            format!(
+                "A type should not be copyable if you set its cloning strategy to `NeverClone`.\n\
+                The cloning strategy for `{}`, a prebuilt type, is `NeverClone`, but it implements the `Copy` trait.",
+                type_.display_for_error(),
+            )
+        }
+        _ => unreachable!(),
+    };
+    let e = anyhow::anyhow!("copyable type is marked NeverClone").context(warning_msg);
+    let help = format!(
+        "Either set the cloning strategy to `CloneIfNecessary` or remove `Copy` for `{}`",
+        type_.display_for_error()
+    );
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .severity(miette::Severity::Warning)
+        .optional_source(source)
+        .optional_label(label)
+        .help(help)
+        .build();
+    diagnostics.push(diagnostic.into());
+}
