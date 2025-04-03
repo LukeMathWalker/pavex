@@ -1,6 +1,3 @@
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::f;
 use crate::request::RequestHead;
 use crate::request::body::BufferedBody;
 use crate::request::body::errors::{
@@ -8,6 +5,7 @@ use crate::request::body::errors::{
     UrlEncodedContentTypeMismatch,
 };
 use http::HeaderMap;
+use pavex_macros::request_scoped;
 use serde::Deserialize;
 
 #[doc(alias = "UrlEncoded")]
@@ -49,6 +47,9 @@ use serde::Deserialize;
 pub struct UrlEncodedBody<T>(pub T);
 
 impl<T> UrlEncodedBody<T> {
+    #[request_scoped(
+        error_handler = "crate::request::body::errors::ExtractUrlEncodedBodyError::into_response"
+    )]
     pub fn extract<'head, 'body>(
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,
@@ -58,21 +59,6 @@ impl<T> UrlEncodedBody<T> {
     {
         check_urlencoded_content_type(&request_head.headers)?;
         parse(buffered_body.bytes.as_ref()).map(UrlEncodedBody)
-    }
-}
-
-impl UrlEncodedBody<()> {
-    /// Register the [default constructor](Self::default_constructor)
-    /// for [`UrlEncodedBody`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](UrlEncodedBody::extract)
-    /// and [error handler](ExtractUrlEncodedBodyError::into_response) for [`UrlEncodedBody`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(super::UrlEncodedBody::extract))
-            .error_handler(f!(super::errors::ExtractUrlEncodedBodyError::into_response))
     }
 }
 

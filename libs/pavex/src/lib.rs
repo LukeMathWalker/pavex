@@ -19,7 +19,6 @@ pub mod connection;
 pub mod cookie;
 pub mod error;
 pub mod http;
-pub mod kit;
 pub mod middleware;
 pub mod request;
 pub mod response;

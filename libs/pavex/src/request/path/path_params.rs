@@ -1,10 +1,8 @@
 use serde::Deserialize;
 
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::f;
 use crate::request::path::deserializer::PathDeserializer;
 use crate::request::path::errors::{DecodeError, ExtractPathParamsError, InvalidUtf8InPathParam};
+use crate::request_scoped;
 
 use super::RawPathParams;
 
@@ -46,7 +44,7 @@ use super::RawPathParams;
 /// }
 /// ```
 ///
-/// `home_id` will be set to `1` for an incoming `/home/1` request.  
+/// `home_id` will be set to `1` for an incoming `/home/1` request.
 /// Extraction will fail, instead, if we receive an `/home/abc` request.
 #[doc(alias = "Path")]
 #[doc(alias = "RouteParams")]
@@ -60,6 +58,9 @@ impl<T> PathParams<T> {
     /// The default constructor for [`PathParams`].
     ///
     /// If the extraction fails, an [`ExtractPathParamsError`] is returned.
+    #[request_scoped(
+        error_handler = "crate::request::path::errors::ExtractPathParamsError::into_response"
+    )]
     pub fn extract<'server, 'request>(
         params: RawPathParams<'server, 'request>,
     ) -> Result<Self, ExtractPathParamsError>
@@ -88,21 +89,5 @@ impl<T> PathParams<T> {
         T::deserialize(deserializer)
             .map_err(ExtractPathParamsError::PathDeserializationError)
             .map(PathParams)
-    }
-}
-
-impl PathParams<()> {
-    /// Register the [default constructor](Self::default_constructor)
-    /// for [`PathParams`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](PathParams::extract)
-    /// and [error handler](ExtractPathParamsError::into_response)
-    /// for [`PathParams`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(super::PathParams::extract))
-            .error_handler(f!(super::errors::ExtractPathParamsError::into_response))
     }
 }

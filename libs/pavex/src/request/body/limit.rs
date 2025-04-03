@@ -1,11 +1,9 @@
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::f;
 use crate::unit::ByteUnit;
+use pavex_macros::request_scoped;
 use ubyte::ToByteUnit;
 
 #[derive(Debug, Clone, Copy)]
-/// An upper limit on the size of incoming request bodies.  
+/// An upper limit on the size of incoming request bodies.
 ///
 /// Check out the documentation of [`BufferedBody`](crate::request::body::BufferedBody) for more details.
 pub enum BodySizeLimit {
@@ -19,15 +17,10 @@ pub enum BodySizeLimit {
 }
 
 impl BodySizeLimit {
-    /// Register the [default constructor](Self::default_constructor)
-    /// for [`BodySizeLimit`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](Self::default) for [`BodySizeLimit`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(<super::BodySizeLimit as std::default::Default>::default))
+    /// Create a new [`BodySizeLimit`] using the default limit (2 MBs).
+    #[request_scoped]
+    pub fn new() -> BodySizeLimit {
+        Self::default()
     }
 }
 
