@@ -1,4 +1,8 @@
-use std::{collections::BTreeSet, ops::Deref, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    ops::Deref,
+    sync::Arc,
+};
 
 use self::computations::ComputationDb;
 
@@ -21,8 +25,9 @@ use crate::{
     language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
     rustdoc::{Crate, CrateCollection, GlobalItemId},
 };
+use guppy::graph::PackageGraph;
 use itertools::Itertools;
-use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, RawIdentifiers};
+use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, Lint, LintSetting, RawIdentifiers};
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::{AnnotatedComponent, errors::AttributeParserError};
 use rustdoc_types::{Enum, Item, ItemEnum, Struct};
@@ -140,6 +145,7 @@ pub(super) fn register_imported_components(
                                 &created_at,
                                 scope_id,
                                 aux,
+                                krate_collection.package_graph(),
                             );
                             let callable =
                                 match rustdoc_free_fn2callable(&item, krate, krate_collection) {
@@ -208,8 +214,15 @@ pub(super) fn register_imported_components(
                             self_path.iter().take(self_path.len() - 1).join("::")
                         },
                     };
-                    let user_component_id =
-                        intern_annotated(annotation, &item, krate, &created_at, scope_id, aux);
+                    let user_component_id = intern_annotated(
+                        annotation,
+                        &item,
+                        krate,
+                        &created_at,
+                        scope_id,
+                        aux,
+                        krate_collection.package_graph(),
+                    );
                     let callable =
                         match rustdoc_method2callable(self_, impl_, &item, krate, krate_collection)
                         {
@@ -318,6 +331,7 @@ fn intern_annotated(
     created_at: &CreatedAt,
     scope_id: ScopeId,
     aux: &mut AuxiliaryData,
+    package_graph: &PackageGraph,
 ) -> UserComponentId {
     match annotation {
         AnnotatedComponent::Constructor {
@@ -348,6 +362,17 @@ fn intern_annotated(
                 constructor_id,
                 cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
             );
+
+            // Ignore unused constructors imported from crates defined outside the current workspace
+            if !package_graph
+                .metadata(&krate.core.package_id)
+                .unwrap()
+                .in_workspace()
+            {
+                let mut lints = BTreeMap::new();
+                lints.insert(Lint::Unused, LintSetting::Ignore);
+                aux.id2lints.insert(constructor_id, lints);
+            }
 
             if let Some(error_handler) = error_handler {
                 let identifiers = RawIdentifiers {
