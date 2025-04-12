@@ -58,7 +58,7 @@ impl BufferedBody {
     ///
     /// If extraction fails, an [`ExtractBufferedBodyError`] is returned.
     #[request_scoped(
-        error_handler = "crate::request::errors::ExtractBufferedBodyError::into_response"
+        error_handler = "crate::request::body::errors::ExtractBufferedBodyError::into_response"
     )]
     pub async fn extract(
         request_head: &RequestHead,
