@@ -13,12 +13,6 @@ use std::collections::BTreeMap;
 /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
 /// section of Pavex's guide for a thorough introduction to dependency injection
 /// in Pavex applications.
-///
-/// # Use cases
-///
-/// [`Constructor`] is primarily used by kits (e.g. [`ApiKit`](crate::kit::ApiKit))
-/// to allow users to customize (or disable!)
-/// the bundled constructors **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct Constructor {
     pub(in crate::blueprint) callable: Callable,
