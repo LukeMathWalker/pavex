@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
@@ -551,21 +550,15 @@ pub struct Crate {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(transparent)]
-pub struct ImportIndex(HashMap<rustdoc_types::Id, ImportIndexEntry>);
-
-impl Deref for ImportIndex {
-    type Target = HashMap<rustdoc_types::Id, ImportIndexEntry>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ImportIndex {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
+pub struct ImportIndex {
+    /// A mapping that keeps track of all modules defined in the current crate.
+    ///
+    /// We track modules separately because their names are allowed to collide with
+    /// type and function names.
+    pub modules: HashMap<rustdoc_types::Id, ImportIndexEntry>,
+    /// A mapping that keeps track of traits, structs, enums and functions
+    /// defined in the current crate.
+    pub items: HashMap<rustdoc_types::Id, ImportIndexEntry>,
 }
 
 /// An entry in [`ImportIndex`].
@@ -826,8 +819,8 @@ impl Crate {
             false,
         )?;
 
-        import_path2id.reserve(import_index.len());
-        for (id, entry) in import_index.0.iter() {
+        import_path2id.reserve(import_index.items.len());
+        for (id, entry) in import_index.items.iter() {
             for path in entry.public_paths.iter().chain(entry.private_paths.iter()) {
                 if !import_path2id.contains_key(&path.0) {
                     import_path2id.insert(path.0.clone(), id.to_owned());
@@ -988,7 +981,7 @@ impl Crate {
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id {
-            if let Some(entry) = self.import_index.get(&type_id.rustdoc_item_id) {
+            if let Some(entry) = self.import_index.items.get(&type_id.rustdoc_item_id) {
                 return Ok(entry.canonical_path());
             }
         }
@@ -1037,14 +1030,19 @@ fn index_local_types<'a>(
 
     let is_public = is_public && current_item.visibility == Visibility::Public;
 
-    let mut add_to_import_index = |path: Vec<String>| {
+    let mut add_to_import_index = |path: Vec<String>, is_module: bool| {
         let visibility = if is_public {
             EntryVisibility::Public
         } else {
             EntryVisibility::Private
         };
         let is_definition = !encountered_use;
-        match import_index.get_mut(current_item_id) {
+        let index = if is_module {
+            &mut import_index.modules
+        } else {
+            &mut import_index.items
+        };
+        match index.get_mut(current_item_id) {
             Some(entry) => {
                 entry.insert(path.clone(), visibility);
                 if is_definition {
@@ -1052,7 +1050,7 @@ fn index_local_types<'a>(
                 }
             }
             None => {
-                import_index.insert(
+                index.insert(
                     *current_item_id,
                     ImportIndexEntry::new(path, visibility, is_definition),
                 );
@@ -1073,6 +1071,7 @@ fn index_local_types<'a>(
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
+                true,
             );
 
             navigation_history.insert(*current_item_id);
@@ -1181,12 +1180,12 @@ fn index_local_types<'a>(
                                     }
                                 }
                                 // Assume it's private unless we find out otherwise later on
-                                match import_index.get_mut(imported_id) {
+                                match import_index.items.get_mut(imported_id) {
                                     Some(entry) => {
                                         entry.insert_private(normalized_source_path);
                                     }
                                     None => {
-                                        import_index.insert(
+                                        import_index.items.insert(
                                             *imported_id,
                                             ImportIndexEntry::new(
                                                 normalized_source_path,
@@ -1231,7 +1230,7 @@ fn index_local_types<'a>(
             }
             current_path.push(name);
             let path: Vec<_> = current_path.into_iter().map(|s| s.to_string()).collect();
-            add_to_import_index(path);
+            add_to_import_index(path, false);
         }
         _ => {}
     }

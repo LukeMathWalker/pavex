@@ -53,31 +53,41 @@ pub(super) fn register_imported_components(
                 Please report this issue at https://github.com/LukeMathWalker/pavex/issues/new."
             )
         };
-        match krate
+        // Let's check if the imported module path actually matches the path of a module in the
+        // relevant crate.
+        if !krate
             .import_index
+            .modules
             .iter()
-            .find(|(_, entry)| entry.defined_at.as_ref() == Some(module_path))
+            .any(|(_, entry)| entry.defined_at.as_ref() == Some(module_path))
         {
-            Some((module_id, _)) => {
-                let module_item = krate.get_item_by_local_type_id(module_id);
-                if !matches!(module_item.inner, ItemEnum::Module(_)) {
+            // No module matches. Perhaps it's another item kind?
+            match krate
+                .import_index
+                .items
+                .iter()
+                .find(|(_, entry)| entry.defined_at.as_ref() == Some(module_path))
+            {
+                Some(_) => {
+                    // We have a matching item. Let's report the kind confusion.
                     not_a_module(module_path, &aux.imports[*import_id].0, diagnostics);
-                    continue;
                 }
-            }
-            None => {
-                unknown_module_path(
-                    module_path,
-                    &krate.crate_name(),
-                    &aux.imports[*import_id].0,
-                    diagnostics,
-                );
-                continue;
-            }
+                None => {
+                    // Nope, no match at all. Let's just report it as an unknown path.
+                    unknown_module_path(
+                        module_path,
+                        &krate.crate_name(),
+                        &aux.imports[*import_id].0,
+                        diagnostics,
+                    );
+                }
+            };
+            continue;
         }
         // We use a BTreeSet to guarantee a deterministic processing order.
         let mut queue: BTreeSet<_> = krate
             .import_index
+            .items
             .iter()
             .filter_map(|(id, entry)| {
                 if entry.is_public() && entry.paths().any(|path| path.starts_with(module_path)) {
@@ -113,8 +123,10 @@ pub(super) fn register_imported_components(
                                 }
                             };
                             let module_path = {
-                                let fn_path =
-                                    krate.import_index[&item.id].defined_at.as_ref().unwrap();
+                                let fn_path = krate.import_index.items[&item.id]
+                                    .defined_at
+                                    .as_ref()
+                                    .unwrap();
                                 fn_path.iter().take(fn_path.len() - 1).join("::")
                             };
                             let created_at = CreatedAt {
@@ -189,7 +201,10 @@ pub(super) fn register_imported_components(
                         // See https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/Module.20items.20don't.20link.20to.20impls.20.5Brustdoc-json.5D
                         // for a discussion on this issue.
                         module_path: {
-                            let self_path = krate.import_index[&self_].defined_at.as_ref().unwrap();
+                            let self_path = krate.import_index.items[&self_]
+                                .defined_at
+                                .as_ref()
+                                .unwrap();
                             self_path.iter().take(self_path.len() - 1).join("::")
                         },
                     };
@@ -361,7 +376,7 @@ fn rustdoc_free_fn2callable(
         unreachable!("Expected a function item");
     };
     let path = ResolvedPath {
-        segments: krate.import_index[&item.id]
+        segments: krate.import_index.items[&item.id]
             .canonical_path()
             .iter()
             .cloned()
@@ -442,7 +457,7 @@ fn rustdoc_method2callable(
 ) -> Result<Callable, CallableResolutionError> {
     let method_path = {
         ResolvedPath {
-            segments: krate.import_index[&self_id]
+            segments: krate.import_index.items[&self_id]
                 .canonical_path()
                 .iter()
                 .cloned()

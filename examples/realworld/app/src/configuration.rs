@@ -1,7 +1,7 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use pavex::server::IncomingStream;
 use pavex::time::SignedDuration;
-use pavex::{blueprint::Blueprint, f, t};
+use pavex::{blueprint::Blueprint, t};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
@@ -11,7 +11,6 @@ pub fn register(bp: &mut Blueprint) {
     bp.config("server", t!(self::ServerConfig));
     bp.config("database", t!(self::DatabaseConfig));
     bp.config("auth", t!(self::AuthConfig));
-    bp.singleton(f!(self::DatabaseConfig::get_pool));
 }
 
 /// Configuration for the HTTP server used to expose our API
@@ -90,6 +89,7 @@ impl DatabaseConfig {
     }
 
     /// Return a database connection pool.
+    #[pavex::singleton(clone_if_necessary)]
     pub async fn get_pool(&self) -> Result<sqlx::PgPool, sqlx::Error> {
         let pool = sqlx::PgPool::connect_with(self.connection_options()).await?;
         Ok(pool)

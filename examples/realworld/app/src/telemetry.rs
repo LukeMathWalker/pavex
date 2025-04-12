@@ -1,4 +1,4 @@
-use pavex::blueprint::{Blueprint, constructor::CloningStrategy};
+use pavex::blueprint::Blueprint;
 use pavex::f;
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
@@ -16,14 +16,13 @@ use pavex_tracing::fields::{
 /// Register telemetry middlewares, an error observer and the relevant constructors
 /// with the application blueprint.
 pub(crate) fn register(bp: &mut Blueprint) {
-    bp.request_scoped(f!(self::root_span))
-        .cloning(CloningStrategy::CloneIfNecessary);
     bp.wrap(f!(pavex_tracing::logger));
     bp.post_process(f!(self::response_logger));
     bp.error_observer(f!(self::error_logger));
 }
 
 /// Construct a new root span for the given request.
+#[pavex::request_scoped(clone_if_necessary)]
 pub fn root_span(
     request_head: &RequestHead,
     matched_path_pattern: MatchedPathPattern,

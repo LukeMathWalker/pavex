@@ -1169,7 +1169,7 @@ pub mod route_3 {
         v3: &sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
         v4: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
-        let v5 = <pavex::request::body::BodySizeLimit as core::default::Default>::default();
+        let v5 = pavex::request::body::BodySizeLimit::new();
         let v6 = pavex::request::body::BufferedBody::extract(v1, v0, v5).await;
         let v7 = match v6 {
             Ok(ok) => ok,
@@ -1396,7 +1396,7 @@ pub mod route_4 {
         v3: &sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
         v4: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
-        let v5 = <pavex::request::body::BodySizeLimit as core::default::Default>::default();
+        let v5 = pavex::request::body::BodySizeLimit::new();
         let v6 = pavex::request::body::BufferedBody::extract(v1, v0, v5).await;
         let v7 = match v6 {
             Ok(ok) => ok,
@@ -1742,7 +1742,7 @@ pub mod route_6 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v3 = <pavex::request::body::BodySizeLimit as core::default::Default>::default();
+        let v3 = pavex::request::body::BodySizeLimit::new();
         let v4 = pavex::request::body::BufferedBody::extract(v1, v0, v3).await;
         let v5 = match v4 {
             Ok(ok) => ok,
@@ -2597,7 +2597,7 @@ pub mod route_11 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v3 = <pavex::request::body::BodySizeLimit as core::default::Default>::default();
+        let v3 = pavex::request::body::BodySizeLimit::new();
         let v4 = pavex::request::body::BufferedBody::extract(v1, v0, v3).await;
         let v5 = match v4 {
             Ok(ok) => ok,
@@ -3308,7 +3308,7 @@ pub mod route_15 {
                 };
             }
         };
-        let v6 = <pavex::request::body::BodySizeLimit as core::default::Default>::default();
+        let v6 = pavex::request::body::BodySizeLimit::new();
         let v7 = pavex::request::body::BufferedBody::extract(v3, v2, v6).await;
         let v8 = match v7 {
             Ok(ok) => ok,
@@ -4030,7 +4030,7 @@ pub mod route_19 {
                 };
             }
         };
-        let v6 = <pavex::request::body::BodySizeLimit as core::default::Default>::default();
+        let v6 = pavex::request::body::BodySizeLimit::new();
         let v7 = pavex::request::body::BufferedBody::extract(v3, v2, v6).await;
         let v8 = match v7 {
             Ok(ok) => ok,
