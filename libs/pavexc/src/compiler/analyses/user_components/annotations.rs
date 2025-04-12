@@ -14,12 +14,15 @@ use crate::{
             OutputTypeResolutionError, SelfResolutionError, resolve_type,
         },
     },
-    diagnostic::{ComponentKind, DiagnosticSink, Registration, TargetSpan},
+    diagnostic::{
+        self, ComponentKind, DiagnosticSink, OptionalLabeledSpanExt, OptionalSourceSpanExt,
+        Registration, TargetSpan,
+    },
     language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
     rustdoc::{Crate, CrateCollection, GlobalItemId},
 };
 use itertools::Itertools;
-use pavex_bp_schema::{CloningStrategy, CreatedAt, RawIdentifiers};
+use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, RawIdentifiers};
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::{AnnotatedComponent, errors::AttributeParserError};
 use rustdoc_types::{Enum, Item, ItemEnum, Struct};
@@ -50,6 +53,28 @@ pub(super) fn register_imported_components(
                 Please report this issue at https://github.com/LukeMathWalker/pavex/issues/new."
             )
         };
+        match krate
+            .import_index
+            .iter()
+            .find(|(_, entry)| entry.defined_at.as_ref() == Some(module_path))
+        {
+            Some((module_id, _)) => {
+                let module_item = krate.get_item_by_local_type_id(module_id);
+                if !matches!(module_item.inner, ItemEnum::Module(_)) {
+                    not_a_module(module_path, &aux.imports[*import_id].0, diagnostics);
+                    continue;
+                }
+            }
+            None => {
+                unknown_module_path(
+                    module_path,
+                    &krate.crate_name(),
+                    &aux.imports[*import_id].0,
+                    diagnostics,
+                );
+                continue;
+            }
+        }
         // We use a BTreeSet to guarantee a deterministic processing order.
         let mut queue: BTreeSet<_> = krate
             .import_index
@@ -556,6 +581,47 @@ fn invalid_diagnostic_attribute(
         .help("Have you manually added the `diagnostic::pavex::*` attribute on the item? \
             The syntax for `diagnostic::pavex::*` attributes is an implementation detail of Pavex's own macros,
             which are guaranteed to output well-formed annotations.".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+fn unknown_module_path(
+    module_path: &[String],
+    krate_name: &str,
+    import: &Import,
+    diagnostics: &mut DiagnosticSink,
+) {
+    let source = diagnostics.source(&import.registered_at).map(|s| {
+        diagnostic::imported_sources_span(s.source(), &import.registered_at)
+            .labeled("The import was registered here".into())
+            .attach(s)
+    });
+    let module_path = module_path.join("::");
+    let e = anyhow::anyhow!(
+        "You tried to import items from `{module_path}`, but there is no module with that path in `{krate_name}`."
+    );
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(source)
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+fn not_a_module(path: &[String], import: &Import, diagnostics: &mut DiagnosticSink) {
+    let source = diagnostics.source(&import.registered_at).map(|s| {
+        diagnostic::imported_sources_span(s.source(), &import.registered_at)
+            .labeled("The import was registered here".into())
+            .attach(s)
+    });
+    let path = path.join("::");
+    let e =
+        anyhow::anyhow!("You tried to import items from `{path}`, but `{path}` is not a module.");
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(source)
+        .help(
+            "Pass to `from!` the path to a module that contains the item you want to import, \
+            rather than the path to the actual item."
+                .into(),
+        )
         .build();
     diagnostics.push(diagnostic);
 }

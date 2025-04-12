@@ -543,7 +543,7 @@ pub struct Crate {
     /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
     /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
-    /// An in-memory index of all traits, structs, enums, and functions that were defined in the current crate.
+    /// An in-memory index of all modules, traits, structs, enums, and functions that were defined in the current crate.
     ///
     /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
     /// for each of them.
@@ -1037,6 +1037,29 @@ fn index_local_types<'a>(
 
     let is_public = is_public && current_item.visibility == Visibility::Public;
 
+    let mut add_to_import_index = |path: Vec<String>| {
+        let visibility = if is_public {
+            EntryVisibility::Public
+        } else {
+            EntryVisibility::Private
+        };
+        let is_definition = !encountered_use;
+        match import_index.get_mut(current_item_id) {
+            Some(entry) => {
+                entry.insert(path.clone(), visibility);
+                if is_definition {
+                    entry.defined_at = Some(path);
+                }
+            }
+            None => {
+                import_index.insert(
+                    *current_item_id,
+                    ImportIndexEntry::new(path, visibility, is_definition),
+                );
+            }
+        }
+    };
+
     match &current_item.inner {
         ItemEnum::Module(m) => {
             let current_path_segment = current_item
@@ -1044,6 +1067,14 @@ fn index_local_types<'a>(
                 .as_deref()
                 .expect("All 'module' items have a 'name' property");
             current_path.push(current_path_segment);
+
+            add_to_import_index(
+                current_path
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>(),
+            );
+
             navigation_history.insert(*current_item_id);
             for item_id in &m.items {
                 index_local_types(
@@ -1200,27 +1231,7 @@ fn index_local_types<'a>(
             }
             current_path.push(name);
             let path: Vec<_> = current_path.into_iter().map(|s| s.to_string()).collect();
-
-            let visibility = if is_public {
-                EntryVisibility::Public
-            } else {
-                EntryVisibility::Private
-            };
-            let is_definition = !encountered_use;
-            match import_index.get_mut(current_item_id) {
-                Some(entry) => {
-                    entry.insert(path.clone(), visibility);
-                    if is_definition {
-                        entry.defined_at = Some(path);
-                    }
-                }
-                None => {
-                    import_index.insert(
-                        *current_item_id,
-                        ImportIndexEntry::new(path, visibility, is_definition),
-                    );
-                }
-            }
+            add_to_import_index(path);
         }
         _ => {}
     }

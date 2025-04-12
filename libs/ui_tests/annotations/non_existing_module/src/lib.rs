@@ -7,8 +7,10 @@ pub fn handler() -> pavex::response::Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![
-        // Non-existing dependency.
-        non_existing_dep,
+        // Non-existing module.
+        crate::non_existing_module,
+        // Not a module.
+        crate::handler
     ]);
     bp
 }
