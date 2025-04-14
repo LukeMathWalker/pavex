@@ -4,7 +4,6 @@ use crate::compiler::analyses::components::{
     unregistered::UnregisteredComponent,
 };
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
-use crate::compiler::analyses::config_types::ConfigTypeDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::into_error::register_error_new_transformer;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -43,7 +42,6 @@ pub(crate) type ComponentId = la_arena::Idx<Component>;
 pub(crate) struct ComponentDb {
     user_db: UserComponentDb,
     prebuilt_type_db: PrebuiltTypeDb,
-    config_type_db: ConfigTypeDb,
     interner: Interner<Component>,
     match_err_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
@@ -134,7 +132,6 @@ impl ComponentDb {
         framework_item_db: &FrameworkItemDb,
         computation_db: &mut ComputationDb,
         prebuilt_type_db: PrebuiltTypeDb,
-        config_type_db: ConfigTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
@@ -165,7 +162,6 @@ impl ComponentDb {
         let mut self_ = Self {
             user_db: user_component_db,
             prebuilt_type_db,
-            config_type_db,
             interner: Interner::new(),
             match_err_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
@@ -455,7 +451,7 @@ impl ComponentDb {
                     );
                 }
                 UserConfigType { user_component_id } => {
-                    let config = &self.config_type_db[user_component_id];
+                    let config = self.user_db.config_type(user_component_id).unwrap();
                     let cloning_strategy =
                         self.user_db.cloning_strategy(user_component_id).unwrap();
                     self.id2cloning_strategy.insert(id, *cloning_strategy);
@@ -1562,7 +1558,7 @@ impl ComponentDb {
                 HydratedComponent::PrebuiltType(Cow::Borrowed(ty))
             }
             Component::ConfigType { user_component_id } => {
-                let ty = &self.config_type_db[*user_component_id];
+                let ty = self.user_db().config_type(*user_component_id).unwrap();
                 HydratedComponent::ConfigType(ty.to_owned())
             }
         }

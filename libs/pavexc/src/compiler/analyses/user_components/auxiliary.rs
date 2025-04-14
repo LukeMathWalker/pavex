@@ -1,7 +1,11 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    compiler::{analyses::domain::DomainGuard, component::DefaultStrategy, interner::Interner},
+    compiler::{
+        analyses::domain::DomainGuard,
+        component::{ConfigType, DefaultStrategy},
+        interner::Interner,
+    },
     diagnostic::{Registration, TargetSpan},
     rustdoc::GlobalItemId,
 };
@@ -47,9 +51,13 @@ pub(super) struct AuxiliaryData {
     ///
     /// Invariants: there is an entry for every constructor, configuration type and prebuilt type.
     pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Assign each config id to its type and key.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    pub(super) config_id2type: HashMap<UserComponentId, ConfigType>,
     /// Determine if a configuration type should have a default.
     ///
-    /// Invariants: there is an entry for configuration type.
+    /// Invariants: there is an entry for every configuration type.
     pub(super) config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
@@ -140,12 +148,12 @@ impl AuxiliaryData {
                 ConfigType { .. } => {
                     assert!(
                         self.id2cloning_strategy.contains_key(&id),
-                        "There is no cloning strategy registered for the user-registered {} #{id:?}",
+                        "There is no cloning strategy registered for the user-registered config-type {} #{id:?}",
                         component.kind(),
                     );
                     assert!(
                         self.config_id2default_strategy.contains_key(&id),
-                        "There is no default strategy registered for the user-registered {} #{id:?}",
+                        "There is no default strategy registered for the user-registered config-type {} #{id:?}",
                         component.kind(),
                     );
                 }

@@ -570,7 +570,7 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
         .get_or_intern(t.input.type_.clone());
     let component = UserComponent::ConfigType {
         key: t.key.clone(),
-        source: identifiers_id,
+        source: identifiers_id.into(),
     };
     let id = aux.intern_component(
         component,
@@ -592,7 +592,7 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
                 DefaultStrategy::Required
             }
         })
-        .unwrap_or(DefaultStrategy::Required);
+        .unwrap_or_default();
     aux.config_id2default_strategy.insert(id, default_strategy);
 }
 

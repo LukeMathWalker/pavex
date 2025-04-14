@@ -6,9 +6,7 @@ use super::{UserComponent, auxiliary::AuxiliaryData};
 use crate::diagnostic::TargetSpan;
 use crate::{
     compiler::{
-        analyses::{
-            computations::ComputationDb, config_types::ConfigTypeDb, prebuilt_types::PrebuiltTypeDb,
-        },
+        analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
         component::{
             ConfigType, ConfigTypeValidationError, PrebuiltType, PrebuiltTypeValidationError,
         },
@@ -24,14 +22,14 @@ use crate::{language::ResolvedPath, rustdoc::CrateCollection, utils::comma_separ
 #[tracing::instrument(name = "Resolve types and callables", skip_all, level = "trace")]
 pub(super) fn resolve_paths(
     id2resolved_path: &HashMap<UserComponentId, ResolvedPath>,
-    raw_db: &AuxiliaryData,
+    aux: &mut AuxiliaryData,
     computation_db: &mut ComputationDb,
     prebuilt_type_db: &mut PrebuiltTypeDb,
-    config_type_db: &mut ConfigTypeDb,
     krate_collection: &CrateCollection,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
-    for (id, user_component) in raw_db.iter() {
+    let mut config_id2type = std::mem::take(&mut aux.config_id2type);
+    for (id, user_component) in aux.iter() {
         let Some(resolved_path) = id2resolved_path.get(&id) else {
             // Annotated components don't have a resolved path attached to them.
             continue;
@@ -42,32 +40,27 @@ pub(super) fn resolve_paths(
                     Ok(prebuilt) => {
                         prebuilt_type_db.get_or_intern(prebuilt, id);
                     }
-                    Err(e) => invalid_prebuilt_type(e, resolved_path, id, raw_db, diagnostics),
+                    Err(e) => invalid_prebuilt_type(e, resolved_path, id, aux, diagnostics),
                 },
-                Err(e) => cannot_resolve_type_path(e, id, raw_db, diagnostics),
+                Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
             };
         } else if let UserComponent::ConfigType { key, .. } = &user_component {
             match resolve_type_path(resolved_path, krate_collection) {
                 Ok(ty) => match ConfigType::new(ty, key.into()) {
                     Ok(config) => {
-                        config_type_db.get_or_intern(config, id);
+                        config_id2type.insert(id, config);
                     }
-                    Err(e) => invalid_config_type(e, resolved_path, id, raw_db, diagnostics),
+                    Err(e) => invalid_config_type(e, resolved_path, id, aux, diagnostics),
                 },
-                Err(e) => cannot_resolve_type_path(e, id, raw_db, diagnostics),
+                Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
             };
         } else if let Err(e) =
             computation_db.resolve_and_intern(krate_collection, resolved_path, Some(id))
         {
-            cannot_resolve_callable_path(
-                e,
-                id,
-                raw_db,
-                krate_collection.package_graph(),
-                diagnostics,
-            );
+            cannot_resolve_callable_path(e, id, aux, krate_collection.package_graph(), diagnostics);
         }
     }
+    aux.config_id2type = config_id2type;
 }
 
 fn invalid_prebuilt_type(
@@ -151,7 +144,7 @@ fn invalid_prebuilt_type(
     diagnostics.push(diagnostic);
 }
 
-fn invalid_config_type(
+pub(super) fn invalid_config_type(
     e: ConfigTypeValidationError,
     resolved_path: &ResolvedPath,
     id: UserComponentId,
@@ -170,7 +163,7 @@ fn invalid_config_type(
         ),
         InvalidKey { .. } => (
             TargetSpan::ConfigKeySpan(registration),
-            "The config key was registered here",
+            "The config key was specified here",
         ),
     };
     let source = diagnostics.annotated(target_span, label_msg);
@@ -186,41 +179,36 @@ fn invalid_config_type(
                 .filter(|l| l.is_static() || l.is_elided())
                 .partition::<Vec<_>, _>(|l| l.is_elided());
             write!(&mut error_msg, "\n`{resolved_path}` has ").unwrap();
-            let mut parts = Vec::new();
-            if !named.is_empty() {
+            let part = if !named.is_empty() {
                 let n = named.len();
-                let part = if n == 1 {
+                if n == 1 {
                     let lifetime = &named[0];
-                    format!("1 named lifetime parameter (`'{lifetime}'`)")
+                    format!("1 named lifetime parameter, `{lifetime}`")
                 } else {
                     let mut part = String::new();
-                    write!(&mut part, "{n} named lifetime parameters (").unwrap();
+                    write!(&mut part, "{n} named lifetime parameters: ").unwrap();
                     comma_separated_list(&mut part, named.iter(), |s| format!("`'{s}`"), "and")
                         .unwrap();
-                    part.push(')');
                     part
-                };
-                parts.push(part);
-            }
-            if !elided.is_empty() {
+                }
+            } else if !elided.is_empty() {
                 let n = elided.len();
-                let part = if n == 1 {
+                if n == 1 {
                     "1 elided lifetime parameter".to_string()
                 } else {
                     format!("{n} elided lifetime parameters")
-                };
-                parts.push(part);
-            }
-            if !static_.is_empty() {
+                }
+            } else if !static_.is_empty() {
                 let n = static_.len();
-                let part = if n == 1 {
+                if n == 1 {
                     "1 static lifetime parameter".to_string()
                 } else {
                     format!("{n} static lifetime parameters")
-                };
-                parts.push(part);
-            }
-            comma_separated_list(&mut error_msg, parts.iter(), |s| s.to_owned(), "and").unwrap();
+                }
+            } else {
+                unreachable!()
+            };
+            error_msg.push_str(&part);
             error_msg.push('.');
 
             Some(
@@ -229,29 +217,35 @@ fn invalid_config_type(
             )
         }
         ConfigTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
-            let generic_type_parameters = ty.unassigned_generic_type_parameters();
-            if generic_type_parameters.len() == 1 {
-                write!(
-                            &mut error_msg,
-                            "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
-                            generic_type_parameters[0]
-                        ).unwrap();
-            } else {
-                write!(
-                            &mut error_msg,
-                            "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
-                            generic_type_parameters.len(),
-                        ).unwrap();
-                comma_separated_list(
-                    &mut error_msg,
-                    generic_type_parameters.iter(),
-                    |s| format!("`{s}`"),
-                    "and",
+            if registration.kind.is_attribute() {
+                Some(
+                    "Remove all generic type parameters from the definition of your configuration type.".into()
                 )
-                .unwrap();
-                write!(&mut error_msg, ".").unwrap();
+            } else {
+                let generic_type_parameters = ty.unassigned_generic_type_parameters();
+                if generic_type_parameters.len() == 1 {
+                    write!(
+                        &mut error_msg,
+                        "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
+                        generic_type_parameters[0]
+                    ).unwrap();
+                } else {
+                    write!(
+                        &mut error_msg,
+                        "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
+                        generic_type_parameters.len(),
+                    ).unwrap();
+                    comma_separated_list(
+                        &mut error_msg,
+                        generic_type_parameters.iter(),
+                        |s| format!("`{s}`"),
+                        "and",
+                    )
+                    .unwrap();
+                    write!(&mut error_msg, ".").unwrap();
+                }
+                Some("Set the generic parameters to concrete types when registering the type as configuration. E.g. `bp.config(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string())
             }
-            Some("Set the generic parameters to concrete types when registering the type as configuration. E.g. `bp.config(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string())
         }
     };
     let e = anyhow::anyhow!(e).context(error_msg);

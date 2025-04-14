@@ -7,12 +7,16 @@ use std::{
 use self::computations::ComputationDb;
 
 use super::{
-    ScopeId, UserComponent, UserComponentId, auxiliary::AuxiliaryData, identifiers::ResolvedPaths,
-    imports::ResolvedImport, paths::cannot_resolve_callable_path,
+    ScopeId, UserComponent, UserComponentId, UserComponentSource,
+    auxiliary::AuxiliaryData,
+    identifiers::ResolvedPaths,
+    imports::ResolvedImport,
+    paths::{cannot_resolve_callable_path, invalid_config_type},
 };
 use crate::{
     compiler::{
         analyses::computations,
+        component::{ConfigType, DefaultStrategy},
         resolvers::{
             CallableResolutionError, GenericBindings, InputParameterResolutionError,
             OutputTypeResolutionError, SelfResolutionError, resolve_type,
@@ -22,12 +26,16 @@ use crate::{
         self, ComponentKind, DiagnosticSink, OptionalLabeledSpanExt, OptionalSourceSpanExt,
         Registration, TargetSpan,
     },
-    language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment},
-    rustdoc::{Crate, CrateCollection, GlobalItemId},
+    language::{
+        Callable, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
+        ResolvedPath, ResolvedPathSegment, ResolvedType,
+    },
+    rustdoc::{Crate, CrateCollection, GlobalItemId, RustdocKindExt},
 };
-use guppy::graph::PackageGraph;
 use itertools::Itertools;
-use pavex_bp_schema::{CloningStrategy, CreatedAt, Import, Lint, LintSetting, RawIdentifiers};
+use pavex_bp_schema::{
+    CloningStrategy, CreatedAt, Import, Lifecycle, Lint, LintSetting, RawIdentifiers,
+};
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::{AnnotatedComponent, errors::AttributeParserError};
 use rustdoc_types::{Enum, Item, ItemEnum, Struct};
@@ -113,8 +121,39 @@ pub(super) fn register_imported_components(
                                 self_: item_id,
                                 id: *impl_id,
                             }));
-                            // We don't have any annotation that goes directly on structs and enums (yet).
-                            continue;
+
+                            let annotation = match pavexc_attr_parser::parse(&item.attrs) {
+                                Ok(Some(annotation)) => annotation,
+                                Ok(None) => {
+                                    continue;
+                                }
+                                Err(e) => {
+                                    invalid_diagnostic_attribute(e, item.as_ref(), diagnostics);
+                                    continue;
+                                }
+                            };
+                            match annotation {
+                                AnnotatedComponent::Constructor { .. } => {
+                                    unsupported_item_kind(
+                                        annotation.attribute(),
+                                        &item,
+                                        diagnostics,
+                                    );
+                                    continue;
+                                }
+                                AnnotatedComponent::Config { .. } => {}
+                            }
+
+                            let _ = intern_annotated(
+                                annotation,
+                                &item,
+                                krate,
+                                &queue_item.created_at(krate).unwrap(),
+                                scope_id,
+                                aux,
+                                diagnostics,
+                                krate_collection,
+                            );
                         }
                         ItemEnum::Function(_) => {
                             let annotation = match pavexc_attr_parser::parse(&item.attrs) {
@@ -127,26 +166,30 @@ pub(super) fn register_imported_components(
                                     continue;
                                 }
                             };
-                            let module_path = {
-                                let fn_path = krate.import_index.items[&item.id]
-                                    .defined_at
-                                    .as_ref()
-                                    .unwrap();
-                                fn_path.iter().take(fn_path.len() - 1).join("::")
-                            };
-                            let created_at = CreatedAt {
-                                crate_name: krate.crate_name(),
-                                module_path,
-                            };
-                            let user_component_id = intern_annotated(
+                            match annotation {
+                                AnnotatedComponent::Constructor { .. } => {}
+                                AnnotatedComponent::Config { .. } => {
+                                    unsupported_item_kind(
+                                        annotation.attribute(),
+                                        &item,
+                                        diagnostics,
+                                    );
+                                    continue;
+                                }
+                            }
+
+                            let Ok(user_component_id) = intern_annotated(
                                 annotation,
                                 &item,
                                 krate,
-                                &created_at,
+                                &queue_item.created_at(krate).unwrap(),
                                 scope_id,
                                 aux,
-                                krate_collection.package_graph(),
-                            );
+                                diagnostics,
+                                krate_collection,
+                            ) else {
+                                continue;
+                            };
                             let callable =
                                 match rustdoc_free_fn2callable(&item, krate, krate_collection) {
                                     Ok(callable) => callable,
@@ -200,29 +243,26 @@ pub(super) fn register_imported_components(
                             continue;
                         }
                     };
-                    let created_at = CreatedAt {
-                        crate_name: krate.crate_name(),
-                        // FIXME: The `impl` where this method is defined may not be within the same module
-                        // where `Self` is defined.
-                        // See https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/Module.20items.20don't.20link.20to.20impls.20.5Brustdoc-json.5D
-                        // for a discussion on this issue.
-                        module_path: {
-                            let self_path = krate.import_index.items[&self_]
-                                .defined_at
-                                .as_ref()
-                                .unwrap();
-                            self_path.iter().take(self_path.len() - 1).join("::")
-                        },
-                    };
-                    let user_component_id = intern_annotated(
+                    match annotation {
+                        AnnotatedComponent::Constructor { .. } => {}
+                        AnnotatedComponent::Config { .. } => {
+                            unsupported_item_kind(annotation.attribute(), &item, diagnostics);
+                            continue;
+                        }
+                    }
+
+                    let Ok(user_component_id) = intern_annotated(
                         annotation,
                         &item,
                         krate,
-                        &created_at,
+                        &queue_item.created_at(krate).unwrap(),
                         scope_id,
                         aux,
-                        krate_collection.package_graph(),
-                    );
+                        diagnostics,
+                        krate_collection,
+                    ) else {
+                        continue;
+                    };
                     let callable =
                         match rustdoc_method2callable(self_, impl_, &item, krate, krate_collection)
                         {
@@ -268,6 +308,42 @@ enum QueueItem {
         /// The `id` of the `impl` block item.
         id: rustdoc_types::Id,
     },
+}
+
+impl QueueItem {
+    /// Returns the annotation location metadata.
+    fn created_at(&self, krate: &Crate) -> Option<CreatedAt> {
+        let id = match &self {
+            QueueItem::Standalone(id) => *id,
+            QueueItem::Impl { .. } => {
+                return None;
+            }
+            QueueItem::ImplItem { self_, .. } => {
+                // FIXME: The `impl` where this method is defined may not be within the same module
+                // where `Self` is defined.
+                // See https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/Module.20items.20don't.20link.20to.20impls.20.5Brustdoc-json.5D
+                // for a discussion on this issue.
+                *self_
+            }
+        };
+        let item = krate.get_item_by_local_type_id(&id);
+        match &item.inner {
+            ItemEnum::Struct(..) | ItemEnum::Enum(..) | ItemEnum::Function(..) => {
+                let module_path = {
+                    let fn_path = krate.import_index.items[&item.id]
+                        .defined_at
+                        .as_ref()
+                        .expect("No `defined_at` in the import index for a struct/enum/function/method item.");
+                    fn_path.iter().take(fn_path.len() - 1).join("::")
+                };
+                Some(CreatedAt {
+                    crate_name: krate.crate_name(),
+                    module_path,
+                })
+            }
+            _ => None,
+        }
+    }
 }
 
 /// A lot of unnecessary jumping through hoops to implement `Ord`/`PartialOrd`
@@ -331,31 +407,32 @@ fn intern_annotated(
     created_at: &CreatedAt,
     scope_id: ScopeId,
     aux: &mut AuxiliaryData,
-    package_graph: &PackageGraph,
-) -> UserComponentId {
+    diagnostics: &mut DiagnosticSink,
+    krate_collection: &CrateCollection,
+) -> Result<UserComponentId, ()> {
+    let Some(span) = item.span.as_ref() else {
+        // TODO: We have empirically verified that this shouldn't happen for components annotated with our own macros,
+        //   but it may happen for components that are generated from other macros or tools.
+        //   In the future, we should handle this case more gracefully.
+        unreachable!(
+            "There is no span attached to the item for `{}` in the JSON documentation for `{}`",
+            item.name.as_deref().unwrap_or(""),
+            krate.crate_name()
+        );
+    };
+    let registration = Registration::attribute(span);
+    let source: UserComponentSource = aux
+        .annotation_interner
+        .get_or_intern(GlobalItemId::new(item.id, krate.core.package_id.to_owned()))
+        .into();
+
     match annotation {
         AnnotatedComponent::Constructor {
             lifecycle,
             cloning_strategy,
             error_handler,
         } => {
-            let constructor = UserComponent::Constructor {
-                source: aux
-                    .annotation_interner
-                    .get_or_intern(GlobalItemId::new(item.id, krate.core.package_id.to_owned()))
-                    .into(),
-            };
-            let Some(span) = item.span.as_ref() else {
-                // TODO: We have empirically verified that this shouldn't happen for components annotated with our own macros,
-                //   but it may happen for components that are generated from other macros or tools.
-                //   In the future, we should handle this case more gracefully.
-                unreachable!(
-                    "There is no span attached to the item for `{}` in the JSON documentation for `{}`",
-                    item.name.as_deref().unwrap_or(""),
-                    krate.crate_name()
-                );
-            };
-            let registration = Registration::attribute(span);
+            let constructor = UserComponent::Constructor { source };
             let constructor_id =
                 aux.intern_component(constructor, scope_id, lifecycle, registration.clone());
             aux.id2cloning_strategy.insert(
@@ -364,7 +441,8 @@ fn intern_annotated(
             );
 
             // Ignore unused constructors imported from crates defined outside the current workspace
-            if !package_graph
+            if !krate_collection
+                .package_graph()
                 .metadata(&krate.core.package_id)
                 .unwrap()
                 .in_workspace()
@@ -386,9 +464,108 @@ fn intern_annotated(
                 };
                 aux.intern_component(component, scope_id, lifecycle, registration);
             }
-            constructor_id
+            Ok(constructor_id)
+        }
+        AnnotatedComponent::Config {
+            key,
+            cloning_strategy,
+            default_if_missing,
+        } => {
+            let config = UserComponent::ConfigType {
+                key: key.clone(),
+                source,
+            };
+            let config_id =
+                aux.intern_component(config, scope_id, Lifecycle::Singleton, registration);
+            aux.id2cloning_strategy.insert(
+                config_id,
+                cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary),
+            );
+            let default_strategy = match default_if_missing {
+                Some(true) => DefaultStrategy::DefaultIfMissing,
+                Some(false) => DefaultStrategy::Required,
+                None => Default::default(),
+            };
+            aux.config_id2default_strategy
+                .insert(config_id, default_strategy);
+
+            let ty = match rustdoc_item_def2type(item, krate) {
+                Ok(t) => t,
+                Err(e) => {
+                    const_generics_are_not_supported(e, item, diagnostics);
+                    return Err(());
+                }
+            };
+            match ConfigType::new(ty, key.into()) {
+                Ok(config) => {
+                    aux.config_id2type.insert(config_id, config);
+                }
+                Err(e) => {
+                    let path = ResolvedPath {
+                        segments: krate.import_index.items[&item.id]
+                            .canonical_path()
+                            .iter()
+                            .cloned()
+                            .map(ResolvedPathSegment::new)
+                            .collect(),
+                        qualified_self: None,
+                        package_id: krate.core.package_id.clone(),
+                    };
+                    invalid_config_type(e, &path, config_id, aux, diagnostics)
+                }
+            };
+
+            Ok(config_id)
         }
     }
+}
+
+fn rustdoc_item_def2type(
+    item: &Item,
+    krate: &Crate,
+) -> Result<ResolvedType, ConstGenericsAreNotSupported> {
+    assert!(
+        matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_)),
+        "Unexpected item type, `{}`. Expected a struct or enum.",
+        item.inner.kind()
+    );
+
+    let path = krate.import_index.items[&item.id].canonical_path();
+
+    let mut generic_arguments = vec![];
+    let params_def = match &item.inner {
+        ItemEnum::Struct(s) => &s.generics.params,
+        ItemEnum::Enum(e) => &e.generics.params,
+        _ => unreachable!(),
+    };
+    for arg in params_def {
+        let arg = match &arg.kind {
+            rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
+                let lifetime = arg.name.strip_prefix("'").unwrap_or(&arg.name);
+                GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime.to_owned()))
+            }
+            rustdoc_types::GenericParamDefKind::Type { .. } => {
+                // TODO: Use the default if available.
+                GenericArgument::TypeParameter(ResolvedType::Generic(Generic {
+                    name: arg.name.clone(),
+                }))
+            }
+            rustdoc_types::GenericParamDefKind::Const { .. } => todo!(),
+        };
+        generic_arguments.push(arg);
+    }
+
+    Ok(ResolvedType::ResolvedPath(PathType {
+        package_id: krate.core.package_id.clone(),
+        rustdoc_id: Some(item.id),
+        base_type: path.into(),
+        generic_arguments,
+    }))
+}
+
+#[derive(Debug)]
+struct ConstGenericsAreNotSupported {
+    name: String,
 }
 
 /// Convert a free function from `rustdoc_types` into a `Callable`.
@@ -598,6 +775,35 @@ fn rustdoc_method2callable(
     })
 }
 
+fn const_generics_are_not_supported(
+    e: ConstGenericsAreNotSupported,
+    item: &Item,
+    diagnostics: &mut DiagnosticSink,
+) {
+    let source = item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
+            "The annotated item",
+        )
+    });
+    let const_name = e.name;
+    let err_msg = match &item.name {
+        Some(name) => {
+            format!(
+                "Pavex does not support const generics.\n`{name}` uses at least one const generic parameter, named `{const_name}`.",
+            )
+        }
+        None => format!(
+            "Pavex does not support const generics.\nOne of your types uses at least one const generic parameter, named `{const_name}`."
+        ),
+    };
+    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err_msg))
+        .optional_source(source)
+        .help("Remove the const generic parameter from your type definition, or use a different type.".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
 fn invalid_diagnostic_attribute(
     e: AttributeParserError,
     item: &Item,
@@ -662,6 +868,31 @@ fn not_a_module(path: &[String], import: &Import, diagnostics: &mut DiagnosticSi
             rather than the path to the actual item."
                 .into(),
         )
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+fn unsupported_item_kind(attribute: &str, item: &Item, diagnostics: &mut DiagnosticSink) {
+    let source = item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
+            "The annotated item",
+        )
+    });
+    let err = match &item.name {
+        Some(name) => {
+            format!(
+                "`{name}` is annotated with `{attribute}`, but `{attribute}` is not supported on {}.",
+                item.inner.kind()
+            )
+        }
+        None => format!("`{attribute}` is not supported on {}.", item.inner.kind()),
+    };
+    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err))
+        .optional_source(source)
+        .help(format!("Have you manually added `{attribute}`? \
+            The syntax for `diagnostic::pavex::*` attributes is an implementation detail of Pavex's own macros,
+            which are guaranteed to output well-formed annotations."))
         .build();
     diagnostics.push(diagnostic);
 }

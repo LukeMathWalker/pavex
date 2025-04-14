@@ -14,10 +14,9 @@ use crate::compiler::analyses::user_components::annotations::register_imported_c
 use crate::compiler::analyses::user_components::identifiers::ResolvedPaths;
 use crate::compiler::analyses::user_components::imports::resolve_imports;
 use crate::compiler::analyses::user_components::paths::resolve_paths;
+use crate::compiler::component::ConfigType;
 use crate::compiler::{
-    analyses::{
-        computations::ComputationDb, config_types::ConfigTypeDb, prebuilt_types::PrebuiltTypeDb,
-    },
+    analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
     component::DefaultStrategy,
 };
 use crate::diagnostic::{Registration, TargetSpan};
@@ -58,6 +57,10 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
     id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Assign the id of each config to its type and key.
+    ///
+    /// Invariants: there is an entry for every config type.
+    config_id2type: HashMap<UserComponentId, ConfigType>,
     /// Determine if a configuration type should have a default.
     ///
     /// Invariants: there is an entry for configuration type.
@@ -85,7 +88,6 @@ impl UserComponentDb {
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
         prebuilt_type_db: &mut PrebuiltTypeDb,
-        config_type_db: &mut ConfigTypeDb,
         krate_collection: &CrateCollection,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) -> Result<(Router, Self), ()> {
@@ -124,10 +126,9 @@ impl UserComponentDb {
         );
         resolve_paths(
             &resolved_paths.0,
-            &aux,
+            &mut aux,
             computation_db,
             prebuilt_type_db,
-            config_type_db,
             krate_collection,
             diagnostics,
         );
@@ -140,6 +141,7 @@ impl UserComponentDb {
             id2lints,
             id2cloning_strategy,
             id2lifecycle,
+            config_id2type,
             config_id2default_strategy,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
@@ -159,6 +161,7 @@ impl UserComponentDb {
                 id2registration,
                 id2cloning_strategy,
                 id2lifecycle,
+                config_id2type,
                 config_id2default_strategy,
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
@@ -294,6 +297,13 @@ impl UserComponentDb {
     /// and `None` for all other components.
     pub fn cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
         self.id2cloning_strategy.get(&id)
+    }
+
+    /// Return the resolved type and key for the configuration component with the given id.
+    /// This is going to be `Some(..)` for configuration components,
+    /// and `None` for all other components.
+    pub fn config_type(&self, id: UserComponentId) -> Option<&ConfigType> {
+        self.config_id2type.get(&id)
     }
 
     /// Return the default strategy of the configuration component with the given id.

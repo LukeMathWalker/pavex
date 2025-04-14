@@ -101,12 +101,14 @@ fn must_be_clonable(
         _ => unreachable!(),
     };
     let e = anyhow::anyhow!(e).context(error_msg);
-    let help = (kind != ComponentKind::ConfigType).then(|| {
-        format!("Implement the `Clone` trait for `{output_type}`, or mark it as `{never_clone}`.",)
-    });
+    let optional_help = (kind != ComponentKind::ConfigType)
+        .then(|| format!("Alternatively, mark it as `{never_clone}`.",));
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
-        .optional_help(help)
+        .help(format!(
+            "Implement (or derive) the `Clone` trait for `{output_type}`."
+        ))
+        .optional_help(optional_help)
         .build();
     diagnostics.push(diagnostic);
 }

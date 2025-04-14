@@ -73,9 +73,7 @@ impl DiagnosticSink {
             TargetSpan::RoutePath(registration) => {
                 route_path_span(s.source(), &registration.location)
             }
-            TargetSpan::ConfigKeySpan(registration) => {
-                config_key_span(s.source(), &registration.location)
-            }
+            TargetSpan::ConfigKeySpan(registration) => config_key_span(s.source(), registration),
             TargetSpan::RawIdentifiers(registration, kind) => match registration.kind {
                 RegistrationKind::Attribute => {
                     // TODO: Refine the span to point at the specific attribute/property we care about.

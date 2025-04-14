@@ -32,9 +32,6 @@ pub mod annotated {
     #[derive(Clone)]
     pub struct B;
 
-    #[derive(Clone)]
-    pub struct C;
-
     #[pavex::singleton]
     pub fn a() -> A {
         todo!()

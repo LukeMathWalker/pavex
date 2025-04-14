@@ -59,6 +59,7 @@ pub struct RawIdentifiers {
 /// Information on the crate/module where the component was created.
 ///
 /// This location matches, for example, where the `from!` or the `f!` macro were invoked.
+/// For annotated items (e.g. via `#[pavex::config]`), this refers to the location of the annotation.
 ///
 /// It may be different from the location where the component was registered
 /// with the blueprint—i.e. where a `Blueprint` method was invoked.

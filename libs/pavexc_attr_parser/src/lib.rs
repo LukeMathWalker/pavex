@@ -32,6 +32,11 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
                     .map_err(InvalidAttributeParams::constructor)?;
                 parsed.into()
             }
+            "config" => {
+                let parsed = model::ConfigProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::config)?;
+                parsed.into()
+            }
             _ => {
                 return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
             }
@@ -52,6 +57,20 @@ pub enum AnnotatedComponent {
         cloning_strategy: Option<CloningStrategy>,
         error_handler: Option<String>,
     },
+    Config {
+        key: String,
+        cloning_strategy: Option<CloningStrategy>,
+        default_if_missing: Option<bool>,
+    },
+}
+
+impl AnnotatedComponent {
+    pub fn attribute(&self) -> &str {
+        match self {
+            AnnotatedComponent::Constructor { .. } => "pavex::diagnostic::constructor",
+            AnnotatedComponent::Config { .. } => "pavex::diagnostic::config",
+        }
+    }
 }
 
 /// Strip the `diagnostic::pavex` prefix from a path.

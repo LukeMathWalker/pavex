@@ -36,4 +36,8 @@ impl InvalidAttributeParams {
     pub fn constructor(e: darling::Error) -> Self {
         Self(e, "pavex::diagnostic::constructor")
     }
+
+    pub fn config(e: darling::Error) -> Self {
+        Self(e, "pavex::diagnostic::config")
+    }
 }

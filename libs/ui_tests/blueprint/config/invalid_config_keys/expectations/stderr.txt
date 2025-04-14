@@ -1,32 +1,64 @@
 [31;1mERROR[0m:
-  [31m×[0m Configuration keys must begin with a letter.
-  [31m│[0m `12a` starts with `1` which is not a letter.
+  [31m×[0m Configuration keys can only contain letters, digits, and underscores.
+  [31m│[0m `with-a-dash` contains `-` which is not a letter, digit, or underscore.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:19:1]
-  [31m│[0m  [2m19[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m20[0m │     bp.config("12a", t!(crate::A));
-  [31m│[0m     · [35;1m              ──┬──[0m
-  [31m│[0m     ·                 [35;1m╰── The config key was registered here[0m
-  [31m│[0m  [2m21[0m │     bp.config("", t!(crate::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:22:1]
+  [31m│[0m  [2m22[0m │ #[derive(Clone)]
+  [31m│[0m  [2m23[0m │ #[pavex::config(key = "with-a-dash")]
+  [31m│[0m     · [35;1m                      ──────┬──────[0m
+  [31m│[0m     ·                             [35;1m╰── The config key was specified here[0m
+  [31m│[0m  [2m24[0m │ pub struct C1;
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Configuration keys can't be empty.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:20:1]
-  [31m│[0m  [2m20[0m │     bp.config("12a", t!(crate::A));
-  [31m│[0m  [2m21[0m │     bp.config("", t!(crate::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:18:1]
+  [31m│[0m  [2m18[0m │ #[derive(Clone)]
+  [31m│[0m  [2m19[0m │ #[pavex::config(key = "")]
+  [31m│[0m     · [35;1m                      ─┬[0m
+  [31m│[0m     ·                        [35;1m╰── The config key was specified here[0m
+  [31m│[0m  [2m20[0m │ pub struct B1;
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys must begin with a letter.
+  [31m│[0m `2numbersfirst` starts with `2` which is not a letter.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:14:1]
+  [31m│[0m  [2m14[0m │ #[derive(Clone)]
+  [31m│[0m  [2m15[0m │ #[pavex::config(key = "2numbersfirst")]
+  [31m│[0m     · [35;1m                      ───────┬───────[0m
+  [31m│[0m     ·                              [35;1m╰── The config key was specified here[0m
+  [31m│[0m  [2m16[0m │ pub struct A1;
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys must begin with a letter.
+  [31m│[0m `12a` starts with `1` which is not a letter.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:32:1]
+  [31m│[0m  [2m32[0m │     bp.import(from![crate]);
+  [31m│[0m  [2m33[0m │     bp.config("12a", t!(crate::A));
+  [31m│[0m     · [35;1m              ──┬──[0m
+  [31m│[0m     ·                 [35;1m╰── The config key was specified here[0m
+  [31m│[0m  [2m34[0m │     bp.config("", t!(crate::B));
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m Configuration keys can't be empty.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:33:1]
+  [31m│[0m  [2m33[0m │     bp.config("12a", t!(crate::A));
+  [31m│[0m  [2m34[0m │     bp.config("", t!(crate::B));
   [31m│[0m     · [35;1m              ─┬[0m
-  [31m│[0m     ·                [35;1m╰── The config key was registered here[0m
-  [31m│[0m  [2m22[0m │     bp.config("my-key", t!(crate::C));
+  [31m│[0m     ·                [35;1m╰── The config key was specified here[0m
+  [31m│[0m  [2m35[0m │     bp.config("my-key", t!(crate::C));
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Configuration keys can only contain letters, digits, and underscores.
   [31m│[0m `my-key` contains `-` which is not a letter, digit, or underscore.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:21:1]
-  [31m│[0m  [2m21[0m │     bp.config("", t!(crate::B));
-  [31m│[0m  [2m22[0m │     bp.config("my-key", t!(crate::C));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_keys/src/lib.rs[0m:34:1]
+  [31m│[0m  [2m34[0m │     bp.config("", t!(crate::B));
+  [31m│[0m  [2m35[0m │     bp.config("my-key", t!(crate::C));
   [31m│[0m     · [35;1m              ────┬───[0m
-  [31m│[0m     ·                   [35;1m╰── The config key was registered here[0m
-  [31m│[0m  [2m23[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ·                   [35;1m╰── The config key was specified here[0m
+  [31m│[0m  [2m36[0m │     bp.route(GET, "/", f!(crate::handler));
   [31m│[0m     ╰────

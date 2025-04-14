@@ -17,7 +17,6 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::cloning::clonables_can_be_cloned;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::config_types::ConfigTypeDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -78,12 +77,10 @@ impl App {
         let mut diagnostics = DiagnosticSink::new(package_graph.clone());
         let mut computation_db = ComputationDb::new();
         let mut prebuilt_type_db = PrebuiltTypeDb::new();
-        let mut config_type_db = ConfigTypeDb::new();
         let Ok((router, user_component_db)) = UserComponentDb::build(
             &bp,
             &mut computation_db,
             &mut prebuilt_type_db,
-            &mut config_type_db,
             &krate_collection,
             &mut diagnostics,
         ) else {
@@ -96,7 +93,6 @@ impl App {
             &framework_item_db,
             &mut computation_db,
             prebuilt_type_db,
-            config_type_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,

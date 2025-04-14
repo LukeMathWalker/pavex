@@ -47,8 +47,8 @@ impl Registration {
     pub fn attribute(span: &rustdoc_types::Span) -> Self {
         Self {
             location: Location {
-                line: (span.begin.0 + 1) as u32,
-                column: (span.begin.1 + 1) as u32,
+                line: (span.begin.0) as u32,
+                column: (span.begin.1) as u32,
                 file: span
                     .filename
                     .to_str()

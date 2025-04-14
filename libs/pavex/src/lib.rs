@@ -36,6 +36,8 @@ pub mod time {
     pub use jiff::*;
 }
 
+pub use pavex_macros::config;
+
 /// Mark a function (or method) as a constructor.
 ///
 /// Pavex will use the annotated function whenever it needs to create a new instance of

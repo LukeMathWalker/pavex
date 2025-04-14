@@ -1,12 +1,15 @@
 use crate::language::ResolvedType;
 
 /// How to handle missing values for a config type.
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Default)]
 pub enum DefaultStrategy {
     /// `Default::default` will be invoked to generate default values
     /// if the user hasn't provided one.
     DefaultIfMissing,
     /// The user *must* provide a value for this config type.
+    ///
+    /// This is the default if the user hasn't specified a strategy explicitly.
+    #[default]
     Required,
 }
 
