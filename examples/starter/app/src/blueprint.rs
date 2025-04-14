@@ -1,4 +1,4 @@
-use crate::{configuration, routes, telemetry};
+use crate::{routes, telemetry};
 use pavex::blueprint::{Blueprint, from};
 
 /// The main blueprint, containing all the routes, middlewares, constructors and error handlers
@@ -16,8 +16,6 @@ pub fn blueprint() -> Blueprint {
     ]);
 
     telemetry::register(&mut bp);
-    configuration::register(&mut bp);
-
     routes::register(&mut bp);
     bp
 }
