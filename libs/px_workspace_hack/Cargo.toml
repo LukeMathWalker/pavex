@@ -62,7 +62,6 @@ serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 sqlx = { version = "0.8", features = ["postgres", "uuid"] }
-sqlx-core = { version = "0.8", features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
@@ -124,7 +123,6 @@ serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 sqlx = { version = "0.8", features = ["postgres", "uuid"] }
-sqlx-core = { version = "0.8", features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-macros = { version = "0.8", features = ["derive", "json", "macros", "migrate", "postgres", "uuid"] }
 sqlx-macros-core = { version = "0.8", features = ["derive", "json", "macros", "migrate", "postgres", "uuid"] }
 sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
