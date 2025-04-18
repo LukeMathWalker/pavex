@@ -8,7 +8,7 @@ organized by application type.
 
 ## `ApiKit`
 
-[`ApiKit`][ApiKit] is a good starting point for most APIs and it's installed by default in projects created with
+`ApiKit` is a good starting point for most APIs and it's installed by default in projects created with
 `pavex new`.
 
 --8<-- "doc_examples/guide/dependency_injection/kit/project-default_kit.snap"
@@ -55,5 +55,4 @@ You can also replace one of the constructors provided by the kit with a custom o
 [BufferedBody]: ../request_data/body/byte_wrappers.md
 [BodySizeLimit]: ../request_data/body/byte_wrappers.md#body-size-limit
 [JsonBody]: ../request_data/body/deserializers/json.md
-[ApiKit]: /api_reference/pavex/kit/struct.ApiKit.html
 [Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html

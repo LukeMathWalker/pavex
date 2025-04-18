@@ -499,7 +499,7 @@ fn intern_annotated(
                     return Err(());
                 }
             };
-            match ConfigType::new(ty, key.into()) {
+            match ConfigType::new(ty, key) {
                 Ok(config) => {
                     aux.config_id2type.insert(config_id, config);
                 }

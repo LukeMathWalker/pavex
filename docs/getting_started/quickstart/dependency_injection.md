@@ -15,10 +15,8 @@ You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 --8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
-[`ApiKit`][ApiKit] is one of Pavex's [kits](../../guide/dependency_injection/kits.md): it
-bundles together [constructors](../../guide/dependency_injection/constructors.md) for types
-that are commonly used when building APIs with Pavex.\
-In particular, it includes a constructor for [`PathParams`][PathParams].
+We're importing all the constructors defined in the `pavex` crate.
+In particular, this includes a constructor for [`PathParams`][PathParams].
 
 ## A new extractor: `UserAgent`
 
