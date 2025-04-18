@@ -1,0 +1,5 @@
+description = """Pavex emits a warning for unused configuration types"""
+
+[expectations]
+codegen = "pass"
+lints = "fail"

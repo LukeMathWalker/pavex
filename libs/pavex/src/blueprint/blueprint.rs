@@ -285,6 +285,7 @@ impl Blueprint {
             key: key.to_owned(),
             cloning_strategy: None,
             default_if_missing: None,
+            include_if_unused: None,
         };
         let component_id = self.push_component(registered);
         RegisteredConfigType {
@@ -302,6 +303,7 @@ impl Blueprint {
             key: i.key,
             cloning_strategy: i.cloning_strategy.map(cloning2cloning),
             default_if_missing: i.default_if_missing,
+            include_if_unused: i.include_if_unused,
         };
         let component_id = self.push_component(i);
         RegisteredConfigType {

@@ -470,6 +470,7 @@ fn intern_annotated(
             key,
             cloning_strategy,
             default_if_missing,
+            include_if_unused,
         } => {
             let config = UserComponent::ConfigType {
                 key: key.clone(),
@@ -488,6 +489,8 @@ fn intern_annotated(
             };
             aux.config_id2default_strategy
                 .insert(config_id, default_strategy);
+            aux.config_id2include_if_unused
+                .insert(config_id, include_if_unused.unwrap_or(false));
 
             let ty = match rustdoc_item_def2type(item, krate) {
                 Ok(t) => t,

@@ -40,8 +40,10 @@ digraph "* * - 1" {
 
 digraph app_state {
     0 [ label = "0| &app_4587d126::A"]
-    1 [ label = "1| app_4587d126::b(&app_4587d126::A) -> app_4587d126::B"]
-    2 [ label = "2| crate::ApplicationState(app_4587d126::B) -> crate::ApplicationState"]
+    1 [ label = "1| &app_4587d126::A1"]
+    2 [ label = "2| app_4587d126::b(&app_4587d126::A, &app_4587d126::A1) -> app_4587d126::B"]
+    3 [ label = "3| crate::ApplicationState(app_4587d126::B) -> crate::ApplicationState"]
+    2 -> 3 [ ]
     1 -> 2 [ ]
-    0 -> 1 [ ]
+    0 -> 2 [ ]
 }

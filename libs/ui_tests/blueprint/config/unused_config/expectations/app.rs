@@ -4,35 +4,30 @@
 extern crate alloc;
 struct ServerState {
     router: Router,
+    #[allow(dead_code)]
     application_state: ApplicationState,
 }
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ApplicationConfig {
-    pub a: app::A,
-    pub a1: app::A1,
-}
-pub struct ApplicationState {
     pub b: app::B,
+    pub b1: app::B1,
 }
+pub struct ApplicationState {}
 impl ApplicationState {
     pub async fn new(
-        app_config: crate::ApplicationConfig,
+        _app_config: crate::ApplicationConfig,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        Ok(Self::_new(&app_config.a, &app_config.a1).await)
+        Ok(Self::_new().await)
     }
-    async fn _new(
-        v0: &app::A,
-        v1: &app::A1,
-    ) -> crate::ApplicationState {
-        let v2 = app::b(v0, v1);
-        crate::ApplicationState { b: v2 }
+    async fn _new() -> crate::ApplicationState {
+        crate::ApplicationState {}
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]
 pub async fn build_application_state(
-    app_config: crate::ApplicationConfig,
+    _app_config: crate::ApplicationConfig,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(app_config).await
+    crate::ApplicationState::new(_app_config).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
@@ -89,7 +84,7 @@ impl Router {
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_0::entrypoint(&state.b).await,
+                    &pavex::http::Method::GET => route_0::entrypoint().await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -104,42 +99,40 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a app::B) -> pavex::response::Response {
-        let response = wrapping_0(s_0).await;
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = wrapping_0().await;
         response
     }
-    async fn stage_1<'a>(s_0: &'a app::B) -> pavex::response::Response {
-        let response = handler(s_0).await;
+    async fn stage_1() -> pavex::response::Response {
+        let response = handler().await;
         response
     }
-    async fn wrapping_0(v0: &app::B) -> pavex::response::Response {
-        let v1 = crate::route_0::Next0 {
-            s_0: v0,
+    async fn wrapping_0() -> pavex::response::Response {
+        let v0 = crate::route_0::Next0 {
             next: stage_1,
         };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = pavex::middleware::wrap_noop(v2).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+        let v1 = pavex::middleware::Next::new(v0);
+        let v2 = pavex::middleware::wrap_noop(v1).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    async fn handler(v0: &app::B) -> pavex::response::Response {
-        let v1 = app::handler(v0);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    async fn handler() -> pavex::response::Response {
+        let v0 = app::handler();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
-    struct Next0<'a, T>
+    struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::B,
-        next: fn(&'a app::B) -> T,
+        next: fn() -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<T> std::future::IntoFuture for Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)()
         }
     }
 }

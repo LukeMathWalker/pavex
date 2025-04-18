@@ -11,6 +11,7 @@ pub struct InputSchema {
     pub clone_if_necessary: Flag,
     pub never_clone: Flag,
     pub default_if_missing: Flag,
+    pub include_if_unused: Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -22,6 +23,7 @@ impl TryFrom<InputSchema> for Properties {
             clone_if_necessary,
             never_clone,
             default_if_missing,
+            include_if_unused,
         } = input;
         let Ok(cloning_strategy) = CloningStrategyFlags {
             clone_if_necessary,
@@ -37,6 +39,7 @@ impl TryFrom<InputSchema> for Properties {
             key,
             cloning_strategy,
             default_if_missing: default_if_missing.is_present(),
+            include_if_unused: include_if_unused.is_present(),
         })
     }
 }
@@ -46,6 +49,7 @@ pub struct Properties {
     pub key: String,
     pub cloning_strategy: Option<CloningStrategy>,
     pub default_if_missing: bool,
+    pub include_if_unused: bool,
 }
 
 pub fn config(metadata: TokenStream, input: TokenStream) -> TokenStream {
@@ -77,6 +81,7 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
         key,
         cloning_strategy,
         default_if_missing,
+        include_if_unused,
     } = properties;
     let mut properties = quote! {
         key = #key,
@@ -89,6 +94,11 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
     if default_if_missing {
         properties.extend(quote! {
             default_if_missing = true,
+        });
+    }
+    if include_if_unused {
+        properties.extend(quote! {
+            include_if_unused = true,
         });
     }
 

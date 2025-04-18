@@ -594,6 +594,8 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
         })
         .unwrap_or_default();
     aux.config_id2default_strategy.insert(id, default_strategy);
+    aux.config_id2include_if_unused
+        .insert(id, t.include_if_unused.unwrap_or(false));
 }
 
 /// Process the error handler registered against a (supposedly) fallible component, if

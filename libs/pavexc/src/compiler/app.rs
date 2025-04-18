@@ -145,10 +145,6 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
-        let application_config =
-            ApplicationConfig::new(&component_db, &computation_db, &mut diagnostics);
-        exit_on_errors!(diagnostics);
-
         let application_state = ApplicationState::new(
             &handler_id2pipeline,
             &framework_item_db,
@@ -158,6 +154,8 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
+        let mut application_config =
+            ApplicationConfig::new(&component_db, &computation_db, &mut diagnostics);
         exit_on_errors!(diagnostics);
 
         let codegen_deps = codegen_deps(&package_graph);
@@ -172,6 +170,14 @@ impl App {
         ) else {
             return Err(diagnostics);
         };
+        exit_on_errors!(diagnostics);
+
+        application_config.prune_unused(
+            &handler_id2pipeline,
+            &application_state_call_graph,
+            &component_db,
+            &mut diagnostics,
+        );
         detect_unused(
             handler_id2pipeline.values(),
             &application_state_call_graph,

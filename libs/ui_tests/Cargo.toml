@@ -41,6 +41,8 @@ members = [
   "blueprint/config/invalid_config_attribute/generated_app",
   "blueprint/config/invalid_config_keys",
   "blueprint/config/invalid_config_keys/generated_app",
+  "blueprint/config/unused_config",
+  "blueprint/config/unused_config/generated_app",
   "blueprint/constructors/a_warning_is_emitted_for_unused_constructors",
   "blueprint/constructors/a_warning_is_emitted_for_unused_constructors/generated_app",
   "blueprint/constructors/constructor_error_spans_are_correct_for_prebuilt_constructors",

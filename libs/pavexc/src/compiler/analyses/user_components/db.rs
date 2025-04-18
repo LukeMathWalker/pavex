@@ -65,6 +65,11 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for configuration type.
     config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
+    /// Determine if a configuration type should be included in the generated `ApplicationConfig`
+    /// even if unused.
+    ///
+    /// Invariants: there is an entry for configuration type.
+    config_id2include_if_unused: HashMap<UserComponentId, bool>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -143,6 +148,7 @@ impl UserComponentDb {
             id2lifecycle,
             config_id2type,
             config_id2default_strategy,
+            config_id2include_if_unused,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
             annotation_interner: _,
@@ -163,6 +169,7 @@ impl UserComponentDb {
                 id2lifecycle,
                 config_id2type,
                 config_id2default_strategy,
+                config_id2include_if_unused,
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
                 scope_graph,
@@ -309,8 +316,16 @@ impl UserComponentDb {
     /// Return the default strategy of the configuration component with the given id.
     /// This is going to be `Some(..)` for configuration components,
     /// and `None` for all other components.
-    pub fn default_strategy(&self, id: UserComponentId) -> Option<&DefaultStrategy> {
-        self.config_id2default_strategy.get(&id)
+    pub fn default_strategy(&self, id: UserComponentId) -> Option<DefaultStrategy> {
+        self.config_id2default_strategy.get(&id).copied()
+    }
+
+    /// Returns whether a configuration type should be included in the generated code
+    /// even if it's unused.
+    ///
+    /// It's `None` for all other component kinds.
+    pub fn include_if_unused(&self, id: UserComponentId) -> Option<bool> {
+        self.config_id2include_if_unused.get(&id).copied()
     }
 
     /// Return the scope tree that was built from the application blueprint.

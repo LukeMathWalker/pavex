@@ -56,6 +56,16 @@ pub(crate) struct ComponentDb {
     ///
     /// Invariants: there is an entry for every configuration type.
     config_id2default_strategy: HashMap<ComponentId, DefaultStrategy>,
+    /// For each configuration type, determine if it should be included in `ApplicationConfig`
+    /// even if it's never used.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    config_id2include_if_unused: HashMap<ComponentId, bool>,
+    /// Associate each configuration type with the (synthetic) constructor that
+    /// yields its type in our dependency graphs.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    config_id2constructor_id: HashMap<ComponentId, ComponentId>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -170,6 +180,8 @@ impl ComponentDb {
             id2lifecycle: Default::default(),
             id2cloning_strategy: Default::default(),
             config_id2default_strategy: Default::default(),
+            config_id2include_if_unused: Default::default(),
+            config_id2constructor_id: Default::default(),
             handler_id2middleware_ids: Default::default(),
             handler_id2error_observer_ids: Default::default(),
             transformer_id2info: Default::default(),
@@ -454,12 +466,17 @@ impl ComponentDb {
                     let config = self.user_db.config_type(user_component_id).unwrap();
                     let cloning_strategy =
                         self.user_db.cloning_strategy(user_component_id).unwrap();
-                    self.id2cloning_strategy.insert(id, *cloning_strategy);
                     let default_strategy =
                         self.user_db.default_strategy(user_component_id).unwrap();
-                    self.config_id2default_strategy
-                        .insert(id, *default_strategy);
-                    self.get_or_intern(
+                    let include_if_unused =
+                        self.user_db.include_if_unused(user_component_id).unwrap();
+
+                    self.id2cloning_strategy.insert(id, *cloning_strategy);
+                    self.config_id2default_strategy.insert(id, default_strategy);
+                    self.config_id2include_if_unused
+                        .insert(id, include_if_unused);
+
+                    let synthetic_constructor_id = self.get_or_intern(
                         UnregisteredComponent::SyntheticConstructor {
                             computation_id: computation_db.get_or_intern(Constructor(
                                 Computation::PrebuiltType(Cow::Owned(config.ty().to_owned())),
@@ -471,6 +488,8 @@ impl ComponentDb {
                         },
                         computation_db,
                     );
+                    self.config_id2constructor_id
+                        .insert(id, synthetic_constructor_id);
                 }
                 RequestHandler { .. }
                 | SyntheticWrappingMiddleware { .. }
@@ -1420,6 +1439,27 @@ impl ComponentDb {
     /// It panics if called for a component that's not a configuration type.
     pub fn default_strategy(&self, component_id: ComponentId) -> DefaultStrategy {
         self.config_id2default_strategy[&component_id]
+    }
+
+    #[track_caller]
+    /// Given the id of a component, return whether it should be included in `ApplicationConfig`
+    /// even if unused.
+    /// It panics if called for a component that's not a configuration type.
+    pub fn include_if_unused(&self, component_id: ComponentId) -> bool {
+        self.config_id2include_if_unused[&component_id]
+    }
+
+    #[track_caller]
+    /// Given the id of a configuration component, return the corresponding (synthetic)
+    /// constructor.
+    /// It panics if called for a component that's not a configuration type.
+    pub fn config2constructor(&self, id: ComponentId) -> ComponentId {
+        match self.config_id2constructor_id.get(&id) {
+            Some(constructor_id) => *constructor_id,
+            None => {
+                panic!("No constructor found for component {:?}", id)
+            }
+        }
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.

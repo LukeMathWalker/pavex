@@ -32,6 +32,7 @@ pub struct ConfigProperties {
     pub key: String,
     pub cloning_strategy: Option<CloningStrategy>,
     pub default_if_missing: Option<bool>,
+    pub include_if_unused: Option<bool>,
 }
 
 impl From<ConfigProperties> for AnnotatedComponent {
@@ -40,6 +41,7 @@ impl From<ConfigProperties> for AnnotatedComponent {
             key: value.key,
             cloning_strategy: value.cloning_strategy.map(Into::into),
             default_if_missing: value.default_if_missing,
+            include_if_unused: value.include_if_unused,
         }
     }
 }

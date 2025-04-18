@@ -59,6 +59,11 @@ pub(super) struct AuxiliaryData {
     ///
     /// Invariants: there is an entry for every configuration type.
     pub(super) config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
+    /// Determine if a configuration type should be included in `ApplicationConfig`
+    /// even if it is unused.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    pub(super) config_id2include_if_unused: HashMap<UserComponentId, bool>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.

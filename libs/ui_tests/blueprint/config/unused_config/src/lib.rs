@@ -1,26 +1,26 @@
 use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
-use std::rc::Rc;
 
 #[derive(Debug, Clone, serde::Deserialize)]
-// Only used before starting to serve requests.
-pub struct A(pub Rc<String>);
+// Won't be included in the generated `ApplicationConfig`.
+pub struct A;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[pavex::config(key = "a1")]
-// Only used before starting to serve requests.
-pub struct A1(pub Rc<String>);
+// Won't be included in the generated `ApplicationConfig`.
+pub struct A1;
 
 #[derive(Debug, Clone, serde::Deserialize)]
+// Will be included in the generated `ApplicationConfig`.
 pub struct B;
 
-#[pavex::singleton]
-pub fn b(_a: &A, _a1: &A1) -> B {
-    todo!()
-}
+#[derive(Debug, Clone, serde::Deserialize)]
+// Will be included in the generated `ApplicationConfig`.
+#[pavex::config(key = "b1", include_if_unused)]
+pub struct B1;
 
-pub fn handler(_b: &B) -> Response {
+pub fn handler() -> Response {
     todo!()
 }
 
@@ -28,6 +28,7 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
     bp.config("a", t!(crate::A));
+    bp.config("b", t!(crate::B)).include_if_unused();
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

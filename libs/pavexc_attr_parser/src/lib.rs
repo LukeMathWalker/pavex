@@ -61,6 +61,7 @@ pub enum AnnotatedComponent {
         key: String,
         cloning_strategy: Option<CloningStrategy>,
         default_if_missing: Option<bool>,
+        include_if_unused: Option<bool>,
     },
 }
 
