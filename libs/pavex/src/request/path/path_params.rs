@@ -17,13 +17,13 @@ use super::RawPathParams;
 ///
 /// ```rust
 /// use pavex::f;
-/// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
+/// use pavex::blueprint::{from, router::GET, Blueprint};
 /// use pavex::request::path::PathParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // Register the default constructor and error handler for `PathParams`.
-///     PathParams::register(&mut bp);
+///     bp.import(from![crate, pavex]);
 ///     // Register a route with a path parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
 ///     bp

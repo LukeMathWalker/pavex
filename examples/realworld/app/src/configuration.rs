@@ -7,7 +7,7 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 /// Configuration for the HTTP server used to expose our API
 /// to users.
 #[derive(serde::Deserialize, Debug, Clone)]
-#[pavex::config(key = "server")]
+#[pavex::config(key = "server", include_if_unused)]
 pub struct ServerConfig {
     /// The port that the server must listen on.
     ///
