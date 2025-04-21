@@ -228,3 +228,5 @@ pub use pavex_macros::singleton;
 ///
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::transient;
+
+pub use pavex_macros::wrap;
