@@ -1,3 +1,4 @@
+use crate::utils::validation::must_be_public;
 use crate::utils::{CloningStrategy, CloningStrategyFlags};
 use darling::FromMeta;
 use darling::util::Flag;
@@ -221,25 +222,29 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     quote! {
         #[diagnostic::pavex::constructor(#properties)]
+        #[deny(unreachable_pub)]
         #input
     }
     .into()
 }
 
 fn reject_invalid_input(input: TokenStream, macro_attr: &'static str) -> Result<(), TokenStream> {
-    // Check if the input is a function
-    if syn::parse::<syn::ItemFn>(input.clone()).is_ok() {
-        return Ok(());
+    // Check if the input is a function or a method.
+    let (vis, sig) = match (
+        syn::parse::<syn::ItemFn>(input.clone()),
+        syn::parse::<syn::ImplItemFn>(input.clone()),
+    ) {
+        (Ok(item_fn), _) => (item_fn.vis, item_fn.sig),
+        (_, Ok(impl_fn)) => (impl_fn.vis, impl_fn.sig),
+        _ => {
+            let msg = format!("{macro_attr} can only be applied to functions and methods.");
+            return Err(
+                syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
+                    .to_compile_error()
+                    .into(),
+            );
+        }
     };
-    if syn::parse::<syn::ImplItemFn>(input.clone()).is_ok() {
-        return Ok(());
-    }
-
-    // Neither ItemFn nor ImplItemFn - return an error
-    let msg = format!("{macro_attr} can only be applied to functions and methods.");
-    Err(
-        syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-            .to_compile_error()
-            .into(),
-    )
+    must_be_public("Constructors", &vis, &sig)?;
+    Ok(())
 }

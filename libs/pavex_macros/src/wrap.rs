@@ -3,6 +3,8 @@ use proc_macro::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::Ident;
 
+use crate::utils::validation::must_be_public;
+
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::wrap]`.
 pub struct InputSchema {
@@ -51,18 +53,17 @@ fn reject_invalid_input(
     macro_attr: &'static str,
 ) -> Result<Ident, TokenStream> {
     // Check if the input is a function
-    match syn::parse::<syn::ItemFn>(input.clone()) {
-        Ok(i) => Ok(i.sig.ident),
-        Err(_) => {
-            // Neither ItemFn nor ImplItemFn - return an error
-            let msg = format!("{macro_attr} can only be applied to free functions.");
-            Err(
-                syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-                    .to_compile_error()
-                    .into(),
-            )
-        }
-    }
+    let Ok(i) = syn::parse::<syn::ItemFn>(input.clone()) else {
+        // Neither ItemFn nor ImplItemFn - return an error
+        let msg = format!("{macro_attr} can only be applied to free functions.");
+        return Err(
+            syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
+                .to_compile_error()
+                .into(),
+        );
+    };
+    must_be_public("Middlewares", &i.vis, &i.sig)?;
+    Ok(i.sig.ident)
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::wrap]` attribute
@@ -88,6 +89,7 @@ fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream 
         #id_def
 
         #[diagnostic::pavex::wrap(#properties)]
+        #[deny(unreachable_pub)]
         #input
     }
     .into()

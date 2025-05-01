@@ -105,6 +105,7 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     quote! {
         #[diagnostic::pavex::config(#properties)]
+        #[deny(unreachable_pub)]
         #input
     }
     .into()
