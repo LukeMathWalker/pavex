@@ -82,7 +82,10 @@ pub struct CreatedAt {
     /// [dependencies]
     /// my_crate = { version = "0.1", registry = "custom", package = "their_crate" }
     /// ```
-    pub crate_name: String,
+    pub package_name: String,
+    /// The version of the crate that created the component, as it appears in the `package.version` field
+    /// of its `Cargo.toml`.
+    pub package_version: String,
     /// The path to the module where the component was created, obtained via [`module_path!`].
     pub module_path: String,
 }
@@ -111,7 +114,7 @@ impl RawIdentifiers {
             // Hyphens are allowed in crate names, but the Rust compiler doesn't
             // allow them in actual import paths.
             // They are "transparently" replaced with underscores.
-            segments[0] = self.created_at.crate_name.replace('-', "_");
+            segments[0] = self.created_at.package_name.replace('-', "_");
             segments
         } else if segments[0] == "self" {
             // The path is relative to the current module.

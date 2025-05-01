@@ -11,6 +11,7 @@ use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId, UserComponent};
+use crate::compiler::app::PAVEX_VERSION;
 use crate::compiler::component::DefaultStrategy;
 
 /// A unique identifier for a `RawCallableIdentifiers`.
@@ -224,7 +225,8 @@ fn _process_blueprint<'a>(
         let raw_callable_identifiers = RawIdentifiers::from_raw_parts(
             "pavex::router::default_fallback".to_owned(),
             CreatedAt {
-                crate_name: "pavex".to_owned(),
+                package_name: "pavex".to_owned(),
+                package_version: PAVEX_VERSION.to_owned(),
                 module_path: "pavex".to_owned(),
             },
         );

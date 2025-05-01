@@ -434,7 +434,7 @@ impl ResolvedPath {
                 // Unwrapping here is safe: there is always at least one path segment in a successfully
                 // parsed `ExprPath`.
                 // We must make sure to normalize the crate name, since it may contain hyphens.
-                first_segment.ident = format_ident!("{}", created_at.crate_name.replace('-', "_"));
+                first_segment.ident = format_ident!("{}", created_at.package_name.replace('-', "_"));
             } else if p.leading_path_segment() == "self" {
                 // We make the path absolute by adding the module path to its beginning.
                 let old_segments = std::mem::take(&mut p.segments);
@@ -628,7 +628,7 @@ impl ResolvedPath {
 
         let package_id = dependency_name2package_id(
             &path.leading_path_segment().to_string(),
-            &identifiers.created_at().crate_name,
+            &identifiers.created_at().package_name,
             graph,
         )
         .map_err(|source| PathMustBeAbsolute {

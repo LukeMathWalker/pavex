@@ -858,6 +858,11 @@ impl Crate {
             .expect("The crate root doesn't have a name")
     }
 
+    pub fn crate_version<'a>(&self, package_graph: &'a PackageGraph) -> &'a semver::Version {
+        let metadata = package_graph.metadata(&self.core.package_id).unwrap();
+        metadata.version()
+    }
+
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation

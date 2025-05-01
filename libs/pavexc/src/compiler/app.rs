@@ -31,6 +31,8 @@ use crate::diagnostic::DiagnosticSink;
 use crate::rustdoc::CrateCollection;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
+/// The version of the Pavex framework that this version of `pavexc` can support.
+pub(crate) const PAVEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// An in-memory representation that can be used to generate application code that matches
 /// the constraints and instructions from a [`Blueprint`] instance.

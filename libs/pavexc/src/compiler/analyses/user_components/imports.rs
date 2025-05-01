@@ -44,7 +44,7 @@ pub(super) fn resolve_imports(
     for (import_id, (import, _)) in db.imports.iter().enumerate() {
         match &import.sources {
             Sources::All => {
-                let krate_name = &import.created_at.crate_name;
+                let krate_name = &import.created_at.package_name;
                 let package_id = match krate_name2package_id(krate_name, package_graph) {
                     Ok(package_id) => package_id,
                     Err(e) => {
@@ -81,7 +81,7 @@ pub(super) fn resolve_imports(
                     let package_name = path.0.first().expect("Module path can't be empty");
                     let package_id = match dependency_name2package_id(
                         package_name,
-                        &import.created_at.crate_name,
+                        &import.created_at.package_name,
                         package_graph,
                     ) {
                         Ok(package_id) => package_id,
@@ -140,7 +140,7 @@ impl RawModulePath {
             .to_owned();
         match first.as_str() {
             "crate" => {
-                self.0[0] = created_at.crate_name.clone();
+                self.0[0] = created_at.package_name.clone();
             }
             "self" => {
                 let old_segments = std::mem::take(&mut self.0);

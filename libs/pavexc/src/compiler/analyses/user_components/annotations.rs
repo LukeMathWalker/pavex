@@ -32,6 +32,7 @@ use crate::{
     },
     rustdoc::{Crate, CrateCollection, GlobalItemId, RustdocKindExt},
 };
+use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use pavex_bp_schema::{
     CloningStrategy, CreatedAt, Import, Lifecycle, Lint, LintSetting, RawIdentifiers,
@@ -148,7 +149,9 @@ pub(super) fn register_imported_components(
                                 annotation,
                                 &item,
                                 krate,
-                                &queue_item.created_at(krate).unwrap(),
+                                &queue_item
+                                    .created_at(krate, krate_collection.package_graph())
+                                    .unwrap(),
                                 scope_id,
                                 aux,
                                 diagnostics,
@@ -182,7 +185,9 @@ pub(super) fn register_imported_components(
                                 annotation,
                                 &item,
                                 krate,
-                                &queue_item.created_at(krate).unwrap(),
+                                &queue_item
+                                    .created_at(krate, krate_collection.package_graph())
+                                    .unwrap(),
                                 scope_id,
                                 aux,
                                 diagnostics,
@@ -255,7 +260,9 @@ pub(super) fn register_imported_components(
                         annotation,
                         &item,
                         krate,
-                        &queue_item.created_at(krate).unwrap(),
+                        &queue_item
+                            .created_at(krate, krate_collection.package_graph())
+                            .unwrap(),
                         scope_id,
                         aux,
                         diagnostics,
@@ -312,7 +319,7 @@ enum QueueItem {
 
 impl QueueItem {
     /// Returns the annotation location metadata.
-    fn created_at(&self, krate: &Crate) -> Option<CreatedAt> {
+    fn created_at(&self, krate: &Crate, graph: &PackageGraph) -> Option<CreatedAt> {
         let id = match &self {
             QueueItem::Standalone(id) => *id,
             QueueItem::Impl { .. } => {
@@ -337,7 +344,8 @@ impl QueueItem {
                     fn_path.iter().take(fn_path.len() - 1).join("::")
                 };
                 Some(CreatedAt {
-                    crate_name: krate.crate_name(),
+                    package_name: krate.crate_name(),
+                    package_version: krate.crate_version(graph).to_string(),
                     module_path,
                 })
             }
