@@ -21,4 +21,8 @@ fn fail() {
     // Tests for `wrap!`
     t.pass("tests/wrap/success/*.rs");
     t.compile_fail("tests/wrap/fail/*.rs");
+
+    // Tests for `wrap!`
+    t.pass("tests/config/success/*.rs");
+    t.compile_fail("tests/config/fail/*.rs");
 }

@@ -62,7 +62,7 @@ fn reject_invalid_input(
                 .into(),
         );
     };
-    must_be_public("Middlewares", &i.vis, &i.sig)?;
+    must_be_public("Middlewares", &i.vis, &i.sig.ident, &i.sig)?;
     Ok(i.sig.ident)
 }
 

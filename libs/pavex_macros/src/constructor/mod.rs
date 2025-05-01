@@ -245,6 +245,6 @@ fn reject_invalid_input(input: TokenStream, macro_attr: &'static str) -> Result<
             );
         }
     };
-    must_be_public("Constructors", &vis, &sig)?;
+    must_be_public("Constructors", &vis, &sig.ident, &sig)?;
     Ok(())
 }

@@ -1,8 +1,9 @@
+use crate::utils::validation::must_be_public;
 use crate::utils::{CloningStrategy, CloningStrategyFlags};
 use darling::FromMeta;
 use darling::util::Flag;
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{ToTokens, quote};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::config]`.
@@ -112,18 +113,70 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
 }
 
 fn reject_invalid_input(input: TokenStream) -> Result<(), TokenStream> {
-    // Check if the input is an enum or a struct.
-    if syn::parse::<syn::ItemEnum>(input.clone()).is_ok()
-        || syn::parse::<syn::ItemStruct>(input.clone()).is_ok()
-    {
-        return Ok(());
+    let raw_item = match (
+        syn::parse::<syn::ItemEnum>(input.clone()),
+        syn::parse::<syn::ItemStruct>(input.clone()),
+    ) {
+        (Ok(item), _) => RawConfigItem::Enum(item),
+        (_, Ok(item)) => RawConfigItem::Struct(item),
+        _ => {
+            return Err(syn::Error::new_spanned(
+                proc_macro2::TokenStream::from(input),
+                "#[pavex::config] can only be applied to enum and struct definitions.",
+            )
+            .to_compile_error()
+            .into());
+        }
+    };
+    must_be_public(
+        "Configuration types",
+        &raw_item.visibility(),
+        &raw_item.ident(),
+        &raw_item,
+    )?;
+    Ok(())
+}
+
+/// The raw item we parse configuration types from.
+///
+/// Its `ToTokens` representation can be used in error spans as the "default" option, unless
+/// a more precise span is desired.
+enum RawConfigItem {
+    Enum(syn::ItemEnum),
+    Struct(syn::ItemStruct),
+}
+
+impl RawConfigItem {
+    fn ident(&self) -> &syn::Ident {
+        match self {
+            RawConfigItem::Enum(item) => &item.ident,
+            RawConfigItem::Struct(item) => &item.ident,
+        }
     }
 
-    // Neither—return an error.
-    Err(syn::Error::new_spanned(
-        proc_macro2::TokenStream::from(input),
-        "#[pavex::config] can only be applied to enum and struct definitions.",
-    )
-    .to_compile_error()
-    .into())
+    fn visibility(&self) -> &syn::Visibility {
+        match self {
+            RawConfigItem::Enum(item) => &item.vis,
+            RawConfigItem::Struct(item) => &item.vis,
+        }
+    }
+}
+
+impl ToTokens for RawConfigItem {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        match self {
+            RawConfigItem::Enum(item) => {
+                item.vis.to_tokens(tokens);
+                item.enum_token.to_tokens(tokens);
+                item.ident.to_tokens(tokens);
+                item.generics.to_tokens(tokens);
+            }
+            RawConfigItem::Struct(item) => {
+                item.vis.to_tokens(tokens);
+                item.struct_token.to_tokens(tokens);
+                item.ident.to_tokens(tokens);
+                item.generics.to_tokens(tokens);
+            }
+        }
+    }
 }

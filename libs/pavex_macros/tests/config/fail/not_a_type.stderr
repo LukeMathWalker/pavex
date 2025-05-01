@@ -1,0 +1,7 @@
+error: #[pavex::config] can only be applied to enum and struct definitions.
+ --> tests/config/fail/not_a_type.rs:7:5
+  |
+7 | /     pub fn new() -> Self {
+8 | |         Self {}
+9 | |     }
+  | |_____^
