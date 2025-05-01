@@ -1,7 +1,0 @@
-error: Missing field `id`
- --> tests/wrap/fail/method.rs:6:5
-  |
-6 |     #[wrap]
-  |     ^^^^^^^
-  |
-  = note: this error originates in the attribute macro `wrap` (in Nightly builds, run with -Z macro-backtrace for more info)
