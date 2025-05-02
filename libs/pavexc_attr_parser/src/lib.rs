@@ -21,7 +21,7 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
         .flatten();
     for attr in attrs {
         let Some(sub_path) = strip_pavex_path_prefix(attr.path()) else {
-            return Ok(None);
+            continue;
         };
         let Some(component_kind) = sub_path.get_ident() else {
             return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
