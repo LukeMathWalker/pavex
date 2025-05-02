@@ -1,9 +1,9 @@
 use std::future::IntoFuture;
 
 use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::middleware::Next;
 use pavex::response::Response;
+use pavex::{f, wrap};
 
 pub struct GenericType<V>(V);
 
@@ -37,6 +37,17 @@ where
     todo!()
 }
 
+#[wrap(id = MW_1)]
+pub fn generic_wrapping_middleware1<A, T>(
+    _next: Next<A>,
+    _generic_input: GenericType<T>,
+) -> Response
+where
+    A: IntoFuture<Output = Response>,
+{
+    todo!()
+}
+
 pub fn handler() -> pavex::response::Response {
     todo!()
 }
@@ -46,6 +57,7 @@ pub fn blueprint() -> Blueprint {
     bp.wrap(f!(crate::generic_wrapping_middleware));
     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
+    bp.wrap(MW_1);
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

@@ -12,7 +12,7 @@ pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -
         value: callable,
         created_at,
     } = callable;
-    if callable.macro_name != "f" {
+    if callable.macro_name == "t" {
         panic!(
             "You need to use the `f!` macro to register function-like components (e.g. a constructor).\n\
             Here you used the `t!` macro, which is reserved type-like components, like state inputs."
@@ -33,7 +33,7 @@ pub(super) fn raw_identifiers2type(callable: WithLocation<RawIdentifiers>) -> Ty
         value: callable,
         created_at,
     } = callable;
-    if callable.macro_name != "t" {
+    if callable.macro_name == "f" {
         panic!(
             "You need to use the `t!` macro to register type-like components (e.g. a state input).\n\
             Here you used the `f!` macro, which is reserved for function-like components, \

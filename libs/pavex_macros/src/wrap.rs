@@ -1,6 +1,7 @@
+use convert_case::{Case, Casing};
 use darling::FromMeta as _;
 use proc_macro::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
 use crate::utils::validation::must_be_public;
@@ -8,7 +9,7 @@ use crate::utils::validation::must_be_public;
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::wrap]`.
 pub struct InputSchema {
-    pub id: syn::Ident,
+    pub id: Option<syn::Ident>,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -22,7 +23,7 @@ impl TryFrom<InputSchema> for Properties {
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct Properties {
-    pub id: syn::Ident,
+    pub id: Option<syn::Ident>,
 }
 
 pub fn wrap(metadata: TokenStream, input: TokenStream) -> TokenStream {
@@ -70,16 +71,21 @@ fn reject_invalid_input(
 /// that matches the provided properties.
 fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream {
     let Properties { id } = properties;
+    // Use the span of the function name if no identifier is provided.
+    let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
+
+    let name = name.to_string();
+
+    // If the user didn't specify an identifier, generate one based on the function name.
+    let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
     let properties = quote! {
         id = #id,
     };
 
-    let id_span = id.span();
-    let name = name.to_string();
     let id_def = quote_spanned! { id_span =>
         pub const #id: ::pavex::blueprint::reflection::WithLocation<::pavex::blueprint::reflection::RawIdentifiers> =
             ::pavex::with_location!(::pavex::blueprint::reflection::RawIdentifiers {
-                import_path: #name,
+                import_path: concat!(module_path!(), "::", #name),
                 macro_name: "wrap",
             });
     };
