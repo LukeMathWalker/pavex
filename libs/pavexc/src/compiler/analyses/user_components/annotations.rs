@@ -35,7 +35,7 @@ use crate::{
 use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use pavex_bp_schema::{
-    CloningStrategy, CreatedAt, Import, Lifecycle, Lint, LintSetting, RawIdentifiers,
+    CloningStrategy, CreatedAt, CreatedBy, Import, Lifecycle, Lint, LintSetting, RawIdentifiers,
 };
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::{AnnotatedComponent, errors::AttributeParserError};
@@ -463,6 +463,7 @@ fn intern_annotated(
             if let Some(error_handler) = error_handler {
                 let identifiers = RawIdentifiers {
                     created_at: created_at.clone(),
+                    created_by: CreatedBy::macro_name("constructor"),
                     import_path: error_handler,
                 };
                 let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);

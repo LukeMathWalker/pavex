@@ -5,6 +5,7 @@ use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location, Type};
+use pavex_reflection::CreatedBy;
 
 #[track_caller]
 pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -> Callable {
@@ -21,6 +22,7 @@ pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -
     Callable {
         callable: pavex_bp_schema::RawIdentifiers {
             created_at: created_at2created_at(created_at),
+            created_by: CreatedBy::macro_name(callable.macro_name),
             import_path: callable.import_path.to_owned(),
         },
         registered_at: Location::caller(),
@@ -43,6 +45,7 @@ pub(super) fn raw_identifiers2type(callable: WithLocation<RawIdentifiers>) -> Ty
     Type {
         type_: pavex_bp_schema::RawIdentifiers {
             created_at: created_at2created_at(created_at),
+            created_by: CreatedBy::macro_name(callable.macro_name),
             import_path: callable.import_path.to_owned(),
         },
         registered_at: Location::caller(),

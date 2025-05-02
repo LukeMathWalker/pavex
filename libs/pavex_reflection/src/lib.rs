@@ -44,6 +44,36 @@ impl Location {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+/// The method used to create (and set the properties) for this component.
+pub enum CreatedBy {
+    /// The component was created via a macro annotation (e.g. `#[pavex::wrap]`)
+    /// on top of the target item (e.g. a function or a method).
+    Attribute { name: String },
+    /// The component was created passing a raw path (via `f!` or `t!`) to a
+    /// blueprint method.
+    Blueprint,
+    /// The component was provided by the framework.
+    ///
+    /// For example, the default fallback handler if the user didn't specify one.
+    Framework,
+}
+
+impl CreatedBy {
+    /// Convert the name of the macro used to perform the registration into an instance of [`CreatedBy`].
+    pub fn macro_name(value: &str) -> Self {
+        match value {
+            "f" | "t" => CreatedBy::Blueprint,
+            "wrap" | "constructor" | "request_scoped" | "transient" | "singleton" | "config" => {
+                CreatedBy::Attribute { name: value.into() }
+            }
+            _ => panic!(
+                "Pavex doesn't recognize `{value}` as one of its macros to register components"
+            ),
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 /// All the information required to identify a component registered against a `Blueprint`.
 ///
 /// It is an implementation detail of the builder.
@@ -51,6 +81,8 @@ pub struct RawIdentifiers {
     /// Information on the location where the component was created—either via `f!`/`t!` using
     /// its import path or via a macro annotation on the definition of the item itself.
     pub created_at: CreatedAt,
+    /// The registration system used to create this component.
+    pub created_by: CreatedBy,
     /// An unambiguous path to the type/callable.
     pub import_path: String,
 }
@@ -95,9 +127,14 @@ pub struct CreatedAt {
 
 impl RawIdentifiers {
     #[track_caller]
-    pub fn from_raw_parts(import_path: String, registered_at: CreatedAt) -> Self {
+    pub fn from_raw_parts(
+        import_path: String,
+        created_at: CreatedAt,
+        created_by: CreatedBy,
+    ) -> Self {
         Self {
-            created_at: registered_at,
+            created_at,
+            created_by,
             import_path,
         }
     }

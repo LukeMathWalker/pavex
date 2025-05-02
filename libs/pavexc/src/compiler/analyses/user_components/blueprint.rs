@@ -1,6 +1,6 @@
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, Domain,
-    ErrorObserver, Fallback, Lifecycle, Location, NestedBlueprint, PathPrefix,
+    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
+    Domain, ErrorObserver, Fallback, Lifecycle, Location, NestedBlueprint, PathPrefix,
     PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route,
     WrappingMiddleware,
 };
@@ -229,6 +229,7 @@ fn _process_blueprint<'a>(
                 package_version: PAVEX_VERSION.to_owned(),
                 module_path: "pavex".to_owned(),
             },
+            CreatedBy::Framework,
         );
         let registered_fallback = Fallback {
             request_handler: Callable {
