@@ -1,4 +1,20 @@
 [31;1mERROR[0m:
+  [31m×[0m Configuration types can't have any lifetime parameter.
+  [31m│[0m `app::F` has 2 named lifetime parameters: `'a` and `'b`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │
+  [31m│[0m  [2m30[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
+  [31m│[0m  [2m31[0m │ [35;1m│[0m   #[allow(dead_code)]
+  [31m│[0m  [2m32[0m │ [35;1m│[0m   #[pavex::config(key = "f")]
+  [31m│[0m  [2m33[0m │ [35;1m│[0m   // Some static, some elided.
+  [31m│[0m  [2m34[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct F<'a, 'b>(std::borrow::Cow<'a, str>, &'b str);
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe config type was registered here[0m
+  [31m│[0m  [2m35[0m │
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
   [31m×[0m Configuration types can't have unassigned generic type parameters.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:24:1]

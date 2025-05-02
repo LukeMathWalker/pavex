@@ -66,6 +66,7 @@ pub struct RawIdentifiers {
 pub struct CreatedAt {
     /// The name of the crate that created the component, as it appears in the `package.name` field
     /// of its `Cargo.toml`.
+    /// Obtained via [`CARGO_PKG_NAME`](https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-crates).
     ///
     /// In particular, the name has *not* been normalised—e.g. hyphens are not replaced with underscores.
     ///
@@ -85,6 +86,8 @@ pub struct CreatedAt {
     pub package_name: String,
     /// The version of the crate that created the component, as it appears in the `package.version` field
     /// of its `Cargo.toml`.
+    ///
+    /// Obtained via [`CARGO_PKG_VERSION`](https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-crates).
     pub package_version: String,
     /// The path to the module where the component was created, obtained via [`module_path!`].
     pub module_path: String,
