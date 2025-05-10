@@ -110,3 +110,94 @@ fn must_be_clonable(
         .build();
     diagnostics.push(diagnostic);
 }
+
+/// Check all types whose cloning strategy is set to "NeverClone" are not Copy.
+
+#[tracing::instrument(
+    name = "If cloning is not allowed, types should not be copyable",
+    skip_all
+)]
+
+pub(crate) fn never_clones_should_not_be_copyable<'a>(
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+    krate_collection: &CrateCollection,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+) {
+    let copy = process_framework_path("core::marker::Copy", krate_collection);
+
+    let ResolvedType::ResolvedPath(copy) = copy else {
+        unreachable!()
+    };
+
+    for (id, _) in component_db.iter() {
+        let hydrated = component_db.hydrated_component(id, computation_db);
+        match hydrated {
+            HydratedComponent::Constructor(_) | HydratedComponent::PrebuiltType(_) => {
+                if component_db.cloning_strategy(id) != CloningStrategy::NeverClone {
+                    continue;
+                }
+            }
+            _ => {
+                continue;
+            }
+        };
+
+        let Some(output_type) = hydrated.output_type() else {
+            continue;
+        };
+
+        if let Ok(()) = assert_trait_is_implemented(krate_collection, output_type, &copy) {
+            should_not_be_never_clone(output_type, id, component_db, computation_db, diagnostics);
+        }
+    }
+}
+
+fn should_not_be_never_clone(
+    type_: &ResolvedType,
+    id: ComponentId,
+    db: &ComponentDb,
+    computation_db: &ComputationDb,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+) {
+    let id = db.derived_from(&id).unwrap_or(id);
+    let user_id = db.user_component_id(id).unwrap();
+    let kind = db.user_db()[user_id].kind();
+    let registration = db.registration(user_id);
+    let source = diagnostics.annotated(
+        db.registration_target(user_id),
+        format!("The {kind} was registered here"),
+    );
+
+    let (clone_if_necessary, never_clone) = if registration.kind.is_attribute() {
+        ("clone_if_necessary", "never_clone")
+    } else {
+        ("CloneIfNecessary", "NeverClone")
+    };
+
+    let output_type = type_.display_for_error();
+    let warning_msg = match kind {
+        ComponentKind::Constructor => {
+            let callable_path = &computation_db[user_id].path;
+            format!(
+                "`{output_type}` implements `Copy`, but its constructor, `{callable_path}`, is marked as `{never_clone}`."
+            )
+        }
+        ComponentKind::PrebuiltType => {
+            format!("`{output_type}` implements `Copy`, but it's marked as `{never_clone}`.")
+        }
+        _ => unreachable!(),
+    };
+
+    let help = format!(
+        "Either set the cloning strategy to `{clone_if_necessary}` or remove `Copy` for `{output_type}`",
+    );
+
+    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(warning_msg))
+        .severity(miette::Severity::Warning)
+        .optional_source(source)
+        .help(help)
+        .build();
+
+    diagnostics.push(diagnostic);
+}

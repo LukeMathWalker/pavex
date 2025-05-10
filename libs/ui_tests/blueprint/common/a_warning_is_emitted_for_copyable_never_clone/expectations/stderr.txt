@@ -1,0 +1,52 @@
+[33;1mWARNING[0m:
+  [33m⚠[0m `app::B` implements `Copy`, but its constructor,
+  [33m│[0m `app::b`, is marked as `NeverClone`.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/common/a_warning_is_emitted_for_copyable_never_clone/src/lib.rs[0m:52:1]
+  [33m│[0m  [2m52[0m │     bp.import(from![crate]);
+  [33m│[0m  [2m53[0m │     bp.singleton(f!(crate::b)).never_clone();
+  [33m│[0m     · [35;1m                 ──────┬─────[0m
+  [33m│[0m     ·                        [35;1m╰── The constructor was registered here[0m
+  [33m│[0m  [2m54[0m │     bp.request_scoped(f!(crate::a)).never_clone();
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Either set the cloning strategy to `CloneIfNecessary` or remove `Copy`
+  [33m│[0m         for `app::B`
+[33;1mWARNING[0m:
+  [33m⚠[0m `app::A` implements `Copy`, but its constructor,
+  [33m│[0m `app::a`, is marked as `NeverClone`.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/common/a_warning_is_emitted_for_copyable_never_clone/src/lib.rs[0m:53:1]
+  [33m│[0m  [2m53[0m │     bp.singleton(f!(crate::b)).never_clone();
+  [33m│[0m  [2m54[0m │     bp.request_scoped(f!(crate::a)).never_clone();
+  [33m│[0m     · [35;1m                      ──────┬─────[0m
+  [33m│[0m     ·                             [35;1m╰── The constructor was registered here[0m
+  [33m│[0m  [2m55[0m │     bp.route(GET, "/", f!(crate::handler_1));
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Either set the cloning strategy to `CloneIfNecessary` or remove `Copy`
+  [33m│[0m         for `app::A`
+[33;1mWARNING[0m:
+  [33m⚠[0m `app::B1` implements `Copy`, but its constructor,
+  [33m│[0m `app::b1`, is marked as `never_clone`.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/common/a_warning_is_emitted_for_copyable_never_clone/src/lib.rs[0m:40:1]
+  [33m│[0m  [2m40[0m │
+  [33m│[0m  [2m41[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::singleton(never_clone)]
+  [33m│[0m  [2m42[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn b1() -> B1 {
+  [33m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [33m│[0m  [2m43[0m │         todo!()
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Either set the cloning strategy to `clone_if_necessary` or remove
+  [33m│[0m         `Copy` for `app::B1`
+[33;1mWARNING[0m:
+  [33m⚠[0m `app::A1` implements `Copy`, but its constructor,
+  [33m│[0m `app::a1`, is marked as `never_clone`.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/common/a_warning_is_emitted_for_copyable_never_clone/src/lib.rs[0m:32:1]
+  [33m│[0m  [2m32[0m │
+  [33m│[0m  [2m33[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::singleton(never_clone)]
+  [33m│[0m  [2m34[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn a1() -> A1 {
+  [33m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [33m│[0m  [2m35[0m │         todo!()
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Either set the cloning strategy to `clone_if_necessary` or remove
+  [33m│[0m         `Copy` for `app::A1`
