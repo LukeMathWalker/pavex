@@ -620,12 +620,14 @@ fn process_error_handler(
         source: identifiers_id.into(),
         fallible_id,
     };
-    aux.intern_component(
+    let error_handler_id = aux.intern_component(
         component,
         scope_id,
         lifecycle,
         error_handler.registered_at.clone().into(),
     );
+    aux.fallible_id2error_handler_id
+        .insert(fallible_id, error_handler_id);
 }
 
 /// Check the path of the registered route.
@@ -723,7 +725,7 @@ mod diagnostics {
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::RoutePath(&aux.id2registration[&route_id]),
+            TargetSpan::RoutePath(&aux.id2registration[route_id]),
             "The path missing a leading '/'",
         );
         let path = &route.path;

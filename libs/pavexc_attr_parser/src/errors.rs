@@ -40,4 +40,8 @@ impl InvalidAttributeParams {
     pub fn config(e: darling::Error) -> Self {
         Self(e, "pavex::diagnostic::config")
     }
+
+    pub fn wrap(e: darling::Error) -> Self {
+        Self(e, "pavex::diagnostic::wrap")
+    }
 }

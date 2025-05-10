@@ -1,71 +1,157 @@
-use ahash::HashMap;
-use guppy::graph::PackageGraph;
-
+use super::UserComponent;
 use super::UserComponentId;
-use super::{UserComponent, auxiliary::AuxiliaryData};
+use super::auxiliary::AuxiliaryData;
+use crate::compiler::component::ConfigTypeValidationError;
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::ComponentKind;
 use crate::diagnostic::TargetSpan;
+use crate::language::{FQPath, ParseError, PathKind};
 use crate::{
     compiler::{
         analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
-        component::{
-            ConfigType, ConfigTypeValidationError, PrebuiltType, PrebuiltTypeValidationError,
-        },
+        component::{ConfigType, PrebuiltType, PrebuiltTypeValidationError},
         resolvers::{CallableResolutionError, TypeResolutionError, resolve_type_path},
     },
-    diagnostic::{CallableDefSource, CompilerDiagnostic},
+    diagnostic::CallableDefSource,
 };
-use crate::{language::ResolvedPath, rustdoc::CrateCollection, utils::comma_separated_list};
+use crate::{rustdoc::CrateCollection, utils::comma_separated_list};
+use guppy::graph::PackageGraph;
+use indexmap::IndexMap;
 
-/// Resolve all paths to their corresponding types or callables.
-/// Those items are then interned into the respective databases for later
-/// use.
-#[tracing::instrument(name = "Resolve types and callables", skip_all, level = "trace")]
-pub(super) fn resolve_paths(
-    id2resolved_path: &HashMap<UserComponentId, ResolvedPath>,
-    aux: &mut AuxiliaryData,
-    computation_db: &mut ComputationDb,
-    prebuilt_type_db: &mut PrebuiltTypeDb,
-    krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
-) {
-    let mut config_id2type = std::mem::take(&mut aux.config_id2type);
-    for (id, user_component) in aux.iter() {
-        let Some(resolved_path) = id2resolved_path.get(&id) else {
-            // Annotated components don't have a resolved path attached to them.
-            continue;
-        };
-        if let UserComponent::PrebuiltType { .. } = &user_component {
-            match resolve_type_path(resolved_path, krate_collection) {
-                Ok(ty) => match PrebuiltType::new(ty) {
-                    Ok(prebuilt) => {
-                        prebuilt_type_db.get_or_intern(prebuilt, id);
-                    }
-                    Err(e) => invalid_prebuilt_type(e, resolved_path, id, aux, diagnostics),
-                },
-                Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
-            };
-        } else if let UserComponent::ConfigType { key, .. } = &user_component {
-            match resolve_type_path(resolved_path, krate_collection) {
-                Ok(ty) => match ConfigType::new(ty, key.into()) {
-                    Ok(config) => {
-                        config_id2type.insert(id, config);
-                    }
-                    Err(e) => invalid_config_type(e, resolved_path, id, aux, diagnostics),
-                },
-                Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
-            };
-        } else if let Err(e) =
-            computation_db.resolve_and_intern(krate_collection, resolved_path, Some(id))
-        {
-            cannot_resolve_callable_path(e, id, aux, krate_collection.package_graph(), diagnostics);
+/// Match the id of a component with its fully-qualified path, if there is one.
+///
+/// # Implementation notes
+///
+/// We could do this work while we resolve the identifiers directly to
+/// types/callables.
+/// We isolate it as its own step to be able to pre-determine which crates
+/// we need to compute/fetch JSON docs for since we get higher throughput
+/// via a batch computation than by computing them one by one as the need
+/// arises.
+#[derive(Default)]
+pub struct FQPaths {
+    /// The path associated with each user component.
+    id2resolved_path: IndexMap<UserComponentId, FQPath>,
+    /// All paths until `resolved_up_to` (excluded) have been resolved to a type/callable.
+    ///
+    /// This field is used as cursor to avoid performing redudant resolutions if
+    /// later stages need to add (and then resolve) new paths.
+    resolved_up_to: usize,
+}
+
+impl FQPaths {
+    /// Create a new instance of [`ResolvedPaths`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Process all identifiers that have been registered with [`AuxiliaryData`].
+    pub fn from_identifiers(
+        &mut self,
+        db: &AuxiliaryData,
+        package_graph: &PackageGraph,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    ) {
+        for (id, _) in db.iter() {
+            self.from_identifier(id, db, package_graph, diagnostics);
         }
     }
-    aux.config_id2type = config_id2type;
+
+    /// Process a single raw identifier.
+    pub fn from_identifier(
+        &mut self,
+        id: UserComponentId,
+        db: &AuxiliaryData,
+        package_graph: &PackageGraph,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    ) {
+        let component = &db[id];
+        let Some(identifiers_id) = component.raw_identifiers_id() else {
+            return;
+        };
+        let identifiers = &db.identifiers_interner[identifiers_id];
+        let kind = match component.kind() {
+            ComponentKind::PrebuiltType | ComponentKind::ConfigType => PathKind::Type,
+            ComponentKind::RequestHandler
+            | ComponentKind::Fallback
+            | ComponentKind::Constructor
+            | ComponentKind::ErrorHandler
+            | ComponentKind::WrappingMiddleware
+            | ComponentKind::PostProcessingMiddleware
+            | ComponentKind::PreProcessingMiddleware
+            | ComponentKind::ErrorObserver => PathKind::Callable,
+        };
+        match FQPath::parse(identifiers, package_graph, kind) {
+            Ok(path) => {
+                self.id2resolved_path.insert(id, path);
+            }
+            Err(e) => invalid_identifiers(e, id, db, diagnostics),
+        }
+    }
+
+    /// Return an iterator over the stored paths.
+    pub(super) fn values(&self) -> impl Iterator<Item = &FQPath> {
+        self.id2resolved_path.values()
+    }
+
+    /// Resolve all paths to their corresponding types or callables.
+    /// Those items are then interned into the respective databases for later
+    /// use.
+    #[tracing::instrument(name = "Resolve types and callables", skip_all, level = "trace")]
+    pub(super) fn resolve(
+        &mut self,
+        aux: &mut AuxiliaryData,
+        computation_db: &mut ComputationDb,
+        prebuilt_type_db: &mut PrebuiltTypeDb,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    ) {
+        let mut config_id2type = std::mem::take(&mut aux.config_id2type);
+        for (id, user_component) in aux.iter().skip(self.resolved_up_to) {
+            let Some(resolved_path) = self.id2resolved_path.get(&id) else {
+                // Annotated components don't have a resolved path attached to them.
+                continue;
+            };
+            if let UserComponent::PrebuiltType { .. } = &user_component {
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match PrebuiltType::new(ty) {
+                        Ok(prebuilt) => {
+                            prebuilt_type_db.get_or_intern(prebuilt, id);
+                        }
+                        Err(e) => invalid_prebuilt_type(e, resolved_path, id, aux, diagnostics),
+                    },
+                    Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
+                };
+            } else if let UserComponent::ConfigType { key, .. } = &user_component {
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match ConfigType::new(ty, key.into()) {
+                        Ok(config) => {
+                            config_id2type.insert(id, config);
+                        }
+                        Err(e) => invalid_config_type(e, resolved_path, id, aux, diagnostics),
+                    },
+                    Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
+                };
+            } else if let Err(e) =
+                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(id))
+            {
+                cannot_resolve_callable_path(
+                    e,
+                    id,
+                    aux,
+                    krate_collection.package_graph(),
+                    diagnostics,
+                );
+            }
+        }
+        self.resolved_up_to = self.id2resolved_path.len();
+        aux.config_id2type = config_id2type;
+    }
 }
 
 fn invalid_prebuilt_type(
     e: PrebuiltTypeValidationError,
-    resolved_path: &ResolvedPath,
+    resolved_path: &FQPath,
     id: UserComponentId,
     db: &AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
@@ -146,7 +232,7 @@ fn invalid_prebuilt_type(
 
 pub(super) fn invalid_config_type(
     e: ConfigTypeValidationError,
-    resolved_path: &ResolvedPath,
+    resolved_path: &FQPath,
     id: UserComponentId,
     db: &AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
@@ -154,7 +240,7 @@ pub(super) fn invalid_config_type(
     use ConfigTypeValidationError::*;
     use std::fmt::Write as _;
 
-    let registration = &db.id2registration[&id];
+    let registration = &db.id2registration[id];
     let (target_span, label_msg) = match &e {
         CannotHaveAnyLifetimeParameters { .. }
         | CannotHaveUnassignedGenericTypeParameters { .. } => (
@@ -264,7 +350,7 @@ fn cannot_resolve_type_path(
 ) {
     let component = &db[id];
     let source = diagnostics.annotated(
-        TargetSpan::RawIdentifiers(&db.id2registration[&id], component.kind()),
+        TargetSpan::RawIdentifiers(&db.id2registration[id], component.kind()),
         "The type that we can't resolve",
     );
     let diagnostic = CompilerDiagnostic::builder(e)
@@ -286,7 +372,7 @@ pub(super) fn cannot_resolve_callable_path(
     match e {
         CallableResolutionError::UnknownCallable(_) => {
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
+                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
                 format!("The {kind} that we can't resolve"),
             );
             let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
@@ -305,7 +391,7 @@ pub(super) fn cannot_resolve_callable_path(
                         def.annotated_source
                     });
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
+                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
                 format!("The {kind} was registered here"),
             );
             let diagnostic = CompilerDiagnostic::builder(e.clone())
@@ -316,7 +402,7 @@ pub(super) fn cannot_resolve_callable_path(
         }
         CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
+                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
                 format!("It was registered as a {kind} here"),
             );
             let message = format!(
@@ -373,4 +459,34 @@ pub(super) fn cannot_resolve_callable_path(
             diagnostics.push(diagnostic);
         }
     }
+}
+
+fn invalid_identifiers(
+    e: ParseError,
+    id: UserComponentId,
+    db: &AuxiliaryData,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+) {
+    let label_msg = match &e {
+        ParseError::InvalidPath(_) => "The invalid path",
+        ParseError::PathMustBeAbsolute(_) => "The relative path",
+    };
+    let source = diagnostics.annotated(db.registration_target(&id), label_msg);
+    let help = match &e {
+        ParseError::InvalidPath(inner) => {
+            inner.raw_identifiers.import_path.strip_suffix("()").map(|stripped| format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))
+        }
+        ParseError::PathMustBeAbsolute(_) =>
+            Some(
+                "If it is a local import, the path must start with `crate::`, `self::` or `super::`.\n\
+                If it is an import from a dependency, the path must start with \
+                the dependency name (e.g. `dependency::`)."
+                .to_string(),
+            )
+    };
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(source)
+        .optional_help(help)
+        .build();
+    diagnostics.push(diagnostic);
 }

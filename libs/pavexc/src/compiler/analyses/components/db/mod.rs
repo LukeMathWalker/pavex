@@ -22,8 +22,7 @@ use crate::compiler::utils::{
 };
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
-    Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
-    TypeReference,
+    Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt, HashSet};
@@ -1153,13 +1152,13 @@ impl ComponentDb {
                 continue;
             }
             let mut transformer_segments = into_response_path.segments.clone();
-            transformer_segments.push(ResolvedPathSegment {
+            transformer_segments.push(FQPathSegment {
                 ident: "into_response".into(),
                 generic_arguments: vec![],
             });
-            let transformer_path = ResolvedPath {
+            let transformer_path = FQPath {
                 segments: transformer_segments,
-                qualified_self: Some(ResolvedPathQualifiedSelf {
+                qualified_self: Some(FQQualifiedSelf {
                     position: into_response_path.segments.len(),
                     type_: output.clone().into(),
                 }),

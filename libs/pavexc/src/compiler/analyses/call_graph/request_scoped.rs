@@ -15,7 +15,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
-use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
+use crate::language::{Callable, FQPath, FQPathSegment, InvocationStyle, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
 /// Build an [`OrderedCallGraph`] for a computation that gets trigger on a per-request basis
@@ -190,7 +190,7 @@ fn augment_preprocessing_graph(
             .iter()
             .cloned()
             .chain(std::iter::once("EarlyReturn".to_string()))
-            .map(|s| ResolvedPathSegment {
+            .map(|s| FQPathSegment {
                 ident: s,
                 generic_arguments: vec![],
             })
@@ -199,7 +199,7 @@ fn augment_preprocessing_graph(
             is_async: false,
             takes_self_as_ref: false,
             output: Some(component_db.pavex_processing.clone()),
-            path: ResolvedPath {
+            path: FQPath {
                 segments: early_return_segments,
                 qualified_self: None,
                 package_id: processing_path.package_id.clone(),

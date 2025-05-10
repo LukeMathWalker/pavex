@@ -1,8 +1,8 @@
 use pavex_bp_schema::Lifecycle;
-use pavexc_attr_parser::{AnnotatedComponent, errors};
+use pavexc_attr_parser::{AnnotationProperties, errors};
 
 // Convenience function to parse a single attribute string.
-fn parse(attrs: &str) -> Result<Option<AnnotatedComponent>, errors::AttributeParserError> {
+fn parse(attrs: &str) -> Result<Option<AnnotationProperties>, errors::AttributeParserError> {
     pavexc_attr_parser::parse(&[attrs.to_owned()])
 }
 
@@ -35,7 +35,7 @@ fn test_cloning_strategy_can_be_omitted() {
         .unwrap();
     assert_eq!(
         c,
-        AnnotatedComponent::Constructor {
+        AnnotationProperties::Constructor {
             lifecycle: Lifecycle::Singleton,
             cloning_strategy: None,
             error_handler: None

@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::process_framework_path;
 use crate::language::{
-    Callable, InvocationStyle, Lifetime, PathType, ResolvedPath, ResolvedPathQualifiedSelf,
-    ResolvedPathSegment, ResolvedType, TypeReference,
+    Callable, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime, PathType,
+    ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -55,15 +55,15 @@ pub(super) fn get_clone_component_id(
     let clone_path = clone.resolved_path();
     let clone_segments = {
         let mut c = clone_path.segments.clone();
-        c.push(ResolvedPathSegment {
+        c.push(FQPathSegment {
             ident: "clone".into(),
             generic_arguments: vec![],
         });
         c
     };
-    let type_clone_path = ResolvedPath {
+    let type_clone_path = FQPath {
         segments: clone_segments,
-        qualified_self: Some(ResolvedPathQualifiedSelf {
+        qualified_self: Some(FQQualifiedSelf {
             position: clone_path.segments.len(),
             type_: output.clone().into(),
         }),

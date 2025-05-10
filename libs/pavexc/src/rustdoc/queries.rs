@@ -15,7 +15,7 @@ use tracing::Span;
 use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
-use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
+use crate::language::{FQGenericArgument, FQPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
@@ -312,9 +312,9 @@ impl CrateCollection {
 
     pub fn get_type_by_resolved_path(
         &self,
-        mut resolved_path: crate::language::ResolvedPath,
+        mut resolved_path: crate::language::FQPath,
     ) -> Result<
-        Result<(crate::language::ResolvedPath, ResolvedItem<'_>), GetItemByResolvedPathError>,
+        Result<(crate::language::FQPath, ResolvedItem<'_>), GetItemByResolvedPathError>,
         CannotGetCrateData,
     > {
         let mut path_without_generics = resolved_path
@@ -395,11 +395,11 @@ impl CrateCollection {
                 let mut name2path_arg = GenericBindings::default();
                 for (path_arg, alias_generic) in path_args.iter().zip(alias_generics.iter()) {
                     match path_arg {
-                        ResolvedPathGenericArgument::Type(t) => {
+                        FQGenericArgument::Type(t) => {
                             let t = t.resolve(self).unwrap();
                             name2path_arg.types.insert(alias_generic.name.clone(), t);
                         }
-                        ResolvedPathGenericArgument::Lifetime(l) => {
+                        FQGenericArgument::Lifetime(l) => {
                             let l = match l {
                                 crate::language::ResolvedPathLifetime::Named(n) => n,
                                 crate::language::ResolvedPathLifetime::Static => "static",
@@ -419,8 +419,8 @@ impl CrateCollection {
                     &name2path_arg,
                 )
                 .unwrap();
-                let aliased: ResolvedPathType = aliased.into();
-                let ResolvedPathType::ResolvedPath(aliased_path) = aliased else {
+                let aliased: FQPathType = aliased.into();
+                let FQPathType::ResolvedPath(aliased_path) = aliased else {
                     unreachable!();
                 };
                 (*aliased_path.path).clone()

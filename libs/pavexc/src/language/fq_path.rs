@@ -30,11 +30,11 @@ use super::krate_name::CrateNameResolutionError;
 use super::krate2package_id;
 use super::resolved_type::GenericLifetimeParameter;
 
-/// A resolved import path.
+/// A fully-qualified import path.
 ///
-/// What does "resolved" mean in this contest?
+/// What does "fully qualified" mean in this contest?
 ///
-/// `ResolvedPath` ensures that all paths are "fully qualified"—i.e.
+/// `FQPath` ensures that all paths are "fully qualified"—i.e.
 /// the first path segment is either the name of the current package or the name of a
 /// crate listed as a dependency of the current package.
 ///
@@ -48,21 +48,21 @@ use super::resolved_type::GenericLifetimeParameter;
 /// Another common scenario: dependency renaming.
 /// `crate_name::TypeName` and `renamed_crate_name::TypeName` can be equivalent if `crate_name`
 /// has been renamed to `renamed_crate_name` in the `Cargo.toml` of the package that declares/uses
-/// the path. `ResolvedPath` takes this into account by using the `PackageId` of the target
+/// the path. `FQPath` takes this into account by using the `PackageId` of the target
 /// crate as the authoritative answer to "What crate does this path belong to?". This is unique
 /// and well-defined within a `cargo` workspace.
 #[derive(Clone, Debug, Eq)]
-pub struct ResolvedPath {
-    pub segments: Vec<ResolvedPathSegment>,
+pub struct FQPath {
+    pub segments: Vec<FQPathSegment>,
     /// The qualified self of the path, if any.
     ///
     /// E.g. `Type` in `<Type as Trait>::Method`.
-    pub qualified_self: Option<ResolvedPathQualifiedSelf>,
+    pub qualified_self: Option<FQQualifiedSelf>,
     /// The package id of the crate that this path belongs to.
     pub package_id: PackageId,
 }
 
-impl ResolvedPath {
+impl FQPath {
     /// Collect all the package ids that are referenced in this path.
     ///
     /// This includes the package id of the crate that this path belongs to
@@ -73,10 +73,10 @@ impl ResolvedPath {
         for segment in &self.segments {
             for generic_argument in &segment.generic_arguments {
                 match generic_argument {
-                    ResolvedPathGenericArgument::Type(t) => {
+                    FQGenericArgument::Type(t) => {
                         t.collect_package_ids(package_ids);
                     }
-                    ResolvedPathGenericArgument::Lifetime(_) => {}
+                    FQGenericArgument::Lifetime(_) => {}
                 }
             }
         }
@@ -87,18 +87,18 @@ impl ResolvedPath {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct ResolvedPathQualifiedSelf {
+pub struct FQQualifiedSelf {
     pub position: usize,
-    pub type_: ResolvedPathType,
+    pub type_: FQPathType,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct ResolvedPathSegment {
+pub struct FQPathSegment {
     pub ident: String,
-    pub generic_arguments: Vec<ResolvedPathGenericArgument>,
+    pub generic_arguments: Vec<FQGenericArgument>,
 }
 
-impl ResolvedPathSegment {
+impl FQPathSegment {
     /// Create a new segment without generic arguments.
     pub fn new(ident: String) -> Self {
         Self {
@@ -109,8 +109,8 @@ impl ResolvedPathSegment {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub enum ResolvedPathGenericArgument {
-    Type(ResolvedPathType),
+pub enum FQGenericArgument {
+    Type(FQPathType),
     Lifetime(ResolvedPathLifetime),
 }
 
@@ -121,21 +121,21 @@ pub enum ResolvedPathLifetime {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub enum ResolvedPathType {
-    ResolvedPath(ResolvedPathResolvedPathType),
-    Reference(ResolvedPathReference),
-    Tuple(ResolvedPathTuple),
+pub enum FQPathType {
+    ResolvedPath(FQResolvedPathType),
+    Reference(FQReference),
+    Tuple(FQTuple),
     ScalarPrimitive(ScalarPrimitive),
-    Slice(ResolvedPathSlice),
+    Slice(FQSlice),
 }
 
-impl ResolvedPathType {
+impl FQPathType {
     pub fn resolve(
         &self,
         krate_collection: &CrateCollection,
     ) -> Result<ResolvedType, anyhow::Error> {
         match self {
-            ResolvedPathType::ResolvedPath(p) => {
+            FQPathType::ResolvedPath(p) => {
                 let resolved_item = p.path.find_rustdoc_item_type(krate_collection)?.1;
                 let item = &resolved_item.item;
                 let used_by_package_id = resolved_item.item_id.package_id();
@@ -164,10 +164,10 @@ impl ResolvedPathType {
                 for (i, param_def) in generic_param_def.iter().enumerate() {
                     let arg = if let Some(arg) = last_segment.generic_arguments.get(i) {
                         match arg {
-                            ResolvedPathGenericArgument::Type(t) => {
+                            FQGenericArgument::Type(t) => {
                                 GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                             }
-                            ResolvedPathGenericArgument::Lifetime(l) => match l {
+                            FQGenericArgument::Lifetime(l) => match l {
                                 ResolvedPathLifetime::Static => {
                                     GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                                 }
@@ -220,12 +220,12 @@ impl ResolvedPathType {
                 }
                 .into())
             }
-            ResolvedPathType::Reference(r) => Ok(ResolvedType::Reference(TypeReference {
+            FQPathType::Reference(r) => Ok(ResolvedType::Reference(TypeReference {
                 is_mutable: r.is_mutable,
                 lifetime: r.lifetime.clone(),
                 inner: Box::new(r.inner.resolve(krate_collection)?),
             })),
-            ResolvedPathType::Tuple(t) => {
+            FQPathType::Tuple(t) => {
                 let elements = t
                     .elements
                     .iter()
@@ -233,8 +233,8 @@ impl ResolvedPathType {
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ResolvedType::Tuple(Tuple { elements }))
             }
-            ResolvedPathType::ScalarPrimitive(s) => Ok(ResolvedType::ScalarPrimitive(s.clone())),
-            ResolvedPathType::Slice(s) => {
+            FQPathType::ScalarPrimitive(s) => Ok(ResolvedType::ScalarPrimitive(s.clone())),
+            FQPathType::Slice(s) => {
                 let inner = s.element.resolve(krate_collection)?;
                 Ok(ResolvedType::Slice(Slice {
                     element_type: Box::new(inner),
@@ -250,35 +250,35 @@ impl ResolvedPathType {
     /// arguments (if any).
     fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
         match self {
-            ResolvedPathType::ResolvedPath(p) => {
+            FQPathType::ResolvedPath(p) => {
                 p.path.collect_package_ids(package_ids);
             }
-            ResolvedPathType::Reference(r) => {
+            FQPathType::Reference(r) => {
                 r.inner.collect_package_ids(package_ids);
             }
-            ResolvedPathType::Tuple(t) => {
+            FQPathType::Tuple(t) => {
                 for element in &t.elements {
                     element.collect_package_ids(package_ids);
                 }
             }
-            ResolvedPathType::ScalarPrimitive(_) => {
+            FQPathType::ScalarPrimitive(_) => {
                 package_ids.insert(&CORE_PACKAGE_ID);
             }
-            ResolvedPathType::Slice(s) => {
+            FQPathType::Slice(s) => {
                 s.element.collect_package_ids(package_ids);
             }
         }
     }
 }
 
-impl From<ResolvedType> for ResolvedPathType {
+impl From<ResolvedType> for FQPathType {
     fn from(value: ResolvedType) -> Self {
         match value {
             ResolvedType::ResolvedPath(p) => {
-                let mut segments: Vec<ResolvedPathSegment> = p
+                let mut segments: Vec<FQPathSegment> = p
                     .base_type
                     .iter()
-                    .map(|s| ResolvedPathSegment {
+                    .map(|s| FQPathSegment {
                         ident: s.to_string(),
                         generic_arguments: vec![],
                     })
@@ -288,42 +288,36 @@ impl From<ResolvedType> for ResolvedPathType {
                         .generic_arguments
                         .into_iter()
                         .map(|t| match t {
-                            GenericArgument::TypeParameter(t) => {
-                                ResolvedPathGenericArgument::Type(t.into())
-                            }
+                            GenericArgument::TypeParameter(t) => FQGenericArgument::Type(t.into()),
                             GenericArgument::Lifetime(l) => match l {
                                 GenericLifetimeParameter::Static => {
-                                    ResolvedPathGenericArgument::Lifetime(
-                                        ResolvedPathLifetime::Static,
-                                    )
+                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Static)
                                 }
                                 GenericLifetimeParameter::Named(name) => {
-                                    ResolvedPathGenericArgument::Lifetime(
-                                        ResolvedPathLifetime::Named(name),
-                                    )
+                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Named(name))
                                 }
                             },
                         })
                         .collect();
                 }
-                ResolvedPathType::ResolvedPath(ResolvedPathResolvedPathType {
-                    path: Box::new(ResolvedPath {
+                FQPathType::ResolvedPath(FQResolvedPathType {
+                    path: Box::new(FQPath {
                         segments,
                         qualified_self: None,
                         package_id: p.package_id,
                     }),
                 })
             }
-            ResolvedType::Reference(r) => ResolvedPathType::Reference(ResolvedPathReference {
+            ResolvedType::Reference(r) => FQPathType::Reference(FQReference {
                 is_mutable: r.is_mutable,
                 lifetime: r.lifetime,
                 inner: Box::new((*r.inner).into()),
             }),
-            ResolvedType::Tuple(t) => ResolvedPathType::Tuple(ResolvedPathTuple {
+            ResolvedType::Tuple(t) => FQPathType::Tuple(FQTuple {
                 elements: t.elements.into_iter().map(|e| e.into()).collect(),
             }),
-            ResolvedType::ScalarPrimitive(s) => ResolvedPathType::ScalarPrimitive(s),
-            ResolvedType::Slice(s) => ResolvedPathType::Slice(ResolvedPathSlice {
+            ResolvedType::ScalarPrimitive(s) => FQPathType::ScalarPrimitive(s),
+            ResolvedType::Slice(s) => FQPathType::Slice(FQSlice {
                 element: Box::new((*s.element_type).into()),
             }),
             ResolvedType::Generic(_) => {
@@ -335,28 +329,28 @@ impl From<ResolvedType> for ResolvedPathType {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct ResolvedPathResolvedPathType {
-    pub path: Box<ResolvedPath>,
+pub struct FQResolvedPathType {
+    pub path: Box<FQPath>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct ResolvedPathReference {
+pub struct FQReference {
     pub is_mutable: bool,
     pub lifetime: Lifetime,
-    pub inner: Box<ResolvedPathType>,
+    pub inner: Box<FQPathType>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct ResolvedPathTuple {
-    pub elements: Vec<ResolvedPathType>,
+pub struct FQTuple {
+    pub elements: Vec<FQPathType>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct ResolvedPathSlice {
-    pub element: Box<ResolvedPathType>,
+pub struct FQSlice {
+    pub element: Box<FQPathType>,
 }
 
-impl PartialEq for ResolvedPath {
+impl PartialEq for FQPath {
     fn eq(&self, other: &Self) -> bool {
         // Using destructuring syntax to make sure we get a compiler error
         // if a new field gets added, as a reminder to update this Hash implementation.
@@ -392,7 +386,7 @@ impl PartialEq for ResolvedPath {
     }
 }
 
-impl Hash for ResolvedPath {
+impl Hash for FQPath {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Using destructuring syntax to make sure we get a compiler error
         // if a new field gets added, as a reminder to update this Hash implementation.
@@ -420,7 +414,7 @@ pub enum PathKind {
     Type,
 }
 
-impl ResolvedPath {
+impl FQPath {
     pub fn parse(
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
@@ -545,15 +539,16 @@ impl ResolvedPath {
         arg: &CallPathGenericArgument,
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
-    ) -> Result<ResolvedPathGenericArgument, ParseError> {
+    ) -> Result<FQGenericArgument, ParseError> {
         match arg {
-            CallPathGenericArgument::Type(t) => Self::parse_call_path_type(t, identifiers, graph)
-                .map(ResolvedPathGenericArgument::Type),
+            CallPathGenericArgument::Type(t) => {
+                Self::parse_call_path_type(t, identifiers, graph).map(FQGenericArgument::Type)
+            }
             CallPathGenericArgument::Lifetime(l) => match l {
-                CallPathLifetime::Static => Ok(ResolvedPathGenericArgument::Lifetime(
-                    ResolvedPathLifetime::Static,
-                )),
-                CallPathLifetime::Named(name) => Ok(ResolvedPathGenericArgument::Lifetime(
+                CallPathLifetime::Static => {
+                    Ok(FQGenericArgument::Lifetime(ResolvedPathLifetime::Static))
+                }
+                CallPathLifetime::Named(name) => Ok(FQGenericArgument::Lifetime(
                     ResolvedPathLifetime::Named(name.to_owned()),
                 )),
             },
@@ -564,17 +559,15 @@ impl ResolvedPath {
         type_: &CallPathType,
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
-    ) -> Result<ResolvedPathType, ParseError> {
+    ) -> Result<FQPathType, ParseError> {
         match type_ {
             CallPathType::ResolvedPath(p) => {
                 let resolved_path = Self::parse_call_path(p.path.deref(), identifiers, graph)?;
-                Ok(ResolvedPathType::ResolvedPath(
-                    ResolvedPathResolvedPathType {
-                        path: Box::new(resolved_path),
-                    },
-                ))
+                Ok(FQPathType::ResolvedPath(FQResolvedPathType {
+                    path: Box::new(resolved_path),
+                }))
             }
-            CallPathType::Reference(r) => Ok(ResolvedPathType::Reference(ResolvedPathReference {
+            CallPathType::Reference(r) => Ok(FQPathType::Reference(FQReference {
                 is_mutable: r.is_mutable,
                 lifetime: r.lifetime.clone(),
                 inner: Box::new(Self::parse_call_path_type(
@@ -588,12 +581,12 @@ impl ResolvedPath {
                 for element in t.elements.iter() {
                     elements.push(Self::parse_call_path_type(element, identifiers, graph)?);
                 }
-                Ok(ResolvedPathType::Tuple(ResolvedPathTuple { elements }))
+                Ok(FQPathType::Tuple(FQTuple { elements }))
             }
             CallPathType::Slice(s) => {
                 let element_type =
                     Self::parse_call_path_type(s.element_type.deref(), identifiers, graph)?;
-                Ok(ResolvedPathType::Slice(ResolvedPathSlice {
+                Ok(FQPathType::Slice(FQSlice {
                     element: Box::new(element_type),
                 }))
             }
@@ -612,7 +605,7 @@ impl ResolvedPath {
                 .iter()
                 .map(|arg| Self::parse_call_path_generic_argument(arg, identifiers, graph))
                 .collect::<Result<Vec<_>, _>>()?;
-            let segment = ResolvedPathSegment {
+            let segment = FQPathSegment {
                 ident: raw_segment.ident.to_string(),
                 generic_arguments,
             };
@@ -620,7 +613,7 @@ impl ResolvedPath {
         }
 
         let qself = if let Some(qself) = &path.qualified_self {
-            Some(ResolvedPathQualifiedSelf {
+            Some(FQQualifiedSelf {
                 position: qself.position,
                 type_: Self::parse_call_path_type(&qself.type_, identifiers, graph)?,
             })
@@ -697,7 +690,7 @@ impl ResolvedPath {
             .qualified_self
             .as_ref()
             .map(|qself| {
-                if let ResolvedPathType::ResolvedPath(p) = &qself.type_ {
+                if let FQPathType::ResolvedPath(p) = &qself.type_ {
                     p.path
                         .find_rustdoc_item_type(krate_collection)
                         .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))
@@ -717,7 +710,7 @@ impl ResolvedPath {
         let (method_name_segment, type_path_segments) = self.segments.split_last().unwrap();
 
         // Let's first try to see if the parent path points to a type, that we'll consider to be `Self`
-        let method_owner_path = ResolvedPath {
+        let method_owner_path = FQPath {
             segments: type_path_segments.to_vec(),
             qualified_self: None,
             package_id: self.package_id.clone(),
@@ -799,7 +792,7 @@ impl ResolvedPath {
             }
         }
 
-        let method_path = ResolvedPath {
+        let method_path = FQPath {
             segments: method_owner_path
                 .segments
                 .iter()
@@ -833,7 +826,7 @@ impl ResolvedPath {
     pub fn find_rustdoc_item_type<'a>(
         &self,
         krate_collection: &'a CrateCollection,
-    ) -> Result<(ResolvedPath, ResolvedItem<'a>), UnknownPath> {
+    ) -> Result<(FQPath, ResolvedItem<'a>), UnknownPath> {
         krate_collection
             .get_type_by_resolved_path(self.clone())
             .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?
@@ -883,7 +876,7 @@ impl ResolvedPath {
 #[derive(Debug)]
 pub enum CallableItem<'a> {
     /// Functions are free-standing and map to a single `rustdoc` item.
-    Function(ResolvedItem<'a>, ResolvedPath),
+    Function(ResolvedItem<'a>, FQPath),
     /// Methods are associated with a type.
     /// They can either be inherent or trait methods.
     /// In the latter case, the `qualified_self` field will be populated with
@@ -891,29 +884,29 @@ pub enum CallableItem<'a> {
     Method {
         /// The item to which the method belongs.
         /// This can be a trait, for a trait method, or a struct/enum for an inherent method.
-        method_owner: (ResolvedItem<'a>, ResolvedPath),
-        method: (ResolvedItem<'a>, ResolvedPath),
+        method_owner: (ResolvedItem<'a>, FQPath),
+        method: (ResolvedItem<'a>, FQPath),
         /// The `self` type of the method.
         /// It's only populated when working with trait methods.
-        qualified_self: Option<(ResolvedItem<'a>, ResolvedPath)>,
+        qualified_self: Option<(ResolvedItem<'a>, FQPath)>,
     },
 }
 
-impl ResolvedPathType {
+impl FQPathType {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         match self {
-            ResolvedPathType::ResolvedPath(p) => p.render_path(id2name, buffer),
-            ResolvedPathType::Reference(r) => r.render_path(id2name, buffer),
-            ResolvedPathType::Tuple(t) => t.render_path(id2name, buffer),
-            ResolvedPathType::ScalarPrimitive(s) => {
+            FQPathType::ResolvedPath(p) => p.render_path(id2name, buffer),
+            FQPathType::Reference(r) => r.render_path(id2name, buffer),
+            FQPathType::Tuple(t) => t.render_path(id2name, buffer),
+            FQPathType::ScalarPrimitive(s) => {
                 write!(buffer, "{s}").unwrap();
             }
-            ResolvedPathType::Slice(s) => s.render_path(id2name, buffer),
+            FQPathType::Slice(s) => s.render_path(id2name, buffer),
         }
     }
 }
 
-impl ResolvedPathSlice {
+impl FQSlice {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         write!(buffer, "[").unwrap();
         self.element.render_path(id2name, buffer);
@@ -921,13 +914,13 @@ impl ResolvedPathSlice {
     }
 }
 
-impl ResolvedPathGenericArgument {
+impl FQGenericArgument {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         match self {
-            ResolvedPathGenericArgument::Type(t) => {
+            FQGenericArgument::Type(t) => {
                 t.render_path(id2name, buffer);
             }
-            ResolvedPathGenericArgument::Lifetime(l) => match l {
+            FQGenericArgument::Lifetime(l) => match l {
                 ResolvedPathLifetime::Static => {
                     write!(buffer, "'static").unwrap();
                 }
@@ -941,13 +934,13 @@ impl ResolvedPathGenericArgument {
     }
 }
 
-impl ResolvedPathResolvedPathType {
+impl FQResolvedPathType {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         self.path.render_path(id2name, buffer);
     }
 }
 
-impl ResolvedPathTuple {
+impl FQTuple {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         write!(buffer, "(").unwrap();
         let mut types = self.elements.iter().peekable();
@@ -961,7 +954,7 @@ impl ResolvedPathTuple {
     }
 }
 
-impl ResolvedPathReference {
+impl FQReference {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         write!(buffer, "&").unwrap();
         if self.is_mutable {
@@ -971,7 +964,7 @@ impl ResolvedPathReference {
     }
 }
 
-impl Display for ResolvedPath {
+impl Display for FQPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let last_segment_index = self.segments.len().saturating_sub(1);
         let mut qself_closing_wedge_index = None;
@@ -992,35 +985,35 @@ impl Display for ResolvedPath {
     }
 }
 
-impl Display for ResolvedPathType {
+impl Display for FQPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ResolvedPathType::ResolvedPath(p) => write!(f, "{}", p),
-            ResolvedPathType::Reference(r) => write!(f, "{}", r),
-            ResolvedPathType::Tuple(t) => write!(f, "{}", t),
-            ResolvedPathType::ScalarPrimitive(s) => {
+            FQPathType::ResolvedPath(p) => write!(f, "{}", p),
+            FQPathType::Reference(r) => write!(f, "{}", r),
+            FQPathType::Tuple(t) => write!(f, "{}", t),
+            FQPathType::ScalarPrimitive(s) => {
                 write!(f, "{}", s)
             }
-            ResolvedPathType::Slice(s) => {
+            FQPathType::Slice(s) => {
                 write!(f, "{}", s)
             }
         }
     }
 }
 
-impl Display for ResolvedPathSlice {
+impl Display for FQSlice {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{}]", self.element)
     }
 }
 
-impl Display for ResolvedPathResolvedPathType {
+impl Display for FQResolvedPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path)
     }
 }
 
-impl Display for ResolvedPathReference {
+impl Display for FQReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "&")?;
         if self.is_mutable {
@@ -1030,7 +1023,7 @@ impl Display for ResolvedPathReference {
     }
 }
 
-impl Display for ResolvedPathTuple {
+impl Display for FQTuple {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "(")?;
         let last_element_index = self.elements.len().saturating_sub(1);
@@ -1044,7 +1037,7 @@ impl Display for ResolvedPathTuple {
     }
 }
 
-impl Display for ResolvedPathSegment {
+impl Display for FQPathSegment {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.ident)?;
         if !self.generic_arguments.is_empty() {
@@ -1064,13 +1057,13 @@ impl Display for ResolvedPathSegment {
     }
 }
 
-impl Display for ResolvedPathGenericArgument {
+impl Display for FQGenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ResolvedPathGenericArgument::Type(t) => {
+            FQGenericArgument::Type(t) => {
                 write!(f, "{}", t)
             }
-            ResolvedPathGenericArgument::Lifetime(l) => {
+            FQGenericArgument::Lifetime(l) => {
                 write!(f, "{}", l)
             }
         }
@@ -1112,7 +1105,7 @@ impl Display for PathMustBeAbsolute {
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
-pub struct UnknownPath(pub ResolvedPath, #[source] Arc<anyhow::Error>);
+pub struct UnknownPath(pub FQPath, #[source] Arc<anyhow::Error>);
 
 impl Display for UnknownPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

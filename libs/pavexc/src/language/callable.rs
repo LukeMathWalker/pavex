@@ -8,7 +8,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{Lifetime, ResolvedPath, ResolvedType};
+use crate::language::{FQPath, Lifetime, ResolvedType};
 use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
@@ -21,7 +21,7 @@ pub struct Callable {
     /// It is **NOT** set to `true` if the function doesn't use the `async` keyword but returns
     /// a type that implements the `Future` trait.
     pub is_async: bool,
-    /// `true` if the first input parameter to the callable is `&self` or `&mut self`.  
+    /// `true` if the first input parameter to the callable is `&self` or `&mut self`.
     /// This is relevant to determine borrow relationships between the callable inputs and outputs
     /// in case some lifetime parameters were elided.
     ///
@@ -33,7 +33,7 @@ pub struct Callable {
     /// The fully-qualified path pointing at this callable.
     ///
     /// E.g. `std::vec::Vec::new` for `Vec::new()`.
-    pub path: ResolvedPath,
+    pub path: FQPath,
     /// The types of the callable input parameter types.
     /// The list is ordered, matching the order in the callable declaration—this is relevant
     /// to ensure correct invocations.
@@ -45,7 +45,7 @@ pub struct Callable {
     /// defined.
     ///
     /// It is optional to allow for flexible usage patterns—e.g. to leverage [`Callable`]
-    /// to work with callables that we want to code-generate into a new crate.  
+    /// to work with callables that we want to code-generate into a new crate.
     pub source_coordinates: Option<GlobalItemId>,
 }
 
@@ -100,7 +100,7 @@ impl Callable {
     }
 
     /// Returns a new [`Callable`] where all lifetime parameters in the
-    /// output type (if present) are explicitly named.  
+    /// output type (if present) are explicitly named.
     ///
     /// This is relevant to ensure correct borrow relationships between the callable
     /// inputs and outputs in case some lifetime parameters were elided.

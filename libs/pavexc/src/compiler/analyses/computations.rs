@@ -4,7 +4,7 @@ use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::computation::Computation;
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{CallableResolutionError, resolve_callable};
-use crate::language::{Callable, ResolvedPath};
+use crate::language::{Callable, FQPath};
 use crate::rustdoc::CrateCollection;
 
 pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
@@ -39,7 +39,7 @@ impl ComputationDb {
     pub(crate) fn resolve_and_intern(
         &mut self,
         krate_collection: &CrateCollection,
-        resolved_path: &ResolvedPath,
+        resolved_path: &FQPath,
         user_component_id: Option<UserComponentId>,
     ) -> Result<ComputationId, CallableResolutionError> {
         let callable = resolve_callable(krate_collection, resolved_path)?;
