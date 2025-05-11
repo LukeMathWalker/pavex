@@ -9,7 +9,7 @@ mod formatter;
 mod telemetry;
 
 use anyhow::Context;
-use cargo_like_utils::shell::Shell;
+use cargo_like_utils::shell::{Shell, Verbosity};
 use clap::{Parser, Subcommand};
 use formatter::ReversedFull;
 use generate_from_path::GenerateArgs;
@@ -38,6 +38,14 @@ const INTROSPECTION_HEADING: &str = "Introspection";
 struct Cli {
     #[clap(long, env = "PAVEXC_COLOR", default_value_t = Color::Auto)]
     color: Color,
+    #[clap(
+        long,
+        short,
+        env = "PAVEXC_QUIET",
+        help = "Pavexc will minimize its terminal output",
+        long_help = "Pavexc will only report errors and warnings to the terminal."
+    )]
+    quiet: bool,
     #[clap(subcommand)]
     command: Commands,
     #[clap(
@@ -237,7 +245,7 @@ fn init_telemetry(
     chrome_guard
 }
 
-fn init_shell(color: Color) -> Result<(), anyhow::Error> {
+fn init_shell(color: Color, quiet: bool) -> Result<(), anyhow::Error> {
     let mut shell = Shell::new();
     shell
         .set_color_choice(Some(match color {
@@ -246,6 +254,9 @@ fn init_shell(color: Color) -> Result<(), anyhow::Error> {
             Color::Never => "never",
         }))
         .context("Failed to configure shell output")?;
+    if quiet {
+        shell.set_verbosity(Verbosity::Quiet);
+    }
     try_init_shell(shell);
     Ok(())
 }
@@ -292,7 +303,7 @@ fn main() -> ExitCode {
 }
 
 fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
-    init_shell(cli.color).map_err(|e| e.into_miette())?;
+    init_shell(cli.color, cli.quiet).map_err(|e| e.into_miette())?;
 
     tracing::trace!(cli = ?cli, "`pavexc` CLI options and flags");
     match cli.command {

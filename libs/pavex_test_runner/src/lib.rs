@@ -782,6 +782,7 @@ fn code_generation_test(
         .env("PAVEX_TEST_CLI_PATH", pavex_cli)
         .env("UI_TEST_DIR", &test.definition_directory)
         .env("PAVEX_PAVEXC", pavexc_cli)
+        .env("PAVEXC_QUIET", "true")
         .env("PAVEXC_CACHE_WORKSPACE_PACKAGES", "true")
         .env("PAVEXC_PRECOMPUTED_METADATA", metadata)
         .current_dir(&test.definition_directory)
