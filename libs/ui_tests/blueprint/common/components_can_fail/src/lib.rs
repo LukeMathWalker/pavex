@@ -74,6 +74,14 @@ impl CustomError {
     }
 }
 
+#[pavex::wrap(error_handler = "crate::CustomError::into_response")]
+pub fn wrap1<T>(_next: Next<T>) -> Result<Response, CustomError>
+where
+    T: IntoFuture<Output = Response>,
+{
+    todo!()
+}
+
 pub fn wrap<T>(_next: Next<T>) -> Result<Response, CustomError>
 where
     T: IntoFuture<Output = Response>,
@@ -96,6 +104,7 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::constructor::raw::GenericError::<
             std::string::String,
         >::handle));
+    bp.wrap(WRAP_1);
     bp.wrap(f!(crate::wrap))
         .error_handler(f!(crate::CustomError::into_response));
     bp.pre_process(f!(crate::pre))

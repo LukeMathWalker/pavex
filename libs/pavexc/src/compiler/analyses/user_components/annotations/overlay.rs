@@ -1,4 +1,5 @@
 use pavex_bp_schema::{CreatedBy, RawIdentifiers};
+use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::AnnotationProperties;
 
 use crate::{
@@ -7,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    AuxiliaryData, Registration,
+    AuxiliaryData, DiagnosticSink, Registration,
     registry::{AnnotatedItem, AnnotationRegistry},
 };
 
@@ -22,6 +23,7 @@ pub fn augment_from_annotation(
     aux: &mut AuxiliaryData,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
+    diagnostics: &mut DiagnosticSink,
 ) {
     let component_ids: Vec<_> = aux.iter().map(|(id, _)| id).collect();
     for id in component_ids {
@@ -48,9 +50,14 @@ pub fn augment_from_annotation(
             continue;
         }
 
-        let krate = krate_collection
-            .get_crate_by_package_id(&source_id.package_id)
-            .unwrap();
+        let krate = match krate_collection.get_or_compute_crate_by_package_id(&source_id.package_id)
+        {
+            Ok(k) => k,
+            Err(e) => {
+                diagnostics.push(CompilerDiagnostic::builder(e).build());
+                continue;
+            }
+        };
 
         // If that's not the case, we must process it!
         let identifiers = RawIdentifiers {
@@ -69,11 +76,13 @@ pub fn augment_from_annotation(
             let item = krate.get_item_by_local_type_id(&source_id.rustdoc_item_id);
             Registration::annotated_item(&item, krate)
         };
-        aux.intern_component(
+        let error_handler_id = aux.intern_component(
             component,
             aux.id2scope_id[id],
             aux.id2lifecycle[id],
             registration,
         );
+        aux.fallible_id2error_handler_id
+            .insert(id, error_handler_id);
     }
 }

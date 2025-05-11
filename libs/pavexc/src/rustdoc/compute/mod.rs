@@ -27,7 +27,7 @@ use self::toolchain::get_toolchain_crate_docs;
 
 #[derive(Debug, thiserror::Error, Clone)]
 #[error(
-    "I failed to retrieve information about the public types of a package in your workspace ('{package_spec}')."
+    "I failed to retrieve information about the public types of a package in your dependency tree ('{package_spec}')."
 )]
 pub struct CannotGetCrateData {
     pub package_spec: String,

@@ -14,7 +14,6 @@ use super::{
     ScopeId, UserComponent, UserComponentId, UserComponentSource,
     auxiliary::AuxiliaryData,
     imports::ResolvedImport,
-    paths::FQPaths,
     paths::{cannot_resolve_callable_path, invalid_config_type},
 };
 use crate::{
@@ -36,7 +35,7 @@ use crate::{
 use pavex_bp_schema::{
     CloningStrategy, CreatedAt, CreatedBy, Lifecycle, Lint, LintSetting, RawIdentifiers,
 };
-use pavexc_attr_parser::AnnotationProperties;
+use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{Item, ItemEnum};
 
 /// An id pointing at the coordinates of an annotated component.
@@ -46,13 +45,11 @@ pub type AnnotatedItemId = la_arena::Idx<GlobalItemId>;
 pub(super) fn register_imported_components(
     imported_modules: &[(ResolvedImport, usize)],
     aux: &mut AuxiliaryData,
-    resolved_paths: &mut FQPaths,
     computation_db: &mut ComputationDb,
     registry: &AnnotationRegistry,
     krate_collection: &CrateCollection,
     diagnostics: &mut DiagnosticSink,
 ) {
-    let old_n_components = aux.component_interner.len();
     for (import, import_id) in imported_modules {
         let ResolvedImport {
             path: module_path,
@@ -100,6 +97,14 @@ pub(super) fn register_imported_components(
 
         let annotated_items = &registry[package_id];
         for (id, annotation) in annotated_items.iter() {
+            // Not all components are auto-registered via imports.
+            // In particular, those that are position-sensitive *must* be
+            // registered individually by the user.
+            let kind = annotation.properties.kind();
+            if !(kind == AnnotationKind::Config || kind == AnnotationKind::Constructor) {
+                continue;
+            }
+
             // First check if the item is in scope for the import
             {
                 let id = match &annotation.impl_ {
@@ -152,11 +157,6 @@ pub(super) fn register_imported_components(
                 }
             };
             computation_db.get_or_intern_with_id(callable, user_component_id.into());
-        }
-
-        // We resolve identifiers for all new components.
-        for (id, _) in aux.component_interner.iter().skip(old_n_components) {
-            resolved_paths.from_identifier(id, aux, krate_collection.package_graph(), diagnostics);
         }
     }
 }

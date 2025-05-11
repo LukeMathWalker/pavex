@@ -109,7 +109,7 @@ impl UserComponentDb {
         let mut aux = AuxiliaryData::default();
         let scope_graph = process_blueprint(bp, &mut aux, diagnostics);
         let mut paths = FQPaths::new();
-        paths.from_identifiers(&aux, krate_collection.package_graph(), diagnostics);
+        paths.process_identifiers(&aux, krate_collection.package_graph(), diagnostics);
         let imported_modules = resolve_imports(&aux, krate_collection.package_graph(), diagnostics);
         let router = Router::new(&aux, &scope_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
@@ -126,7 +126,6 @@ impl UserComponentDb {
         register_imported_components(
             &imported_modules,
             &mut aux,
-            &mut paths,
             computation_db,
             &registry,
             krate_collection,
@@ -141,7 +140,13 @@ impl UserComponentDb {
         );
         exit_on_errors!(diagnostics);
 
-        augment_from_annotation(&registry, &mut aux, computation_db, krate_collection);
+        augment_from_annotation(
+            &registry,
+            &mut aux,
+            computation_db,
+            krate_collection,
+            diagnostics,
+        );
         // New paths have been registered, which must be resolved now!
         paths.resolve(
             &mut aux,

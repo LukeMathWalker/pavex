@@ -37,6 +37,13 @@ pub struct FQPaths {
     /// This field is used as cursor to avoid performing redudant resolutions if
     /// later stages need to add (and then resolve) new paths.
     resolved_up_to: usize,
+    /// All raw identifiers until `fully_qualified_up_to` (excluded) have been
+    /// converted into a fully qualified path and add to [`Self::id2resolved_path`]
+    /// (if the conversion was successful).
+    ///
+    /// This field is used as cursor to avoid performing redudant work if
+    /// later stages need to process new identifiers.
+    fully_qualified_up_to: usize,
 }
 
 impl FQPaths {
@@ -46,19 +53,20 @@ impl FQPaths {
     }
 
     /// Process all identifiers that have been registered with [`AuxiliaryData`].
-    pub fn from_identifiers(
+    pub fn process_identifiers(
         &mut self,
         db: &AuxiliaryData,
         package_graph: &PackageGraph,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
-        for (id, _) in db.iter() {
-            self.from_identifier(id, db, package_graph, diagnostics);
+        for (id, _) in db.iter().skip(self.fully_qualified_up_to) {
+            self.process_identifier(id, db, package_graph, diagnostics);
         }
+        self.fully_qualified_up_to = db.iter().len();
     }
 
     /// Process a single raw identifier.
-    pub fn from_identifier(
+    pub fn process_identifier(
         &mut self,
         id: UserComponentId,
         db: &AuxiliaryData,
@@ -106,6 +114,9 @@ impl FQPaths {
         krate_collection: &CrateCollection,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
+        // First make sure we have processed all newly registered identifiers.
+        self.process_identifiers(aux, krate_collection.package_graph(), diagnostics);
+
         let mut config_id2type = std::mem::take(&mut aux.config_id2type);
         for (id, user_component) in aux.iter().skip(self.resolved_up_to) {
             let Some(resolved_path) = self.id2resolved_path.get(&id) else {

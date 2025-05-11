@@ -130,6 +130,12 @@ pub mod route_0 {
     async fn stage_2<'a>(
         s_0: &'a app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
+        let response = wrapping_2(s_0).await;
+        response
+    }
+    async fn stage_3<'a>(
+        s_0: &'a app::constructor::annotated::Singleton,
+    ) -> pavex::response::Response {
         let response = 'incoming: {
             if let Some(response) = pre_processing_0().await.into_response() {
                 break 'incoming response;
@@ -156,6 +162,28 @@ pub mod route_0 {
         let v1 = crate::route_0::Next1 {
             s_0: v0,
             next: stage_2,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = app::wrap1(v2);
+        let v4 = match v3 {
+            Ok(ok) => ok,
+            Err(v4) => {
+                return {
+                    let v5 = app::CustomError::into_response(&v4);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+    }
+    async fn wrapping_2(
+        v0: &app::constructor::annotated::Singleton,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_0::Next2 {
+            s_0: v0,
+            next: stage_3,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::wrap(v2);
@@ -300,6 +328,23 @@ pub mod route_0 {
             (self.next)(self.s_0)
         }
     }
+    struct Next2<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a app::constructor::annotated::Singleton,
+        next: fn(&'a app::constructor::annotated::Singleton) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next2<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
 }
 pub mod route_1 {
     pub async fn entrypoint<'a>(
@@ -315,6 +360,12 @@ pub mod route_1 {
         response
     }
     async fn stage_2<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = wrapping_2(s_0).await;
+        response
+    }
+    async fn stage_3<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let response = 'incoming: {
@@ -343,6 +394,28 @@ pub mod route_1 {
         let v1 = crate::route_1::Next1 {
             s_0: v0,
             next: stage_2,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = app::wrap1(v2);
+        let v4 = match v3 {
+            Ok(ok) => ok,
+            Err(v4) => {
+                return {
+                    let v5 = app::CustomError::into_response(&v4);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+    }
+    async fn wrapping_2(
+        v0: &pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_1::Next2 {
+            s_0: v0,
+            next: stage_3,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::wrap(v2);
@@ -423,6 +496,23 @@ pub mod route_1 {
         next: fn(&'a pavex::router::AllowedMethods) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next1<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+    struct Next2<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::router::AllowedMethods,
+        next: fn(&'a pavex::router::AllowedMethods) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next2<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
