@@ -4,7 +4,7 @@ starter_project_folder: demo
 snippets:
   - name: "blueprint_definition"
     source_path: "app/src/blueprint.rs"
-    ranges: ["6..16"]
+    ranges: ["5..21"]
   - name: "route_registration"
     source_path: "app/src/routes/mod.rs"
     ranges: ["2.."]
@@ -62,8 +62,8 @@ steps:
         ranges: [".."]
       - name: "register_common_invocation"
         source_path: "app/src/blueprint.rs"
-        ranges: ["6..10", "14..15"]
-        hl_lines: [4]
+        ranges: ["9..16"]
+        hl_lines: [5, 6, 7]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -95,8 +95,8 @@ steps:
         ranges: ["0..2", "10..23"]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: ["2..3", "7..8", "12..13", "16..17"]
-        hl_lines: [6]
+        ranges: ["9..16"]
+        hl_lines: [3, 4]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -104,7 +104,7 @@ steps:
     snippets:
       - name: "extract"
         source_path: "app/src/user_agent.rs"
-        ranges: ["0..2", "10..19"]
+        ranges: ["0..2", "10..21"]
     commands:
       - command: "cargo px c -q"
         expected_outcome: "failure"
@@ -113,11 +113,11 @@ steps:
     snippets:
       - name: "error_handler"
         source_path: "app/src/user_agent.rs"
-        ranges: ["21..25"]
+        ranges: ["23..28"]
       - name: "register"
-        source_path: "app/src/blueprint.rs"
-        ranges: ["7..8", "12..14", "17..18"]
-        hl_lines: [5]
+        source_path: "app/src/user_agent.rs"
+        ranges: ["13..21"]
+        hl_lines: [2]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"

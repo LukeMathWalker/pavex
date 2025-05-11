@@ -2,7 +2,9 @@
 use pavex::http::header::{ToStrError, USER_AGENT};
 use pavex::request::RequestHead;
 // [...]
+
 impl UserAgent {
+    #[request_scoped]
     pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
             return Ok(UserAgent::Unknown);

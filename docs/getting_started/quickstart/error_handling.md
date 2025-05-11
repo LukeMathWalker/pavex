@@ -38,7 +38,7 @@ Define a new `invalid_user_agent` function in `app/src/user_agent.rs`:
 
 --8<-- "doc_examples/quickstart/08-error_handler.snap"
 
-Then register the error handler with the [`Blueprint`][Blueprint]:
+Then attach the error handler to the fallible constructor, using its fully-qualified path:
 
 --8<-- "doc_examples/quickstart/08-register.snap"
 

@@ -1,9 +1,11 @@
-```rust title="app/src/blueprint.rs" hl_lines="5"
-// [...]
-pub fn blueprint() -> Blueprint {
+```rust title="app/src/user_agent.rs" hl_lines="2"
     // [...]
-    bp.request_scoped(f!(crate::user_agent::UserAgent::extract))
-        .error_handler(f!(crate::user_agent::invalid_user_agent));
-        // [...]
-}
+    #[request_scoped(error_handler = "crate::user_agent::invalid_user_agent")]
+    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError> {
+        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+            return Ok(UserAgent::Unknown);
+        };
+
+        user_agent.to_str().map(|s| UserAgent::Known(s.into()))
+    }
 ```

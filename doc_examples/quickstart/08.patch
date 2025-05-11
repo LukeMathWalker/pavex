@@ -1,34 +1,32 @@
-diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
-index fb0ef2c..2602c1b 100644
---- a/app/src/blueprint.rs
-+++ b/app/src/blueprint.rs
-@@ -10,7 +10,8 @@ pub fn blueprint() -> Blueprint {
-     ApiKit::new().register(&mut bp);
-     telemetry::register(&mut bp);
-     configuration::register(&mut bp);
--    bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
-+    bp.request_scoped(f!(crate::user_agent::UserAgent::extract))
-+        .error_handler(f!(crate::user_agent::invalid_user_agent));
-
-     routes::register(&mut bp);
-     bp
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
-index bb1f65b..78360bd 100644
+index 7418512..a080d37 100644
 --- a/app/src/user_agent.rs
 +++ b/app/src/user_agent.rs
-@@ -1,5 +1,6 @@
+@@ -1,6 +1,7 @@
  use pavex::http::header::{ToStrError, USER_AGENT};
  use pavex::request::RequestHead;
+ use pavex::request_scoped;
 +use pavex::response::Response;
 
  pub enum UserAgent {
      /// No `User-Agent` header was provided.
-@@ -17,3 +18,8 @@ impl UserAgent {
+@@ -10,8 +11,8 @@ pub enum UserAgent {
+ }
+
+ impl UserAgent {
+-    #[request_scoped]
+-    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
++    #[request_scoped(error_handler = "crate::user_agent::invalid_user_agent")]
++    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError> {
+         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+             return Ok(UserAgent::Unknown);
+         };
+@@ -19,3 +20,8 @@ impl UserAgent {
          user_agent.to_str().map(|s| UserAgent::Known(s.into()))
      }
  }
 +
 +pub fn invalid_user_agent(_e: &ToStrError) -> Response {
-+    Response::bad_request()
-+        .set_typed_body("The `User-Agent` header value can only use ASCII printable characters.")
++    let body = "The `User-Agent` header value can only use ASCII printable characters.";
++    Response::bad_request().set_typed_body(body)
 +}

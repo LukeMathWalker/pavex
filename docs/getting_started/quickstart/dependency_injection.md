@@ -65,19 +65,18 @@ minus the body.
 
 --8<-- "doc_examples/quickstart/06-extract.snap"
 
-Now register the new constructor with the [`Blueprint`][Blueprint]:
+The `#[request_scoped]` annotation tells Pavex that the new method is a **constructor**.\
+
+The "missing constructor" error we were discussing earlier should be fixed now, since
+our [`Blueprint`][Blueprint] imports all constructors defined in the current crate:
 
 --8<-- "doc_examples/quickstart/06-register.snap"
-
-In [`Blueprint::request_scoped`][Blueprint::request_scoped] you must specify
-an [unambiguous path](../../guide/dependency_injection/cookbook.md) to the constructor method,
-wrapped in the [`f!`][f!] macro.
 
 Make sure that the project compiles successfully at this point.
 
 ## Lifecycles
 
-A constructor registered via [`Blueprint::request_scoped`][Blueprint::request_scoped] has
+A constructor registered via [`#[request_scoped]`][request_scoped] has
 a **[request-scoped lifecycle][lifecycle]**: the framework
 will invoke a request-scoped constructor **at most once per request**.
 
@@ -97,7 +96,7 @@ multiple times for the same request.
   As a request-scoped constructor, it's done once and the outcome is reused.
 
 [Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::request_scoped]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
+[request_scoped]: /api_reference/pavex/macro.request_scoped.html
 [f!]: /api_reference/pavex/macro.f!.html
 [PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
 [ApiKit]: /api_reference/pavex/kit/struct.ApiKit.html
