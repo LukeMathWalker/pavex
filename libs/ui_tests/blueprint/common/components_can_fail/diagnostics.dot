@@ -11,50 +11,6 @@ digraph "GET / - 0" {
 }
 
 digraph "GET / - 1" {
-    0 [ label = "0| &app_e501823b::constructor::annotated::Singleton"]
-    1 [ label = "1| crate::route_0::Next1(&'a app_e501823b::constructor::annotated::Singleton) -> crate::route_0::Next1<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next1<'a>) -> pavex::middleware::Next<crate::route_0::Next1<'a>>"]
-    3 [ label = "3| app_e501823b::wrap1(pavex::middleware::Next<crate::route_0::Next1<'a>>) -> core::result::Result<pavex::response::Response, app_e501823b::CustomError>"]
-    4 [ label = "4| `match`"]
-    5 [ label = "5| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> app_e501823b::CustomError"]
-    6 [ label = "6| app_e501823b::CustomError::into_response(&app_e501823b::CustomError) -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "8| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> pavex::response::Response"]
-    9 [ label = "9| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    4 -> 8 [ ]
-    4 -> 5 [ ]
-    5 -> 6 [ label = "&"]
-    8 -> 9 [ ]
-    6 -> 7 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-
-digraph "GET / - 2" {
-    0 [ label = "0| &app_e501823b::constructor::annotated::Singleton"]
-    1 [ label = "1| crate::route_0::Next2(&'a app_e501823b::constructor::annotated::Singleton) -> crate::route_0::Next2<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next2<'a>) -> pavex::middleware::Next<crate::route_0::Next2<'a>>"]
-    3 [ label = "3| app_e501823b::wrap(pavex::middleware::Next<crate::route_0::Next2<'a>>) -> core::result::Result<pavex::response::Response, app_e501823b::CustomError>"]
-    4 [ label = "4| `match`"]
-    5 [ label = "5| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> app_e501823b::CustomError"]
-    6 [ label = "6| app_e501823b::CustomError::into_response(&app_e501823b::CustomError) -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "8| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> pavex::response::Response"]
-    9 [ label = "9| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    4 -> 8 [ ]
-    4 -> 5 [ ]
-    5 -> 6 [ label = "&"]
-    8 -> 9 [ ]
-    6 -> 7 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-
-digraph "GET / - 3" {
     0 [ label = "0| app_e501823b::pre() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_e501823b::CustomError>"]
     1 [ label = "1| `match`"]
     2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_e501823b::CustomError> -> app_e501823b::CustomError"]
@@ -70,7 +26,7 @@ digraph "GET / - 3" {
     0 -> 1 [ ]
 }
 
-digraph "GET / - 4" {
+digraph "GET / - 2" {
     0 [ label = "0| app_e501823b::constructor::raw::a() -> core::result::Result<app_e501823b::constructor::raw::A, app_e501823b::constructor::raw::GenericError<alloc::string::String>>"]
     1 [ label = "1| `match`"]
     2 [ label = "2| core::result::Result<app_e501823b::constructor::raw::A, app_e501823b::constructor::raw::GenericError<alloc::string::String>> -> app_e501823b::constructor::raw::GenericError<alloc::string::String>"]
@@ -113,7 +69,7 @@ digraph "GET / - 4" {
     12 -> 13 [ ]
 }
 
-digraph "GET / - 5" {
+digraph "GET / - 3" {
     0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| app_e501823b::post(pavex::response::Response) -> core::result::Result<pavex::response::Response, app_e501823b::CustomError>"]
     2 [ label = "2| `match`"]
@@ -144,50 +100,6 @@ digraph "* * - 0" {
 }
 
 digraph "* * - 1" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| crate::route_1::Next1(&'a pavex::router::AllowedMethods) -> crate::route_1::Next1<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
-    3 [ label = "3| app_e501823b::wrap1(pavex::middleware::Next<crate::route_1::Next1<'a>>) -> core::result::Result<pavex::response::Response, app_e501823b::CustomError>"]
-    4 [ label = "4| `match`"]
-    5 [ label = "5| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> app_e501823b::CustomError"]
-    6 [ label = "6| app_e501823b::CustomError::into_response(&app_e501823b::CustomError) -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "8| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> pavex::response::Response"]
-    9 [ label = "9| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    4 -> 8 [ ]
-    4 -> 5 [ ]
-    5 -> 6 [ label = "&"]
-    8 -> 9 [ ]
-    6 -> 7 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-
-digraph "* * - 2" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| crate::route_1::Next2(&'a pavex::router::AllowedMethods) -> crate::route_1::Next2<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next2<'a>) -> pavex::middleware::Next<crate::route_1::Next2<'a>>"]
-    3 [ label = "3| app_e501823b::wrap(pavex::middleware::Next<crate::route_1::Next2<'a>>) -> core::result::Result<pavex::response::Response, app_e501823b::CustomError>"]
-    4 [ label = "4| `match`"]
-    5 [ label = "5| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> app_e501823b::CustomError"]
-    6 [ label = "6| app_e501823b::CustomError::into_response(&app_e501823b::CustomError) -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "8| core::result::Result<pavex::response::Response, app_e501823b::CustomError> -> pavex::response::Response"]
-    9 [ label = "9| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    4 -> 8 [ ]
-    4 -> 5 [ ]
-    5 -> 6 [ label = "&"]
-    8 -> 9 [ ]
-    6 -> 7 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-
-digraph "* * - 3" {
     0 [ label = "0| app_e501823b::pre() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_e501823b::CustomError>"]
     1 [ label = "1| `match`"]
     2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_e501823b::CustomError> -> app_e501823b::CustomError"]
@@ -203,7 +115,7 @@ digraph "* * - 3" {
     0 -> 1 [ ]
 }
 
-digraph "* * - 4" {
+digraph "* * - 2" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -211,7 +123,7 @@ digraph "* * - 4" {
     0 -> 1 [ ]
 }
 
-digraph "* * - 5" {
+digraph "* * - 3" {
     0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| app_e501823b::post(pavex::response::Response) -> core::result::Result<pavex::response::Response, app_e501823b::CustomError>"]
     2 [ label = "2| `match`"]
