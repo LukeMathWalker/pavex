@@ -81,7 +81,7 @@ impl CallPath {
     pub fn parse_type_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let callable_path: TypePath =
             syn::parse_str(identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_identifiers: identifiers.to_owned(),
+                raw_path: identifiers.raw_path().to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(callable_path.path, None)
@@ -90,7 +90,7 @@ impl CallPath {
     pub fn parse_callable_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let expr =
             syn::parse_str::<ExprPath>(identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_identifiers: identifiers.to_owned(),
+                raw_path: identifiers.raw_path().to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(expr.path, expr.qself)
@@ -317,15 +317,9 @@ impl Display for CallPathLifetime {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
+#[error("`{raw_path}` is not a valid import path")]
 pub struct InvalidCallPath {
-    pub(crate) raw_identifiers: RawIdentifiers,
+    pub(crate) raw_path: String,
     #[source]
     pub(crate) parsing_error: syn::Error,
-}
-
-impl Display for InvalidCallPath {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let path = self.raw_identifiers.raw_path();
-        write!(f, "`{path}` is not a valid import path.")
-    }
 }

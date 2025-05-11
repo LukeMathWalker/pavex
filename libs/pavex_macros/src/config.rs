@@ -130,8 +130,8 @@ fn reject_invalid_input(input: TokenStream) -> Result<(), TokenStream> {
     };
     must_be_public(
         "Configuration types",
-        &raw_item.visibility(),
-        &raw_item.ident(),
+        raw_item.visibility(),
+        raw_item.ident(),
         &raw_item,
     )?;
     Ok(())

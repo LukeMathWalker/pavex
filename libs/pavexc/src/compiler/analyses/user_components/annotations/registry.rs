@@ -62,7 +62,7 @@ impl AnnotationRegistry {
             .import_index
             .items
             .iter()
-            .filter_map(|(id, entry)| entry.is_public().then(|| QueueItem::Standalone(*id)))
+            .filter_map(|(id, entry)| entry.is_public().then_some(QueueItem::Standalone(*id)))
             .collect();
 
         while let Some(queue_item) = queue.pop_last() {
@@ -188,7 +188,7 @@ fn check_item_compatibility(
             if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {}
         _ => {
             // TODO: Only emit an error if it's a workspace package.
-            unsupported_item_kind(annotation.attribute(), &item, diagnostics);
+            unsupported_item_kind(annotation.attribute(), item, diagnostics);
             return Err(());
         }
     }

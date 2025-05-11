@@ -485,7 +485,7 @@ fn invalid_identifiers(
     let source = diagnostics.annotated(db.registration_target(&id), label_msg);
     let help = match &e {
         ParseError::InvalidPath(inner) => {
-            inner.raw_identifiers.import_path.strip_suffix("()").map(|stripped| format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))
+            inner.raw_path.strip_suffix("()").map(|stripped| format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))
         }
         ParseError::PathMustBeAbsolute(_) =>
             Some(

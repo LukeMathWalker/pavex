@@ -41,7 +41,7 @@ pub fn dependency_name2package_id(
     let name = normalize(name);
 
     let used_in_package = graph
-        .metadata(&used_in)
+        .metadata(used_in)
         // This could happen if `used_in_id` was a toolchain crate id,
         // but I doubt `std` will ever register Pavex components directly,
         // so we can safely assume that the package metadata exists.
