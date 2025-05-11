@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-use crate::utils::validation::must_be_public;
+use crate::utils::{deny_unreachable_pub_attr, validation::must_be_public};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::wrap]`.
@@ -98,12 +98,14 @@ fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream 
             });
     };
 
+    let deny_unreachable_pub = deny_unreachable_pub_attr();
+
     let input: proc_macro2::TokenStream = input.into();
     quote! {
         #id_def
 
         #[diagnostic::pavex::wrap(#properties)]
-        #[deny(unreachable_pub)]
+        #deny_unreachable_pub
         #input
     }
     .into()

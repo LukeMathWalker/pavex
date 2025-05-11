@@ -10,6 +10,12 @@ license.workspace = true
 [lib]
 proc-macro = true
 
+[features]
+# Allow items annotated with our macros to be marked as `pub` without being
+# reachable from outside the crate they were defined into.
+# This is necessary to get doc-tests compiling in the `pavex` crate.
+allow_unreachable_pub = []
+
 [dependencies]
 pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.1.80" }
 darling = { workspace = true }

@@ -1,5 +1,5 @@
 use crate::utils::validation::must_be_public;
-use crate::utils::{CloningStrategy, CloningStrategyFlags};
+use crate::utils::{CloningStrategy, CloningStrategyFlags, deny_unreachable_pub_attr};
 use darling::FromMeta;
 use darling::util::Flag;
 use lifecycle::Lifecycle;
@@ -219,10 +219,12 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
         });
     }
 
+    let deny_unreachable_pub = deny_unreachable_pub_attr();
+
     let input: proc_macro2::TokenStream = input.into();
     quote! {
         #[diagnostic::pavex::constructor(#properties)]
-        #[deny(unreachable_pub)]
+        #deny_unreachable_pub
         #input
     }
     .into()

@@ -94,3 +94,7 @@ tracing = { workspace = true }
 reqwest = { workspace = true }
 itertools = { workspace = true }
 pavex_tracing = { path = "../pavex_tracing" }
+
+pavex_macros = { path = "../pavex_macros", features = [
+    "allow_unreachable_pub",
+], version = "0.1.80" }
