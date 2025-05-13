@@ -1,0 +1,16 @@
+[package]
+name = "pavex_session_redis"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+pavex = { version = "0.1.80", path = "../pavex" }
+pavex_session = { version = "0.1.80", path = "../pavex_session" }
+redis = { version = "0.31.0", features = ["tokio-comp", "aio", "connection-manager"] }
+tokio = { workspace = true }
+serde_json = { workspace = true }
