@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "./pavex*",
-    "generate_from_path",
+    "generate_from_path", "pavex_session_redis",
     "pavexc_attr_parser",
     "persist_if_changed",
     "px_workspace_hack",
@@ -83,6 +83,8 @@ r2d2 = "0.8"
 r2d2_sqlite = "0.25.0"
 rayon = "1.10"
 redact = "0.1.11"
+redact = "0.1.10"
+redis = { version = "0.31.0", features = ["tokio-comp", "aio", "connection-manager"] }
 regex = "1.11.1"
 relative-path = "2.0"
 remove_dir_all = "1"
