@@ -30,7 +30,9 @@ allow = [
     "BSL-1.0",
     "OpenSSL",
     "Zlib",
+    "CDLA-Permissive-2.0",
 ]
+unused-allowed-license = "allow"
 confidence-threshold = 0.8
 
 [[licenses.clarify]]
