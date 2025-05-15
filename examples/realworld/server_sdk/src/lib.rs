@@ -1101,7 +1101,7 @@ pub mod route_3 {
         s_4: &'d jsonwebtoken::EncodingKey,
         s_5: pavex::request::path::MatchedPathPattern,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_4, s_1, s_5, s_2, s_0, s_3).await;
+        let response = wrapping_1(s_1, s_5, s_2, s_0, s_3, s_4).await;
         response
     }
     async fn stage_2<'a, 'b, 'c, 'd, 'e>(
@@ -1139,22 +1139,22 @@ pub mod route_3 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
     }
     async fn wrapping_1(
-        v0: &'_ jsonwebtoken::EncodingKey,
-        v1: pavex::request::body::RawIncomingBody,
-        v2: pavex::request::path::MatchedPathPattern,
-        v3: &pavex::request::RequestHead,
-        v4: &biscotti::Processor,
-        v5: &sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
+        v0: pavex::request::body::RawIncomingBody,
+        v1: pavex::request::path::MatchedPathPattern,
+        v2: &pavex::request::RequestHead,
+        v3: &biscotti::Processor,
+        v4: &sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
+        v5: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
         let v6 = pavex::telemetry::ServerRequestId::generate();
-        let v7 = app::telemetry::root_span(v3, v2, v6);
+        let v7 = app::telemetry::root_span(v2, v1, v6);
         let v8 = crate::route_3::Next1 {
-            s_0: v4,
+            s_0: v3,
             s_1: &v7,
-            s_2: v1,
-            s_3: v3,
-            s_4: v5,
-            s_5: v0,
+            s_2: v0,
+            s_3: v2,
+            s_4: v4,
+            s_5: v5,
             next: stage_2,
         };
         let v9 = pavex::middleware::Next::new(v8);
@@ -1328,7 +1328,7 @@ pub mod route_4 {
         s_4: &'d jsonwebtoken::EncodingKey,
         s_5: pavex::request::path::MatchedPathPattern,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_4, s_1, s_5, s_2, s_0, s_3).await;
+        let response = wrapping_1(s_1, s_5, s_2, s_0, s_3, s_4).await;
         response
     }
     async fn stage_2<'a, 'b, 'c, 'd, 'e>(
@@ -1366,22 +1366,22 @@ pub mod route_4 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
     }
     async fn wrapping_1(
-        v0: &'_ jsonwebtoken::EncodingKey,
-        v1: pavex::request::body::RawIncomingBody,
-        v2: pavex::request::path::MatchedPathPattern,
-        v3: &pavex::request::RequestHead,
-        v4: &biscotti::Processor,
-        v5: &sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
+        v0: pavex::request::body::RawIncomingBody,
+        v1: pavex::request::path::MatchedPathPattern,
+        v2: &pavex::request::RequestHead,
+        v3: &biscotti::Processor,
+        v4: &sqlx_core::pool::Pool<sqlx_postgres::Postgres>,
+        v5: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
         let v6 = pavex::telemetry::ServerRequestId::generate();
-        let v7 = app::telemetry::root_span(v3, v2, v6);
+        let v7 = app::telemetry::root_span(v2, v1, v6);
         let v8 = crate::route_4::Next1 {
-            s_0: v4,
+            s_0: v3,
             s_1: &v7,
-            s_2: v1,
-            s_3: v3,
-            s_4: v5,
-            s_5: v0,
+            s_2: v0,
+            s_3: v2,
+            s_4: v4,
+            s_5: v5,
             next: stage_2,
         };
         let v9 = pavex::middleware::Next::new(v8);
