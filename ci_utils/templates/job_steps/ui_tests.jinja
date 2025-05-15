@@ -7,8 +7,11 @@
     rustflags: ""
     cache-workspaces: "./libs -> ./target"
 <% include 'setup_pavex' %>
-- name: Run tests
+- name: Run UI tests
+  env:
+    PAVEX_TEST_CLI_PATH: << pavex_path(target) >>
+    PAVEXC_TEST_CLI_PATH: << pavexc_path(target) >>
   working-directory: libs
   run: |
-    cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros"
+    cargo test --package pavex_cli
 <%- endblock %>

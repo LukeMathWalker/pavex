@@ -10,5 +10,5 @@
 - name: Run tests
   working-directory: libs
   run: |
-    cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros"
+    cargo test -p pavex_macros
 <%- endblock %>
