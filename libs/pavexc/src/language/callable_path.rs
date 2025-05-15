@@ -317,7 +317,7 @@ impl Display for CallPathLifetime {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("`{raw_path}` is not a valid import path")]
+#[error("`{raw_path}` is not a valid import path.")]
 pub struct InvalidCallPath {
     pub(crate) raw_path: String,
     #[source]
