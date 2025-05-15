@@ -67,7 +67,7 @@ minus the body.
 The `#[request_scoped]` annotation tells Pavex that the new method is a **constructor**.\
 
 Try to recompile the project—there should be no error now.\
-The new constructor was picked up immediately because our [`Blueprint`][Blueprint] 
+The new constructor was picked up immediately because our [`Blueprint`][Blueprint]
 is configured to import all constructors defined in the current crate:
 
 --8<-- "doc_examples/quickstart/06-register.snap"
@@ -80,7 +80,7 @@ will invoke a request-scoped constructor **at most once per request**.
 
 You can register constructors with two other lifecycles: **[singleton][lifecycle]**
 and **[transient][lifecycle]**.\
-Singletons are built once and shared across requests. 
+Singletons are built once and shared across requests.
 Transient constructors, instead, are invoked every time their output type is needed—potentially
 multiple times for the same request.
 
