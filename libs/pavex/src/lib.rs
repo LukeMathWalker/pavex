@@ -38,7 +38,7 @@ pub mod time {
 
 pub use pavex_macros::config;
 
-/// Mark a function (or method) as a constructor.
+/// Define a constructor.
 ///
 /// Pavex will use the annotated function whenever it needs to create a new instance of
 /// its output type.
@@ -104,7 +104,8 @@ pub use pavex_macros::config;
 ///
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::constructor;
-/// Mark a function (or method) as a request-scoped constructor.
+
+/// Define a request-scoped constructor.
 ///
 /// Request-scoped constructors are invoked once per request to create a new instance
 /// of their output type. The created instance is cached for the duration of the request
@@ -146,7 +147,7 @@ pub use pavex_macros::constructor;
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::request_scoped;
 
-/// Mark a function (or method) as a singleton constructor.
+/// Define a singleton constructor.
 ///
 /// Singleton constructors are invoked once (when the application starts up) to create
 /// a new instance of their output type. The created instance is then shared across all
@@ -188,7 +189,7 @@ pub use pavex_macros::request_scoped;
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::singleton;
 
-/// Mark a function (or method) as a transient constructor.
+/// Define a transient constructor.
 ///
 /// Transient constructors are invoked each time a new instance of their output type
 /// is needed, even within the same request. The created instances are not cached.
@@ -229,4 +230,91 @@ pub use pavex_macros::singleton;
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::transient;
 
+/// Define a wrapping middleware.
+///
+/// # Example
+///
+/// A middleware that applies a timeout to all incoming requests:
+///
+/// ```rust
+/// use pavex::middleware::Next;
+/// use pavex::response::Response;
+/// use tokio::time::error::Elapsed;
+///
+/// #[pavex::wrap]
+/// pub async fn timeout<C>(next: Next<C>) -> Result<Response, Elapsed>
+/// where
+///     C: IntoFuture<Output = Response>,
+/// {
+///     let max_duration = std::time::Duration::from_secs(20);
+///     tokio::time::timeout(max_duration, next.into_future()).await
+/// }
+/// ```
+///
+/// # Guide
+///
+/// Check out the ["Middlewares"](https://pavex.dev/docs/guide/middleware/)
+/// section of Pavex's guide for a thorough introduction to middlewares
+/// in Pavex applications.
+///
+/// # Registration
+///
+/// You must invoke [`Blueprint::wrap`] to register the newly-defined middleware
+/// with your [`Blueprint`].
+/// `#[pavex::wrap]` generates a constant that can be used to refer to
+/// the newly-defined middleware when interacting with your [`Blueprint`]:
+///
+/// ```rust
+/// use pavex::blueprint::Blueprint;
+///
+/// # use pavex::middleware::Next;
+/// # use pavex::response::Response;
+/// # use tokio::time::error::Elapsed;
+/// # #[pavex::wrap]
+/// # pub async fn timeout<C>(next: Next<C>) -> Result<Response, Elapsed>
+/// # where
+/// #     C: IntoFuture<Output = Response>,
+/// # {
+/// #     let max_duration = std::time::Duration::from_secs(20);
+/// #     tokio::time::timeout(max_duration, next.into_future()).await
+/// # }
+/// #
+/// # fn main() {
+/// let mut bp = Blueprint::new();
+/// // The generated constant, by default, is named `<fn_name>_ID`,
+/// // with `<fn_name>` converted to constant casing.
+/// bp.wrap(TIMEOUT_ID);
+/// # }
+/// ```
+///
+/// You can choose to customize the name of the generated constant via the `id`
+/// macro argument:
+///
+/// ```rust
+/// use pavex::blueprint::Blueprint;
+/// use pavex::middleware::Next;
+/// use pavex::response::Response;
+/// use tokio::time::error::Elapsed;
+///
+/// // Custom id name 👇
+/// #[pavex::wrap(id = "MY_TIMEOUT")]
+/// pub async fn timeout<C>(next: Next<C>) -> Result<Response, Elapsed>
+/// where
+///     C: IntoFuture<Output = Response>,
+/// {
+///     // [...]
+///     # let max_duration = std::time::Duration::from_secs(20);
+///     # tokio::time::timeout(max_duration, next.into_future()).await
+/// }
+///
+/// # fn main() {
+/// let mut bp = Blueprint::new();
+/// // Later used to register the middleware.
+/// //          👇
+/// bp.wrap(MY_TIMEOUT);
+/// # }
+/// ```
+///
+/// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
+/// [`Blueprint`]: crate::blueprint::Blueprint
 pub use pavex_macros::wrap;
