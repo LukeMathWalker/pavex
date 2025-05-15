@@ -1,7 +1,7 @@
 # Error handling
 
 In `UserAgent::extract` you're only handling the happy path:
-the method panics if the `User-Agent` header contains characters that are not [ASCII printable](https://www.ascii-code.com/characters/printable-characters).
+the method panics if the `User-Agent` header contains characters that are not [ASCII printable](https://en.wikipedia.org/wiki/ASCII#Printable_character_table).
 Panicking for bad user input is poor behavior: you should handle the issue gracefully and return an error instead.
 
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
