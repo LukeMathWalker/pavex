@@ -132,6 +132,7 @@ pub struct RawIdentifiers {
 /// [`t!`]: crate::t
 macro_rules! f {
     ($p:expr) => {{
+        #[allow(unexpected_cfgs)]
         #[cfg(pavex_ide_hint)]
         let x = $p();
 
@@ -165,6 +166,7 @@ macro_rules! t {
     // The `ty` designator is more restrictive than the `expr` designator, so it's
     // the first one we try to match.
     ($t:ty) => {{
+        #[allow(unexpected_cfgs)]
         #[cfg(pavex_ide_hint)]
         const P: $t;
         $crate::with_location!($crate::blueprint::reflection::RawIdentifiers {
