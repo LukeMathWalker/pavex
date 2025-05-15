@@ -46,6 +46,8 @@ fn main() {
         ),
         ("is_up_to_date_steps", "job_steps/is_up_to_date.jinja"),
         ("tests_steps", "job_steps/tests.jinja"),
+        ("macro_tests_steps", "job_steps/macro_tests.jinja"),
+        ("ui_tests_steps", "job_steps/ui_tests.jinja"),
         ("setup_pavex", "setup_pavex.jinja"),
     ];
     let templates: Vec<_> = templates
