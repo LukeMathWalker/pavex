@@ -17,7 +17,7 @@ use super::{
 ///
 /// # Guide
 ///
-/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/json/)
+/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/json/)
 /// of Pavex's guide for a thorough introduction to `JsonBody`.
 ///
 /// # Example

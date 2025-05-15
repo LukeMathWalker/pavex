@@ -18,7 +18,7 @@ use serde::Deserialize;
 ///
 /// # Guide
 ///
-/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/url_encoded/)
+/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/url_encoded/)
 /// of Pavex's guide for a thorough introduction to `UrlEncodedBody`.
 ///
 /// # Example
