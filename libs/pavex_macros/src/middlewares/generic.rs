@@ -7,7 +7,7 @@ use syn::Ident;
 use crate::utils::{deny_unreachable_pub_attr, validation::must_be_public};
 
 #[derive(darling::FromMeta, Debug, Clone)]
-/// The available options for `#[pavex::wrap]`.
+/// The available options for middleware macros.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
     pub error_handler: Option<String>,
@@ -28,8 +28,33 @@ pub struct Properties {
     pub error_handler: Option<String>,
 }
 
-pub fn wrap(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let name = match reject_invalid_input(input.clone(), "#[pavex::wrap]") {
+#[derive(Clone, Copy)]
+pub enum MiddlewareKind {
+    Wrap,
+    PreProcess,
+    PostProcess,
+}
+
+impl MiddlewareKind {
+    pub fn macro_name(&self) -> &'static str {
+        match self {
+            MiddlewareKind::Wrap => "wrap",
+            MiddlewareKind::PreProcess => "pre_process",
+            MiddlewareKind::PostProcess => "post_process",
+        }
+    }
+
+    pub fn attr(&self) -> &'static str {
+        match self {
+            MiddlewareKind::Wrap => "#[pavex::wrap]",
+            MiddlewareKind::PreProcess => "#[pavex::pre_process]",
+            MiddlewareKind::PostProcess => "#[pavex::post_process]",
+        }
+    }
+}
+
+pub fn middleware(kind: MiddlewareKind, metadata: TokenStream, input: TokenStream) -> TokenStream {
+    let name = match reject_invalid_input(input.clone(), kind.attr()) {
         Ok(name) => name,
         Err(err) => return err,
     };
@@ -48,7 +73,7 @@ pub fn wrap(metadata: TokenStream, input: TokenStream) -> TokenStream {
             return err.write_errors().into();
         }
     };
-    emit(name, properties, input)
+    emit(kind, name, properties, input)
 }
 
 fn reject_invalid_input(
@@ -71,7 +96,12 @@ fn reject_invalid_input(
 
 /// Decorate the input with a `#[diagnostic::pavex::wrap]` attribute
 /// that matches the provided properties.
-fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream {
+fn emit(
+    kind: MiddlewareKind,
+    name: Ident,
+    properties: Properties,
+    input: TokenStream,
+) -> TokenStream {
     let Properties { id, error_handler } = properties;
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
@@ -90,8 +120,19 @@ fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream 
         });
     }
 
-    let id_docs = format!(
-        r#"A strongly-typed id to add [`{name}`] as a wrapping middleware to your Pavex application.
+    let id_docs = {
+        let adj = match kind {
+            MiddlewareKind::Wrap => "wrapping",
+            MiddlewareKind::PreProcess => "pre-processing",
+            MiddlewareKind::PostProcess => "post-processing",
+        };
+        let bp_method_name = match kind {
+            MiddlewareKind::Wrap => "wrap",
+            MiddlewareKind::PreProcess => "pre_process",
+            MiddlewareKind::PostProcess => "post_process",
+        };
+        format!(
+            r#"A strongly-typed id to add [`{name}`] as a {adj} middleware to your Pavex application.
 
 # Example
 
@@ -101,26 +142,29 @@ use pavex::blueprint::Blueprint;
 // ^ Import `{id}` here
 
 let mut bp = Blueprint::new();
-// Add `{name}` as a wrapping middleware to your application.
-bp.wrap({id});
+// Add `{name}` as a {adj} middleware to your application.
+bp.{bp_method_name}({id});
 ```"#
-    );
+        )
+    };
+    let macro_name = kind.macro_name();
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
         pub const #id: ::pavex::blueprint::reflection::WithLocation<::pavex::blueprint::reflection::RawIdentifiers> =
             ::pavex::with_location!(::pavex::blueprint::reflection::RawIdentifiers {
                 import_path: concat!(module_path!(), "::", #name),
-                macro_name: "wrap",
+                macro_name: #macro_name,
             });
     };
 
     let deny_unreachable_pub = deny_unreachable_pub_attr();
 
     let input: proc_macro2::TokenStream = input.into();
+    let macro_name = format_ident!("{macro_name}");
     quote! {
         #id_def
 
-        #[diagnostic::pavex::wrap(#properties)]
+        #[diagnostic::pavex::#macro_name(#properties)]
         #deny_unreachable_pub
         #input
     }
