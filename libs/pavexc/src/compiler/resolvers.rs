@@ -12,9 +12,9 @@ use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type
 use tracing_log_error::log_error;
 
 use crate::language::{
-    Callable, CallableItem, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle,
-    PathType, ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathSegment,
-    ResolvedPathType, ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
+    Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
+    GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
+    ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
 };
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
@@ -351,7 +351,7 @@ pub(crate) fn resolve_type(
 
 pub(crate) fn resolve_callable(
     krate_collection: &CrateCollection,
-    callable_path: &ResolvedPath,
+    callable_path: &FQPath,
 ) -> Result<Callable, CallableResolutionError> {
     let callable_items = callable_path.find_rustdoc_callable_items(krate_collection)??;
     let (callable_item, new_callable_path) = match &callable_items {
@@ -417,7 +417,7 @@ pub(crate) fn resolve_callable(
     for (generic_arg, generic_def) in fn_generic_args.iter().zip(&fn_generics_defs.params) {
         let generic_name = &generic_def.name;
         match generic_arg {
-            ResolvedPathGenericArgument::Type(t) => {
+            FQGenericArgument::Type(t) => {
                 let resolved_type =
                     t.resolve(krate_collection)
                         .map_err(|e| GenericParameterResolutionError {
@@ -430,7 +430,7 @@ pub(crate) fn resolve_callable(
                     .types
                     .insert(generic_name.to_owned(), resolved_type);
             }
-            ResolvedPathGenericArgument::Lifetime(l) => {
+            FQGenericArgument::Lifetime(l) => {
                 let resolved_lifetime = l.to_string();
                 generic_bindings
                     .lifetimes
@@ -513,7 +513,7 @@ pub(crate) fn resolve_callable(
                     Ok(canonical_segments) => {
                         let mut segments: Vec<_> = canonical_segments
                             .iter()
-                            .map(|s| ResolvedPathSegment {
+                            .map(|s| FQPathSegment {
                                 ident: s.into(),
                                 generic_arguments: vec![],
                             })
@@ -522,7 +522,7 @@ pub(crate) fn resolve_callable(
                         // so we need to add them back in.
                         segments.last_mut().unwrap().generic_arguments =
                             self_.1.segments.last().unwrap().generic_arguments.clone();
-                        Some(ResolvedPath {
+                        Some(FQPath {
                             segments,
                             qualified_self: self_.1.qualified_self.clone(),
                             package_id: self_.0.item_id.package_id.clone(),
@@ -547,7 +547,7 @@ pub(crate) fn resolve_callable(
                 // We have already canonicalized the parent path, so we just need to append the method name and we're done.
                 let mut segments = p.segments;
                 segments.push(callable_path.segments.last().unwrap().clone());
-                ResolvedPath {
+                FQPath {
                     segments,
                     qualified_self: callable_path.qualified_self.clone(),
                     package_id: p.package_id.clone(),
@@ -561,7 +561,7 @@ pub(crate) fn resolve_callable(
                     Ok(p) => {
                         let mut segments: Vec<_> = p
                             .iter()
-                            .map(|s| ResolvedPathSegment {
+                            .map(|s| FQPathSegment {
                                 ident: s.into(),
                                 generic_arguments: vec![],
                             })
@@ -574,7 +574,7 @@ pub(crate) fn resolve_callable(
                             .unwrap()
                             .generic_arguments
                             .clone();
-                        ResolvedPath {
+                        FQPath {
                             segments,
                             qualified_self: callable_path.qualified_self.clone(),
                             package_id: callable_item.item_id.package_id.clone(),
@@ -609,7 +609,7 @@ pub(crate) fn resolve_callable(
 
 fn get_trait_generic_bindings(
     resolved_item: &ResolvedItem,
-    path: &ResolvedPath,
+    path: &FQPath,
     krate_collection: &CrateCollection,
     generic_bindings: &mut GenericBindings,
 ) -> Result<(), anyhow::Error> {
@@ -624,7 +624,7 @@ fn get_trait_generic_bindings(
         .iter()
         .zip(path.segments.last().unwrap().generic_arguments.iter())
     {
-        if let ResolvedPathGenericArgument::Type(t) = assigned_parameter {
+        if let FQGenericArgument::Type(t) = assigned_parameter {
             // TODO: handle conflicts
             generic_bindings
                 .types
@@ -635,11 +635,11 @@ fn get_trait_generic_bindings(
 }
 
 pub(crate) fn resolve_type_path(
-    path: &ResolvedPath,
+    path: &FQPath,
     krate_collection: &CrateCollection,
 ) -> Result<ResolvedType, TypeResolutionError> {
     fn _resolve_type_path(
-        path: &ResolvedPath,
+        path: &FQPath,
         krate_collection: &CrateCollection,
     ) -> Result<ResolvedType, anyhow::Error> {
         let item = path.find_rustdoc_item_type(krate_collection)?.1;
@@ -653,7 +653,7 @@ pub(crate) fn resolve_type_path(
 }
 
 pub(crate) fn resolve_type_path_with_item(
-    path: &ResolvedPath,
+    path: &FQPath,
     resolved_item: &ResolvedItem,
     krate_collection: &CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
@@ -666,10 +666,10 @@ pub(crate) fn resolve_type_path_with_item(
     for segment in first_segments {
         for generic_path in &segment.generic_arguments {
             let arg = match generic_path {
-                ResolvedPathGenericArgument::Type(t) => {
+                FQGenericArgument::Type(t) => {
                     GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
-                ResolvedPathGenericArgument::Lifetime(l) => match l {
+                FQGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => {
                         GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                     }
@@ -692,10 +692,10 @@ pub(crate) fn resolve_type_path_with_item(
     for (i, generic_def) in generic_defs.iter().enumerate() {
         let arg = if let Some(generic_path) = last_segment.generic_arguments.get(i) {
             match generic_path {
-                ResolvedPathGenericArgument::Type(t) => {
+                FQGenericArgument::Type(t) => {
                     GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
-                ResolvedPathGenericArgument::Lifetime(l) => match l {
+                FQGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => {
                         GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                     }
@@ -771,7 +771,7 @@ pub(crate) enum CallableResolutionError {
 #[derive(Debug, thiserror::Error)]
 #[error("I can't resolve `{path}` to a type.")]
 pub(crate) struct TypeResolutionError {
-    path: ResolvedPath,
+    path: FQPath,
     #[source]
     pub source: anyhow::Error,
 }
@@ -781,14 +781,14 @@ pub(crate) struct TypeResolutionError {
     "I can work with functions and methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here."
 )]
 pub(crate) struct UnsupportedCallableKind {
-    pub import_path: ResolvedPath,
+    pub import_path: FQPath,
     pub item_kind: String,
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("One of the input parameters for `{callable_path}` has a type that I can't handle.")]
 pub(crate) struct InputParameterResolutionError {
-    pub callable_path: ResolvedPath,
+    pub callable_path: FQPath,
     pub callable_item: rustdoc_types::Item,
     pub parameter_type: Type,
     pub parameter_index: usize,
@@ -799,7 +799,7 @@ pub(crate) struct InputParameterResolutionError {
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("I can't handle the `Self` type for `{path}`.")]
 pub(crate) struct SelfResolutionError {
-    pub path: ResolvedPath,
+    pub path: FQPath,
     #[source]
     pub source: Arc<anyhow::Error>,
 }
@@ -809,9 +809,9 @@ pub(crate) struct SelfResolutionError {
     "I can't handle `{generic_type}`, one of the generic parameters you specified for `{callable_path}`."
 )]
 pub(crate) struct GenericParameterResolutionError {
-    pub callable_path: ResolvedPath,
+    pub callable_path: FQPath,
     pub callable_item: rustdoc_types::Item,
-    pub generic_type: ResolvedPathType,
+    pub generic_type: FQPathType,
     #[source]
     pub source: Arc<anyhow::Error>,
 }
@@ -819,7 +819,7 @@ pub(crate) struct GenericParameterResolutionError {
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("I don't know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
-    pub callable_path: ResolvedPath,
+    pub callable_path: FQPath,
     pub callable_item: rustdoc_types::Item,
     pub output_type: Type,
     #[source]

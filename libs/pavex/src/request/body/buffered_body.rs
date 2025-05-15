@@ -1,11 +1,10 @@
 use bytes::Bytes;
 use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
+use pavex_macros::request_scoped;
 use ubyte::ByteUnit;
 
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::{f, request::RequestHead, request::body::errors::SizeLimitExceeded};
+use crate::{request::RequestHead, request::body::errors::SizeLimitExceeded};
 
 use super::{
     BodySizeLimit, RawIncomingBody,
@@ -19,9 +18,9 @@ use super::{
 /// # Guide
 ///
 /// `BufferedBody` is the ideal building block for _other_ extractors that need to
-/// have the entire body available in memory to do their job (e.g. [`JsonBody`](super::JsonBody)).  
+/// have the entire body available in memory to do their job (e.g. [`JsonBody`](super::JsonBody)).
 /// It can also be useful if you need to access the raw bytes of the body ahead of deserialization
-/// (e.g. to compute its hash as a step of a signature verification process).  
+/// (e.g. to compute its hash as a step of a signature verification process).
 ///
 /// Check out the ["Low-level access"](https://pavex.dev/docs/guide/request_data/body/byte_wrappers/)
 /// section of Pavex's guide for a thorough introduction to `BufferedBody`.
@@ -58,6 +57,9 @@ impl BufferedBody {
     /// Default constructor for [`BufferedBody`].
     ///
     /// If extraction fails, an [`ExtractBufferedBodyError`] is returned.
+    #[request_scoped(
+        error_handler = "crate::request::body::errors::ExtractBufferedBodyError::into_response"
+    )]
     pub async fn extract(
         request_head: &RequestHead,
         body: RawIncomingBody,
@@ -74,20 +76,6 @@ impl BufferedBody {
                 Err(e) => Err(UnexpectedBufferError { source: e.into() }.into()),
             },
         }
-    }
-
-    /// Register the [default constructor](Self::default_constructor)
-    /// for [`BufferedBody`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](BufferedBody::extract)
-    /// and [error handler](ExtractBufferedBodyError::into_response)
-    /// for [`BufferedBody`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(super::BufferedBody::extract))
-            .error_handler(f!(super::errors::ExtractBufferedBodyError::into_response))
     }
 
     async fn _extract_with_limit<B>(

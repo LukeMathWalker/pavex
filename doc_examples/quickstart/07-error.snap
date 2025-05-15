@@ -3,11 +3,11 @@
   [31m│[0m register an error handler for it. If I don't have an error handler, I
   [31m│[0m don't know what to do with the error when the constructor fails!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mapp/src/blueprint.rs[0m:12:1]
-  [31m│[0m  [2m12[0m │     configuration::register(&mut bp);
-  [31m│[0m  [2m13[0m │     bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
-  [31m│[0m     · [35;1m                      ────────────────────┬────────────────────[0m
-  [31m│[0m     ·                [35;1mThe fallible constructor was registered here[0m
-  [31m│[0m  [2m14[0m │ 
+  [31m│[0m     ╭─[[36;1;4mapp/src/user_agent.rs[0m:12:1]
+  [31m│[0m  [2m12[0m │     impl UserAgent {
+  [31m│[0m  [2m13[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[request_scoped]
+  [31m│[0m  [2m14[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe fallible constructor was registered here[0m
+  [31m│[0m  [2m15[0m │             let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Add an error handler via `.error_handler`

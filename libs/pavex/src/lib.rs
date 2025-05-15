@@ -19,7 +19,6 @@ pub mod connection;
 pub mod cookie;
 pub mod error;
 pub mod http;
-pub mod kit;
 pub mod middleware;
 pub mod request;
 pub mod response;
@@ -36,6 +35,8 @@ pub mod time {
     //! It's a re-export of the [`jiff@0.2`](https://docs.rs/jiff/0.2) crate.
     pub use jiff::*;
 }
+
+pub use pavex_macros::config;
 
 /// Mark a function (or method) as a constructor.
 ///
@@ -227,3 +228,5 @@ pub use pavex_macros::singleton;
 ///
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::transient;
+
+pub use pavex_macros::wrap;

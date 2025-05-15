@@ -1,7 +1,7 @@
 ```rust title="server_sdk/src/lib.rs"
 // [...]
-pub struct ApplicationConfig {
-    pub database: configuration::base::DatabaseConfig,
-    pub server: configuration::server::ServerConfig,
-}
+pub struct ApplicationConfig {}
+pub struct ApplicationState {}
+impl ApplicationState {
+    pub async fn new(
 ```

@@ -1,0 +1,33 @@
+[33;1mWARNING[0m:
+  [33m⚠[0m `app::A` is never used.
+  [33m│[0m `app::A` is registered as a configuration type, but it is never
+  [33m│[0m injected as an input parameter. Pavex won't include it in the generated
+  [33m│[0m `ApplicationConfig`.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/config/unused_config/src/lib.rs[0m:29:1]
+  [33m│[0m  [2m29[0m │     bp.import(from![crate]);
+  [33m│[0m  [2m30[0m │     bp.config("a", t!(crate::A));
+  [33m│[0m     · [35;1m                   ──────┬─────[0m
+  [33m│[0m     ·                          [35;1m╰── Registered here[0m
+  [33m│[0m  [2m31[0m │     bp.config("b", t!(crate::B)).include_if_unused();
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Use `include_if_unused` if you want to force Pavex to include a
+  [33m│[0m         `app::A` field in `ApplicationConfig`, even if it's not used.
+[33;1mWARNING[0m:
+  [33m⚠[0m `app::A1` is never used.
+  [33m│[0m `app::A1` is registered as a configuration type, but it is never
+  [33m│[0m injected as an input parameter. Pavex won't include it in the generated
+  [33m│[0m `ApplicationConfig`.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/config/unused_config/src/lib.rs[0m:8:1]
+  [33m│[0m  [2m 8[0m │
+  [33m│[0m  [2m 9[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Debug, Clone, serde::Deserialize)]
+  [33m│[0m  [2m10[0m │ [35;1m│[0m   #[pavex::config(key = "a1")]
+  [33m│[0m  [2m11[0m │ [35;1m│[0m   // Won't be included in the generated `ApplicationConfig`.
+  [33m│[0m  [2m12[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct A1;
+  [33m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mRegistered here[0m
+  [33m│[0m  [2m13[0m │
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Use `include_if_unused` if you want to force Pavex to include a
+  [33m│[0m         `app::A1` field in `ApplicationConfig`, even if it's not
+  [33m│[0m         used.

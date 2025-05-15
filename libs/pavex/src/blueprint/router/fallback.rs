@@ -78,13 +78,6 @@ impl RegisteredFallback<'_> {
 /// # Guide
 ///
 /// Check out [`Blueprint::fallback`] for an introduction to fallback routes in Pavex.
-///
-/// # Use cases
-///
-/// [`Fallback`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
-/// to allow users to customize (or disable!)
-/// the bundled fallbacks **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct Fallback {
     pub(in crate::blueprint) callable: Callable,

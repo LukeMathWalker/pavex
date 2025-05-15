@@ -6,6 +6,9 @@ pub fn handler() -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![non_existing_dep]);
+    bp.import(from![
+        // Non-existing dependency.
+        non_existing_dep,
+    ]);
     bp
 }

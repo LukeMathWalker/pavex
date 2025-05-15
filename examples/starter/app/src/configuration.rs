@@ -1,21 +1,23 @@
-use pavex::blueprint::Blueprint;
+//! Refer to Pavex's [configuration guide](https://pavex.dev/docs/guide/configuration) for more details
+//! on how to manage configuration values.
 use pavex::server::IncomingStream;
-use pavex::t;
-use pavex::time::SignedDuration;
-use serde::Deserialize;
 
-/// Refer to Pavex's [configuration guide](https://pavex.dev/docs/guide/configuration) for more details
-/// on how to manage configuration values.
-pub fn register(bp: &mut Blueprint) {
-    bp.config("server", t!(self::ServerConfig));
-    // Feel free to delete `GreetConfig` once you start working on your app!
-    // It's here as a reference example on how to add a new configuration type.
-    bp.config("greet", t!(self::GreetConfig));
+#[derive(serde::Deserialize, Clone, Debug)]
+/// A group of configuration values to showcase how app config works.
+///
+/// Feel free to delete `GreetConfig` once you start working on your app!
+/// It's here as a reference example on how to add a new configuration type.
+#[pavex::config(key = "greet")]
+pub struct GreetConfig {
+    /// Say "Hello {name}," rather than "Hello," in the response.
+    pub use_name: bool,
+    /// The message that's appended after the "Hello" line.
+    pub greeting_message: String,
 }
-
 #[derive(serde::Deserialize, Debug, Clone)]
 /// Configuration for the HTTP server used to expose our API
 /// to users.
+#[pavex::config(key = "server", include_if_unused)]
 pub struct ServerConfig {
     /// The port that the server must listen on.
     ///
@@ -42,7 +44,9 @@ fn deserialize_shutdown<'de, D>(deserializer: D) -> Result<std::time::Duration, 
 where
     D: serde::Deserializer<'de>,
 {
-    let duration = SignedDuration::deserialize(deserializer)?;
+    use serde::Deserialize as _;
+
+    let duration = pavex::time::SignedDuration::deserialize(deserializer)?;
     if duration.is_negative() {
         Err(serde::de::Error::custom(
             "graceful shutdown timeout must be positive",
@@ -58,13 +62,4 @@ impl ServerConfig {
         let addr = std::net::SocketAddr::new(self.ip, self.port);
         IncomingStream::bind(addr).await
     }
-}
-
-#[derive(serde::Deserialize, Clone, Debug)]
-/// A group of configuration values to showcase how app config works.
-pub struct GreetConfig {
-    /// Say "Hello {name}," rather than "Hello," in the response.
-    pub use_name: bool,
-    /// The message that's appended after the "Hello" line.
-    pub greeting_message: String,
 }

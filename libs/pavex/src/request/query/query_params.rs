@@ -1,6 +1,5 @@
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::f;
+use pavex_macros::request_scoped;
+
 use crate::request::RequestHead;
 
 use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
@@ -45,6 +44,9 @@ impl<T> QueryParams<T> {
     /// If the extraction fails, an [`ExtractQueryParamsError`] is returned.
     ///
     /// Check out [`QueryParams`] for more information on query parameters.
+    #[request_scoped(
+        error_handler = "crate::request::query::errors::ExtractQueryParamsError::into_response"
+    )]
     pub fn extract<'request>(
         request_head: &'request RequestHead,
     ) -> Result<Self, ExtractQueryParamsError>
@@ -53,22 +55,6 @@ impl<T> QueryParams<T> {
     {
         let query = request_head.target.query().unwrap_or_default();
         parse(query).map(QueryParams)
-    }
-}
-
-impl QueryParams<()> {
-    /// Register the [default constructor](Self::default_constructor)
-    /// for [`QueryParams`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](QueryParams::extract)
-    /// and [error handler](ExtractQueryParamsError::into_response)
-    /// for [`QueryParams`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(super::QueryParams::extract))
-            .error_handler(f!(super::errors::ExtractQueryParamsError::into_response))
     }
 }
 

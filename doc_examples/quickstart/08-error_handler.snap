@@ -1,7 +1,7 @@
 ```rust title="app/src/user_agent.rs"
 // [...]
 pub fn invalid_user_agent(_e: &ToStrError) -> Response {
-    Response::bad_request()
-        .set_typed_body("The `User-Agent` header value can only use ASCII printable characters.")
+    let body = "The `User-Agent` header value can only use ASCII printable characters.";
+    Response::bad_request().set_typed_body(body)
 }
 ```

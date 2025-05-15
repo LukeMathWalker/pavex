@@ -13,17 +13,13 @@ use super::RegisteredConfigType;
 ///
 /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
 /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
-///
-/// # Use cases
-///
-/// [`ConfigType`] is primarily used by kits to allow users to customize (or disable!)
-/// configuration types **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct ConfigType {
     pub(in crate::blueprint) type_: Type,
     pub(in crate::blueprint) key: String,
     pub(in crate::blueprint) cloning_strategy: Option<CloningStrategy>,
     pub(in crate::blueprint) default_if_missing: Option<bool>,
+    pub(in crate::blueprint) include_if_unused: Option<bool>,
 }
 
 impl ConfigType {
@@ -38,6 +34,7 @@ impl ConfigType {
             key: key.into(),
             cloning_strategy: None,
             default_if_missing: None,
+            include_if_unused: None,
         }
     }
 
@@ -75,6 +72,13 @@ impl ConfigType {
     /// configuration key in the code-generated `ApplicationConfig` struct.
     pub fn default_if_missing(mut self) -> Self {
         self.default_if_missing = Some(true);
+        self
+    }
+
+    /// Include this configuration entry in the generated `ApplicationConfig` struct
+    /// even if the type is never used by the application.
+    pub fn include_if_unused(mut self) -> Self {
+        self.include_if_unused = Some(true);
         self
     }
 

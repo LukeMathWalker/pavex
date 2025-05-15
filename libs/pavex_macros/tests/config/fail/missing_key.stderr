@@ -1,0 +1,7 @@
+error: Missing field `key`
+ --> tests/config/fail/missing_key.rs:3:1
+  |
+3 | #[config]
+  | ^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)

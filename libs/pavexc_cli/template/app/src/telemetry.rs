@@ -1,10 +1,9 @@
 use pavex::blueprint::Blueprint;
-use pavex::f;
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
 use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
-use pavex_tracing::RootSpan;
+use pavex::{f, request_scoped};
 use pavex_tracing::fields::{
     ERROR_DETAILS, ERROR_MESSAGE, ERROR_SOURCE_CHAIN, HTTP_REQUEST_METHOD, HTTP_REQUEST_SERVER_ID,
     HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_VERSION, URL_PATH, URL_QUERY,
@@ -12,18 +11,18 @@ use pavex_tracing::fields::{
     http_request_server_id, http_response_status_code, http_route, network_protocol_version,
     url_path, url_query, user_agent_original,
 };
+use pavex_tracing::{LOGGER_ID, RootSpan};
 use tracing_log_error::log_error;
 
-/// Register telemetry middlewares, an error observer and the relevant constructors
-/// with the application blueprint.
+/// Register telemetry middlewares and an error observer with the application blueprint.
 pub(crate) fn register(bp: &mut Blueprint) {
-    bp.request_scoped(f!(self::root_span)).clone_if_necessary();
-    bp.wrap(f!(pavex_tracing::logger));
+    bp.wrap(LOGGER_ID);
     bp.post_process(f!(self::response_logger));
     bp.error_observer(f!(self::error_logger));
 }
 
 /// Construct a new root span for the given request.
+#[request_scoped(clone_if_necessary)]
 pub fn root_span(
     request_head: &RequestHead,
     matched_path_pattern: MatchedPathPattern,

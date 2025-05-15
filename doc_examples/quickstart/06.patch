@@ -1,28 +1,10 @@
-diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
-index 979d04b..fb0ef2c 100644
---- a/app/src/blueprint.rs
-+++ b/app/src/blueprint.rs
-@@ -1,5 +1,6 @@
- use crate::{configuration, routes, telemetry};
- use pavex::blueprint::Blueprint;
-+use pavex::f;
- use pavex::kit::ApiKit;
-
- /// The main blueprint, containing all the routes, middlewares, constructors and error handlers
-@@ -9,6 +10,7 @@ pub fn blueprint() -> Blueprint {
-     ApiKit::new().register(&mut bp);
-     telemetry::register(&mut bp);
-     configuration::register(&mut bp);
-+    bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
-
-     routes::register(&mut bp);
-     bp
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
 --- a/app/src/user_agent.rs
 +++ b/app/src/user_agent.rs
-@@ -1,6 +1,22 @@
+@@ -1,6 +1,24 @@
 +use pavex::http::header::USER_AGENT;
 +use pavex::request::RequestHead;
++use pavex::request_scoped;
 +
  pub enum UserAgent {
      /// No `User-Agent` header was provided.
@@ -32,6 +14,7 @@ diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
  }
 +
 +impl UserAgent {
++    #[request_scoped]
 +    pub fn extract(request_head: &RequestHead) -> Self {
 +        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
 +            return Self::Unknown;

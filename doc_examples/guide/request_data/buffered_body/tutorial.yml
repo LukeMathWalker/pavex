@@ -5,18 +5,18 @@ commands:
 snippets:
   - name: "installation"
     source_path: "src/blueprint.rs"
-    ranges: [ "0..7", "11..13" ]
-    hl_lines: [ 6, 7 ]
+    ranges: ["0..6", "10..11"]
+    hl_lines: [6]
   - name: "extraction"
     source_path: "src/buffered_body/routes.rs"
-    ranges: [ "0..5", "6..7" ]
-    hl_lines: [ 4 ]
+    ranges: ["0..5", "6..7"]
+    hl_lines: [4]
   - name: "custom_limit"
     source_path: "src/custom_limit/blueprint.rs"
-    ranges: [ "0..14", "20..21" ]
+    ranges: ["0..14", "20..21"]
   - name: "no_limit"
     source_path: "src/no_limit/blueprint.rs"
-    ranges: [ "0..11", "17..18" ]
+    ranges: ["0..11", "17..18"]
   - name: "granular_limits"
     source_path: "src/granular_limits/blueprint.rs"
-    ranges: [ ".." ]
+    ranges: [".."]

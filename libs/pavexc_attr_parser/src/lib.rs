@@ -10,7 +10,9 @@ pub mod model;
 /// It returns `None` for:
 /// - attributes that don't belong to the `diagnostic::pavex` namespace (e.g. `#[inline]`)
 /// - attributes that don't parse successfully into `syn::Attribute`
-pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::AttributeParserError> {
+pub fn parse(
+    attrs: &[String],
+) -> Result<Option<AnnotationProperties>, errors::AttributeParserError> {
     let mut component = None;
     let attrs = attrs
         .iter()
@@ -21,7 +23,7 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
         .flatten();
     for attr in attrs {
         let Some(sub_path) = strip_pavex_path_prefix(attr.path()) else {
-            return Ok(None);
+            continue;
         };
         let Some(component_kind) = sub_path.get_ident() else {
             return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
@@ -30,6 +32,16 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
             "constructor" => {
                 let parsed = model::ConstructorProperties::from_meta(&attr.meta)
                     .map_err(InvalidAttributeParams::constructor)?;
+                parsed.into()
+            }
+            "config" => {
+                let parsed = model::ConfigProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::config)?;
+                parsed.into()
+            }
+            "wrap" => {
+                let parsed = model::WrappingMiddlewareProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::wrap)?;
                 parsed.into()
             }
             _ => {
@@ -46,12 +58,46 @@ pub fn parse(attrs: &[String]) -> Result<Option<AnnotatedComponent>, errors::Att
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AnnotatedComponent {
+pub enum AnnotationProperties {
     Constructor {
         lifecycle: Lifecycle,
         cloning_strategy: Option<CloningStrategy>,
         error_handler: Option<String>,
     },
+    Config {
+        key: String,
+        cloning_strategy: Option<CloningStrategy>,
+        default_if_missing: Option<bool>,
+        include_if_unused: Option<bool>,
+    },
+    WrappingMiddleware {
+        error_handler: Option<String>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AnnotationKind {
+    Constructor,
+    Config,
+    WrappingMiddleware,
+}
+
+impl AnnotationProperties {
+    pub fn attribute(&self) -> &str {
+        match self {
+            AnnotationProperties::Constructor { .. } => "pavex::diagnostic::constructor",
+            AnnotationProperties::Config { .. } => "pavex::diagnostic::config",
+            AnnotationProperties::WrappingMiddleware { .. } => "pavex::diagnostic::wrap",
+        }
+    }
+
+    pub fn kind(&self) -> AnnotationKind {
+        match self {
+            AnnotationProperties::Constructor { .. } => AnnotationKind::Constructor,
+            AnnotationProperties::Config { .. } => AnnotationKind::Config,
+            AnnotationProperties::WrappingMiddleware { .. } => AnnotationKind::WrappingMiddleware,
+        }
+    }
 }
 
 /// Strip the `diagnostic::pavex` prefix from a path.

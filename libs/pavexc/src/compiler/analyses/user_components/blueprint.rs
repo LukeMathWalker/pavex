@@ -1,6 +1,6 @@
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, Domain,
-    ErrorObserver, Fallback, Lifecycle, Location, NestedBlueprint, PathPrefix,
+    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
+    Domain, ErrorObserver, Fallback, Lifecycle, Location, NestedBlueprint, PathPrefix,
     PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route,
     WrappingMiddleware,
 };
@@ -11,6 +11,7 @@ use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId, UserComponent};
+use crate::compiler::app::PAVEX_VERSION;
 use crate::compiler::component::DefaultStrategy;
 
 /// A unique identifier for a `RawCallableIdentifiers`.
@@ -224,9 +225,11 @@ fn _process_blueprint<'a>(
         let raw_callable_identifiers = RawIdentifiers::from_raw_parts(
             "pavex::router::default_fallback".to_owned(),
             CreatedAt {
-                crate_name: "pavex".to_owned(),
+                package_name: "pavex".to_owned(),
+                package_version: PAVEX_VERSION.to_owned(),
                 module_path: "pavex".to_owned(),
             },
+            CreatedBy::Framework,
         );
         let registered_fallback = Fallback {
             request_handler: Callable {
@@ -570,7 +573,7 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
         .get_or_intern(t.input.type_.clone());
     let component = UserComponent::ConfigType {
         key: t.key.clone(),
-        source: identifiers_id,
+        source: identifiers_id.into(),
     };
     let id = aux.intern_component(
         component,
@@ -592,8 +595,10 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
                 DefaultStrategy::Required
             }
         })
-        .unwrap_or(DefaultStrategy::Required);
+        .unwrap_or_default();
     aux.config_id2default_strategy.insert(id, default_strategy);
+    aux.config_id2include_if_unused
+        .insert(id, t.include_if_unused.unwrap_or(false));
 }
 
 /// Process the error handler registered against a (supposedly) fallible component, if
@@ -615,12 +620,14 @@ fn process_error_handler(
         source: identifiers_id.into(),
         fallible_id,
     };
-    aux.intern_component(
+    let error_handler_id = aux.intern_component(
         component,
         scope_id,
         lifecycle,
         error_handler.registered_at.clone().into(),
     );
+    aux.fallible_id2error_handler_id
+        .insert(fallible_id, error_handler_id);
 }
 
 /// Check the path of the registered route.
@@ -718,7 +725,7 @@ mod diagnostics {
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
-            TargetSpan::RoutePath(&aux.id2registration[&route_id]),
+            TargetSpan::RoutePath(&aux.id2registration[route_id]),
             "The path missing a leading '/'",
         );
         let path = &route.path;

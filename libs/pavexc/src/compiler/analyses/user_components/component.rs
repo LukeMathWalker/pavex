@@ -33,7 +33,7 @@ pub enum UserComponent {
         source: RawIdentifierId,
     },
     ConfigType {
-        source: RawIdentifierId,
+        source: UserComponentSource,
         key: String,
     },
     WrappingMiddleware {
@@ -59,10 +59,13 @@ impl UserComponent {
             UserComponent::RequestHandler { source, .. }
             | UserComponent::Fallback { source }
             | UserComponent::PrebuiltType { source }
-            | UserComponent::ConfigType { source, .. }
             | UserComponent::WrappingMiddleware { source }
             | UserComponent::PostProcessingMiddleware { source }
             | UserComponent::PreProcessingMiddleware { source }
+            | UserComponent::ConfigType {
+                source: UserComponentSource::Identifiers(source),
+                ..
+            }
             | UserComponent::Constructor {
                 source: UserComponentSource::Identifiers(source),
             }

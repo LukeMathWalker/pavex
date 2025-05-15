@@ -1,0 +1,4 @@
+description = "Pavex rejects imports if the name doesn't match a module"
+
+[expectations]
+codegen = "fail"

@@ -1,10 +1,7 @@
-use http::HeaderMap;
-use serde::Deserialize;
-
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::f;
 use crate::request::RequestHead;
+use http::HeaderMap;
+use pavex_macros::request_scoped;
+use serde::Deserialize;
 
 use super::{
     buffered_body::BufferedBody,
@@ -20,7 +17,7 @@ use super::{
 ///
 /// # Guide
 ///
-/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/json/)
+/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/json/)
 /// of Pavex's guide for a thorough introduction to `JsonBody`.
 ///
 /// # Example
@@ -62,6 +59,9 @@ impl<T> JsonBody<T> {
     //
     // We are using two separate lifetimes here to make it clear to the compiler
     // that `JsonBody` doesn't borrow from `RequestHead`.
+    #[request_scoped(
+        error_handler = "crate::request::body::errors::ExtractJsonBodyError::into_response"
+    )]
     pub fn extract<'head, 'body>(
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,
@@ -74,21 +74,6 @@ impl<T> JsonBody<T> {
         let body = serde_path_to_error::deserialize(&mut deserializer)
             .map_err(|e| JsonDeserializationError { source: e })?;
         Ok(JsonBody(body))
-    }
-}
-
-impl JsonBody<()> {
-    /// Register the [default constructor](Self::default_constructor)
-    /// for [`JsonBody`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](JsonBody::extract)
-    /// and [error handler](ExtractJsonBodyError::into_response) for [`JsonBody`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(super::JsonBody::extract))
-            .error_handler(f!(super::errors::ExtractJsonBodyError::into_response))
     }
 }
 

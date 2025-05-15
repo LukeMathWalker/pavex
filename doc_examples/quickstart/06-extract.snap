@@ -2,7 +2,9 @@
 use pavex::http::header::USER_AGENT;
 use pavex::request::RequestHead;
 // [...]
+
 impl UserAgent {
+    #[request_scoped]
     pub fn extract(request_head: &RequestHead) -> Self {
         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
             return Self::Unknown;
@@ -13,5 +15,4 @@ impl UserAgent {
             Err(_e) => todo!(),
         }
     }
-}
 ```

@@ -5,7 +5,7 @@ use crate::compiler::analyses::components::{ConsumptionMode, InsertTransformer};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
+use crate::language::{Callable, FQPath, FQPathSegment, InvocationStyle, ResolvedType};
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
 /// error returned by a fallible computation.
@@ -34,13 +34,13 @@ pub(super) fn register_error_new_transformer(
     let pavex_error_path = &pavex_error.resolved_path();
     let pavex_error_new_segments = {
         let mut c = pavex_error_path.segments.clone();
-        c.push(ResolvedPathSegment {
+        c.push(FQPathSegment {
             ident: "new".into(),
             generic_arguments: vec![],
         });
         c
     };
-    let pavex_error_new_path = ResolvedPath {
+    let pavex_error_new_path = FQPath {
         segments: pavex_error_new_segments,
         qualified_self: None,
         package_id: pavex_error.package_id.clone(),

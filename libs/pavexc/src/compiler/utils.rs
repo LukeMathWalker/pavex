@@ -1,11 +1,12 @@
 use guppy::graph::PackageGraph;
 
-use pavex_bp_schema::{RawIdentifiers, CreatedAt};
+use pavex_bp_schema::{CreatedAt, CreatedBy, RawIdentifiers};
 
 use crate::compiler::resolvers::resolve_callable;
-use crate::language::{Callable, GenericArgument, PathKind, ResolvedPath, ResolvedType};
+use crate::language::{Callable, FQPath, GenericArgument, PathKind, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
+use super::app::PAVEX_VERSION;
 use super::resolvers::resolve_type_path;
 
 pub(crate) fn get_ok_variant(t: &ResolvedType) -> &ResolvedType {
@@ -41,11 +42,13 @@ pub(crate) fn process_framework_path(
             // We are relying on a little hack to anchor our search:
             // all framework types belong to crates that are direct dependencies of `pavex`.
             // TODO: find a better way in the future.
-            crate_name: "pavex".to_owned(),
+            package_name: "pavex".to_owned(),
+            package_version: PAVEX_VERSION.to_owned(),
             module_path: "pavex".to_owned(),
         },
+        CreatedBy::Framework,
     );
-    let path = ResolvedPath::parse(
+    let path = FQPath::parse(
         &identifiers,
         krate_collection.package_graph(),
         PathKind::Type,
@@ -66,11 +69,13 @@ pub(crate) fn process_framework_callable_path(
             // We are relying on a little hack to anchor our search:
             // all framework types belong to crates that are direct dependencies of `pavex`.
             // TODO: find a better way in the future.
-            crate_name: "pavex".to_owned(),
+            package_name: "pavex".to_owned(),
+            package_version: PAVEX_VERSION.to_owned(),
             module_path: "pavex".to_owned(),
         },
+        CreatedBy::Framework,
     );
-    let path = ResolvedPath::parse(&identifiers, package_graph, PathKind::Callable).unwrap();
+    let path = FQPath::parse(&identifiers, package_graph, PathKind::Callable).unwrap();
     resolve_callable(krate_collection, &path).unwrap()
 }
 

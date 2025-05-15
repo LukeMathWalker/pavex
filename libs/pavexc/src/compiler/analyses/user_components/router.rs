@@ -145,7 +145,7 @@ impl Router {
                 })
                 .unwrap();
             diagnostics.annotated(
-                TargetSpan::RoutePath(&aux.id2registration[&id]),
+                TargetSpan::RoutePath(&aux.id2registration[id]),
                 "A handler restricted to a specific domain",
             )
         };
@@ -164,7 +164,7 @@ impl Router {
                 })
                 .unwrap();
             diagnostics.annotated(
-                TargetSpan::RoutePath(&aux.id2registration[&id]),
+                TargetSpan::RoutePath(&aux.id2registration[id]),
                 "A handler without a domain restriction",
             )
         };
@@ -871,7 +871,7 @@ fn push_fallback_ambiguity_diagnostic(
         unreachable!()
     };
     let route_source = diagnostics.annotated(
-        TargetSpan::RoutePath(&db.id2registration[&route_id]),
+        TargetSpan::RoutePath(&db.id2registration[route_id]),
         "The path was specified here",
     );
     let route_repr = router_key.diagnostic_repr();
@@ -1043,7 +1043,7 @@ fn push_matchit_diagnostic(
     };
 
     let source = diagnostics.annotated(
-        TargetSpan::RoutePath(&db.id2registration[&id]),
+        TargetSpan::RoutePath(&db.id2registration[id]),
         "The problematic path",
     );
     diagnostics.push(

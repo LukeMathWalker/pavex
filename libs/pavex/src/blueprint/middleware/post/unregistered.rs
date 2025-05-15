@@ -11,13 +11,6 @@ use pavex_bp_schema::Callable;
 ///
 /// Check out [`Blueprint::post_process`] for an introduction to post-processing
 /// middlewares in Pavex.
-///
-/// # Use cases
-///
-/// [`PostProcessingMiddleware`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
-/// to allow users to customize (or disable!)
-/// the bundled middlewares **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct PostProcessingMiddleware {
     pub(in crate::blueprint) callable: Callable,

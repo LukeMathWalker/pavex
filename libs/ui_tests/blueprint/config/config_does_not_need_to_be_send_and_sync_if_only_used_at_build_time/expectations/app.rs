@@ -9,6 +9,7 @@ struct ServerState {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ApplicationConfig {
     pub a: app::A,
+    pub a1: app::A1,
 }
 pub struct ApplicationState {
     pub b: app::B,
@@ -17,11 +18,14 @@ impl ApplicationState {
     pub async fn new(
         app_config: crate::ApplicationConfig,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        Ok(Self::_new(&app_config.a).await)
+        Ok(Self::_new(&app_config.a, &app_config.a1).await)
     }
-    async fn _new(v0: &app::A) -> crate::ApplicationState {
-        let v1 = app::b(v0);
-        crate::ApplicationState { b: v1 }
+    async fn _new(
+        v0: &app::A,
+        v1: &app::A1,
+    ) -> crate::ApplicationState {
+        let v2 = app::b(v0, v1);
+        crate::ApplicationState { b: v2 }
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]

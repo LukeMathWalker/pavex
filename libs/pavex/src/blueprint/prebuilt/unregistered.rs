@@ -13,11 +13,6 @@ use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
 /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
 /// section of Pavex's guide for a thorough introduction to dependency injection
 /// in Pavex applications.
-///
-/// # Use cases
-///
-/// [`PrebuiltType`] is primarily used by kits to allow users to customize (or disable!)
-/// state inputs **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct PrebuiltType {
     pub(in crate::blueprint) type_: Type,

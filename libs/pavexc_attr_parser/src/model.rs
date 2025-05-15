@@ -1,4 +1,6 @@
-use crate::AnnotatedComponent;
+use darling::util::Ignored;
+
+use crate::AnnotationProperties;
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// The way we expect constructor properties to be represented in
@@ -12,12 +14,52 @@ pub struct ConstructorProperties {
     pub error_handler: Option<String>,
 }
 
-impl From<ConstructorProperties> for AnnotatedComponent {
+impl From<ConstructorProperties> for AnnotationProperties {
     fn from(value: ConstructorProperties) -> Self {
-        AnnotatedComponent::Constructor {
+        AnnotationProperties::Constructor {
             lifecycle: value.lifecycle.into(),
             cloning_strategy: value.cloning_strategy.map(Into::into),
             error_handler: value.error_handler,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect wrapping middleware properties to be represented in
+/// `pavex::diagnostic::wrap`.
+pub struct WrappingMiddlewareProperties {
+    pub error_handler: Option<String>,
+    pub id: Ignored,
+}
+
+impl From<WrappingMiddlewareProperties> for AnnotationProperties {
+    fn from(value: WrappingMiddlewareProperties) -> Self {
+        AnnotationProperties::WrappingMiddleware {
+            error_handler: value.error_handler,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect config properties to be represented in
+/// `pavex::diagnostic::config`.
+///
+/// It is a more verbose (but easier to parse) representation than
+/// what is used by `pavex::config`.
+pub struct ConfigProperties {
+    pub key: String,
+    pub cloning_strategy: Option<CloningStrategy>,
+    pub default_if_missing: Option<bool>,
+    pub include_if_unused: Option<bool>,
+}
+
+impl From<ConfigProperties> for AnnotationProperties {
+    fn from(value: ConfigProperties) -> Self {
+        AnnotationProperties::Config {
+            key: value.key,
+            cloning_strategy: value.cloning_strategy.map(Into::into),
+            default_if_missing: value.default_if_missing,
+            include_if_unused: value.include_if_unused,
         }
     }
 }

@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
@@ -16,7 +15,7 @@ use tracing::Span;
 use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
-use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
+use crate::language::{FQGenericArgument, FQPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
@@ -313,9 +312,9 @@ impl CrateCollection {
 
     pub fn get_type_by_resolved_path(
         &self,
-        mut resolved_path: crate::language::ResolvedPath,
+        mut resolved_path: crate::language::FQPath,
     ) -> Result<
-        Result<(crate::language::ResolvedPath, ResolvedItem<'_>), GetItemByResolvedPathError>,
+        Result<(crate::language::FQPath, ResolvedItem<'_>), GetItemByResolvedPathError>,
         CannotGetCrateData,
     > {
         let mut path_without_generics = resolved_path
@@ -396,11 +395,11 @@ impl CrateCollection {
                 let mut name2path_arg = GenericBindings::default();
                 for (path_arg, alias_generic) in path_args.iter().zip(alias_generics.iter()) {
                     match path_arg {
-                        ResolvedPathGenericArgument::Type(t) => {
+                        FQGenericArgument::Type(t) => {
                             let t = t.resolve(self).unwrap();
                             name2path_arg.types.insert(alias_generic.name.clone(), t);
                         }
-                        ResolvedPathGenericArgument::Lifetime(l) => {
+                        FQGenericArgument::Lifetime(l) => {
                             let l = match l {
                                 crate::language::ResolvedPathLifetime::Named(n) => n,
                                 crate::language::ResolvedPathLifetime::Static => "static",
@@ -420,8 +419,8 @@ impl CrateCollection {
                     &name2path_arg,
                 )
                 .unwrap();
-                let aliased: ResolvedPathType = aliased.into();
-                let ResolvedPathType::ResolvedPath(aliased_path) = aliased else {
+                let aliased: FQPathType = aliased.into();
+                let FQPathType::ResolvedPath(aliased_path) = aliased else {
                     unreachable!();
                 };
                 (*aliased_path.path).clone()
@@ -543,7 +542,7 @@ pub struct Crate {
     /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
     /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
-    /// An in-memory index of all traits, structs, enums, and functions that were defined in the current crate.
+    /// An in-memory index of all modules, traits, structs, enums, and functions that were defined in the current crate.
     ///
     /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
     /// for each of them.
@@ -551,21 +550,15 @@ pub struct Crate {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(transparent)]
-pub struct ImportIndex(HashMap<rustdoc_types::Id, ImportIndexEntry>);
-
-impl Deref for ImportIndex {
-    type Target = HashMap<rustdoc_types::Id, ImportIndexEntry>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ImportIndex {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
+pub struct ImportIndex {
+    /// A mapping that keeps track of all modules defined in the current crate.
+    ///
+    /// We track modules separately because their names are allowed to collide with
+    /// type and function names.
+    pub modules: HashMap<rustdoc_types::Id, ImportIndexEntry>,
+    /// A mapping that keeps track of traits, structs, enums and functions
+    /// defined in the current crate.
+    pub items: HashMap<rustdoc_types::Id, ImportIndexEntry>,
 }
 
 /// An entry in [`ImportIndex`].
@@ -826,8 +819,8 @@ impl Crate {
             false,
         )?;
 
-        import_path2id.reserve(import_index.len());
-        for (id, entry) in import_index.0.iter() {
+        import_path2id.reserve(import_index.items.len());
+        for (id, entry) in import_index.items.iter() {
             for path in entry.public_paths.iter().chain(entry.private_paths.iter()) {
                 if !import_path2id.contains_key(&path.0) {
                     import_path2id.insert(path.0.clone(), id.to_owned());
@@ -863,6 +856,11 @@ impl Crate {
             .name
             .clone()
             .expect("The crate root doesn't have a name")
+    }
+
+    pub fn crate_version<'a>(&self, package_graph: &'a PackageGraph) -> &'a semver::Version {
+        let metadata = package_graph.metadata(&self.core.package_id).unwrap();
+        metadata.version()
     }
 
     /// Given a crate id, return the corresponding [`PackageId`].
@@ -988,7 +986,7 @@ impl Crate {
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id {
-            if let Some(entry) = self.import_index.get(&type_id.rustdoc_item_id) {
+            if let Some(entry) = self.import_index.items.get(&type_id.rustdoc_item_id) {
                 return Ok(entry.canonical_path());
             }
         }
@@ -1037,6 +1035,34 @@ fn index_local_types<'a>(
 
     let is_public = is_public && current_item.visibility == Visibility::Public;
 
+    let mut add_to_import_index = |path: Vec<String>, is_module: bool| {
+        let visibility = if is_public {
+            EntryVisibility::Public
+        } else {
+            EntryVisibility::Private
+        };
+        let is_definition = !encountered_use;
+        let index = if is_module {
+            &mut import_index.modules
+        } else {
+            &mut import_index.items
+        };
+        match index.get_mut(current_item_id) {
+            Some(entry) => {
+                entry.insert(path.clone(), visibility);
+                if is_definition {
+                    entry.defined_at = Some(path);
+                }
+            }
+            None => {
+                index.insert(
+                    *current_item_id,
+                    ImportIndexEntry::new(path, visibility, is_definition),
+                );
+            }
+        }
+    };
+
     match &current_item.inner {
         ItemEnum::Module(m) => {
             let current_path_segment = current_item
@@ -1044,6 +1070,15 @@ fn index_local_types<'a>(
                 .as_deref()
                 .expect("All 'module' items have a 'name' property");
             current_path.push(current_path_segment);
+
+            add_to_import_index(
+                current_path
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>(),
+                true,
+            );
+
             navigation_history.insert(*current_item_id);
             for item_id in &m.items {
                 index_local_types(
@@ -1150,12 +1185,12 @@ fn index_local_types<'a>(
                                     }
                                 }
                                 // Assume it's private unless we find out otherwise later on
-                                match import_index.get_mut(imported_id) {
+                                match import_index.items.get_mut(imported_id) {
                                     Some(entry) => {
                                         entry.insert_private(normalized_source_path);
                                     }
                                     None => {
-                                        import_index.insert(
+                                        import_index.items.insert(
                                             *imported_id,
                                             ImportIndexEntry::new(
                                                 normalized_source_path,
@@ -1200,27 +1235,7 @@ fn index_local_types<'a>(
             }
             current_path.push(name);
             let path: Vec<_> = current_path.into_iter().map(|s| s.to_string()).collect();
-
-            let visibility = if is_public {
-                EntryVisibility::Public
-            } else {
-                EntryVisibility::Private
-            };
-            let is_definition = !encountered_use;
-            match import_index.get_mut(current_item_id) {
-                Some(entry) => {
-                    entry.insert(path.clone(), visibility);
-                    if is_definition {
-                        entry.defined_at = Some(path);
-                    }
-                }
-                None => {
-                    import_index.insert(
-                        *current_item_id,
-                        ImportIndexEntry::new(path, visibility, is_definition),
-                    );
-                }
-            }
+            add_to_import_index(path, false);
         }
         _ => {}
     }

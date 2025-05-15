@@ -11,8 +11,6 @@ Register it with your [`Blueprint`][Blueprint] to get started:
 --8<-- "doc_examples/guide/cookies/installation/project-kit.snap"
 
 You can customize each component inside [`CookieKit`][CookieKit] to suit your needs.
-Check out the ["Kits"](../dependency_injection/kits.md#customization)
-section for reference examples.
 
 [Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
 [CookieKit]: /api_reference/pavex/cookie/struct.CookieKit.html

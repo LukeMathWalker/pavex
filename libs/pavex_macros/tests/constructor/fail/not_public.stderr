@@ -1,0 +1,55 @@
+error: Constructors must be public.
+       Mark `a1` as `pub`, and make sure it can be imported from outside your crate.
+ --> tests/constructor/fail/not_public.rs:6:1
+  |
+6 | fn a1() -> A {
+  | ^^^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `a2` as `pub`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:11:1
+   |
+11 | fn a2() -> A {
+   | ^^^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `a3` as `pub`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:16:1
+   |
+16 | fn a3() -> A {
+   | ^^^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `a4` as `pub`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:21:1
+   |
+21 | fn a4() -> A {
+   | ^^^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `b1` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:28:1
+   |
+28 | pub(crate) fn b1() -> B {
+   | ^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `b2` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:33:1
+   |
+33 | pub(crate) fn b2() -> B {
+   | ^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `b3` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:38:1
+   |
+38 | pub(crate) fn b3() -> B {
+   | ^^^^^^^^^^
+
+error: Constructors must be public.
+       Mark `b4` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/constructor/fail/not_public.rs:43:1
+   |
+43 | pub(crate) fn b4() -> B {
+   | ^^^^^^^^^^

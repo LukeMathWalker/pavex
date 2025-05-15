@@ -10,15 +10,9 @@ You then use [`PathParams<T>`][PathParams] to extract the parameters from the in
 
 ## Registration
 
-To use [`PathParams<T>`][PathParams] in your application you need to register a constructor for it.
-You can use [`PathParams::register`][PathParams::register] to register its default constructor
-and error handler:
+To use [`PathParams<T>`][PathParams] in your application you need to import its constructor from `pavex`:
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_installation.snap"
-
-If you're using the default [`ApiKit`](../../dependency_injection/kits.md),
-you don't need to register a constructor for [`PathParams<T>`][PathParams] manually:
-it's already included in the kit.
 
 ## Overview
 

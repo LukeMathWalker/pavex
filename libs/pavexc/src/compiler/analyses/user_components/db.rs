@@ -1,27 +1,26 @@
+use super::UserComponentId;
+use super::{ScopeGraph, ScopeId};
+use super::{UserComponent, auxiliary::AuxiliaryData};
+use super::{blueprint::process_blueprint, router::Router};
+use crate::compiler::analyses::user_components::annotations::{
+    AnnotationRegistry, augment_from_annotation, register_imported_components,
+};
+use crate::compiler::analyses::user_components::imports::resolve_imports;
+use crate::compiler::analyses::user_components::paths::FQPaths;
+use crate::compiler::component::ConfigType;
+use crate::compiler::{
+    analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
+    component::DefaultStrategy,
+};
+use crate::diagnostic::TargetSpan;
+use crate::diagnostic::{DiagnosticSink, Registration};
+use crate::{language::FQPath, rustdoc::CrateCollection};
 use ahash::HashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
+use pavex_bp_schema::{Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting};
 use pavex_cli_diagnostic::AnyhowBridge;
 use std::collections::BTreeMap;
-
-use pavex_bp_schema::{Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting};
-
-use super::{ScopeGraph, ScopeId, UserComponentId};
-use super::{
-    UserComponent, auxiliary::AuxiliaryData, blueprint::process_blueprint, router::Router,
-};
-use crate::compiler::analyses::user_components::annotations::register_imported_components;
-use crate::compiler::analyses::user_components::identifiers::ResolvedPaths;
-use crate::compiler::analyses::user_components::imports::resolve_imports;
-use crate::compiler::analyses::user_components::paths::resolve_paths;
-use crate::compiler::{
-    analyses::{
-        computations::ComputationDb, config_types::ConfigTypeDb, prebuilt_types::PrebuiltTypeDb,
-    },
-    component::DefaultStrategy,
-};
-use crate::diagnostic::{Registration, TargetSpan};
-use crate::{language::ResolvedPath, rustdoc::CrateCollection};
 
 /// A database that contains all the user components that have been registered against the
 /// `Blueprint` for the application.
@@ -46,11 +45,11 @@ pub struct UserComponentDb {
     /// registered at.
     ///
     /// Invariants: there is an entry for every single user component.
-    id2registration: HashMap<UserComponentId, Registration>,
+    id2registration: la_arena::ArenaMap<UserComponentId, Registration>,
     /// Associate each user-registered component with its lifecycle.
     ///
     /// Invariants: there is an entry for every single user component.
-    id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    id2lifecycle: la_arena::ArenaMap<UserComponentId, Lifecycle>,
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
@@ -58,10 +57,19 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
     id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Assign the id of each config to its type and key.
+    ///
+    /// Invariants: there is an entry for every config type.
+    config_id2type: HashMap<UserComponentId, ConfigType>,
     /// Determine if a configuration type should have a default.
     ///
     /// Invariants: there is an entry for configuration type.
     config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
+    /// Determine if a configuration type should be included in the generated `ApplicationConfig`
+    /// even if unused.
+    ///
+    /// Invariants: there is an entry for configuration type.
+    config_id2include_if_unused: HashMap<UserComponentId, bool>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -85,9 +93,8 @@ impl UserComponentDb {
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
         prebuilt_type_db: &mut PrebuiltTypeDb,
-        config_type_db: &mut ConfigTypeDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut DiagnosticSink,
     ) -> Result<(Router, Self), ()> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
@@ -98,17 +105,19 @@ impl UserComponentDb {
             };
         }
 
+        let mut registry = AnnotationRegistry::default();
         let mut aux = AuxiliaryData::default();
         let scope_graph = process_blueprint(bp, &mut aux, diagnostics);
-        let mut resolved_paths = ResolvedPaths::new();
-        resolved_paths.resolve_all(&aux, krate_collection.package_graph(), diagnostics);
+        let mut paths = FQPaths::new();
+        paths.process_identifiers(&aux, krate_collection.package_graph(), diagnostics);
         let imported_modules = resolve_imports(&aux, krate_collection.package_graph(), diagnostics);
         let router = Router::new(&aux, &scope_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
 
         precompute_crate_docs(
             krate_collection,
-            resolved_paths.0.values(),
+            &mut registry,
+            paths.values(),
             imported_modules.iter().map(|(i, _)| &i.package_id),
             diagnostics,
         );
@@ -117,21 +126,35 @@ impl UserComponentDb {
         register_imported_components(
             &imported_modules,
             &mut aux,
-            &mut resolved_paths,
             computation_db,
+            &registry,
             krate_collection,
             diagnostics,
         );
-        resolve_paths(
-            &resolved_paths.0,
-            &aux,
+        paths.resolve(
+            &mut aux,
             computation_db,
             prebuilt_type_db,
-            config_type_db,
             krate_collection,
             diagnostics,
         );
         exit_on_errors!(diagnostics);
+
+        augment_from_annotation(
+            &registry,
+            &mut aux,
+            computation_db,
+            krate_collection,
+            diagnostics,
+        );
+        // New paths have been registered, which must be resolved now!
+        paths.resolve(
+            &mut aux,
+            computation_db,
+            prebuilt_type_db,
+            krate_collection,
+            diagnostics,
+        );
 
         let AuxiliaryData {
             component_interner,
@@ -140,10 +163,13 @@ impl UserComponentDb {
             id2lints,
             id2cloning_strategy,
             id2lifecycle,
+            config_id2type,
             config_id2default_strategy,
+            config_id2include_if_unused,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
             annotation_interner: _,
+            fallible_id2error_handler_id: _,
             imports: _,
             identifiers_interner: _,
             fallback_id2domain_guard: _,
@@ -159,7 +185,9 @@ impl UserComponentDb {
                 id2registration,
                 id2cloning_strategy,
                 id2lifecycle,
+                config_id2type,
                 config_id2default_strategy,
+                config_id2include_if_unused,
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
                 scope_graph,
@@ -270,7 +298,7 @@ impl UserComponentDb {
 
     /// Return the lifecycle of the component with the given id.
     pub fn lifecycle(&self, id: UserComponentId) -> Lifecycle {
-        self.id2lifecycle[&id]
+        self.id2lifecycle[id]
     }
 
     /// Return the registration metadata for the component with the given id.
@@ -278,7 +306,7 @@ impl UserComponentDb {
     /// It's the primary entrypoint when you're building a diagnostic that
     /// includes a span from the source file where the component was registered.
     pub fn registration(&self, id: UserComponentId) -> &Registration {
-        &self.id2registration[&id]
+        &self.id2registration[id]
     }
 
     /// Return the target metadata for the component with the given id.
@@ -296,11 +324,26 @@ impl UserComponentDb {
         self.id2cloning_strategy.get(&id)
     }
 
+    /// Return the resolved type and key for the configuration component with the given id.
+    /// This is going to be `Some(..)` for configuration components,
+    /// and `None` for all other components.
+    pub fn config_type(&self, id: UserComponentId) -> Option<&ConfigType> {
+        self.config_id2type.get(&id)
+    }
+
     /// Return the default strategy of the configuration component with the given id.
     /// This is going to be `Some(..)` for configuration components,
     /// and `None` for all other components.
-    pub fn default_strategy(&self, id: UserComponentId) -> Option<&DefaultStrategy> {
-        self.config_id2default_strategy.get(&id)
+    pub fn default_strategy(&self, id: UserComponentId) -> Option<DefaultStrategy> {
+        self.config_id2default_strategy.get(&id).copied()
+    }
+
+    /// Returns whether a configuration type should be included in the generated code
+    /// even if it's unused.
+    ///
+    /// It's `None` for all other component kinds.
+    pub fn include_if_unused(&self, id: UserComponentId) -> Option<bool> {
+        self.config_id2include_if_unused.get(&id).copied()
     }
 
     /// Return the scope tree that was built from the application blueprint.
@@ -336,24 +379,28 @@ impl UserComponentDb {
 /// for projects that pull in a lot of dependencies in the signature of their components.
 fn precompute_crate_docs<'a, I, J>(
     krate_collection: &CrateCollection,
-    resolved_paths: I,
+    registry: &mut AnnotationRegistry,
+    paths: I,
     imported_package_ids: J,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &mut DiagnosticSink,
 ) where
-    I: Iterator<Item = &'a ResolvedPath>,
+    I: Iterator<Item = &'a FQPath>,
     J: Iterator<Item = &'a PackageId>,
 {
     let mut package_ids = IndexSet::new();
-    for path in resolved_paths {
+    for path in paths {
         path.collect_package_ids(&mut package_ids);
     }
     package_ids.extend(imported_package_ids);
+    let package_ids = package_ids.iter().map(|&p| p.to_owned());
 
-    if let Err(e) = krate_collection.bootstrap_collection(package_ids.into_iter().cloned()) {
+    if let Err(e) = krate_collection.bootstrap_collection(package_ids.clone()) {
         let e = anyhow::anyhow!(e).context(
             "I failed to compute the JSON documentation for one or more crates in the workspace.",
         );
         diagnostics.push(e.into_miette());
+    } else {
+        registry.bootstrap(package_ids, krate_collection, diagnostics);
     }
 }
 

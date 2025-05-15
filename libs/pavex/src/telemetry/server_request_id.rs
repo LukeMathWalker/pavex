@@ -1,7 +1,5 @@
-use crate::blueprint::Blueprint;
-use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
-use crate::f;
 use crate::http::HeaderValue;
+use pavex_macros::request_scoped;
 use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use type_safe_id::{StaticType, TypeSafeId};
@@ -56,6 +54,7 @@ impl ServerRequestId {
     ///
     /// It generates a new request id using a [UUID v7](https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format-04#name-uuid-version-7),
     /// with a random number and the current (UNIX) timestamp.
+    #[request_scoped]
     pub fn generate() -> Self {
         Self(TypeSafeId::from_uuid(Uuid::now_v7()))
     }
@@ -82,20 +81,6 @@ impl From<Uuid> for ServerRequestId {
 impl std::fmt::Display for ServerRequestId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
-    }
-}
-
-/// Registration helpers.
-impl ServerRequestId {
-    /// Register the [default constructor](Self::generate)
-    /// for [`ServerRequestId`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        Self::default_constructor().register(bp)
-    }
-
-    /// The [default constructor](Self::generate) for [`ServerRequestId`].
-    pub fn default_constructor() -> Constructor {
-        Constructor::request_scoped(f!(super::ServerRequestId::generate))
     }
 }
 

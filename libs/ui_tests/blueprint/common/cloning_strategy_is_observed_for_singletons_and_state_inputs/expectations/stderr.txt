@@ -5,12 +5,12 @@
   [31m│[0m but `app::C` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:57:1]
-  [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
-  [31m│[0m  [2m58[0m │     bp.singleton(f!(crate::singleton2));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:54:1]
+  [31m│[0m  [2m54[0m │     bp.singleton(f!(crate::singleton));
+  [31m│[0m  [2m55[0m │     bp.singleton(f!(crate::singleton2));
   [31m│[0m     · [35;1m                 ──────────┬──────────[0m
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m59[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m  [2m56[0m │     bp.route(GET, "/", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::C` by marking it
   [31m│[0m         `CloneIfNecessary`.
@@ -23,12 +23,12 @@
   [31m│[0m but `app::B` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:55:1]
-  [31m│[0m  [2m55[0m │     bp.import(from!(crate::annotated));
-  [31m│[0m  [2m56[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:52:1]
+  [31m│[0m  [2m52[0m │     bp.import(from!(crate::annotated));
+  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
+  [31m│[0m  [2m54[0m │     bp.singleton(f!(crate::singleton));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::B` by marking it
   [31m│[0m         `CloneIfNecessary`.
@@ -41,12 +41,12 @@
   [31m│[0m but `app::A` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:56:1]
-  [31m│[0m  [2m56[0m │     bp.prebuilt(t!(crate::B));
-  [31m│[0m  [2m57[0m │     bp.singleton(f!(crate::singleton));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:53:1]
+  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m  [2m54[0m │     bp.singleton(f!(crate::singleton));
   [31m│[0m     · [35;1m                 ──────────┬─────────[0m
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m58[0m │     bp.singleton(f!(crate::singleton2));
+  [31m│[0m  [2m55[0m │     bp.singleton(f!(crate::singleton2));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::A` by marking it
   [31m│[0m         `CloneIfNecessary`.
@@ -59,12 +59,12 @@
   [31m│[0m by value, but `app::annotated::B` is a singleton and can't be
   [31m│[0m moved out of `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:42:1]
-  [31m│[0m  [2m42[0m │
-  [31m│[0m  [2m43[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
-  [31m│[0m  [2m44[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn b(_b: A) -> B {
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:39:1]
+  [31m│[0m  [2m39[0m │
+  [31m│[0m  [2m40[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
+  [31m│[0m  [2m41[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn b(_b: A) -> B {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
-  [31m│[0m  [2m45[0m │             todo!()
+  [31m│[0m  [2m42[0m │             todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::B` by marking it
   [31m│[0m         `clone_if_necessary`.
@@ -77,12 +77,12 @@
   [31m│[0m by value, but `app::annotated::A` is a singleton and can't be
   [31m│[0m moved out of `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:37:1]
-  [31m│[0m  [2m37[0m │
-  [31m│[0m  [2m38[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
-  [31m│[0m  [2m39[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn a() -> A {
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:34:1]
+  [31m│[0m  [2m34[0m │
+  [31m│[0m  [2m35[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
+  [31m│[0m  [2m36[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn a() -> A {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
-  [31m│[0m  [2m40[0m │             todo!()
+  [31m│[0m  [2m37[0m │             todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::A` by marking it
   [31m│[0m         `clone_if_necessary`.

@@ -1,20 +1,22 @@
 use std::collections::BTreeMap;
 
-use ahash::{HashMap, HashMapExt};
-use bimap::BiHashMap;
+use bimap::{BiBTreeMap, BiHashMap};
 use indexmap::IndexMap;
+use miette::Severity;
 use pavex_cli_diagnostic::CompilerDiagnostic;
 
 use crate::{
     compiler::component::{ConfigKey, DefaultStrategy},
-    diagnostic::TargetSpan,
+    diagnostic::{self, TargetSpan},
     language::ResolvedType,
     utils::comma_separated_list,
 };
 
 use super::{
+    call_graph::ApplicationStateCallGraph,
     components::{ComponentDb, ComponentId, HydratedComponent},
     computations::ComputationDb,
+    processing_pipeline::RequestHandlerPipeline,
 };
 
 /// The code-generated `struct` that holds the configurable parameters
@@ -24,19 +26,23 @@ use super::{
 /// blueprint.
 pub struct ApplicationConfig {
     bindings: BiHashMap<syn::Ident, ResolvedType>,
-    binding2default: HashMap<syn::Ident, DefaultStrategy>,
+    binding2default: BTreeMap<syn::Ident, DefaultStrategy>,
+    binding2id: BiBTreeMap<syn::Ident, ComponentId>,
 }
 
 impl ApplicationConfig {
-    /// Examine the processing pipeline of all request handlers to
-    /// determine which singletons are needed to serve user requests.
+    /// Retrieve all registered configuration types.
+    ///
+    /// Ensure that configuration types are unique and that each type is
+    /// associated with an equally unique configuration key.
     pub fn new(
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut diagnostic::DiagnosticSink,
     ) -> Self {
         let mut bindings = BiHashMap::new();
-        let mut binding2default = HashMap::new();
+        let mut binding2default = BTreeMap::new();
+        let mut binding2id = BiBTreeMap::new();
         // Temporary maps to track key-to-type and type-to-key relationships
         // and detect conflicts.
         let mut key2types: BTreeMap<ConfigKey, IndexMap<ResolvedType, ComponentId>> =
@@ -60,7 +66,8 @@ impl ApplicationConfig {
 
             let ident = config.key().ident();
             bindings.insert(ident.clone(), config.ty().to_owned());
-            binding2default.insert(ident, component_db.default_strategy(id));
+            binding2default.insert(ident.clone(), component_db.default_strategy(id));
+            binding2id.insert(ident, id);
         }
 
         for (key, type2id) in key2types {
@@ -78,7 +85,61 @@ impl ApplicationConfig {
         Self {
             bindings,
             binding2default,
+            binding2id,
         }
+    }
+
+    /// Remove unused configuration types from the bindings.
+    ///
+    /// A warning is issued for each pruned configuration type.
+    pub fn prune_unused(
+        &mut self,
+        handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
+        state_call_graph: &ApplicationStateCallGraph,
+        db: &ComponentDb,
+        diagnostics: &mut diagnostic::DiagnosticSink,
+    ) {
+        // Configuration type ids are not directly used in call graphs.
+        // We need to look for the corresponding (synthetic) constructor ids.
+        let mut constructor_id2config_id = self
+            .binding2id
+            .right_values()
+            .map(|id| (db.config2constructor(*id), *id))
+            .collect::<BiBTreeMap<_, _>>();
+        for node in handler_id2pipeline
+            .values()
+            .flat_map(|p| p.graph_iter())
+            .flat_map(|g| g.call_graph.node_weights())
+            .chain(state_call_graph.call_graph.call_graph.node_weights())
+        {
+            let Some(id) = node.component_id() else {
+                continue;
+            };
+            if constructor_id2config_id.remove_by_left(&id).is_some()
+                && constructor_id2config_id.is_empty()
+            {
+                // All config types are used, no point to keep iterating
+                // over the remaining nodes.
+                return;
+            }
+        }
+        for config_id in constructor_id2config_id.right_values() {
+            if db.include_if_unused(*config_id) {
+                continue;
+            }
+            let (_, id, ty) = self.remove(*config_id);
+            unused_configuration_type(id, &ty, db, diagnostics);
+        }
+    }
+
+    /// Remove a binding from the generated `ApplicationConfig` type.
+    ///
+    /// Panics if there is binding with the given id.
+    fn remove(&mut self, id: ComponentId) -> (syn::Ident, ComponentId, ResolvedType) {
+        let (ident, id) = self.binding2id.remove_by_right(&id).unwrap();
+        let (_, ty) = self.bindings.remove_by_left(&ident).unwrap();
+        self.binding2default.remove(&ident);
+        (ident, id, ty)
     }
 
     /// Retrieve the bindings between configuration keys and their types.
@@ -96,7 +157,7 @@ fn same_key_different_types(
     key: &ConfigKey,
     type2id: &IndexMap<ResolvedType, ComponentId>,
     db: &ComponentDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &mut diagnostic::DiagnosticSink,
 ) {
     let mut counter = 0;
     let snippets: Vec<_> = type2id
@@ -148,7 +209,7 @@ fn same_type_different_key(
     ty: &ResolvedType,
     key2component_id: &BTreeMap<ConfigKey, ComponentId>,
     db: &ComponentDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &mut diagnostic::DiagnosticSink,
 ) {
     let mut counter = 0;
     let snippets: Vec<_> = key2component_id
@@ -193,6 +254,28 @@ fn same_type_different_key(
     }
     let diagnostic = diagnostic
         .help("Register the type as configuration once, with a single key.".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+fn unused_configuration_type(
+    id: ComponentId,
+    ty: &ResolvedType,
+    db: &ComponentDb,
+    diagnostics: &mut diagnostic::DiagnosticSink,
+) {
+    let user_id = db.user_component_id(id).unwrap();
+    let s = diagnostics.annotated(db.registration_target(user_id), "Registered here");
+    let ty = ty.display_for_error();
+    let e = anyhow::anyhow!(
+        "`{ty}` is never used.\n\
+        `{ty}` is registered as a configuration type, but it is never injected as an input parameter. \
+        Pavex won't include it in the generated `ApplicationConfig`."
+    );
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(s)
+        .severity(Severity::Warning)
+        .help(format!("Use `include_if_unused` if you want to force Pavex to include a `{ty}` field in `ApplicationConfig`, even if it's not used."))
         .build();
     diagnostics.push(diagnostic);
 }

@@ -5,7 +5,7 @@ use crate::compiler::utils::get_err_variant;
 use indexmap::IndexSet;
 use itertools::Itertools;
 
-use crate::language::{Callable, Lifetime, ResolvedPath, ResolvedType};
+use crate::language::{Callable, FQPath, Lifetime, ResolvedType};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.
@@ -117,8 +117,8 @@ impl AsRef<Callable> for ErrorHandler {
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorHandlerValidationError {
-    CannotReturnTheUnitType(ResolvedPath),
-    CannotBeFallible(ResolvedPath),
+    CannotReturnTheUnitType(FQPath),
+    CannotBeFallible(FQPath),
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,

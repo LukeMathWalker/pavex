@@ -1,7 +1,7 @@
 # Error handling
 
 In `UserAgent::extract` you're only handling the happy path:
-the method panics if the `User-Agent` header contains characters that are not [ASCII printable](https://www.ascii-code.com/characters/printable-characters).
+the method panics if the `User-Agent` header contains characters that are not [ASCII printable](https://en.wikipedia.org/wiki/ASCII#Printable_character_table).
 Panicking for bad user input is poor behavior: you should handle the issue gracefully and return an error instead.
 
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
@@ -25,7 +25,7 @@ Pavex is complaining: you can register a fallible constructor, but you must also
 
 An error handler must convert a reference to the error type into a [`Response`][Response] (1).\
 It decouples the detection of an error from its representation on the wire: a constructor doesn't need to know how the
-error will be represented in the response, it just needs to signal that something went wrong.\
+error will be represented in the response, it just needs to signal that something went wrong.
 You can then change the representation of an error on the wire without touching the constructor: you only need to change
 the
 error handler.
@@ -38,7 +38,7 @@ Define a new `invalid_user_agent` function in `app/src/user_agent.rs`:
 
 --8<-- "doc_examples/quickstart/08-error_handler.snap"
 
-Then register the error handler with the [`Blueprint`][Blueprint]:
+Then attach the error handler to the fallible constructor, using its fully-qualified path:
 
 --8<-- "doc_examples/quickstart/08-register.snap"
 

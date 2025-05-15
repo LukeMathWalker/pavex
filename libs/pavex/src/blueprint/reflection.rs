@@ -17,6 +17,7 @@ use std::borrow::Cow;
 /// [`from!`]: super::from
 /// [`f!`]: crate::f
 /// [`t!`]: crate::t
+#[derive(Debug)]
 pub struct WithLocation<T> {
     /// The decorated value.
     pub value: T,
@@ -40,6 +41,7 @@ pub struct WithLocation<T> {
 /// [`from!`]: super::from
 /// [`f!`]: crate::f
 /// [`t!`]: crate::t
+#[derive(Debug)]
 pub struct CreatedAt {
     /// The name of the Cargo package where the value within [`WithLocation`] was created.
     pub package_name: &'static str,

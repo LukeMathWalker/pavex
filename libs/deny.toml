@@ -11,10 +11,6 @@ ignore = [
     # `paste` is unmaintained, but it's a small utility for macro-writing.
     # There are no known vulnerabilities, so we'll ignore the advisory for now.
     "RUSTSEC-2024-0436",
-    # `humantime` is unmaintained.
-    # We'll fix it by moving all out time-handling to `jiff` ASAP,
-    # as we already planned to.
-    "RUSTSEC-2025-0014",
 ]
 
 [licenses]
@@ -34,7 +30,9 @@ allow = [
     "BSL-1.0",
     "OpenSSL",
     "Zlib",
+    "CDLA-Permissive-2.0",
 ]
+unused-allowed-license = "allow"
 confidence-threshold = 0.8
 
 [[licenses.clarify]]

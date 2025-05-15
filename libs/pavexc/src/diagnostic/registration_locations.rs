@@ -37,14 +37,19 @@ pub(crate) fn attribute_span(
     kind: ComponentKind,
 ) -> Option<SourceSpan> {
     if kind == ComponentKind::ErrorHandler {
-        attribute_error_handler_span(source, location)
-    } else {
-        let raw_source = &source.contents;
-        let span = find_callable_def(location, &source.parsed)?.attrs_and_sig_span();
-        Some(convert_proc_macro_span(raw_source, span))
+        return attribute_error_handler_span(source, location);
     }
+
+    let raw_source = &source.contents;
+    let span = if kind == ComponentKind::ConfigType || kind == ComponentKind::PrebuiltType {
+        find_type_def(location, &source.parsed)?.attrs_and_name_span()
+    } else {
+        find_callable_def(location, &source.parsed)?.attrs_and_sig_span()
+    };
+    Some(convert_proc_macro_span(raw_source, span))
 }
 
+/// A span matching the `error_handler = "error::error::path"` portion of an attribute.
 pub(crate) fn attribute_error_handler_span(
     source: &ParsedSourceFile,
     location: &Location,
@@ -268,6 +273,51 @@ pub(crate) fn route_path_span(
     Some(convert_proc_macro_span(raw_source, span))
 }
 
+/// Returns a span covering the registration location.
+///
+/// For attributes, returns a span covering the key property (e.g. `key = "my-config-key"`).
+/// For blueprint registrations, returns a span pointing at the method argument that accepts key.
+pub(crate) fn config_key_span(
+    source: &ParsedSourceFile,
+    registration: &Registration,
+) -> Option<SourceSpan> {
+    match registration.kind {
+        RegistrationKind::Blueprint => bp_config_key_span(source, &registration.location),
+        RegistrationKind::Attribute => attribute_config_key_span(source, &registration.location),
+    }
+}
+
+/// A span matching the `key = "my-config-key"` portion of an attribute.
+pub(crate) fn attribute_config_key_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    use darling::FromMeta;
+    let raw_source = &source.contents;
+    let def = find_type_def(location, &source.parsed)?;
+    let attrs = match &def {
+        TypeDef::Struct(s) => &s.attrs,
+        TypeDef::Enum(e) => &e.attrs,
+    };
+
+    #[derive(darling::FromMeta)]
+    struct Property {
+        key: darling::util::SpannedValue<String>,
+    }
+
+    for attr in attrs {
+        if let Ok(property) = Property::from_meta(&attr.meta) {
+            return Some(convert_proc_macro_span(raw_source, property.key.span()));
+        }
+    }
+
+    // Fall back to the full name+attr span if we can't find a precise one.
+    Some(convert_proc_macro_span(
+        raw_source,
+        def.attrs_and_name_span(),
+    ))
+}
+
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
 /// `.` in the method invocation for `config`.
 /// E.g.
@@ -285,7 +335,7 @@ pub(crate) fn route_path_span(
 /// //        ^^^^^^
 /// //        We want a SourceSpan that points at this for routes
 /// ```
-pub(crate) fn config_key_span(
+pub(crate) fn bp_config_key_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
@@ -613,6 +663,63 @@ fn find_callable_def<'a>(location: &'a Location, file: &'a syn::File) -> Option<
     }
 
     let mut locator = CallableLocator {
+        location,
+        node: None,
+    };
+    locator.visit_file(file);
+    locator.node
+}
+
+enum TypeDef<'a> {
+    Struct(&'a syn::ItemStruct),
+    Enum(&'a syn::ItemEnum),
+}
+
+impl TypeDef<'_> {
+    /// Return a span that includes the attributes and name of the type.
+    fn attrs_and_name_span(&self) -> Span {
+        let (attrs, vis, ident) = match self {
+            TypeDef::Struct(item) => (&item.attrs, &item.vis, &item.ident),
+            TypeDef::Enum(item) => (&item.attrs, &item.vis, &item.ident),
+        };
+
+        let mut span = attrs
+            .first()
+            .map(|attr| attr.span())
+            .unwrap_or_else(|| vis.span());
+        // Expand the span to include visibility
+        span = span.join(vis.span()).unwrap_or(span);
+        // Expand to include the type name
+        span = span.join(ident.span()).unwrap_or(span);
+
+        span
+    }
+}
+
+/// Visits the abstract syntax tree of a parsed `syn::File` to find a struct or enum definition
+/// that contains the given `location`.
+/// It then converts the span associated with the node to a [`SourceSpan`].
+fn find_type_def<'a>(location: &'a Location, file: &'a syn::File) -> Option<TypeDef<'a>> {
+    /// A visitor that locates the type def that contains the given `location`.
+    struct TypeLocator<'a> {
+        location: &'a Location,
+        node: Option<TypeDef<'a>>,
+    }
+
+    impl<'a> Visit<'a> for TypeLocator<'a> {
+        fn visit_item_struct(&mut self, i: &'a syn::ItemStruct) {
+            if i.span().contains(self.location) {
+                self.node = Some(TypeDef::Struct(i));
+            }
+        }
+        fn visit_item_enum(&mut self, i: &'a syn::ItemEnum) {
+            if i.span().contains(self.location) {
+                self.node = Some(TypeDef::Enum(i));
+            }
+        }
+    }
+
+    let mut locator = TypeLocator {
         location,
         node: None,
     };

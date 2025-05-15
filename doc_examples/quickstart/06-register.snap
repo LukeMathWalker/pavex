@@ -1,10 +1,10 @@
-```rust title="app/src/blueprint.rs" hl_lines="6"
-// [...]
-use pavex::f;
-// [...]
-pub fn blueprint() -> Blueprint {
+```rust title="app/src/blueprint.rs" hl_lines="3 4"
     // [...]
-    bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
-    // [...]
-}
+    bp.import(from![
+        // Local components, defined in this crate
+        crate,
+        // Components defined in the `pavex` crate,
+        // by the framework itself.
+        pavex,
+    ]);
 ```

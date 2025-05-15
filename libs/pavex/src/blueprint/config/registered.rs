@@ -58,6 +58,13 @@ impl RegisteredConfigType<'_> {
         self
     }
 
+    /// Include this configuration entry in the generated `ApplicationConfig` struct
+    /// even if the type is never used by the application.
+    pub fn include_if_unused(mut self) -> Self {
+        self.config().include_if_unused = Some(true);
+        self
+    }
+
     fn config(&mut self) -> &mut ConfigType {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::ConfigType(s) = component else {

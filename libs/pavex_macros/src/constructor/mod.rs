@@ -1,11 +1,11 @@
-use cloning_strategy::CloningStrategy;
+use crate::utils::validation::must_be_public;
+use crate::utils::{CloningStrategy, CloningStrategyFlags, deny_unreachable_pub_attr};
 use darling::FromMeta;
 use darling::util::Flag;
 use lifecycle::Lifecycle;
 use proc_macro::TokenStream;
 use quote::quote;
 
-mod cloning_strategy;
 mod lifecycle;
 
 #[derive(darling::FromMeta, Debug, Clone)]
@@ -33,11 +33,20 @@ impl TryFrom<InputSchema> for Properties {
     type Error = darling::Error;
 
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let singleton_present = input.singleton.is_present();
-        let request_scoped_present = input.request_scoped.is_present();
-        let transient_present = input.transient.is_present();
+        let InputSchema {
+            singleton,
+            request_scoped,
+            transient,
+            clone_if_necessary,
+            never_clone,
+            error_handler,
+        } = input;
 
-        let lifecycle = match (singleton_present, request_scoped_present, transient_present) {
+        let lifecycle = match (
+            singleton.is_present(),
+            request_scoped.is_present(),
+            transient.is_present(),
+        ) {
             (true, false, false) => Lifecycle::Singleton,
             (false, true, false) => Lifecycle::RequestScoped,
             (false, false, true) => Lifecycle::Transient,
@@ -53,24 +62,20 @@ impl TryFrom<InputSchema> for Properties {
             }
         };
 
-        let cloning_strategy = match (
-            input.never_clone.is_present(),
-            input.clone_if_necessary.is_present(),
-        ) {
-            (true, true) => {
-                return Err(darling::Error::custom(
-                    "A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.",
-                ));
-            }
-            (true, false) => Some(CloningStrategy::NeverClone),
-            (false, true) => Some(CloningStrategy::CloneIfNecessary),
-            (false, false) => None,
+        let Ok(cloning_strategy) = CloningStrategyFlags {
+            clone_if_necessary,
+            never_clone,
+        }
+        .try_into() else {
+            return Err(darling::Error::custom(
+                "A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.",
+            ));
         };
 
         Ok(Properties {
             lifecycle,
             cloning_strategy,
-            error_handler: input.error_handler,
+            error_handler,
         })
     }
 }
@@ -93,23 +98,24 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
     type Error = darling::Error;
 
     fn try_from(input: ShorthandSchema) -> Result<Self, Self::Error> {
-        let cloning_strategy = match (
-            input.never_clone.is_present(),
-            input.clone_if_necessary.is_present(),
-        ) {
-            (true, true) => {
-                return Err(darling::Error::custom(
-                    "A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.",
-                ));
-            }
-            (true, false) => Some(CloningStrategy::NeverClone),
-            (false, true) => Some(CloningStrategy::CloneIfNecessary),
-            (false, false) => None,
+        let ShorthandSchema {
+            clone_if_necessary,
+            never_clone,
+            error_handler,
+        } = input;
+        let Ok(cloning_strategy) = CloningStrategyFlags {
+            clone_if_necessary,
+            never_clone,
+        }
+        .try_into() else {
+            return Err(darling::Error::custom(
+                "A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.",
+            ));
         };
 
         Ok(Self {
             cloning_strategy,
-            error_handler: input.error_handler,
+            error_handler,
         })
     }
 }
@@ -213,28 +219,34 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
         });
     }
 
+    let deny_unreachable_pub = deny_unreachable_pub_attr();
+
     let input: proc_macro2::TokenStream = input.into();
     quote! {
         #[diagnostic::pavex::constructor(#properties)]
+        #deny_unreachable_pub
         #input
     }
     .into()
 }
 
 fn reject_invalid_input(input: TokenStream, macro_attr: &'static str) -> Result<(), TokenStream> {
-    // Check if the input is a function
-    if syn::parse::<syn::ItemFn>(input.clone()).is_ok() {
-        return Ok(());
+    // Check if the input is a function or a method.
+    let (vis, sig) = match (
+        syn::parse::<syn::ItemFn>(input.clone()),
+        syn::parse::<syn::ImplItemFn>(input.clone()),
+    ) {
+        (Ok(item_fn), _) => (item_fn.vis, item_fn.sig),
+        (_, Ok(impl_fn)) => (impl_fn.vis, impl_fn.sig),
+        _ => {
+            let msg = format!("{macro_attr} can only be applied to functions and methods.");
+            return Err(
+                syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
+                    .to_compile_error()
+                    .into(),
+            );
+        }
     };
-    if syn::parse::<syn::ImplItemFn>(input.clone()).is_ok() {
-        return Ok(());
-    }
-
-    // Neither ItemFn nor ImplItemFn - return an error
-    let msg = format!("{macro_attr} can only be applied to functions and methods.");
-    Err(
-        syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-            .to_compile_error()
-            .into(),
-    )
+    must_be_public("Constructors", &vis, &sig.ident, &sig)?;
+    Ok(())
 }

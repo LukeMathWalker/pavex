@@ -1,27 +1,18 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use pavex::server::IncomingStream;
-use pavex::time::SignedDuration;
-use pavex::{blueprint::Blueprint, f, t};
 use secrecy::{ExposeSecret, Secret};
-use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
-
-pub fn register(bp: &mut Blueprint) {
-    bp.config("server", t!(self::ServerConfig));
-    bp.config("database", t!(self::DatabaseConfig));
-    bp.config("auth", t!(self::AuthConfig));
-    bp.singleton(f!(self::DatabaseConfig::get_pool));
-}
 
 /// Configuration for the HTTP server used to expose our API
 /// to users.
 #[derive(serde::Deserialize, Debug, Clone)]
+#[pavex::config(key = "server", include_if_unused)]
 pub struct ServerConfig {
     /// The port that the server must listen on.
     ///
     /// Set the `PX_SERVER__PORT` environment variable to override its value.
-    #[serde(deserialize_with = "serde_aux::field_attributes::deserialize_number_from_string")]
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     /// The network interface that the server must be bound to.
     ///
@@ -43,7 +34,9 @@ fn deserialize_shutdown<'de, D>(deserializer: D) -> Result<std::time::Duration, 
 where
     D: serde::Deserializer<'de>,
 {
-    let duration = SignedDuration::deserialize(deserializer)?;
+    use serde::Deserialize as _;
+
+    let duration = pavex::time::SignedDuration::deserialize(deserializer)?;
     if duration.is_negative() {
         Err(serde::de::Error::custom(
             "graceful shutdown timeout must be positive",
@@ -62,6 +55,7 @@ impl ServerConfig {
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
+#[pavex::config(key = "database")]
 pub struct DatabaseConfig {
     pub username: String,
     pub password: Secret<String>,
@@ -90,6 +84,7 @@ impl DatabaseConfig {
     }
 
     /// Return a database connection pool.
+    #[pavex::singleton(clone_if_necessary)]
     pub async fn get_pool(&self) -> Result<sqlx::PgPool, sqlx::Error> {
         let pool = sqlx::PgPool::connect_with(self.connection_options()).await?;
         Ok(pool)
@@ -97,6 +92,7 @@ impl DatabaseConfig {
 }
 
 #[derive(serde::Deserialize, Clone, Debug)]
+#[pavex::config(key = "auth")]
 /// Configuration for the authentication system.
 pub struct AuthConfig {
     /// The private key used to sign JWTs.
@@ -107,6 +103,7 @@ pub struct AuthConfig {
 
 impl AuthConfig {
     /// Return the private key to be used for JWT signing.
+    #[pavex::singleton]
     pub fn encoding_key(&self) -> Result<EncodingKey, jsonwebtoken::errors::Error> {
         EncodingKey::from_ed_pem(self.eddsa_private_key_pem.expose_secret().as_bytes())
     }

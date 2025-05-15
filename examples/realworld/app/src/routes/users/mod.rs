@@ -4,9 +4,6 @@ use pavex::f;
 
 pub(crate) fn users_bp() -> Blueprint {
     let mut bp = Blueprint::new();
-    // Only the users-related routes need access to the encoding key.
-    // All the other routes only need access to the decoding key.
-    bp.singleton(f!(crate::configuration::AuthConfig::encoding_key));
 
     bp.route(POST, "/users", f!(self::signup))
         .error_handler(f!(self::SignupError::into_response));

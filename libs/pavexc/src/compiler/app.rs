@@ -17,7 +17,6 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::cloning::clonables_can_be_cloned;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::config_types::ConfigTypeDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -32,6 +31,8 @@ use crate::diagnostic::DiagnosticSink;
 use crate::rustdoc::CrateCollection;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
+/// The version of the Pavex framework that this version of `pavexc` can support.
+pub(crate) const PAVEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// An in-memory representation that can be used to generate application code that matches
 /// the constraints and instructions from a [`Blueprint`] instance.
@@ -78,12 +79,10 @@ impl App {
         let mut diagnostics = DiagnosticSink::new(package_graph.clone());
         let mut computation_db = ComputationDb::new();
         let mut prebuilt_type_db = PrebuiltTypeDb::new();
-        let mut config_type_db = ConfigTypeDb::new();
         let Ok((router, user_component_db)) = UserComponentDb::build(
             &bp,
             &mut computation_db,
             &mut prebuilt_type_db,
-            &mut config_type_db,
             &krate_collection,
             &mut diagnostics,
         ) else {
@@ -96,7 +95,6 @@ impl App {
             &framework_item_db,
             &mut computation_db,
             prebuilt_type_db,
-            config_type_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -149,10 +147,6 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
-        let application_config =
-            ApplicationConfig::new(&component_db, &computation_db, &mut diagnostics);
-        exit_on_errors!(diagnostics);
-
         let application_state = ApplicationState::new(
             &handler_id2pipeline,
             &framework_item_db,
@@ -162,6 +156,8 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
+        let mut application_config =
+            ApplicationConfig::new(&component_db, &computation_db, &mut diagnostics);
         exit_on_errors!(diagnostics);
 
         let codegen_deps = codegen_deps(&package_graph);
@@ -176,6 +172,14 @@ impl App {
         ) else {
             return Err(diagnostics);
         };
+        exit_on_errors!(diagnostics);
+
+        application_config.prune_unused(
+            &handler_id2pipeline,
+            &application_state_call_graph,
+            &component_db,
+            &mut diagnostics,
+        );
         detect_unused(
             handler_id2pipeline.values(),
             &application_state_call_graph,

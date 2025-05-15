@@ -10,7 +10,7 @@ use indexmap::{IndexMap, IndexSet};
 use serde::{Deserializer, Serializer};
 
 use crate::language::resolved_type::generics_equivalence::UnassignedIdGenerator;
-use crate::language::{ResolvedPath, ResolvedPathSegment};
+use crate::language::{FQPath, FQPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum ResolvedType {
@@ -1118,15 +1118,15 @@ impl ResolvedType {
 }
 
 impl PathType {
-    pub fn resolved_path(&self) -> ResolvedPath {
+    pub fn resolved_path(&self) -> FQPath {
         let mut segments = Vec::with_capacity(self.base_type.len());
         for segment in &self.base_type {
-            segments.push(ResolvedPathSegment {
+            segments.push(FQPathSegment {
                 ident: segment.to_owned(),
                 generic_arguments: vec![],
             });
         }
-        ResolvedPath {
+        FQPath {
             segments,
             qualified_self: None,
             package_id: self.package_id.clone(),

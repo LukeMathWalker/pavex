@@ -8,15 +8,9 @@ Those variables are called **query parameters**. You can extract them using [`Qu
 
 ## Registration
 
-To use [`QueryParams<T>`][QueryParams] in your application you need to register a constructor for it.\
-You can use [`QueryParams::register`][QueryParams::register] to register its default constructor
-and error handler:
+To use [`QueryParams<T>`][QueryParams] in your application you need to import its constructor from `pavex`:
 
 --8<-- "doc_examples/guide/request_data/query_params/project-installation.snap"
-
-If you're using the default [`ApiKit`](../../dependency_injection/kits.md),
-you don't need to register a constructor for [`QueryParams<T>`][QueryParams] manually:
-it's already included in the kit.
 
 ## Overview
 

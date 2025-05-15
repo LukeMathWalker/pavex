@@ -10,8 +10,8 @@ use syn::punctuated::Punctuated;
 use crate::diagnostic::{self, DiagnosticSink, OptionalLabeledSpanExt};
 use crate::diagnostic::{CompilerDiagnostic, OptionalSourceSpanExt};
 use crate::language::{
-    CrateNameResolutionError, UnknownCrateName, UnknownDependency, dependency_name2package_id,
-    krate_name2package_id,
+    CrateNameResolutionError, UnknownCrate, UnknownDependency, dependency_name2package_id,
+    krate2package_id,
 };
 
 use super::auxiliary::AuxiliaryData;
@@ -42,17 +42,20 @@ pub(super) fn resolve_imports(
 ) -> Vec<(ResolvedImport, usize)> {
     let mut resolved_imports = Vec::new();
     for (import_id, (import, _)) in db.imports.iter().enumerate() {
+        let imported_in = match krate2package_id(
+            &import.created_at.package_name,
+            &import.created_at.package_version,
+            package_graph,
+        ) {
+            Ok(package_id) => package_id,
+            Err(e) => {
+                unknown_registration_crate(e, import, diagnostics);
+                continue;
+            }
+        };
         match &import.sources {
             Sources::All => {
-                let krate_name = &import.created_at.crate_name;
-                let package_id = match krate_name2package_id(krate_name, package_graph) {
-                    Ok(package_id) => package_id,
-                    Err(e) => {
-                        unknown_registration_crate(e, import, diagnostics);
-                        continue;
-                    }
-                };
-                let sources = sources_for_all(&package_id, package_graph);
+                let sources = sources_for_all(&imported_in, package_graph);
                 for source in sources {
                     let name = package_graph
                         .metadata(&source)
@@ -79,17 +82,15 @@ pub(super) fn resolve_imports(
                     };
                     path.make_absolute(&import.created_at);
                     let package_name = path.0.first().expect("Module path can't be empty");
-                    let package_id = match dependency_name2package_id(
-                        package_name,
-                        &import.created_at.crate_name,
-                        package_graph,
-                    ) {
-                        Ok(package_id) => package_id,
-                        Err(e) => {
-                            crate_resolution_error(e, import, diagnostics);
-                            continue;
-                        }
-                    };
+                    let package_id =
+                        match dependency_name2package_id(package_name, &imported_in, package_graph)
+                        {
+                            Ok(package_id) => package_id,
+                            Err(e) => {
+                                crate_resolution_error(e, import, diagnostics);
+                                continue;
+                            }
+                        };
                     resolved_imports.push((
                         ResolvedImport {
                             path: path.0,
@@ -140,7 +141,7 @@ impl RawModulePath {
             .to_owned();
         match first.as_str() {
             "crate" => {
-                self.0[0] = created_at.crate_name.clone();
+                self.0[0] = created_at.package_name.clone();
             }
             "self" => {
                 let old_segments = std::mem::take(&mut self.0);
@@ -204,20 +205,16 @@ fn crate_resolution_error(
     }
 }
 
-fn unknown_registration_crate(
-    e: UnknownCrateName,
-    import: &Import,
-    diagnostics: &mut DiagnosticSink,
-) {
+fn unknown_registration_crate(e: UnknownCrate, import: &Import, diagnostics: &mut DiagnosticSink) {
     #[derive(Debug, thiserror::Error)]
     #[error(
-        "I can't find any package in your dependency tree named `{name}`.\n\
+        "{source}.\n\
         You registered an import against your blueprint in `{name}`. \
         I can't resolve that import until I can match `{name}` to a package in your dependency tree."
     )]
     struct CannotMatchPackageIdToCrateName {
         name: String,
-        source: UnknownCrateName,
+        source: UnknownCrate,
     }
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
@@ -225,7 +222,7 @@ fn unknown_registration_crate(
             .labeled("The import was registered here".into())
             .attach(s)
     });
-    let diagnostic = CompilerDiagnostic::builder(CannotMatchPackageIdToCrateName { name: e.0.clone(), source: e })
+    let diagnostic = CompilerDiagnostic::builder(CannotMatchPackageIdToCrateName { name: e.name.clone(), source: e })
         .optional_source(source)
         .help("Did you use the `from!` macro to register your sources? Setting `WithLocation`'s fields manually is bound to cause problems for Pavex.".into())
         .build();

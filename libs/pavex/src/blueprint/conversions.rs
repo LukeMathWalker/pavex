@@ -5,6 +5,7 @@ use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location, Type};
+use pavex_reflection::CreatedBy;
 
 #[track_caller]
 pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -> Callable {
@@ -12,7 +13,7 @@ pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -
         value: callable,
         created_at,
     } = callable;
-    if callable.macro_name != "f" {
+    if callable.macro_name == "t" {
         panic!(
             "You need to use the `f!` macro to register function-like components (e.g. a constructor).\n\
             Here you used the `t!` macro, which is reserved type-like components, like state inputs."
@@ -21,6 +22,7 @@ pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -
     Callable {
         callable: pavex_bp_schema::RawIdentifiers {
             created_at: created_at2created_at(created_at),
+            created_by: CreatedBy::macro_name(callable.macro_name),
             import_path: callable.import_path.to_owned(),
         },
         registered_at: Location::caller(),
@@ -33,7 +35,7 @@ pub(super) fn raw_identifiers2type(callable: WithLocation<RawIdentifiers>) -> Ty
         value: callable,
         created_at,
     } = callable;
-    if callable.macro_name != "t" {
+    if callable.macro_name == "f" {
         panic!(
             "You need to use the `t!` macro to register type-like components (e.g. a state input).\n\
             Here you used the `f!` macro, which is reserved for function-like components, \
@@ -43,6 +45,7 @@ pub(super) fn raw_identifiers2type(callable: WithLocation<RawIdentifiers>) -> Ty
     Type {
         type_: pavex_bp_schema::RawIdentifiers {
             created_at: created_at2created_at(created_at),
+            created_by: CreatedBy::macro_name(callable.macro_name),
             import_path: callable.import_path.to_owned(),
         },
         registered_at: Location::caller(),
@@ -51,7 +54,8 @@ pub(super) fn raw_identifiers2type(callable: WithLocation<RawIdentifiers>) -> Ty
 
 pub(super) fn created_at2created_at(created_at: CreatedAt) -> pavex_bp_schema::CreatedAt {
     pavex_bp_schema::CreatedAt {
-        crate_name: created_at.package_name.to_owned(),
+        package_name: created_at.package_name.to_owned(),
+        package_version: created_at.package_version.to_owned(),
         module_path: created_at.module_path.to_owned(),
     }
 }

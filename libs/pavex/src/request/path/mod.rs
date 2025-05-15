@@ -51,7 +51,7 @@ pub use path_params::PathParams;
 /// for the type that it is applied to.
 ///
 /// Check out [`PathParams`](struct@PathParams) for more details on how to work with
-/// path parameters in Pavex.  
+/// path parameters in Pavex.
 /// Check out [`StructuralDeserialize`] if you are curious about the rationale behind this
 /// macro.
 ///

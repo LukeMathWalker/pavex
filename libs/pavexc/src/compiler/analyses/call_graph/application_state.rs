@@ -23,8 +23,7 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, GenericArgument, InvocationStyle, PathType, ResolvedPath, ResolvedPathSegment,
-    ResolvedType,
+    Callable, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType, ResolvedType,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -151,7 +150,7 @@ pub(crate) fn application_state_call_graph(
         let ok_wrapper = {
             let ok_wrapper_path = {
                 let mut v = application_state_result.resolved_path().segments;
-                v.push(ResolvedPathSegment {
+                v.push(FQPathSegment {
                     ident: "Ok".into(),
                     generic_arguments: vec![],
                 });
@@ -161,7 +160,7 @@ pub(crate) fn application_state_call_graph(
                 is_async: false,
                 takes_self_as_ref: false,
                 output: Some(application_state_result.clone().into()),
-                path: ResolvedPath {
+                path: FQPath {
                     segments: ok_wrapper_path,
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
@@ -174,7 +173,7 @@ pub(crate) fn application_state_call_graph(
         let err_wrapper = {
             let err_wrapper_path = {
                 let mut v = application_state_result.resolved_path().segments;
-                v.push(ResolvedPathSegment {
+                v.push(FQPathSegment {
                     ident: "Err".into(),
                     generic_arguments: vec![],
                 });
@@ -184,7 +183,7 @@ pub(crate) fn application_state_call_graph(
                 is_async: false,
                 takes_self_as_ref: false,
                 output: Some(application_state_result.into()),
-                path: ResolvedPath {
+                path: FQPath {
                     segments: err_wrapper_path,
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
@@ -257,17 +256,17 @@ pub(crate) fn application_state_call_graph(
                 let error_variant_constructor = Callable {
                     is_async: false,
                     takes_self_as_ref: false,
-                    path: ResolvedPath {
+                    path: FQPath {
                         segments: vec![
-                            ResolvedPathSegment {
+                            FQPathSegment {
                                 ident: "crate".into(),
                                 generic_arguments: vec![],
                             },
-                            ResolvedPathSegment {
+                            FQPathSegment {
                                 ident: "ApplicationStateError".into(),
                                 generic_arguments: vec![],
                             },
-                            ResolvedPathSegment {
+                            FQPathSegment {
                                 ident: error_type_name.to_owned(),
                                 generic_arguments: vec![],
                             },

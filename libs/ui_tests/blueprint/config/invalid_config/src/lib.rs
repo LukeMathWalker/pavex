@@ -53,8 +53,6 @@ pub fn blueprint() -> Blueprint {
     bp.config("e", t!(crate::E<'static>));
     // Some static, some elided.
     bp.config("f", t!(crate::F<'static, '_>));
-    // Key is not a valid Rust identifier
-    bp.config("12c", t!(std::string::String));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

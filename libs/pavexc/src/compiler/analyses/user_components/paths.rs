@@ -1,78 +1,168 @@
-use ahash::HashMap;
-use guppy::graph::PackageGraph;
-
+use super::UserComponent;
 use super::UserComponentId;
-use super::{UserComponent, auxiliary::AuxiliaryData};
+use super::auxiliary::AuxiliaryData;
+use crate::compiler::component::ConfigTypeValidationError;
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::ComponentKind;
 use crate::diagnostic::TargetSpan;
+use crate::language::{FQPath, ParseError, PathKind};
 use crate::{
     compiler::{
-        analyses::{
-            computations::ComputationDb, config_types::ConfigTypeDb, prebuilt_types::PrebuiltTypeDb,
-        },
-        component::{
-            ConfigType, ConfigTypeValidationError, PrebuiltType, PrebuiltTypeValidationError,
-        },
+        analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
+        component::{ConfigType, PrebuiltType, PrebuiltTypeValidationError},
         resolvers::{CallableResolutionError, TypeResolutionError, resolve_type_path},
     },
-    diagnostic::{CallableDefSource, CompilerDiagnostic},
+    diagnostic::CallableDefSource,
 };
-use crate::{language::ResolvedPath, rustdoc::CrateCollection, utils::comma_separated_list};
+use crate::{rustdoc::CrateCollection, utils::comma_separated_list};
+use guppy::graph::PackageGraph;
+use indexmap::IndexMap;
 
-/// Resolve all paths to their corresponding types or callables.
-/// Those items are then interned into the respective databases for later
-/// use.
-#[tracing::instrument(name = "Resolve types and callables", skip_all, level = "trace")]
-pub(super) fn resolve_paths(
-    id2resolved_path: &HashMap<UserComponentId, ResolvedPath>,
-    raw_db: &AuxiliaryData,
-    computation_db: &mut ComputationDb,
-    prebuilt_type_db: &mut PrebuiltTypeDb,
-    config_type_db: &mut ConfigTypeDb,
-    krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
-) {
-    for (id, user_component) in raw_db.iter() {
-        let Some(resolved_path) = id2resolved_path.get(&id) else {
-            // Annotated components don't have a resolved path attached to them.
-            continue;
-        };
-        if let UserComponent::PrebuiltType { .. } = &user_component {
-            match resolve_type_path(resolved_path, krate_collection) {
-                Ok(ty) => match PrebuiltType::new(ty) {
-                    Ok(prebuilt) => {
-                        prebuilt_type_db.get_or_intern(prebuilt, id);
-                    }
-                    Err(e) => invalid_prebuilt_type(e, resolved_path, id, raw_db, diagnostics),
-                },
-                Err(e) => cannot_resolve_type_path(e, id, raw_db, diagnostics),
-            };
-        } else if let UserComponent::ConfigType { key, .. } = &user_component {
-            match resolve_type_path(resolved_path, krate_collection) {
-                Ok(ty) => match ConfigType::new(ty, key.into()) {
-                    Ok(config) => {
-                        config_type_db.get_or_intern(config, id);
-                    }
-                    Err(e) => invalid_config_type(e, resolved_path, id, raw_db, diagnostics),
-                },
-                Err(e) => cannot_resolve_type_path(e, id, raw_db, diagnostics),
-            };
-        } else if let Err(e) =
-            computation_db.resolve_and_intern(krate_collection, resolved_path, Some(id))
-        {
-            cannot_resolve_callable_path(
-                e,
-                id,
-                raw_db,
-                krate_collection.package_graph(),
-                diagnostics,
-            );
+/// Match the id of a component with its fully-qualified path, if there is one.
+///
+/// # Implementation notes
+///
+/// We could do this work while we resolve the identifiers directly to
+/// types/callables.
+/// We isolate it as its own step to be able to pre-determine which crates
+/// we need to compute/fetch JSON docs for since we get higher throughput
+/// via a batch computation than by computing them one by one as the need
+/// arises.
+#[derive(Default)]
+pub struct FQPaths {
+    /// The path associated with each user component.
+    id2resolved_path: IndexMap<UserComponentId, FQPath>,
+    /// All paths until `resolved_up_to` (excluded) have been resolved to a type/callable.
+    ///
+    /// This field is used as cursor to avoid performing redudant resolutions if
+    /// later stages need to add (and then resolve) new paths.
+    resolved_up_to: usize,
+    /// All raw identifiers until `fully_qualified_up_to` (excluded) have been
+    /// converted into a fully qualified path and add to [`Self::id2resolved_path`]
+    /// (if the conversion was successful).
+    ///
+    /// This field is used as cursor to avoid performing redudant work if
+    /// later stages need to process new identifiers.
+    fully_qualified_up_to: usize,
+}
+
+impl FQPaths {
+    /// Create a new instance of [`ResolvedPaths`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Process all identifiers that have been registered with [`AuxiliaryData`].
+    pub fn process_identifiers(
+        &mut self,
+        db: &AuxiliaryData,
+        package_graph: &PackageGraph,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    ) {
+        for (id, _) in db.iter().skip(self.fully_qualified_up_to) {
+            self.process_identifier(id, db, package_graph, diagnostics);
         }
+        self.fully_qualified_up_to = db.iter().len();
+    }
+
+    /// Process a single raw identifier.
+    pub fn process_identifier(
+        &mut self,
+        id: UserComponentId,
+        db: &AuxiliaryData,
+        package_graph: &PackageGraph,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    ) {
+        let component = &db[id];
+        let Some(identifiers_id) = component.raw_identifiers_id() else {
+            return;
+        };
+        let identifiers = &db.identifiers_interner[identifiers_id];
+        let kind = match component.kind() {
+            ComponentKind::PrebuiltType | ComponentKind::ConfigType => PathKind::Type,
+            ComponentKind::RequestHandler
+            | ComponentKind::Fallback
+            | ComponentKind::Constructor
+            | ComponentKind::ErrorHandler
+            | ComponentKind::WrappingMiddleware
+            | ComponentKind::PostProcessingMiddleware
+            | ComponentKind::PreProcessingMiddleware
+            | ComponentKind::ErrorObserver => PathKind::Callable,
+        };
+        match FQPath::parse(identifiers, package_graph, kind) {
+            Ok(path) => {
+                self.id2resolved_path.insert(id, path);
+            }
+            Err(e) => invalid_identifiers(e, id, db, diagnostics),
+        }
+    }
+
+    /// Return an iterator over the stored paths.
+    pub(super) fn values(&self) -> impl Iterator<Item = &FQPath> {
+        self.id2resolved_path.values()
+    }
+
+    /// Resolve all paths to their corresponding types or callables.
+    /// Those items are then interned into the respective databases for later
+    /// use.
+    #[tracing::instrument(name = "Resolve types and callables", skip_all, level = "trace")]
+    pub(super) fn resolve(
+        &mut self,
+        aux: &mut AuxiliaryData,
+        computation_db: &mut ComputationDb,
+        prebuilt_type_db: &mut PrebuiltTypeDb,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    ) {
+        // First make sure we have processed all newly registered identifiers.
+        self.process_identifiers(aux, krate_collection.package_graph(), diagnostics);
+
+        let mut config_id2type = std::mem::take(&mut aux.config_id2type);
+        for (id, user_component) in aux.iter().skip(self.resolved_up_to) {
+            let Some(resolved_path) = self.id2resolved_path.get(&id) else {
+                // Annotated components don't have a resolved path attached to them.
+                continue;
+            };
+            if let UserComponent::PrebuiltType { .. } = &user_component {
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match PrebuiltType::new(ty) {
+                        Ok(prebuilt) => {
+                            prebuilt_type_db.get_or_intern(prebuilt, id);
+                        }
+                        Err(e) => invalid_prebuilt_type(e, resolved_path, id, aux, diagnostics),
+                    },
+                    Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
+                };
+            } else if let UserComponent::ConfigType { key, .. } = &user_component {
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match ConfigType::new(ty, key.into()) {
+                        Ok(config) => {
+                            config_id2type.insert(id, config);
+                        }
+                        Err(e) => invalid_config_type(e, resolved_path, id, aux, diagnostics),
+                    },
+                    Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
+                };
+            } else if let Err(e) =
+                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(id))
+            {
+                cannot_resolve_callable_path(
+                    e,
+                    id,
+                    aux,
+                    krate_collection.package_graph(),
+                    diagnostics,
+                );
+            }
+        }
+        self.resolved_up_to = self.id2resolved_path.len();
+        aux.config_id2type = config_id2type;
     }
 }
 
 fn invalid_prebuilt_type(
     e: PrebuiltTypeValidationError,
-    resolved_path: &ResolvedPath,
+    resolved_path: &FQPath,
     id: UserComponentId,
     db: &AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
@@ -151,9 +241,9 @@ fn invalid_prebuilt_type(
     diagnostics.push(diagnostic);
 }
 
-fn invalid_config_type(
+pub(super) fn invalid_config_type(
     e: ConfigTypeValidationError,
-    resolved_path: &ResolvedPath,
+    resolved_path: &FQPath,
     id: UserComponentId,
     db: &AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
@@ -161,7 +251,7 @@ fn invalid_config_type(
     use ConfigTypeValidationError::*;
     use std::fmt::Write as _;
 
-    let registration = &db.id2registration[&id];
+    let registration = &db.id2registration[id];
     let (target_span, label_msg) = match &e {
         CannotHaveAnyLifetimeParameters { .. }
         | CannotHaveUnassignedGenericTypeParameters { .. } => (
@@ -170,7 +260,7 @@ fn invalid_config_type(
         ),
         InvalidKey { .. } => (
             TargetSpan::ConfigKeySpan(registration),
-            "The config key was registered here",
+            "The config key was specified here",
         ),
     };
     let source = diagnostics.annotated(target_span, label_msg);
@@ -186,41 +276,36 @@ fn invalid_config_type(
                 .filter(|l| l.is_static() || l.is_elided())
                 .partition::<Vec<_>, _>(|l| l.is_elided());
             write!(&mut error_msg, "\n`{resolved_path}` has ").unwrap();
-            let mut parts = Vec::new();
-            if !named.is_empty() {
+            let part = if !named.is_empty() {
                 let n = named.len();
-                let part = if n == 1 {
+                if n == 1 {
                     let lifetime = &named[0];
-                    format!("1 named lifetime parameter (`'{lifetime}'`)")
+                    format!("1 named lifetime parameter, `{lifetime}`")
                 } else {
                     let mut part = String::new();
-                    write!(&mut part, "{n} named lifetime parameters (").unwrap();
+                    write!(&mut part, "{n} named lifetime parameters: ").unwrap();
                     comma_separated_list(&mut part, named.iter(), |s| format!("`'{s}`"), "and")
                         .unwrap();
-                    part.push(')');
                     part
-                };
-                parts.push(part);
-            }
-            if !elided.is_empty() {
+                }
+            } else if !elided.is_empty() {
                 let n = elided.len();
-                let part = if n == 1 {
+                if n == 1 {
                     "1 elided lifetime parameter".to_string()
                 } else {
                     format!("{n} elided lifetime parameters")
-                };
-                parts.push(part);
-            }
-            if !static_.is_empty() {
+                }
+            } else if !static_.is_empty() {
                 let n = static_.len();
-                let part = if n == 1 {
+                if n == 1 {
                     "1 static lifetime parameter".to_string()
                 } else {
                     format!("{n} static lifetime parameters")
-                };
-                parts.push(part);
-            }
-            comma_separated_list(&mut error_msg, parts.iter(), |s| s.to_owned(), "and").unwrap();
+                }
+            } else {
+                unreachable!()
+            };
+            error_msg.push_str(&part);
             error_msg.push('.');
 
             Some(
@@ -229,29 +314,35 @@ fn invalid_config_type(
             )
         }
         ConfigTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
-            let generic_type_parameters = ty.unassigned_generic_type_parameters();
-            if generic_type_parameters.len() == 1 {
-                write!(
-                            &mut error_msg,
-                            "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
-                            generic_type_parameters[0]
-                        ).unwrap();
-            } else {
-                write!(
-                            &mut error_msg,
-                            "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
-                            generic_type_parameters.len(),
-                        ).unwrap();
-                comma_separated_list(
-                    &mut error_msg,
-                    generic_type_parameters.iter(),
-                    |s| format!("`{s}`"),
-                    "and",
+            if registration.kind.is_attribute() {
+                Some(
+                    "Remove all generic type parameters from the definition of your configuration type.".into()
                 )
-                .unwrap();
-                write!(&mut error_msg, ".").unwrap();
+            } else {
+                let generic_type_parameters = ty.unassigned_generic_type_parameters();
+                if generic_type_parameters.len() == 1 {
+                    write!(
+                        &mut error_msg,
+                        "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
+                        generic_type_parameters[0]
+                    ).unwrap();
+                } else {
+                    write!(
+                        &mut error_msg,
+                        "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
+                        generic_type_parameters.len(),
+                    ).unwrap();
+                    comma_separated_list(
+                        &mut error_msg,
+                        generic_type_parameters.iter(),
+                        |s| format!("`{s}`"),
+                        "and",
+                    )
+                    .unwrap();
+                    write!(&mut error_msg, ".").unwrap();
+                }
+                Some("Set the generic parameters to concrete types when registering the type as configuration. E.g. `bp.config(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string())
             }
-            Some("Set the generic parameters to concrete types when registering the type as configuration. E.g. `bp.config(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string())
         }
     };
     let e = anyhow::anyhow!(e).context(error_msg);
@@ -270,7 +361,7 @@ fn cannot_resolve_type_path(
 ) {
     let component = &db[id];
     let source = diagnostics.annotated(
-        TargetSpan::RawIdentifiers(&db.id2registration[&id], component.kind()),
+        TargetSpan::RawIdentifiers(&db.id2registration[id], component.kind()),
         "The type that we can't resolve",
     );
     let diagnostic = CompilerDiagnostic::builder(e)
@@ -292,7 +383,7 @@ pub(super) fn cannot_resolve_callable_path(
     match e {
         CallableResolutionError::UnknownCallable(_) => {
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
+                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
                 format!("The {kind} that we can't resolve"),
             );
             let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
@@ -311,7 +402,7 @@ pub(super) fn cannot_resolve_callable_path(
                         def.annotated_source
                     });
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
+                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
                 format!("The {kind} was registered here"),
             );
             let diagnostic = CompilerDiagnostic::builder(e.clone())
@@ -322,7 +413,7 @@ pub(super) fn cannot_resolve_callable_path(
         }
         CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[&id], kind),
+                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
                 format!("It was registered as a {kind} here"),
             );
             let message = format!(
@@ -379,4 +470,34 @@ pub(super) fn cannot_resolve_callable_path(
             diagnostics.push(diagnostic);
         }
     }
+}
+
+fn invalid_identifiers(
+    e: ParseError,
+    id: UserComponentId,
+    db: &AuxiliaryData,
+    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+) {
+    let label_msg = match &e {
+        ParseError::InvalidPath(_) => "The invalid path",
+        ParseError::PathMustBeAbsolute(_) => "The relative path",
+    };
+    let source = diagnostics.annotated(db.registration_target(&id), label_msg);
+    let help = match &e {
+        ParseError::InvalidPath(inner) => {
+            inner.raw_path.strip_suffix("()").map(|stripped| format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))
+        }
+        ParseError::PathMustBeAbsolute(_) =>
+            Some(
+                "If it is a local import, the path must start with `crate::`, `self::` or `super::`.\n\
+                If it is an import from a dependency, the path must start with \
+                the dependency name (e.g. `dependency::`)."
+                .to_string(),
+            )
+    };
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(source)
+        .optional_help(help)
+        .build();
+    diagnostics.push(diagnostic);
 }

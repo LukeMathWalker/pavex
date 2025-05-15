@@ -1,7 +1,11 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    compiler::{analyses::domain::DomainGuard, component::DefaultStrategy, interner::Interner},
+    compiler::{
+        analyses::domain::DomainGuard,
+        component::{ConfigType, DefaultStrategy},
+        interner::Interner,
+    },
     diagnostic::{Registration, TargetSpan},
     rustdoc::GlobalItemId,
 };
@@ -35,11 +39,11 @@ pub(super) struct AuxiliaryData {
     /// registered at.
     ///
     /// Invariants: there is an entry for every single user component.
-    pub(super) id2registration: HashMap<UserComponentId, Registration>,
+    pub(super) id2registration: la_arena::ArenaMap<UserComponentId, Registration>,
     /// Associate each user-registered component with its lifecycle.
     ///
     /// Invariants: there is an entry for every single user component.
-    pub(super) id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    pub(super) id2lifecycle: la_arena::ArenaMap<UserComponentId, Lifecycle>,
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     pub(super) id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
@@ -47,10 +51,22 @@ pub(super) struct AuxiliaryData {
     ///
     /// Invariants: there is an entry for every constructor, configuration type and prebuilt type.
     pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Assign to each fallible component the error handler that was registered for it,
+    /// if any.
+    pub(super) fallible_id2error_handler_id: HashMap<UserComponentId, UserComponentId>,
+    /// Assign each config id to its type and key.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    pub(super) config_id2type: HashMap<UserComponentId, ConfigType>,
     /// Determine if a configuration type should have a default.
     ///
-    /// Invariants: there is an entry for configuration type.
+    /// Invariants: there is an entry for every configuration type.
     pub(super) config_id2default_strategy: HashMap<UserComponentId, DefaultStrategy>,
+    /// Determine if a configuration type should be included in `ApplicationConfig`
+    /// even if it is unused.
+    ///
+    /// Invariants: there is an entry for every configuration type.
+    pub(super) config_id2include_if_unused: HashMap<UserComponentId, bool>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -115,12 +131,12 @@ impl AuxiliaryData {
 
         for (id, component) in self.component_interner.iter() {
             assert!(
-                self.id2lifecycle.contains_key(&id),
+                self.id2lifecycle.contains_idx(id),
                 "There is no lifecycle registered for the user-provided {} #{id:?}",
                 component.kind()
             );
             assert!(
-                self.id2registration.contains_key(&id),
+                self.id2registration.contains_idx(id),
                 "There is no location registered for the user-provided {} #{id:?}",
                 component.kind()
             );
@@ -140,12 +156,12 @@ impl AuxiliaryData {
                 ConfigType { .. } => {
                     assert!(
                         self.id2cloning_strategy.contains_key(&id),
-                        "There is no cloning strategy registered for the user-registered {} #{id:?}",
+                        "There is no cloning strategy registered for the user-registered config-type {} #{id:?}",
                         component.kind(),
                     );
                     assert!(
                         self.config_id2default_strategy.contains_key(&id),
-                        "There is no default strategy registered for the user-registered {} #{id:?}",
+                        "There is no default strategy registered for the user-registered config-type {} #{id:?}",
                         component.kind(),
                     );
                 }
@@ -193,7 +209,7 @@ impl AuxiliaryData {
     }
 
     pub(crate) fn registration_target(&self, id: &UserComponentId) -> TargetSpan {
-        TargetSpan::Registration(&self.id2registration[id], self[id].kind())
+        TargetSpan::Registration(&self.id2registration[*id], self[id].kind())
     }
 }
 
