@@ -103,6 +103,7 @@ pub struct AuthConfig {
 
 impl AuthConfig {
     /// Return the private key to be used for JWT signing.
+    #[pavex::singleton]
     pub fn encoding_key(&self) -> Result<EncodingKey, jsonwebtoken::errors::Error> {
         EncodingKey::from_ed_pem(self.eddsa_private_key_pem.expose_secret().as_bytes())
     }
