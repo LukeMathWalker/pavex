@@ -17,9 +17,9 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 [dependencies]
 cargo_px_env = "0.1"
 humantime-serde = "1.1"
-pavex = { version = "0.1" }
-pavex_tracing = { version = "0.1" }
-pavex_cli_client = { version = "0.1" }
+pavex = { version = "0.1.80" }
+pavex_tracing = { version = "0.1.80" }
+pavex_cli_client = { version = "0.1.80" }
 tracing = "0.1"
 tracing_log_error = "0.1"
 serde = { version = "1", features = ["derive"] }
