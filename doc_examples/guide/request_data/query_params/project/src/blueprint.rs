@@ -1,9 +1,9 @@
+use pavex::blueprint::from;
 use pavex::blueprint::Blueprint;
-use pavex::request::query::QueryParams;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    QueryParams::register(&mut bp);
+    bp.import(from![pavex]);
     bp.nest(crate::query_params::blueprint());
     bp
 }

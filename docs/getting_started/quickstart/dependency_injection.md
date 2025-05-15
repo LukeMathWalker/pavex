@@ -20,8 +20,7 @@ In particular, this includes a constructor for [`PathParams`][PathParams].
 
 ## A new extractor: `UserAgent`
 
-Kits give you a head start, but they're not the last stop on your journey: to leverage Pavex to
-its full potential, you'll soon need to define and register your own constructors.\
+The framework gives you a head start with its built-in components, but they're not enough: to build a real application with Pavex, you'll soon need to define and register your own constructors.\
 There's no substitute for hands-on experience: let's design together a brand-new constructor
 for our demo project to get a better understanding of how it all works.\
 We only want to greet people who include a `User-Agent` header in their request(1).
@@ -53,7 +52,7 @@ If you try to build the project now, you'll get an error from Pavex:
 Pavex cannot do miracles, nor does it want to: it only knows how to construct a type if you tell it how to do so.
 
 By the way: this is also your first encounter with Pavex's error messages!\
-We strive to make them as helpful as possible. If you find them confusing, report it as a bug!
+We strive to make them as helpful as possible. If you find them confusing, file a bug report.
 
 ## Add a new constructor
 
@@ -67,12 +66,11 @@ minus the body.
 
 The `#[request_scoped]` annotation tells Pavex that the new method is a **constructor**.\
 
-The "missing constructor" error we were discussing earlier should be fixed now, since
-our [`Blueprint`][Blueprint] imports all constructors defined in the current crate:
+Try to recompile the project—there should be no error now.\
+The new constructor was picked up immediately because our [`Blueprint`][Blueprint] 
+is configured to import all constructors defined in the current crate:
 
 --8<-- "doc_examples/quickstart/06-register.snap"
-
-Make sure that the project compiles successfully at this point.
 
 ## Lifecycles
 
@@ -82,7 +80,7 @@ will invoke a request-scoped constructor **at most once per request**.
 
 You can register constructors with two other lifecycles: **[singleton][lifecycle]**
 and **[transient][lifecycle]**.\
-Singletons are built once and shared across requests.\
+Singletons are built once and shared across requests. 
 Transient constructors, instead, are invoked every time their output type is needed—potentially
 multiple times for the same request.
 
@@ -96,9 +94,8 @@ multiple times for the same request.
   As a request-scoped constructor, it's done once and the outcome is reused.
 
 [Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[request_scoped]: /api_reference/pavex/macro.request_scoped.html
+[request_scoped]: /api_reference/pavex/attr.request_scoped.html
 [f!]: /api_reference/pavex/macro.f!.html
 [PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
-[ApiKit]: /api_reference/pavex/kit/struct.ApiKit.html
 [lifecycle]: ../../guide/dependency_injection/constructors.md#lifecycles
 [RequestHead]: /api_reference/pavex/request/struct.RequestHead.html

@@ -5,16 +5,16 @@ commands:
 snippets:
   - name: "installation"
     source_path: "src/blueprint.rs"
-    ranges: [ "0..6", "11..12" ]
-    hl_lines: [ 6 ]
+    ranges: ["0..6", "9..10"]
+    hl_lines: [6]
   - name: "extraction"
     source_path: "src/urlencoded/routes.rs"
-    ranges: [ "0..11", "12..13" ]
-    hl_lines: [ 10 ]
+    ranges: ["0..11", "12..13"]
+    hl_lines: [10]
   - name: "whole"
     source_path: "src/urlencoded/routes.rs"
-    ranges: [ "0..11", "12..13" ]
+    ranges: ["0..11", "12..13"]
   - name: "struct_with_attr"
     source_path: "src/urlencoded/routes.rs"
-    ranges: [ "3..8" ]
-    hl_lines: [ 2 ]
+    ranges: ["3..8"]
+    hl_lines: [2]

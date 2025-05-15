@@ -9,18 +9,9 @@ The whole request body is buffered in memory before being deserialized.
 
 ## Registration
 
-If you're using the default [`ApiKit`][ApiKit],
-you don't need to register a constructor for [`JsonBody`][JsonBody]:
-it's already included in the kit.
-
-If you're not using [`ApiKit`][ApiKit], you need to register a constructor for [`JsonBody<T>`][JsonBody].
-You can use [`JsonBody::register`][JsonBody::register] to register the default constructor
-and error handler:
+To use [`JsonBody`][JsonBody] in your application, you need to import its constructor from `pavex`:
 
 --8<-- "doc_examples/guide/request_data/json/project-installation.snap"
-
-1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!\
-   Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
 
 ## Extraction
 
@@ -62,4 +53,3 @@ if the field contains escape sequences, but you tried to use `&str` as its field
 [JsonBody::register]: /api_reference/pavex/request/body/struct.JsonBody.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
-[ApiKit]: ../../../dependency_injection/kits.md

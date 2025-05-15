@@ -12,18 +12,9 @@ The whole request body is buffered in memory before being deserialized.
 
 ## Registration
 
-If you're using the default [`ApiKit`][ApiKit],
-you don't need to register a constructor for [`UrlEncodedBody<T>`][UrlEncodedBody] manually:
-it's already included in the kit.
-
-If you're not using [`ApiKit`][ApiKit], you need to register a constructor for [`UrlEncodedBody<T>`][UrlEncodedBody].
-You can use [`UrlEncodedBody::register`][UrlEncodedBody::register] to register the default constructor
-and error handler:
+To use [`UrlEncodedBody<T>`][UrlEncodedBody] in your application, you need to import its constructor from `pavex`:
 
 --8<-- "doc_examples/guide/request_data/urlencoded/project-installation.snap"
-
-1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!\
-   Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
 
 ## Extraction
 
@@ -90,7 +81,6 @@ It borrows from the buffered request body if possible, it allocates a new `Strin
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime
 error if the field is percent-encoded, but you minimise memory usage when it is.
 
-[ApiKit]: ../../../dependency_injection/kits.md
 [BufferedBody]: /api_reference/pavex/request/body/struct.BufferedBody.html
 [UrlEncodedBody]: /api_reference/pavex/request/body/struct.UrlEncodedBody.html
 [UrlEncodedBody::register]: /api_reference/pavex/request/body/struct.UrlEncodedBody.html#method.register

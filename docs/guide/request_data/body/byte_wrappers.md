@@ -1,24 +1,14 @@
-# Low-level access
-
-[`BufferedBody`][BufferedBody] is Pavex's main interface to work with the bytes of the incoming request body.
+# Bytes
 
 [`BufferedBody`][BufferedBody] consumes the [raw byte stream](../wire_data.md#rawincomingbody) and
-buffers the entire body of the incoming request in memory.\
+buffers the entire body of the incoming request in memory.
 At the same time, it takes care of enforcing [sane limits](#body-size-limit) to prevent resource exhaustion attacks.
 
 ## Registration
 
-To use [`BufferedBody`][BufferedBody] in your project, you need to register a constructor for it.
-You can use [`BufferedBody::register`][BufferedBody::register] to register its default constructor
-and error handler:
+To use [`BufferedBody`][BufferedBody] in your application, you need to import its constructor from `pavex`:
 
 --8<-- "doc_examples/guide/request_data/buffered_body/project-installation.snap"
-
-1. You also need to register a constructor for [`BodySizeLimit`][BodySizeLimit]!
-
-If you're using the default [`ApiKit`](../../dependency_injection/kits.md),
-you don't need to register a constructor for [`BufferedBody`][BufferedBody] manually:
-it's already included in the kit.
 
 ## Use cases
 

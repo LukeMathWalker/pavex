@@ -25,7 +25,7 @@ Pavex is complaining: you can register a fallible constructor, but you must also
 
 An error handler must convert a reference to the error type into a [`Response`][Response] (1).\
 It decouples the detection of an error from its representation on the wire: a constructor doesn't need to know how the
-error will be represented in the response, it just needs to signal that something went wrong.\
+error will be represented in the response, it just needs to signal that something went wrong.
 You can then change the representation of an error on the wire without touching the constructor: you only need to change
 the
 error handler.
