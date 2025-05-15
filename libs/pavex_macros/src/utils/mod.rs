@@ -13,7 +13,9 @@ use quote::quote;
 /// feature of this crate.
 pub fn deny_unreachable_pub_attr() -> impl ToTokens {
     if cfg!(feature = "allow_unreachable_pub") {
-        quote! {}
+        quote! {
+            #[warn(unreachable_pub)]
+        }
     } else {
         quote! {
             #[deny(unreachable_pub)]
