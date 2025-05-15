@@ -1,0 +1,13 @@
+error: Middlewares must be public.
+       Mark `a` as `pub`, and make sure it can be imported from outside your crate.
+ --> tests/pre_process/fail/not_public.rs:6:1
+  |
+6 | fn a() -> A {
+  | ^^^^^^^^^^^
+
+error: Middlewares must be public.
+       Mark `b` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/pre_process/fail/not_public.rs:13:1
+   |
+13 | pub(crate) fn b() -> B {
+   | ^^^^^^^^^^
