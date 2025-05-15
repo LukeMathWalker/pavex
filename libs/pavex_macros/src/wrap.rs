@@ -79,7 +79,7 @@ fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream 
     let name = name.to_string();
 
     // If the user didn't specify an identifier, generate one based on the function name.
-    let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
+    let id = id.unwrap_or_else(|| format_ident!("{}_ID", name.to_case(Case::Constant)));
     let mut properties = quote! {
         id = #id,
     };
@@ -90,7 +90,23 @@ fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream 
         });
     }
 
+    let id_docs = format!(
+        r#"A strongly-typed id to add [`{name}`] as a wrapping middleware to your Pavex application.
+
+# Example
+
+```rust,ignore
+use pavex::blueprint::Blueprint;
+// [...]
+// ^ Import `{id}` here
+
+let mut bp = Blueprint::new();
+// Add `{name}` as a wrapping middleware to your application.
+bp.wrap({id});
+```"#
+    );
     let id_def = quote_spanned! { id_span =>
+        #[doc = #id_docs]
         pub const #id: ::pavex::blueprint::reflection::WithLocation<::pavex::blueprint::reflection::RawIdentifiers> =
             ::pavex::with_location!(::pavex::blueprint::reflection::RawIdentifiers {
                 import_path: concat!(module_path!(), "::", #name),
