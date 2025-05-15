@@ -21,9 +21,24 @@ targets = [
 pr-run-mode = "plan"
 # Skip checking whether the specified configuration files are up to date
 allow-dirty = []
-# Use faster built-in runners for macOS on ARM
-github-custom-runners = { aarch64-apple-darwin = "macos-14", x86_64-apple-darwin = "macos-14" }
 # Whether to install an updater program
 install-updater = false
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
+
+[dist.github-custom-runners]
+# Workarounds to move away from ubuntu-20.04,
+# coming from https://github.com/axodotdev/cargo-dist/issues/1760#issuecomment-2769218034
+global = "ubuntu-latest"
+
+# Use faster built-in runners for macOS on ARM
+aarch64-apple-darwin = "macos-14"
+x86_64-apple-darwin = "macos-14"
+
+[dist.github-custom-runners.x86_64-unknown-linux-gnu]
+runner = "ubuntu-latest"
+container = { image = "quay.io/pypa/manylinux_2_28_x86_64", host = "x86_64-unknown-linux-musl" }
+
+[dist.github-custom-runners.x86_64-unknown-linux-musl]
+runner = "ubuntu-latest"
+container = { image = "quay.io/pypa/musllinux_1_2_x86_64", host = "x86_64-unknown-linux-musl" }
