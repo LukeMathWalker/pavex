@@ -5,7 +5,7 @@ use std::future::IntoFuture;
 use tracing::Instrument;
 
 /// A logging middleware that instruments the request processing pipeline with
-/// [`RootSpan`].  
+/// [`RootSpan`].
 /// All `tracing` spans entered after `logger` executes will be children of [`RootSpan`],
 /// either directly or transitively.
 ///
@@ -15,16 +15,17 @@ use tracing::Instrument;
 ///
 /// ```rust
 /// use pavex::blueprint::Blueprint;
-/// use pavex::f;
+/// use pavex_tracing::LOGGER_ID;
 ///
 /// let mut bp = Blueprint::new();
-/// bp.wrap(f!(pavex_tracing::logger));
+/// bp.wrap(LOGGER_ID);
 /// ```
 ///
 /// You will also need to register a constructor for [`RootSpan`].
 /// Check out its documentation for more information.
 ///
 /// [`Blueprint::wrap`]: pavex::blueprint::Blueprint::wrap
+#[pavex::wrap]
 pub async fn logger<C>(root_span: RootSpan, next: Next<C>) -> Response
 where
     C: IntoFuture<Output = Response>,

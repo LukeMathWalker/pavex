@@ -6,5 +6,5 @@ pub mod fields;
 mod mw;
 mod root_span;
 
-pub use mw::logger;
+pub use mw::{LOGGER_ID, logger};
 pub use root_span::RootSpan;
