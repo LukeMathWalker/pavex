@@ -18,7 +18,7 @@ pub fn handler() -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::mw));
-    bp.wrap(MW_1);
+    bp.wrap(MW_1_ID);
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }
