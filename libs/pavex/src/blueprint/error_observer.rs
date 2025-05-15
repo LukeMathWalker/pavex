@@ -25,13 +25,6 @@ pub struct RegisteredErrorObserver<'a> {
 /// # Guide
 ///
 /// Check out [`Blueprint::error_observer`] for an introduction to error observers in Pavex.
-///
-/// # Use cases
-///
-/// [`ErrorObserver`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
-/// to allow users to customize (or disable!)
-/// the bundled observers **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct ErrorObserver {
     pub(in crate::blueprint) callable: Callable,

@@ -13,11 +13,6 @@ use super::RegisteredConfigType;
 ///
 /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
 /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
-///
-/// # Use cases
-///
-/// [`ConfigType`] is primarily used by kits to allow users to customize (or disable!)
-/// configuration types **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct ConfigType {
     pub(in crate::blueprint) type_: Type,

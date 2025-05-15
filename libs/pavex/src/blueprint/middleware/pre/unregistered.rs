@@ -9,13 +9,6 @@ use pavex_bp_schema::Callable;
 /// # Guide
 ///
 /// Check out [`Blueprint::pre_process`] for an introduction to pre_processing middlewares in Pavex.
-///
-/// # Use cases
-///
-/// [`PreProcessingMiddleware`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
-/// to allow users to customize (or disable!)
-/// the bundled middlewares **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct PreProcessingMiddleware {
     pub(in crate::blueprint) callable: Callable,

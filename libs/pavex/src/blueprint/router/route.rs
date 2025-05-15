@@ -76,13 +76,6 @@ impl RegisteredRoute<'_> {
 ///
 /// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
 /// for a thorough introduction to routing in Pavex applications.
-///
-/// # Use cases
-///
-/// [`Route`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
-/// to allow users to customize (or disable!)
-/// the bundled routes **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct Route {
     pub(in crate::blueprint) method_guard: MethodGuard,

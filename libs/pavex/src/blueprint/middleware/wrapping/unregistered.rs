@@ -9,13 +9,6 @@ use pavex_bp_schema::Callable;
 /// # Guide
 ///
 /// Check out [`Blueprint::wrap`] for an introduction to wrapping middlewares in Pavex.
-///
-/// # Use cases
-///
-/// [`crate::blueprint::middleware::WrappingMiddleware`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
-/// to allow users to customize (or disable!)
-/// the bundled middlewares **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
 pub struct WrappingMiddleware {
     pub(in crate::blueprint) callable: Callable,
