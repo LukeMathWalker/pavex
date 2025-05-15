@@ -109,7 +109,7 @@ fn emit(
     let name = name.to_string();
 
     // If the user didn't specify an identifier, generate one based on the function name.
-    let id = id.unwrap_or_else(|| format_ident!("{}_ID", name.to_case(Case::Constant)));
+    let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
     let mut properties = quote! {
         id = #id,
     };
