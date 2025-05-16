@@ -70,20 +70,20 @@ impl AnnotationProperties {
     fn from_meta(kind: AnnotationKind, item: &syn::Meta) -> Result<Self, InvalidAttributeParams> {
         match kind {
             AnnotationKind::Constructor => {
-                model::ConstructorProperties::from_meta(&item).map(Into::into)
+                model::ConstructorProperties::from_meta(item).map(Into::into)
             }
-            AnnotationKind::Config => model::ConfigProperties::from_meta(&item).map(Into::into),
+            AnnotationKind::Config => model::ConfigProperties::from_meta(item).map(Into::into),
             AnnotationKind::WrappingMiddleware => {
-                model::WrappingMiddlewareProperties::from_meta(&item).map(Into::into)
+                model::WrappingMiddlewareProperties::from_meta(item).map(Into::into)
             }
             AnnotationKind::PreProcessingMiddleware => {
-                model::PreProcessingMiddlewareProperties::from_meta(&item).map(Into::into)
+                model::PreProcessingMiddlewareProperties::from_meta(item).map(Into::into)
             }
             AnnotationKind::PostProcessingMiddleware => {
-                model::PostProcessingMiddlewareProperties::from_meta(&item).map(Into::into)
+                model::PostProcessingMiddlewareProperties::from_meta(item).map(Into::into)
             }
             AnnotationKind::ErrorObserver => {
-                model::ErrorObserverProperties::from_meta(&item).map(Into::into)
+                model::ErrorObserverProperties::from_meta(item).map(Into::into)
             }
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
@@ -117,11 +117,11 @@ impl AnnotationKind {
         use AnnotationKind::*;
 
         match self {
-            Constructor { .. } => "pavex::diagnostic::constructor",
-            Config { .. } => "pavex::diagnostic::config",
-            WrappingMiddleware { .. } => "pavex::diagnostic::wrap",
-            PreProcessingMiddleware { .. } => "pavex::diagnostic::pre_process",
-            PostProcessingMiddleware { .. } => "pavex::diagnostic::post_process",
+            Constructor => "pavex::diagnostic::constructor",
+            Config => "pavex::diagnostic::config",
+            WrappingMiddleware => "pavex::diagnostic::wrap",
+            PreProcessingMiddleware => "pavex::diagnostic::pre_process",
+            PostProcessingMiddleware => "pavex::diagnostic::post_process",
             ErrorObserver => "pavex::diagnostic::error_observer",
         }
     }
