@@ -15,10 +15,10 @@ use tracing::Instrument;
 ///
 /// ```rust
 /// use pavex::blueprint::Blueprint;
-/// use pavex_tracing::LOGGER_ID;
+/// use pavex_tracing::LOGGER;
 ///
 /// let mut bp = Blueprint::new();
-/// bp.wrap(LOGGER_ID);
+/// bp.wrap(LOGGER);
 /// ```
 ///
 /// You will also need to register a constructor for [`RootSpan`].

@@ -11,12 +11,12 @@ use pavex_tracing::fields::{
     http_request_server_id, http_response_status_code, http_route, network_protocol_version,
     url_path, url_query, user_agent_original,
 };
-use pavex_tracing::{LOGGER_ID, RootSpan};
+use pavex_tracing::{LOGGER, RootSpan};
 use tracing_log_error::log_error;
 
 /// Register telemetry middlewares and an error observer with the application blueprint.
 pub(crate) fn register(bp: &mut Blueprint) {
-    bp.wrap(LOGGER_ID);
+    bp.wrap(LOGGER);
     bp.post_process(f!(self::response_logger));
     bp.error_observer(f!(self::error_logger));
 }
