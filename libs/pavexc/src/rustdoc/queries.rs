@@ -1361,7 +1361,7 @@ fn get_external_crate_version(external_crate: &ExternalCrate) -> Option<Version>
     if let Some(url) = &external_crate.html_root_url {
         url.trim_end_matches('/')
             .split('/')
-            .last()
+            .next_back()
             .map(Version::parse)
             .and_then(|x| x.ok())
     } else {

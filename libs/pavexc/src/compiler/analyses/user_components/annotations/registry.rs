@@ -182,18 +182,18 @@ fn check_item_compatibility(
     diagnostics: &mut DiagnosticSink,
 ) -> Result<(), ()> {
     match annotation.kind() {
-        AnnotationKind::PreProcessingMiddleware { .. }
-        | AnnotationKind::PostProcessingMiddleware { .. }
-        | AnnotationKind::WrappingMiddleware { .. }
-        | AnnotationKind::Constructor { .. }
+        AnnotationKind::PreProcessingMiddleware
+        | AnnotationKind::PostProcessingMiddleware
+        | AnnotationKind::WrappingMiddleware
+        | AnnotationKind::Constructor
             if matches!(item.inner, ItemEnum::Function(_)) => {}
-        AnnotationKind::Config { .. }
+        AnnotationKind::Config
             if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {}
-        AnnotationKind::PreProcessingMiddleware { .. }
-        | AnnotationKind::PostProcessingMiddleware { .. }
-        | AnnotationKind::WrappingMiddleware { .. }
-        | AnnotationKind::Constructor { .. }
-        | AnnotationKind::Config { .. } => {
+        AnnotationKind::PreProcessingMiddleware
+        | AnnotationKind::PostProcessingMiddleware
+        | AnnotationKind::WrappingMiddleware
+        | AnnotationKind::Constructor
+        | AnnotationKind::Config => {
             // TODO: Only emit an error if it's a workspace package.
             unsupported_item_kind(annotation.attribute(), item, diagnostics);
             return Err(());
@@ -266,11 +266,11 @@ impl AnnotatedItem {
     /// The name of the macro that was used to attach this annotation.
     pub fn created_by(&self) -> CreatedBy {
         let name = match self.properties.kind() {
-            AnnotationKind::PreProcessingMiddleware { .. } => "pre_process",
-            AnnotationKind::PostProcessingMiddleware { .. } => "post_process",
-            AnnotationKind::WrappingMiddleware { .. } => "wrap",
-            AnnotationKind::Constructor { .. } => "constructor",
-            AnnotationKind::Config { .. } => "config",
+            AnnotationKind::PreProcessingMiddleware => "pre_process",
+            AnnotationKind::PostProcessingMiddleware => "post_process",
+            AnnotationKind::WrappingMiddleware => "wrap",
+            AnnotationKind::Constructor => "constructor",
+            AnnotationKind::Config => "config",
         };
         CreatedBy::macro_name(name)
     }

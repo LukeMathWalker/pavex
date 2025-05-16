@@ -277,7 +277,7 @@ pub(crate) fn resolve_type(
                         GenericArgs::Parenthesized { .. } => {
                             return Err(anyhow!("I don't support function pointers yet. Sorry!"));
                         }
-                        GenericArgs::ReturnTypeNotation { .. } => {
+                        GenericArgs::ReturnTypeNotation => {
                             return Err(anyhow!(
                                 "I don't support return-type notation yet. Sorry!"
                             ));

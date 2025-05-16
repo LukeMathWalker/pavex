@@ -494,7 +494,7 @@ fn find_match_branching_ancestor(
         if ignore_set.contains(ancestor_index.index()) {
             continue;
         }
-        if let CallGraphNode::MatchBranching { .. } = &call_graph[ancestor_index] {
+        if let CallGraphNode::MatchBranching = &call_graph[ancestor_index] {
             candidates.push(ancestor_index);
         }
     }
