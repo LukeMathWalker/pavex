@@ -105,6 +105,9 @@ pub mod route_0 {
             if let Some(response) = pre_processing_0().await.into_response() {
                 break 'incoming response;
             }
+            if let Some(response) = pre_processing_1().await.into_response() {
+                break 'incoming response;
+            }
             handler().await
         };
         response
@@ -121,6 +124,11 @@ pub mod route_0 {
         pavex::response::Response,
     > {
         app::pre()
+    }
+    async fn pre_processing_1() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
+        app::pre1()
     }
     async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
@@ -157,6 +165,9 @@ pub mod route_1 {
             if let Some(response) = pre_processing_0().await.into_response() {
                 break 'incoming response;
             }
+            if let Some(response) = pre_processing_1().await.into_response() {
+                break 'incoming response;
+            }
             handler(s_0).await
         };
         response
@@ -176,6 +187,11 @@ pub mod route_1 {
         pavex::response::Response,
     > {
         app::pre()
+    }
+    async fn pre_processing_1() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
+        app::pre1()
     }
     async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;

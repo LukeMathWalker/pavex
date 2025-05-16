@@ -1,0 +1,5 @@
+error: #[pavex::pre_process] can only be applied to free functions.
+ --> tests/pre_process/fail/not_a_function.rs:7:5
+  |
+7 |     const A: usize = 42;
+  |     ^^^^^^^^^^^^^^^^^^^^

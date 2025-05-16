@@ -6,7 +6,7 @@ use std::{
 use ahash::HashMap;
 use guppy::{PackageId, graph::PackageGraph};
 use itertools::Itertools as _;
-use pavex_bp_schema::CreatedAt;
+use pavex_bp_schema::{CreatedAt, CreatedBy};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{Enum, ItemEnum, Struct};
 
@@ -182,11 +182,18 @@ fn check_item_compatibility(
     diagnostics: &mut DiagnosticSink,
 ) -> Result<(), ()> {
     match annotation.kind() {
-        AnnotationKind::WrappingMiddleware { .. } | AnnotationKind::Constructor { .. }
+        AnnotationKind::PreProcessingMiddleware
+        | AnnotationKind::PostProcessingMiddleware
+        | AnnotationKind::WrappingMiddleware
+        | AnnotationKind::Constructor
             if matches!(item.inner, ItemEnum::Function(_)) => {}
-        AnnotationKind::Config { .. }
+        AnnotationKind::Config
             if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {}
-        _ => {
+        AnnotationKind::PreProcessingMiddleware
+        | AnnotationKind::PostProcessingMiddleware
+        | AnnotationKind::WrappingMiddleware
+        | AnnotationKind::Constructor
+        | AnnotationKind::Config => {
             // TODO: Only emit an error if it's a workspace package.
             unsupported_item_kind(annotation.attribute(), item, diagnostics);
             return Err(());
@@ -254,6 +261,18 @@ impl AnnotatedItem {
             }
             _ => None,
         }
+    }
+
+    /// The name of the macro that was used to attach this annotation.
+    pub fn created_by(&self) -> CreatedBy {
+        let name = match self.properties.kind() {
+            AnnotationKind::PreProcessingMiddleware => "pre_process",
+            AnnotationKind::PostProcessingMiddleware => "post_process",
+            AnnotationKind::WrappingMiddleware => "wrap",
+            AnnotationKind::Constructor => "constructor",
+            AnnotationKind::Config => "config",
+        };
+        CreatedBy::macro_name(name)
     }
 }
 

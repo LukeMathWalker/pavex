@@ -1,0 +1,4 @@
+description = """An application that registers fallible pre-processing middlewares"""
+
+[dependencies]
+thiserror = "1"

@@ -124,13 +124,7 @@ pub mod route_0 {
     async fn stage_1<'a>(
         s_0: &'a app::constructor::annotated::Singleton,
     ) -> pavex::response::Response {
-        let response = 'incoming: {
-            if let Some(response) = pre_processing_0().await.into_response() {
-                break 'incoming response;
-            }
-            handler(s_0).await
-        };
-        let response = post_processing_0(response).await;
+        let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
@@ -143,24 +137,6 @@ pub mod route_0 {
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
-    }
-    async fn pre_processing_0() -> pavex::middleware::Processing<
-        pavex::response::Response,
-    > {
-        let v0 = app::pre();
-        let v1 = match v0 {
-            Ok(ok) => ok,
-            Err(v1) => {
-                return {
-                    let v2 = app::CustomError::into_response(&v1);
-                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v2,
-                    );
-                    pavex::middleware::Processing::EarlyReturn(v3)
-                };
-            }
-        };
-        v1
     }
     async fn handler(
         v0: &app::constructor::annotated::Singleton,
@@ -221,23 +197,6 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
-    async fn post_processing_0(
-        v0: pavex::response::Response,
-    ) -> pavex::response::Response {
-        let v1 = app::post(v0);
-        let v2 = match v1 {
-            Ok(ok) => ok,
-            Err(v2) => {
-                return {
-                    let v3 = app::CustomError::into_response(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
-                };
-            }
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
     struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
@@ -266,13 +225,7 @@ pub mod route_1 {
     async fn stage_1<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let response = 'incoming: {
-            if let Some(response) = pre_processing_0().await.into_response() {
-                break 'incoming response;
-            }
-            handler(s_0).await
-        };
-        let response = post_processing_0(response).await;
+        let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
@@ -286,44 +239,9 @@ pub mod route_1 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<
-        pavex::response::Response,
-    > {
-        let v0 = app::pre();
-        let v1 = match v0 {
-            Ok(ok) => ok,
-            Err(v1) => {
-                return {
-                    let v2 = app::CustomError::into_response(&v1);
-                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v2,
-                    );
-                    pavex::middleware::Processing::EarlyReturn(v3)
-                };
-            }
-        };
-        v1
-    }
     async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    async fn post_processing_0(
-        v0: pavex::response::Response,
-    ) -> pavex::response::Response {
-        let v1 = app::post(v0);
-        let v2 = match v1 {
-            Ok(ok) => ok,
-            Err(v2) => {
-                return {
-                    let v3 = app::CustomError::into_response(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
-                };
-            }
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<'a, T>
     where

@@ -1,4 +1,4 @@
-digraph "GET /home - 0" {
+digraph "GET / - 0" {
     0 [ label = "0| app_41064ffa::a() -> app_41064ffa::A"]
     1 [ label = "1| crate::route_0::Next0(app_41064ffa::A) -> crate::route_0::Next0"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
@@ -10,7 +10,7 @@ digraph "GET /home - 0" {
     3 -> 4 [ ]
 }
 
-digraph "GET /home - 1" {
+digraph "GET / - 1" {
     0 [ label = "0| &mut app_41064ffa::A"]
     1 [ label = "1| app_41064ffa::handler(&mut app_41064ffa::A) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -18,7 +18,7 @@ digraph "GET /home - 1" {
     0 -> 1 [ ]
 }
 
-digraph "GET /home - 2" {
+digraph "GET / - 2" {
     0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| &mut app_41064ffa::A"]
     2 [ label = "2| app_41064ffa::first(pavex::response::Response, &mut app_41064ffa::A) -> pavex::response::Response"]
@@ -28,7 +28,7 @@ digraph "GET /home - 2" {
     1 -> 2 [ ]
 }
 
-digraph "GET /home - 3" {
+digraph "GET / - 3" {
     0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| &mut app_41064ffa::A"]
     2 [ label = "2| app_41064ffa::second(pavex::response::Response, &mut app_41064ffa::A) -> pavex::response::Response"]
@@ -38,7 +38,7 @@ digraph "GET /home - 3" {
     1 -> 2 [ ]
 }
 
-digraph "GET /home - 4" {
+digraph "GET / - 4" {
     0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| app_41064ffa::A"]
     2 [ label = "2| app_41064ffa::third(pavex::response::Response, app_41064ffa::A) -> pavex::response::Response"]

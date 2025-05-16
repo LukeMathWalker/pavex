@@ -11,6 +11,9 @@ digraph "GET /home - 1" {
     0 [ label = "0| app::pre() -> pavex::middleware::Processing<pavex::response::Response>"]
 }
 digraph "GET /home - 2" {
+    0 [ label = "0| app::pre1() -> pavex::middleware::Processing<pavex::response::Response>"]
+}
+digraph "GET /home - 3" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
@@ -30,6 +33,9 @@ digraph "* * - 1" {
     0 [ label = "0| app::pre() -> pavex::middleware::Processing<pavex::response::Response>"]
 }
 digraph "* * - 2" {
+    0 [ label = "0| app::pre1() -> pavex::middleware::Processing<pavex::response::Response>"]
+}
+digraph "* * - 3" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]

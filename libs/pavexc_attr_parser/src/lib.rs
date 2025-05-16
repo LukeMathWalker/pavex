@@ -44,6 +44,16 @@ pub fn parse(
                     .map_err(InvalidAttributeParams::wrap)?;
                 parsed.into()
             }
+            "post_process" => {
+                let parsed = model::PostProcessingMiddlewareProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::wrap)?;
+                parsed.into()
+            }
+            "pre_process" => {
+                let parsed = model::PreProcessingMiddlewareProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::wrap)?;
+                parsed.into()
+            }
             _ => {
                 return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
             }
@@ -73,6 +83,12 @@ pub enum AnnotationProperties {
     WrappingMiddleware {
         error_handler: Option<String>,
     },
+    PreProcessingMiddleware {
+        error_handler: Option<String>,
+    },
+    PostProcessingMiddleware {
+        error_handler: Option<String>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -80,6 +96,8 @@ pub enum AnnotationKind {
     Constructor,
     Config,
     WrappingMiddleware,
+    PreProcessingMiddleware,
+    PostProcessingMiddleware,
 }
 
 impl AnnotationProperties {
@@ -88,6 +106,12 @@ impl AnnotationProperties {
             AnnotationProperties::Constructor { .. } => "pavex::diagnostic::constructor",
             AnnotationProperties::Config { .. } => "pavex::diagnostic::config",
             AnnotationProperties::WrappingMiddleware { .. } => "pavex::diagnostic::wrap",
+            AnnotationProperties::PreProcessingMiddleware { .. } => {
+                "pavex::diagnostic::pre_process"
+            }
+            AnnotationProperties::PostProcessingMiddleware { .. } => {
+                "pavex::diagnostic::post_process"
+            }
         }
     }
 
@@ -96,6 +120,12 @@ impl AnnotationProperties {
             AnnotationProperties::Constructor { .. } => AnnotationKind::Constructor,
             AnnotationProperties::Config { .. } => AnnotationKind::Config,
             AnnotationProperties::WrappingMiddleware { .. } => AnnotationKind::WrappingMiddleware,
+            AnnotationProperties::PreProcessingMiddleware { .. } => {
+                AnnotationKind::PreProcessingMiddleware
+            }
+            AnnotationProperties::PostProcessingMiddleware { .. } => {
+                AnnotationKind::PostProcessingMiddleware
+            }
         }
     }
 }

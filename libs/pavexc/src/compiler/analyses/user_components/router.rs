@@ -441,7 +441,7 @@ impl PathRouter {
                 for &(ref guard, &id) in &routes {
                     match guard {
                         // `None` stands for the `ANY` guard, it matches all well-known methods
-                        MethodGuard::Any { .. } => {
+                        MethodGuard::Any => {
                             relevant_handler_ids.insert(id);
                         }
                         MethodGuard::Some(method_guards) => {
@@ -701,7 +701,7 @@ impl PathRouter {
                 continue;
             };
             let method_guard = match &router_key.method_guard {
-                MethodGuard::Any { .. } => {
+                MethodGuard::Any => {
                     // `None` stands for the `ANY` guard, it matches all methods
                     // and we have already checked that we don't have any overlap when it comes
                     // to method routing, so we can safely ignore it since we won't have any

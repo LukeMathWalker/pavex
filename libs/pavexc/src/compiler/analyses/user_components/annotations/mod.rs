@@ -274,7 +274,9 @@ fn intern_annotated(
 
             Ok(config_id)
         }
-        AnnotationProperties::WrappingMiddleware { .. } => {
+        AnnotationProperties::PreProcessingMiddleware { .. }
+        | AnnotationProperties::PostProcessingMiddleware { .. }
+        | AnnotationProperties::WrappingMiddleware { .. } => {
             unreachable!()
         }
     }

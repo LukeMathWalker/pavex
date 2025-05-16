@@ -25,6 +25,11 @@ pub fn triply_generic<T, S, U>(
     todo!()
 }
 
+#[pavex::post_process]
+pub fn generic1<T>(_response: Response, _generic_input: GenericType<T>) -> Response {
+    todo!()
+}
+
 pub fn handler() -> pavex::response::Response {
     todo!()
 }
@@ -34,6 +39,7 @@ pub fn blueprint() -> Blueprint {
     bp.post_process(f!(crate::generic));
     bp.post_process(f!(crate::doubly_generic));
     bp.post_process(f!(crate::triply_generic));
+    bp.post_process(GENERIC_1);
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

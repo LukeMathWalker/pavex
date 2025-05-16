@@ -4,9 +4,9 @@ mod config;
 mod config_profile;
 mod constructor;
 mod from;
+mod middlewares;
 mod path_params;
 pub(crate) mod utils;
-mod wrap;
 
 #[allow(non_snake_case)]
 #[proc_macro_attribute]
@@ -21,7 +21,17 @@ pub fn config(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn wrap(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    wrap::wrap(metadata, input)
+    middlewares::wrap(metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn pre_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    middlewares::pre_process(metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn post_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    middlewares::post_process(metadata, input)
 }
 
 #[proc_macro_attribute]

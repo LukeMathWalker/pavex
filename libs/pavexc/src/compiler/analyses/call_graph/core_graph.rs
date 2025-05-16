@@ -521,7 +521,7 @@ fn enforce_invariants(
     let mut n_error_observers = 0;
     let mut n_errors = 0;
     for node in call_graph.node_weights() {
-        if let CallGraphNode::MatchBranching { .. } = node {
+        if let CallGraphNode::MatchBranching = node {
             n_errors += 1;
             continue;
         }
@@ -886,7 +886,7 @@ impl NodeDeduplicator {
         graph: &mut RawCallGraph,
         node: CallGraphNode,
     ) -> NodeIndex {
-        assert!(!matches!(node, CallGraphNode::MatchBranching { .. }));
+        assert!(!matches!(node, CallGraphNode::MatchBranching));
         self.0.get(&node).cloned().unwrap_or_else(|| {
             let index = graph.add_node(node.clone());
             self.0.insert(node, index);
