@@ -41,13 +41,13 @@ pub mod time {
 /// # Example
 ///
 /// ```
-/// use secrecy::Secret;
+/// use secrecy::SecretString;
 ///
 /// #[pavex::config(key = "database")]
 /// #[derive(serde::Deserialize, Debug, Clone)]
 /// pub struct DatabaseConfig {
 ///     pub username: String,
-///     pub password: Secret<String>,
+///     pub password: SecretString,
 ///     pub host: String,
 ///     pub database_name: String,
 ///     pub require_ssl: bool,
