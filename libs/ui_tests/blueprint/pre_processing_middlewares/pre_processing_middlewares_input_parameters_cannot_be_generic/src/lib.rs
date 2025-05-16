@@ -21,6 +21,11 @@ pub fn triply_generic<T, S, U>(
     todo!()
 }
 
+#[pavex::pre_process]
+pub fn generic1<T>(_generic_input: GenericType<T>) -> Processing {
+    todo!()
+}
+
 pub fn handler() -> Response {
     todo!()
 }
@@ -30,6 +35,7 @@ pub fn blueprint() -> Blueprint {
     bp.pre_process(f!(crate::generic));
     bp.pre_process(f!(crate::doubly_generic));
     bp.pre_process(f!(crate::triply_generic));
+    bp.pre_process(GENERIC_1);
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

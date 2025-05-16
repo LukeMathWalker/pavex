@@ -1,4 +1,4 @@
-use pavex_bp_schema::{CreatedBy, RawIdentifiers};
+use pavex_bp_schema::RawIdentifiers;
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::AnnotationProperties;
 
@@ -27,7 +27,12 @@ pub fn augment_from_annotation(
 ) {
     let component_ids: Vec<_> = aux.iter().map(|(id, _)| id).collect();
     for id in component_ids {
-        if !matches!(&aux[id], UserComponent::WrappingMiddleware { .. }) {
+        if !matches!(
+            &aux[id],
+            UserComponent::WrappingMiddleware { .. }
+                | UserComponent::PreProcessingMiddleware { .. }
+                | UserComponent::PostProcessingMiddleware { .. }
+        ) {
             continue;
         }
         let Some(source_id) = &computation_db[id].source_coordinates else {
@@ -37,8 +42,13 @@ pub fn augment_from_annotation(
             continue;
         };
         let AnnotatedItem { properties, .. } = &annotation;
-        let AnnotationProperties::WrappingMiddleware { error_handler } = properties else {
-            panic!("Unexpected annotation kind")
+        let error_handler = match properties {
+            AnnotationProperties::Constructor { .. } | AnnotationProperties::Config { .. } => {
+                panic!("Unexpected annotation kind")
+            }
+            AnnotationProperties::WrappingMiddleware { error_handler }
+            | AnnotationProperties::PreProcessingMiddleware { error_handler }
+            | AnnotationProperties::PostProcessingMiddleware { error_handler } => error_handler,
         };
         let Some(error_handler) = error_handler else {
             continue;
@@ -64,7 +74,7 @@ pub fn augment_from_annotation(
             created_at: annotation
                 .created_at(krate, krate_collection.package_graph())
                 .expect("Failed to determine `CreatedAt` for an annotated item"),
-            created_by: CreatedBy::macro_name("wrap"),
+            created_by: annotation.created_by(),
             import_path: error_handler.to_owned(),
         };
         let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);

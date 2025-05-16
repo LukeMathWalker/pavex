@@ -59,7 +59,7 @@ impl Router {
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
-        router.insert("/home", 0u32).unwrap();
+        router.insert("/", 0u32).unwrap();
         router
     }
     pub async fn route(
@@ -108,6 +108,12 @@ pub mod route_0 {
             if let Some(response) = pre_processing_1().await.into_response() {
                 break 'incoming response;
             }
+            if let Some(response) = pre_processing_2().await.into_response() {
+                break 'incoming response;
+            }
+            if let Some(response) = pre_processing_3().await.into_response() {
+                break 'incoming response;
+            }
             handler().await
         };
         response
@@ -123,12 +129,74 @@ pub mod route_0 {
     async fn pre_processing_0() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
-        app::pre()
+        let v0 = app::via_attribute();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
     }
     async fn pre_processing_1() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
-        app::pre1()
+        let v0 = app::via_blueprint();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
+    }
+    async fn pre_processing_2() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
+        let v0 = app::override_in_blueprint();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response_override(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
+    }
+    async fn pre_processing_3() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
+        let v0 = app::no_attribute();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
     }
     async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
@@ -168,6 +236,12 @@ pub mod route_1 {
             if let Some(response) = pre_processing_1().await.into_response() {
                 break 'incoming response;
             }
+            if let Some(response) = pre_processing_2().await.into_response() {
+                break 'incoming response;
+            }
+            if let Some(response) = pre_processing_3().await.into_response() {
+                break 'incoming response;
+            }
             handler(s_0).await
         };
         response
@@ -186,12 +260,74 @@ pub mod route_1 {
     async fn pre_processing_0() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
-        app::pre()
+        let v0 = app::via_attribute();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
     }
     async fn pre_processing_1() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
-        app::pre1()
+        let v0 = app::via_blueprint();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
+    }
+    async fn pre_processing_2() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
+        let v0 = app::override_in_blueprint();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response_override(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
+    }
+    async fn pre_processing_3() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
+        let v0 = app::no_attribute();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::CustomError::into_response(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
     }
     async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;

@@ -41,6 +41,38 @@ impl From<WrappingMiddlewareProperties> for AnnotationProperties {
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect pre-processing middleware properties to be represented in
+/// `pavex::diagnostic::pre_process`.
+pub struct PreProcessingMiddlewareProperties {
+    pub error_handler: Option<String>,
+    pub id: Ignored,
+}
+
+impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
+    fn from(value: PreProcessingMiddlewareProperties) -> Self {
+        AnnotationProperties::PreProcessingMiddleware {
+            error_handler: value.error_handler,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect post-processing middleware properties to be represented in
+/// `pavex::diagnostic::post_process`.
+pub struct PostProcessingMiddlewareProperties {
+    pub error_handler: Option<String>,
+    pub id: Ignored,
+}
+
+impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
+    fn from(value: PostProcessingMiddlewareProperties) -> Self {
+        AnnotationProperties::PostProcessingMiddleware {
+            error_handler: value.error_handler,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// The way we expect config properties to be represented in
 /// `pavex::diagnostic::config`.
 ///

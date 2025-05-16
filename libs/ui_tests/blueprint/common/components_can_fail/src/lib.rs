@@ -80,10 +80,6 @@ pub fn post(_response: Response) -> Result<Response, CustomError> {
     todo!()
 }
 
-pub fn pre() -> Result<Processing, CustomError> {
-    todo!()
-}
-
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from!(crate));
@@ -92,8 +88,6 @@ pub fn blueprint() -> Blueprint {
             std::string::String,
         >::handle));
 
-    bp.pre_process(f!(crate::pre))
-        .error_handler(f!(crate::CustomError::into_response));
     bp.post_process(f!(crate::post))
         .error_handler(f!(crate::CustomError::into_response));
     bp.route(GET, "/", f!(crate::handler))

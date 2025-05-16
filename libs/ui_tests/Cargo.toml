@@ -105,6 +105,8 @@ members = [
   "blueprint/post_processing_middlewares/post_processing_middlewares_input_parameters_cannot_be_generic/generated_app",
   "blueprint/pre_processing_middlewares/pre_process_without_wrapping",
   "blueprint/pre_processing_middlewares/pre_process_without_wrapping/generated_app",
+  "blueprint/pre_processing_middlewares/pre_processing_can_fail",
+  "blueprint/pre_processing_middlewares/pre_processing_can_fail/generated_app",
   "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic",
   "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/generated_app",
   "blueprint/prebuilts/invalid_prebuilt",
