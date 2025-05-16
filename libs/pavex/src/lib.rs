@@ -311,7 +311,7 @@ pub use pavex_macros::transient;
 /// #
 /// # fn main() {
 /// let mut bp = Blueprint::new();
-/// // The generated constant, by default, is named `<fn_name>_ID`,
+/// // The generated constant, by default, is named `<fn_name>`,
 /// // with `<fn_name>` converted to constant casing.
 /// bp.wrap(TIMEOUT);
 /// # }
@@ -558,7 +558,7 @@ pub use pavex_macros::post_process;
 /// let mut bp = Blueprint::new();
 /// // The generated constant, by default, is named `<fn_name>`,
 /// // with `<fn_name>` converted to constant casing.
-/// bp.error_observer(RESPONSE_LOGGER);
+/// bp.error_observer(ERROR_LOGGER);
 /// # }
 /// ```
 ///
