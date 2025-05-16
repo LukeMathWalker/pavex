@@ -1,5 +1,7 @@
 use itertools::Itertools;
 
+use crate::AnnotationKind;
+
 #[derive(Debug, thiserror::Error)]
 /// Failure modes of [`parse`](crate::parse).
 pub enum AttributeParserError {
@@ -33,15 +35,7 @@ impl UnknownPavexAttribute {
 pub struct InvalidAttributeParams(darling::Error, &'static str);
 
 impl InvalidAttributeParams {
-    pub fn constructor(e: darling::Error) -> Self {
-        Self(e, "pavex::diagnostic::constructor")
-    }
-
-    pub fn config(e: darling::Error) -> Self {
-        Self(e, "pavex::diagnostic::config")
-    }
-
-    pub fn wrap(e: darling::Error) -> Self {
-        Self(e, "pavex::diagnostic::wrap")
+    pub fn new(e: darling::Error, kind: AnnotationKind) -> Self {
+        Self(e, kind.attribute())
     }
 }

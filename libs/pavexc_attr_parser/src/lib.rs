@@ -28,41 +28,10 @@ pub fn parse(
         let Some(component_kind) = sub_path.get_ident() else {
             return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
         };
-        let c = match component_kind.to_string().as_str() {
-            "constructor" => {
-                let parsed = model::ConstructorProperties::from_meta(&attr.meta)
-                    .map_err(InvalidAttributeParams::constructor)?;
-                parsed.into()
-            }
-            "config" => {
-                let parsed = model::ConfigProperties::from_meta(&attr.meta)
-                    .map_err(InvalidAttributeParams::config)?;
-                parsed.into()
-            }
-            "wrap" => {
-                let parsed = model::WrappingMiddlewareProperties::from_meta(&attr.meta)
-                    .map_err(InvalidAttributeParams::wrap)?;
-                parsed.into()
-            }
-            "post_process" => {
-                let parsed = model::PostProcessingMiddlewareProperties::from_meta(&attr.meta)
-                    .map_err(InvalidAttributeParams::wrap)?;
-                parsed.into()
-            }
-            "pre_process" => {
-                let parsed = model::PreProcessingMiddlewareProperties::from_meta(&attr.meta)
-                    .map_err(InvalidAttributeParams::wrap)?;
-                parsed.into()
-            }
-            "error_observer" => {
-                let parsed = model::ErrorObserverProperties::from_meta(&attr.meta)
-                    .map_err(InvalidAttributeParams::wrap)?;
-                parsed.into()
-            }
-            _ => {
-                return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
-            }
+        let Ok(kind) = AnnotationKind::parse(component_kind) else {
+            return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
         };
+        let c = AnnotationProperties::from_meta(kind, &attr.meta)?;
         if component.is_some() {
             return Err(errors::AttributeParserError::MultiplePavexAttributes);
         } else {
@@ -97,6 +66,30 @@ pub enum AnnotationProperties {
     ErrorObserver,
 }
 
+impl AnnotationProperties {
+    fn from_meta(kind: AnnotationKind, item: &syn::Meta) -> Result<Self, InvalidAttributeParams> {
+        match kind {
+            AnnotationKind::Constructor => {
+                model::ConstructorProperties::from_meta(&item).map(Into::into)
+            }
+            AnnotationKind::Config => model::ConfigProperties::from_meta(&item).map(Into::into),
+            AnnotationKind::WrappingMiddleware => {
+                model::WrappingMiddlewareProperties::from_meta(&item).map(Into::into)
+            }
+            AnnotationKind::PreProcessingMiddleware => {
+                model::PreProcessingMiddlewareProperties::from_meta(&item).map(Into::into)
+            }
+            AnnotationKind::PostProcessingMiddleware => {
+                model::PostProcessingMiddlewareProperties::from_meta(&item).map(Into::into)
+            }
+            AnnotationKind::ErrorObserver => {
+                model::ErrorObserverProperties::from_meta(&item).map(Into::into)
+            }
+        }
+        .map_err(|e| InvalidAttributeParams::new(e, kind))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AnnotationKind {
     Constructor,
@@ -107,20 +100,36 @@ pub enum AnnotationKind {
     ErrorObserver,
 }
 
-impl AnnotationProperties {
-    pub fn attribute(&self) -> &str {
-        match self {
-            AnnotationProperties::Constructor { .. } => "pavex::diagnostic::constructor",
-            AnnotationProperties::Config { .. } => "pavex::diagnostic::config",
-            AnnotationProperties::WrappingMiddleware { .. } => "pavex::diagnostic::wrap",
-            AnnotationProperties::PreProcessingMiddleware { .. } => {
-                "pavex::diagnostic::pre_process"
-            }
-            AnnotationProperties::PostProcessingMiddleware { .. } => {
-                "pavex::diagnostic::post_process"
-            }
-            AnnotationProperties::ErrorObserver => "pavex::diagnostic::error_observer",
+impl AnnotationKind {
+    fn parse(ident: &syn::Ident) -> Result<AnnotationKind, ()> {
+        match ident.to_string().as_str() {
+            "constructor" => Ok(AnnotationKind::Constructor),
+            "config" => Ok(AnnotationKind::Config),
+            "wrap" => Ok(AnnotationKind::WrappingMiddleware),
+            "post_process" => Ok(AnnotationKind::PostProcessingMiddleware),
+            "pre_process" => Ok(AnnotationKind::PreProcessingMiddleware),
+            "error_observer" => Ok(AnnotationKind::ErrorObserver),
+            _ => Err(()),
         }
+    }
+
+    pub fn attribute(&self) -> &'static str {
+        use AnnotationKind::*;
+
+        match self {
+            Constructor { .. } => "pavex::diagnostic::constructor",
+            Config { .. } => "pavex::diagnostic::config",
+            WrappingMiddleware { .. } => "pavex::diagnostic::wrap",
+            PreProcessingMiddleware { .. } => "pavex::diagnostic::pre_process",
+            PostProcessingMiddleware { .. } => "pavex::diagnostic::post_process",
+            ErrorObserver => "pavex::diagnostic::error_observer",
+        }
+    }
+}
+
+impl AnnotationProperties {
+    pub fn attribute(&self) -> &'static str {
+        self.kind().attribute()
     }
 
     pub fn kind(&self) -> AnnotationKind {
