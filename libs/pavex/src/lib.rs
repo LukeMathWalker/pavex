@@ -36,6 +36,36 @@ pub mod time {
     pub use jiff::*;
 }
 
+/// Define a [configuration type](https://pavex.dev/docs/guide/configuration/).
+///
+/// # Example
+///
+/// ```
+/// use secrecy::SecretString;
+///
+/// #[pavex::config(key = "database")]
+/// #[derive(serde::Deserialize, Debug, Clone)]
+/// pub struct DatabaseConfig {
+///     pub username: String,
+///     pub password: SecretString,
+///     pub host: String,
+///     pub database_name: String,
+///     pub require_ssl: bool,
+/// }
+/// ```
+///
+/// # Imports
+///
+/// The annotated type must be imported via [`Blueprint::import`], otherwise it won't be considered
+/// by Pavex.
+///
+/// # Guide
+///
+/// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration/)
+/// section of Pavex's guide for a thorough introduction to configuration
+/// in Pavex applications.
+///
+/// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::config;
 
 /// Define a [constructor](https://pavex.dev/docs/guide/dependency_injection/constructors/).
@@ -147,7 +177,7 @@ pub use pavex_macros::constructor;
 /// [`Blueprint::import`]: crate::blueprint::Blueprint::import
 pub use pavex_macros::request_scoped;
 
-/// Define [a singleton constructor](https://pavex.dev/docs/guide/dependency_injection/constructors/).
+/// Define a [singleton constructor](https://pavex.dev/docs/guide/dependency_injection/constructors/).
 ///
 /// Singleton constructors are invoked once (when the application starts up) to create
 /// a new instance of their output type. The created instance is then shared across all
@@ -281,7 +311,7 @@ pub use pavex_macros::transient;
 /// #
 /// # fn main() {
 /// let mut bp = Blueprint::new();
-/// // The generated constant, by default, is named `<fn_name>_ID`,
+/// // The generated constant, by default, is named `<fn_name>`,
 /// // with `<fn_name>` converted to constant casing.
 /// bp.wrap(TIMEOUT);
 /// # }
@@ -455,7 +485,7 @@ pub use pavex_macros::pre_process;
 /// let mut bp = Blueprint::new();
 /// // The generated constant, by default, is named `<fn_name>`,
 /// // with `<fn_name>` converted to constant casing.
-/// bp.pre_process(RESPONSE_LOGGER);
+/// bp.post_process(RESPONSE_LOGGER);
 /// # }
 /// ```
 ///
@@ -487,3 +517,74 @@ pub use pavex_macros::pre_process;
 /// [`Blueprint::post_process`]: crate::blueprint::Blueprint::post_process
 /// [`Blueprint`]: crate::blueprint::Blueprint
 pub use pavex_macros::post_process;
+
+/// Define an [error observer](https://pavex.dev/docs/guide/errors/error_observers/).
+///
+/// # Example
+///
+/// Log the status code of the HTTP response returned to the caller:
+///
+/// ```rust
+/// #[pavex::error_observer]
+/// pub async fn error_logger(e: &pavex::Error) {
+///     tracing::error!(
+///         error.msg = %e,
+///         error.details = ?e,
+///         "An error occurred"
+///     );
+/// }
+/// ```
+///
+/// # Guide
+///
+/// Check out the ["Errors"](https://pavex.dev/docs/guide/errors/)
+/// section of Pavex's guide for a thorough introduction to errors
+/// in Pavex applications.
+///
+/// # Registration
+///
+/// You must invoke [`Blueprint::error_observer`] to register the newly-defined
+/// observer with your [`Blueprint`].
+/// `#[pavex::error_observer]` generates a constant that can be used to refer to
+/// the newly-defined observer when interacting with your [`Blueprint`]:
+///
+/// ```rust
+/// use pavex::blueprint::Blueprint;
+///
+/// # #[pavex::error_observer]
+/// # pub async fn error_logger(e: &pavex::Error) {
+/// # }
+/// # fn main() {
+/// let mut bp = Blueprint::new();
+/// // The generated constant, by default, is named `<fn_name>`,
+/// // with `<fn_name>` converted to constant casing.
+/// bp.error_observer(ERROR_LOGGER);
+/// # }
+/// ```
+///
+/// ## Customize the constant name
+///
+/// You can choose to customize the name of the generated constant via the `id`
+/// macro argument:
+///
+/// ```rust
+/// use pavex::blueprint::Blueprint;
+///
+/// //               Custom id name 👇
+/// #[pavex::error_observer(id = "MY_ERROR_LOGGER")]
+/// pub async fn error_logger(e: &pavex::Error) {
+///     // [..]
+///     # todo!()
+/// }
+///
+/// # fn main() {
+/// let mut bp = Blueprint::new();
+/// // Later used to register the observer.
+/// //                   👇
+/// bp.error_observer(MY_ERROR_LOGGER);
+/// # }
+/// ```
+///
+/// [`Blueprint::error_observer`]: crate::blueprint::Blueprint::error_observer
+/// [`Blueprint`]: crate::blueprint::Blueprint
+pub use pavex_macros::error_observer;

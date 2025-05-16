@@ -276,6 +276,7 @@ fn intern_annotated(
         }
         AnnotationProperties::PreProcessingMiddleware { .. }
         | AnnotationProperties::PostProcessingMiddleware { .. }
+        | AnnotationProperties::ErrorObserver
         | AnnotationProperties::WrappingMiddleware { .. } => {
             unreachable!()
         }

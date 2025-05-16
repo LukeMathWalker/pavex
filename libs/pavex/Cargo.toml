@@ -93,6 +93,7 @@ insta = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
 itertools = { workspace = true }
+secrecy = { workspace = true, features = ["serde"] }
 pavex_tracing = { path = "../pavex_tracing" }
 
 pavex_macros = { path = "../pavex_macros", features = [

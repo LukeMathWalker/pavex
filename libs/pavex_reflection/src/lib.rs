@@ -64,7 +64,9 @@ impl CreatedBy {
         match value {
             "f" | "t" => CreatedBy::Blueprint,
             "pre_process" | "post_process" | "wrap" | "constructor" | "request_scoped"
-            | "transient" | "singleton" | "config" => CreatedBy::Attribute { name: value.into() },
+            | "transient" | "singleton" | "config" | "error_observer" => {
+                CreatedBy::Attribute { name: value.into() }
+            }
             _ => panic!(
                 "Pavex doesn't recognize `{value}` as one of its macros to register components"
             ),
