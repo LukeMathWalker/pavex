@@ -33,7 +33,7 @@ pub fn error_handler(_a: &A, _e: &ErrorB) -> Response {
     todo!()
 }
 
-pub fn error_observer(_a: A, _err: &pavex::Error) {
+pub fn error_observer(_a: &A, _err: &pavex::Error) {
     todo!()
 }
 
