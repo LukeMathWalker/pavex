@@ -3,6 +3,7 @@ use proc_macro::TokenStream;
 mod config;
 mod config_profile;
 mod constructor;
+mod error_observer;
 mod from;
 mod middlewares;
 mod path_params;
@@ -17,6 +18,11 @@ pub fn PathParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn config(metadata: TokenStream, input: TokenStream) -> TokenStream {
     config::config(metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn error_observer(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    error_observer::error_observer(metadata, input)
 }
 
 #[proc_macro_attribute]

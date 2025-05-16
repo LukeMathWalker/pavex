@@ -1,0 +1,5 @@
+error: #[pavex::error_observer] can only be applied to free functions.
+ --> tests/error_observer/fail/not_a_function.rs:7:5
+  |
+7 |     const A: usize = 42;
+  |     ^^^^^^^^^^^^^^^^^^^^

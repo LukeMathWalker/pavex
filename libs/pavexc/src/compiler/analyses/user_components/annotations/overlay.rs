@@ -43,7 +43,9 @@ pub fn augment_from_annotation(
         };
         let AnnotatedItem { properties, .. } = &annotation;
         let error_handler = match properties {
-            AnnotationProperties::Constructor { .. } | AnnotationProperties::Config { .. } => {
+            AnnotationProperties::ErrorObserver
+            | AnnotationProperties::Constructor { .. }
+            | AnnotationProperties::Config { .. } => {
                 panic!("Unexpected annotation kind")
             }
             AnnotationProperties::WrappingMiddleware { error_handler }

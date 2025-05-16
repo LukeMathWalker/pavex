@@ -36,11 +36,17 @@ pub fn error_observer(_err: &pavex::Error) {
     todo!()
 }
 
+#[pavex::error_observer]
+pub fn error_observer1(_err: &pavex::Error) {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::constructor), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
     bp.error_observer(f!(crate::error_observer));
+    bp.error_observer(ERROR_OBSERVER_1);
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

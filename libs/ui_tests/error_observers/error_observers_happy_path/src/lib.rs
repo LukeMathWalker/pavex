@@ -41,6 +41,16 @@ pub fn error_observer2(_err: &pavex::Error) {
     todo!()
 }
 
+#[pavex::error_observer]
+pub fn error_observer_ann(_a: A, _err: &pavex::Error) {
+    todo!()
+}
+
+#[pavex::error_observer]
+pub fn error_observer_ann1(_err: &pavex::Error) {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
@@ -48,6 +58,8 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::error_handler));
     bp.error_observer(f!(crate::error_observer));
     bp.error_observer(f!(crate::error_observer2));
+    bp.error_observer(ERROR_OBSERVER_ANN);
+    bp.error_observer(ERROR_OBSERVER_ANN_1);
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

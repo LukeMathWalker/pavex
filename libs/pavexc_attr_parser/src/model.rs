@@ -25,6 +25,19 @@ impl From<ConstructorProperties> for AnnotationProperties {
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect error observer properties to be represented in
+/// `pavex::diagnostic::error_observer`.
+pub struct ErrorObserverProperties {
+    pub id: Ignored,
+}
+
+impl From<ErrorObserverProperties> for AnnotationProperties {
+    fn from(_value: ErrorObserverProperties) -> Self {
+        AnnotationProperties::ErrorObserver {}
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// The way we expect wrapping middleware properties to be represented in
 /// `pavex::diagnostic::wrap`.
 pub struct WrappingMiddlewareProperties {

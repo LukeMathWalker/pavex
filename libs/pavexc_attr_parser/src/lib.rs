@@ -54,6 +54,11 @@ pub fn parse(
                     .map_err(InvalidAttributeParams::wrap)?;
                 parsed.into()
             }
+            "error_observer" => {
+                let parsed = model::ErrorObserverProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::wrap)?;
+                parsed.into()
+            }
             _ => {
                 return Err(errors::UnknownPavexAttribute::new(attr.path()).into());
             }
@@ -89,6 +94,7 @@ pub enum AnnotationProperties {
     PostProcessingMiddleware {
         error_handler: Option<String>,
     },
+    ErrorObserver,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -98,6 +104,7 @@ pub enum AnnotationKind {
     WrappingMiddleware,
     PreProcessingMiddleware,
     PostProcessingMiddleware,
+    ErrorObserver,
 }
 
 impl AnnotationProperties {
@@ -112,6 +119,7 @@ impl AnnotationProperties {
             AnnotationProperties::PostProcessingMiddleware { .. } => {
                 "pavex::diagnostic::post_process"
             }
+            AnnotationProperties::ErrorObserver => "pavex::diagnostic::error_observer",
         }
     }
 
@@ -126,6 +134,7 @@ impl AnnotationProperties {
             AnnotationProperties::PostProcessingMiddleware { .. } => {
                 AnnotationKind::PostProcessingMiddleware
             }
+            AnnotationProperties::ErrorObserver => AnnotationKind::ErrorObserver,
         }
     }
 }

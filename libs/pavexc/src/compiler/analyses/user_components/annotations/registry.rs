@@ -185,14 +185,16 @@ fn check_item_compatibility(
         AnnotationKind::PreProcessingMiddleware
         | AnnotationKind::PostProcessingMiddleware
         | AnnotationKind::WrappingMiddleware
+        | AnnotationKind::ErrorObserver
         | AnnotationKind::Constructor
             if matches!(item.inner, ItemEnum::Function(_)) => {}
-        AnnotationKind::Config
-            if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {}
+        AnnotationKind::Config if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {
+        }
         AnnotationKind::PreProcessingMiddleware
         | AnnotationKind::PostProcessingMiddleware
         | AnnotationKind::WrappingMiddleware
         | AnnotationKind::Constructor
+        | AnnotationKind::ErrorObserver
         | AnnotationKind::Config => {
             // TODO: Only emit an error if it's a workspace package.
             unsupported_item_kind(annotation.attribute(), item, diagnostics);
@@ -271,6 +273,7 @@ impl AnnotatedItem {
             AnnotationKind::WrappingMiddleware => "wrap",
             AnnotationKind::Constructor => "constructor",
             AnnotationKind::Config => "config",
+            AnnotationKind::ErrorObserver => "error_observer",
         };
         CreatedBy::macro_name(name)
     }
