@@ -103,6 +103,7 @@ pub mod route_0 {
     async fn stage_1() -> pavex::response::Response {
         let response = handler().await;
         let response = post_processing_0(response).await;
+        let response = post_processing_1(response).await;
         response
     }
     async fn wrapping_0() -> pavex::response::Response {
@@ -121,6 +122,12 @@ pub mod route_0 {
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
         let v1 = app::mw(v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+    async fn post_processing_1(
+        v0: pavex::response::Response,
+    ) -> pavex::response::Response {
+        let v1 = app::mw1(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     struct Next0<T>
@@ -152,6 +159,7 @@ pub mod route_1 {
     ) -> pavex::response::Response {
         let response = handler(s_0).await;
         let response = post_processing_0(response).await;
+        let response = post_processing_1(response).await;
         response
     }
     async fn wrapping_0(
@@ -173,6 +181,12 @@ pub mod route_1 {
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
         let v1 = app::mw(v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+    async fn post_processing_1(
+        v0: pavex::response::Response,
+    ) -> pavex::response::Response {
+        let v1 = app::mw1(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     struct Next0<'a, T>

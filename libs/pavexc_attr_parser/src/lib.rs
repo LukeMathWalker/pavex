@@ -44,8 +44,13 @@ pub fn parse(
                     .map_err(InvalidAttributeParams::wrap)?;
                 parsed.into()
             }
+            "post_process" => {
+                let parsed = model::PostProcessingMiddlewareProperties::from_meta(&attr.meta)
+                    .map_err(InvalidAttributeParams::wrap)?;
+                parsed.into()
+            }
             "pre_process" => {
-                let parsed = model::WrappingMiddlewareProperties::from_meta(&attr.meta)
+                let parsed = model::PreProcessingMiddlewareProperties::from_meta(&attr.meta)
                     .map_err(InvalidAttributeParams::wrap)?;
                 parsed.into()
             }
