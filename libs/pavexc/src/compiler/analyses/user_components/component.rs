@@ -16,7 +16,7 @@ pub type UserComponentId = la_arena::Idx<UserComponent>;
 /// [`UserComponentDb`]: super::UserComponentDb
 pub enum UserComponent {
     RequestHandler {
-        source: RawIdentifierId,
+        source: UserComponentSource,
         router_key: RouterKey,
     },
     Fallback {
@@ -56,11 +56,14 @@ impl UserComponent {
     /// It's `None` for annotated components.
     pub fn raw_identifiers_id(&self) -> Option<RawIdentifierId> {
         match self {
-            UserComponent::RequestHandler { source, .. }
-            | UserComponent::Fallback { source }
+            UserComponent::Fallback { source }
             | UserComponent::WrappingMiddleware { source }
             | UserComponent::PostProcessingMiddleware { source }
             | UserComponent::PreProcessingMiddleware { source }
+            | UserComponent::RequestHandler {
+                source: UserComponentSource::Identifiers(source),
+                ..
+            }
             | UserComponent::ConfigType {
                 source: UserComponentSource::Identifiers(source),
                 ..

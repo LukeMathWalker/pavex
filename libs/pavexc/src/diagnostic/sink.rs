@@ -5,7 +5,8 @@ use pavex_cli_diagnostic::AnnotatedSource;
 use super::{
     ComponentKind, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile, Registration,
     RegistrationKind, config_key_span, f_macro_span, imported_sources_span,
-    registration_locations::attribute_span, registration_span, route_path_span,
+    registration_locations::{attribute_span, route_path_attr_span},
+    registration_span, route_path_span,
 };
 
 /// An accumulator for diagnostics.
@@ -70,9 +71,12 @@ impl DiagnosticSink {
             TargetSpan::Registration(registration, kind) => {
                 registration_span(s.source(), registration, kind)
             }
-            TargetSpan::RoutePath(registration) => {
-                route_path_span(s.source(), &registration.location)
-            }
+            TargetSpan::RoutePath(registration) => match registration.kind {
+                RegistrationKind::Blueprint => route_path_span(s.source(), &registration.location),
+                RegistrationKind::Attribute => {
+                    route_path_attr_span(s.source(), &registration.location)
+                }
+            },
             TargetSpan::ConfigKeySpan(registration) => config_key_span(s.source(), registration),
             TargetSpan::RawIdentifiers(registration, kind) => match registration.kind {
                 RegistrationKind::Attribute => {

@@ -32,6 +32,22 @@ digraph "* * - 1" {
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
+digraph "GET /annotation - 0" {
+    0 [ label = "0| crate::route_2::Next0() -> crate::route_2::Next0"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
+}
+digraph "GET /annotation - 1" {
+    0 [ label = "0| app::build() -> app::A"]
+    1 [ label = "1| app::handler_ann(&mut app::A) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ label = "&mut "]
+    1 -> 2 [ ]
+}
 digraph app_state {
     0 [ label = "0| crate::ApplicationState() -> crate::ApplicationState"]
 }

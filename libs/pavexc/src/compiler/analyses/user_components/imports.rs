@@ -2,11 +2,12 @@ use std::collections::BTreeSet;
 
 use guppy::PackageId;
 use guppy::graph::PackageGraph;
-use pavex_bp_schema::{CreatedAt, Import, Sources};
+use pavex_bp_schema::{CreatedAt, Location, Sources};
 use syn::Token;
 use syn::ext::IdentExt;
 use syn::punctuated::Punctuated;
 
+use crate::compiler::analyses::domain::DomainGuard;
 use crate::diagnostic::{self, DiagnosticSink, OptionalLabeledSpanExt};
 use crate::diagnostic::{CompilerDiagnostic, OptionalSourceSpanExt};
 use crate::language::{
@@ -15,6 +16,35 @@ use crate::language::{
 };
 
 use super::auxiliary::AuxiliaryData;
+use super::{ScopeId, UserComponentId};
+
+/// A user-registered import that's yet to be processed.
+pub struct UnresolvedImport {
+    /// The scope to which the imported components will belong.
+    pub scope_id: ScopeId,
+    /// The sources being imported.
+    pub sources: Sources,
+    /// The location where the import was created.
+    pub created_at: CreatedAt,
+    /// The location at which the import was registered against the blueprint.
+    pub registered_at: Location,
+    /// Which component kinds are being imported.
+    pub kind: ImportKind,
+}
+
+/// The kind of imports exposed by Pavex to the user.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ImportKind {
+    /// Constructors, configuration types, prebuilt types, error handlers.
+    Injectables,
+    /// Request handlers.
+    Routes {
+        path_prefix: Option<String>,
+        domain_guard: Option<DomainGuard>,
+        observer_chain: Vec<UserComponentId>,
+        middleware_chain: Vec<UserComponentId>,
+    },
+}
 
 /// A normalized import path.
 #[derive(Debug, Clone)]
@@ -27,6 +57,10 @@ pub struct ResolvedImport {
     pub path: Vec<String>,
     /// The ID of the package that defines the imported module.
     pub package_id: PackageId,
+    /// The scope to which the imported components will belong.
+    pub scope_id: ScopeId,
+    /// Which component kinds are being imported.
+    pub kind: ImportKind,
 }
 
 /// For each import:
@@ -41,19 +75,19 @@ pub(super) fn resolve_imports(
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) -> Vec<(ResolvedImport, usize)> {
     let mut resolved_imports = Vec::new();
-    for (import_id, (import, _)) in db.imports.iter().enumerate() {
+    for (import_id, raw_import) in db.imports.iter().enumerate() {
         let imported_in = match krate2package_id(
-            &import.created_at.package_name,
-            &import.created_at.package_version,
+            &raw_import.created_at.package_name,
+            &raw_import.created_at.package_version,
             package_graph,
         ) {
             Ok(package_id) => package_id,
             Err(e) => {
-                unknown_registration_crate(e, import, diagnostics);
+                unknown_registration_crate(e, raw_import, diagnostics);
                 continue;
             }
         };
-        match &import.sources {
+        match &raw_import.sources {
             Sources::All => {
                 let sources = sources_for_all(&imported_in, package_graph);
                 for source in sources {
@@ -66,6 +100,8 @@ pub(super) fn resolve_imports(
                         ResolvedImport {
                             path: vec![name],
                             package_id: source,
+                            scope_id: raw_import.scope_id,
+                            kind: raw_import.kind.clone(),
                         },
                         import_id,
                     ));
@@ -76,18 +112,18 @@ pub(super) fn resolve_imports(
                     let mut path = match syn::parse_str::<RawModulePath>(source) {
                         Ok(p) => p,
                         Err(e) => {
-                            invalid_module_path(e, source.into(), import, diagnostics);
+                            invalid_module_path(e, source.into(), raw_import, diagnostics);
                             continue;
                         }
                     };
-                    path.make_absolute(&import.created_at);
+                    path.make_absolute(&raw_import.created_at);
                     let package_name = path.0.first().expect("Module path can't be empty");
                     let package_id =
                         match dependency_name2package_id(package_name, &imported_in, package_graph)
                         {
                             Ok(package_id) => package_id,
                             Err(e) => {
-                                crate_resolution_error(e, import, diagnostics);
+                                crate_resolution_error(e, raw_import, diagnostics);
                                 continue;
                             }
                         };
@@ -95,6 +131,8 @@ pub(super) fn resolve_imports(
                         ResolvedImport {
                             path: path.0,
                             package_id,
+                            scope_id: raw_import.scope_id,
+                            kind: raw_import.kind.clone(),
                         },
                         import_id,
                     ));
@@ -192,7 +230,7 @@ impl syn::parse::Parse for RawModulePath {
 
 fn crate_resolution_error(
     e: CrateNameResolutionError,
-    import: &Import,
+    import: &UnresolvedImport,
     diagnostics: &mut DiagnosticSink,
 ) {
     match e {
@@ -205,12 +243,15 @@ fn crate_resolution_error(
     }
 }
 
-fn unknown_registration_crate(e: UnknownCrate, import: &Import, diagnostics: &mut DiagnosticSink) {
+fn unknown_registration_crate(
+    e: UnknownCrate,
+    import: &UnresolvedImport,
+    diagnostics: &mut DiagnosticSink,
+) {
     #[derive(Debug, thiserror::Error)]
     #[error(
         "{source}.\n\
-        You registered an import against your blueprint in `{name}`. \
-        I can't resolve that import until I can match `{name}` to a package in your dependency tree."
+        You tried to import from `{name}`, but I can't resolve that import if I can't match `{name}` to a package in your dependency tree."
     )]
     struct CannotMatchPackageIdToCrateName {
         name: String,
@@ -218,25 +259,31 @@ fn unknown_registration_crate(e: UnknownCrate, import: &Import, diagnostics: &mu
     }
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
+        let msg = match import.kind {
+            ImportKind::Injectables => "The import was registered here",
+            ImportKind::Routes { .. } => "The routes were imported here",
+        };
         diagnostic::imported_sources_span(s.source(), &import.registered_at)
-            .labeled("The import was registered here".into())
+            .labeled(msg.into())
             .attach(s)
     });
-    let diagnostic = CompilerDiagnostic::builder(CannotMatchPackageIdToCrateName { name: e.name.clone(), source: e })
-        .optional_source(source)
-        .help("Did you use the `from!` macro to register your sources? Setting `WithLocation`'s fields manually is bound to cause problems for Pavex.".into())
-        .build();
+    let diagnostic = CompilerDiagnostic::builder(CannotMatchPackageIdToCrateName {
+        name: e.name.clone(),
+        source: e,
+    })
+    .optional_source(source)
+    .build();
     diagnostics.push(diagnostic);
 }
 
 fn unknown_dependency_crate(
     e: UnknownDependency,
-    import: &Import,
+    import: &UnresolvedImport,
     diagnostics: &mut DiagnosticSink,
 ) {
     #[derive(Debug, thiserror::Error)]
     #[error(
-        "You tried to import items from `{dependency}`, but `{dependent}` has no direct dependency named `{dependency}`."
+        "You tried to import from `{dependency}`, but `{dependent}` has no direct dependency named `{dependency}`."
     )]
     struct CannotFindDependency {
         dependent: String,
@@ -245,8 +292,12 @@ fn unknown_dependency_crate(
     }
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
+        let msg = match import.kind {
+            ImportKind::Injectables => "The import was registered here",
+            ImportKind::Routes { .. } => "The routes were imported here",
+        };
         diagnostic::imported_sources_span(s.source(), &import.registered_at)
-            .labeled("The import was registered here".into())
+            .labeled(msg.into())
             .attach(s)
     });
     let diagnostic = CompilerDiagnostic::builder(CannotFindDependency {
@@ -257,7 +308,7 @@ fn unknown_dependency_crate(
     .optional_source(source)
     .help("Check your `Cargo.toml` file for typos or missing dependencies.".into())
     .help(
-        "The path must start with either `crate` or `super` if you want to import a local module."
+        "The path must start with either `crate` or `super` if you want to import from a local module."
             .into(),
     )
     .build();
@@ -267,7 +318,7 @@ fn unknown_dependency_crate(
 fn invalid_module_path(
     e: syn::Error,
     raw_path: String,
-    import: &Import,
+    import: &UnresolvedImport,
     diagnostics: &mut DiagnosticSink,
 ) {
     #[derive(Debug, thiserror::Error)]
@@ -278,13 +329,17 @@ fn invalid_module_path(
     }
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
+        let msg = match import.kind {
+            ImportKind::Injectables => "The import was registered here",
+            ImportKind::Routes { .. } => "The routes were imported here",
+        };
         diagnostic::imported_sources_span(s.source(), &import.registered_at)
-            .labeled("The import was registered here".into())
+            .labeled(msg.into())
             .attach(s)
     });
     let diagnostic = CompilerDiagnostic::builder(InvalidModulePath { path: raw_path, source: e })
         .optional_source(source)
-        .help("Did you use the `from!` macro to register your sources? An invalid module path should have been caught earlier.".into())
+        .help("Did you use the `from!` macro to register your sources? An invalid module path should have been caught earlier in the compilation process.".into())
         .build();
     diagnostics.push(diagnostic);
 }

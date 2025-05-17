@@ -1,7 +1,8 @@
 use darling::FromMeta;
 use errors::InvalidAttributeParams;
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle, MethodGuard};
 
+pub mod atoms;
 pub mod errors;
 pub mod model;
 
@@ -67,6 +68,11 @@ pub enum AnnotationProperties {
         error_handler: Option<String>,
     },
     ErrorObserver,
+    Route {
+        method: MethodGuard,
+        path: String,
+        error_handler: Option<String>,
+    },
 }
 
 impl AnnotationProperties {
@@ -88,9 +94,8 @@ impl AnnotationProperties {
             AnnotationKind::ErrorObserver => {
                 model::ErrorObserverProperties::from_meta(item).map(Into::into)
             }
-            AnnotationKind::Prebuilt => {
-                model::PrebuiltProperties::from_meta(item).map(Into::into)
-            }
+            AnnotationKind::Prebuilt => model::PrebuiltProperties::from_meta(item).map(Into::into),
+            AnnotationKind::Route => model::RouteProperties::from_meta(item).map(Into::into),
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
     }
@@ -105,6 +110,7 @@ pub enum AnnotationKind {
     PostProcessingMiddleware,
     ErrorObserver,
     Prebuilt,
+    Route,
 }
 
 impl AnnotationKind {
@@ -117,6 +123,7 @@ impl AnnotationKind {
             "pre_process" => Ok(AnnotationKind::PreProcessingMiddleware),
             "error_observer" => Ok(AnnotationKind::ErrorObserver),
             "prebuilt" => Ok(AnnotationKind::Prebuilt),
+            "route" => Ok(AnnotationKind::Route),
             _ => Err(()),
         }
     }
@@ -132,6 +139,7 @@ impl AnnotationKind {
             PostProcessingMiddleware => "pavex::diagnostic::post_process",
             ErrorObserver => "pavex::diagnostic::error_observer",
             Prebuilt => "pavex::diagnostic::prebuilt",
+            Route => "pavex::diagnostic::route",
         }
     }
 }
@@ -154,6 +162,7 @@ impl AnnotationProperties {
             }
             AnnotationProperties::ErrorObserver => AnnotationKind::ErrorObserver,
             AnnotationProperties::Prebuilt { .. } => AnnotationKind::Prebuilt,
+            AnnotationProperties::Route { .. } => AnnotationKind::Route,
         }
     }
 }

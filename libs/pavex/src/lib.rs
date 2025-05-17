@@ -613,3 +613,12 @@ pub use pavex_macros::post_process;
 /// [`Blueprint::error_observer`]: crate::blueprint::Blueprint::error_observer
 /// [`Blueprint`]: crate::blueprint::Blueprint
 pub use pavex_macros::error_observer;
+
+pub use pavex_macros::delete;
+pub use pavex_macros::get;
+pub use pavex_macros::head;
+pub use pavex_macros::options;
+pub use pavex_macros::patch;
+pub use pavex_macros::post;
+pub use pavex_macros::put;
+pub use pavex_macros::route;

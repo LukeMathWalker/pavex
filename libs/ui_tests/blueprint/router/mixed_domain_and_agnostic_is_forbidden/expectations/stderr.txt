@@ -1,23 +1,22 @@
 [31;1mERROR[0m:
-  [31m×[0m When registering request handlers, you must make a choice: either all
-  [31m│[0m handlers have a domain constraint, or none do.
-  [31m│[0m Your application violates this rule: there are both domain-specific and
-  [31m│[0m domain-agnostic handlers.
+  [31m×[0m Your application has both domain-specific handlers and domain-agnostic
+  [31m│[0m handlers.
+  [31m│[0m Either all request handlers have a domain constraint, or none do.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/mixed_domain_and_agnostic_is_forbidden/src/lib.rs[0m:12:1]
-  [31m│[0m  [2m12[0m │         let mut bp = Blueprint::new();
-  [31m│[0m  [2m13[0m │         bp.route(GET, "/", f!(crate::handler));
-  [31m│[0m     · [35;1m                      ─┬─[0m
-  [31m│[0m     ·                        [35;1m╰── A handler restricted to a specific domain[0m
-  [31m│[0m  [2m14[0m │         bp
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/mixed_domain_and_agnostic_is_forbidden/src/lib.rs[0m:17:1]
+  [31m│[0m  [2m17[0m │         let mut bp = Blueprint::new();
+  [31m│[0m  [2m18[0m │         bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     · [35;1m                           ─────────┬────────[0m
+  [31m│[0m     ·                 [35;1mA handler restricted to a specific domain[0m
+  [31m│[0m  [2m19[0m │         bp
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/mixed_domain_and_agnostic_is_forbidden/src/lib.rs[0m:16:1]
-  [31m│[0m  [2m16[0m │     // Domain-agnostic
-  [31m│[0m  [2m17[0m │     bp.route(GET, "/login", f!(crate::handler));
-  [31m│[0m     · [35;1m                  ────┬───[0m
-  [31m│[0m     ·                       [35;1m╰── A handler without a domain restriction[0m
-  [31m│[0m  [2m18[0m │     bp
-  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4mblueprint/router/mixed_domain_and_agnostic_is_forbidden/src/lib.rs[0m:3:1]
+  [31m│[0m  [2m3[0m │
+  [31m│[0m  [2m4[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/")]
+  [31m│[0m  [2m5[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn non_domain() -> String {
+  [31m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mA handler without a domain restriction[0m
+  [31m│[0m  [2m6[0m │         todo!()
+  [31m│[0m    ╰────
   [31m│[0m   [36mhelp:[0m To avoid routing ambiguity, you must either:
   [31m│[0m         - Add a domain guard to all handlers that don't have one
   [31m│[0m         - Remove domain guards from all handlers that have one

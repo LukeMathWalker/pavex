@@ -60,6 +60,7 @@ impl Router {
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
         router.insert("/", 0u32).unwrap();
+        router.insert("/annotation", 1u32).unwrap();
         router
     }
     pub async fn route(
@@ -82,6 +83,18 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => route_0::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
+                            .into();
+                        route_1::entrypoint(&allowed_methods).await
+                    }
+                }
+            }
+            1u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_2::entrypoint().await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -177,6 +190,45 @@ pub mod route_1 {
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0)
+        }
+    }
+}
+pub mod route_2 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = wrapping_0().await;
+        response
+    }
+    async fn stage_1() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
+    async fn wrapping_0() -> pavex::response::Response {
+        let v0 = crate::route_2::Next0 {
+            next: stage_1,
+        };
+        let v1 = pavex::middleware::Next::new(v0);
+        let v2 = pavex::middleware::wrap_noop(v1).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    async fn handler() -> pavex::response::Response {
+        let mut v0 = app::build();
+        let v1 = app::handler_ann(&mut v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+    struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)()
         }
     }
 }

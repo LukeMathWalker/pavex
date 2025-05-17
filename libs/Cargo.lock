@@ -2801,7 +2801,9 @@ dependencies = [
  "insta",
  "itertools",
  "pavex_bp_schema",
+ "proc-macro2",
  "px_workspace_hack",
+ "quote",
  "syn",
  "thiserror 2.0.12",
 ]

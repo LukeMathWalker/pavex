@@ -1,0 +1,17 @@
+error: You can't use both `method` and `allow(any_method)` on the same route: either you accept a single method, or you accept them all.
+       Remove one of the two arguments.
+ --> tests/route/fail/conflicting_method_guards.rs:3:1
+  |
+3 | #[route(path = "/single", method = "GET", allow(any_method))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `route` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: You can't use both `method` and `allow(any_method)` on the same route: either you accept a list of specific methods, or you accept them all.
+       Remove one of the two arguments.
+ --> tests/route/fail/conflicting_method_guards.rs:6:1
+  |
+6 | #[route(path = "/multiple", method = ["GET", "POST"], allow(any_method))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `route` (in Nightly builds, run with -Z macro-backtrace for more info)
