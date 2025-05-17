@@ -1,0 +1,5 @@
+description = """When a type marked as NeverClone implements Copy, Pavex emits a warning."""
+
+[expectations]
+codegen = "pass"
+lints = "fail"
