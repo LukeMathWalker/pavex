@@ -1,12 +1,13 @@
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
-    Domain, ErrorObserver, Fallback, Lifecycle, Location, NestedBlueprint, PathPrefix,
+    Domain, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix,
     PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route,
-    WrappingMiddleware,
+    RoutesImport, WrappingMiddleware,
 };
 
 use super::UserComponentId;
 use super::auxiliary::AuxiliaryData;
+use super::imports::{ImportKind, UnresolvedImport};
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
@@ -202,8 +203,31 @@ fn _process_blueprint<'a>(
             Component::ConfigType(t) => {
                 process_config_type(aux, t, current_scope_id);
             }
-            Component::Import(import) => {
-                aux.imports.push((import.clone(), current_scope_id));
+            Component::RoutesImport(RoutesImport {
+                sources,
+                created_at,
+                registered_at,
+            })
+            | Component::Import(Import {
+                sources,
+                created_at,
+                registered_at,
+            }) => {
+                let kind = if matches!(component, Component::Import(_)) {
+                    ImportKind::Injectables
+                } else {
+                    ImportKind::Routes {
+                        path_prefix: path_prefix.map(ToOwned::to_owned),
+                        domain_guard: domain_guard.clone(),
+                    }
+                };
+                aux.imports.push(UnresolvedImport {
+                    scope_id: current_scope_id,
+                    sources: sources.to_owned(),
+                    created_at: created_at.to_owned(),
+                    registered_at: registered_at.to_owned(),
+                    kind,
+                });
             }
         }
     }
@@ -287,7 +311,7 @@ fn process_route(
     };
     let component = UserComponent::RequestHandler {
         router_key,
-        source: raw_callable_identifiers_id,
+        source: raw_callable_identifiers_id.into(),
     };
     let request_handler_id = aux.intern_component(
         component,

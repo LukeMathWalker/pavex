@@ -187,6 +187,7 @@ fn check_item_compatibility(
         | AnnotationKind::WrappingMiddleware
         | AnnotationKind::ErrorObserver
         | AnnotationKind::Constructor
+        | AnnotationKind::Route
             if matches!(item.inner, ItemEnum::Function(_)) => {}
         AnnotationKind::Prebuilt | AnnotationKind::Config
             if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {}
@@ -196,6 +197,7 @@ fn check_item_compatibility(
         | AnnotationKind::Constructor
         | AnnotationKind::ErrorObserver
         | AnnotationKind::Prebuilt
+        | AnnotationKind::Route
         | AnnotationKind::Config => {
             // TODO: Only emit an error if it's a workspace package.
             unsupported_item_kind(annotation.attribute(), item, diagnostics);
@@ -276,6 +278,7 @@ impl AnnotatedItem {
             AnnotationKind::Config => "config",
             AnnotationKind::ErrorObserver => "error_observer",
             AnnotationKind::Prebuilt => "prebuilt",
+            AnnotationKind::Route => "route",
         };
         CreatedBy::macro_name(name)
     }

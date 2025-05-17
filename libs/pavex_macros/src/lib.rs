@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use routes::Method;
 
 mod config;
 mod config_profile;
@@ -8,6 +9,7 @@ mod from;
 mod middlewares;
 mod path_params;
 mod prebuilt;
+mod routes;
 pub(crate) mod utils;
 
 #[allow(non_snake_case)]
@@ -64,6 +66,41 @@ pub fn transient(metadata: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn request_scoped(metadata: TokenStream, input: TokenStream) -> TokenStream {
     constructor::request_scoped(metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn get(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Get, metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn post(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Post, metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn put(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Put, metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn delete(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Delete, metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn patch(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Patch, metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn head(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Head, metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn options(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    routes::route(Method::Options, metadata, input)
 }
 
 #[proc_macro_derive(ConfigProfile, attributes(pavex))]

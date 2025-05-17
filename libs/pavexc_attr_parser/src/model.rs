@@ -110,6 +110,25 @@ impl From<ConfigProperties> for AnnotationProperties {
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect route properties to be represented in
+/// `pavex::diagnostic::route`.
+pub struct RouteProperties {
+    pub path: String,
+    pub method: String,
+    pub error_handler: Option<String>,
+}
+
+impl From<RouteProperties> for AnnotationProperties {
+    fn from(value: RouteProperties) -> Self {
+        AnnotationProperties::Route {
+            path: value.path,
+            method: value.method,
+            error_handler: value.error_handler,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// The way we expect prebuilt properties to be represented in
 /// `pavex::diagnostic::prebuilt`.
 pub struct PrebuiltProperties {

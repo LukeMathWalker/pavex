@@ -7,7 +7,8 @@ use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
     Blueprint as BlueprintSchema, ConfigType, Constructor, Fallback, Import, NestedBlueprint,
-    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, Route, WrappingMiddleware,
+    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, Route, RoutesImport,
+    WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
@@ -21,7 +22,7 @@ use super::middleware::{
 };
 use super::nesting::NestingConditions;
 use super::reflection::{RawIdentifiers, Sources, WithLocation};
-use super::router::{MethodGuard, RegisteredRoute};
+use super::router::{MethodGuard, RegisteredRoute, RegisteredRoutes};
 
 /// The starting point for building an application with Pavex.
 ///
@@ -69,9 +70,9 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Import the constructors and error handlers defined in the target modules.
+    /// Import all constructors, error handlers, configuration and prebuilt types defined in the target modules.
     ///
-    /// Components that have been annotated with Pavex's macros (e.g. `#[constructor]`) aren't automatically
+    /// Components that have been annotated with Pavex's macros (e.g. `#[singleton]`) aren't automatically
     /// considered when resolving the dependency graph for your application.\
     /// They need to be explicitly imported using one or more invocations of this method.
     ///
@@ -142,13 +143,98 @@ impl Blueprint {
             value: sources,
             created_at,
         } = sources;
-        let import = Import {
+        self.register_import(Import {
+            sources: sources2sources(sources),
+            created_at: created_at2created_at(created_at),
+            registered_at: Location::caller(),
+        })
+    }
+
+    #[track_caller]
+    /// Register all the request handlers defined in the target modules.
+    ///
+    /// Components that have been annotated with Pavex's macros (e.g. `#[pavex::get]`) aren't automatically
+    /// added to the router of your application.\
+    /// They need to be explicitly imported using one or more invocations of this method.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
+    /// for a thorough introduction to routing in Pavex applications.
+    ///
+    /// # All local request handlers
+    ///
+    /// Use `crate` as source to register all the request handlers defined in the current crate:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.routes(from![crate]);
+    /// # }
+    /// ```
+    ///
+    /// # Specific modules
+    ///
+    /// You can restrict the scope to specific modules:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// // It will only register routes defined
+    /// // in the `crate::routes::user` and `crate::routes::post` modules.
+    /// bp.routes(from![
+    ///     crate::routes::user,
+    ///     crate::routes::post
+    /// ]);
+    /// # }
+    /// ```
+    ///
+    /// # Dependencies
+    ///
+    /// You can register request handlers defined in one of your dependencies using the same mechanism:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// // Register request handlers from the `pavex_session` crate
+    /// bp.routes(from![pavex_session]);
+    /// # }
+    /// ```
+    ///
+    /// The specified crates must be direct dependencies of the current crate.
+    ///
+    /// # Wildcard import
+    ///
+    /// You can import all request handlers defined in the current crate and its direct dependencies using the wildcard source, `*`:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{from, Blueprint};
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.routes(from![*]);
+    /// # }
+    /// ```
+    ///
+    /// This is generally discouraged.
+    pub fn routes(&mut self, sources: WithLocation<Sources>) -> RegisteredRoutes {
+        let WithLocation {
+            value: sources,
+            created_at,
+        } = sources;
+        let import = RoutesImport {
             sources: sources2sources(sources),
             created_at: created_at2created_at(created_at),
             registered_at: Location::caller(),
         };
         let component_id = self.push_component(import);
-        RegisteredImport {
+        RegisteredRoutes {
             blueprint: &mut self.schema,
             component_id,
         }

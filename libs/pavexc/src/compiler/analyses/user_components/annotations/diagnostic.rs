@@ -1,11 +1,11 @@
 use crate::{
+    compiler::analyses::user_components::imports::UnresolvedImport,
     diagnostic::{
         self, ComponentKind, DiagnosticSink, OptionalLabeledSpanExt, OptionalSourceSpanExt,
         Registration, TargetSpan,
     },
     rustdoc::RustdocKindExt,
 };
-use pavex_bp_schema::Import;
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::errors::AttributeParserError;
 use rustdoc_types::Item;
@@ -71,7 +71,7 @@ pub(super) fn invalid_diagnostic_attribute(
 pub(super) fn unknown_module_path(
     module_path: &[String],
     krate_name: &str,
-    import: &Import,
+    import: &UnresolvedImport,
     diagnostics: &mut DiagnosticSink,
 ) {
     let source = diagnostics.source(&import.registered_at).map(|s| {
@@ -81,7 +81,7 @@ pub(super) fn unknown_module_path(
     });
     let module_path = module_path.join("::");
     let e = anyhow::anyhow!(
-        "You tried to import items from `{module_path}`, but there is no module with that path in `{krate_name}`."
+        "You tried to import from `{module_path}`, but there is no module with that path in `{krate_name}`."
     );
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
@@ -89,21 +89,22 @@ pub(super) fn unknown_module_path(
     diagnostics.push(diagnostic);
 }
 
-pub(super) fn not_a_module(path: &[String], import: &Import, diagnostics: &mut DiagnosticSink) {
+pub(super) fn not_a_module(
+    path: &[String],
+    import: &UnresolvedImport,
+    diagnostics: &mut DiagnosticSink,
+) {
     let source = diagnostics.source(&import.registered_at).map(|s| {
         diagnostic::imported_sources_span(s.source(), &import.registered_at)
             .labeled("The import was registered here".into())
             .attach(s)
     });
     let path = path.join("::");
-    let e =
-        anyhow::anyhow!("You tried to import items from `{path}`, but `{path}` is not a module.");
+    let e = anyhow::anyhow!("You tried to import from `{path}`, but `{path}` is not a module.");
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)
         .help(
-            "Pass to `from!` the path to a module that contains the item you want to import, \
-            rather than the path to the actual item."
-                .into(),
+            "Specify the path of the module that contains the item you want to import, rather than the actual item path.".into()
         )
         .build();
     diagnostics.push(diagnostic);

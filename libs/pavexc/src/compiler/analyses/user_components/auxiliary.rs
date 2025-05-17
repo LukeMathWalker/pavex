@@ -11,11 +11,9 @@ use crate::{
 };
 use ahash::HashMap;
 use indexmap::IndexMap;
-use pavex_bp_schema::{
-    CloningStrategy, Import, Lifecycle, Lint, LintSetting, Location, RawIdentifiers,
-};
+use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawIdentifiers};
 
-use super::{ScopeId, UserComponent, UserComponentId};
+use super::{ScopeId, UserComponent, UserComponentId, imports::UnresolvedImport};
 
 /// Data that we need to keep track of as we collect and process all user-registered components.
 ///
@@ -29,10 +27,7 @@ pub(super) struct AuxiliaryData {
     /// Invariants: there is an entry for every single user component.
     pub(super) id2scope_id: la_arena::ArenaMap<UserComponentId, ScopeId>,
     /// A list of imports to be resolved.
-    ///
-    /// For each import, we keep track of the scope that it was declared in.
-    /// That scope will be used as the scope for the imported components.
-    pub(super) imports: Vec<(Import, ScopeId)>,
+    pub(super) imports: Vec<UnresolvedImport>,
     pub(super) annotation_interner: Interner<GlobalItemId>,
     pub(super) identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was

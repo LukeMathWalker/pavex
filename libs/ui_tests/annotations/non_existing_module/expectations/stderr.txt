@@ -1,6 +1,6 @@
 [31;1mERROR[0m:
-  [31m×[0m You tried to import items from `app::non_existing_module`, but
-  [31m│[0m there is no module with that path in `app`.
+  [31m×[0m You tried to import from `app::non_existing_module`, but there is
+  [31m│[0m no module with that path in `app`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mannotations/non_existing_module/src/lib.rs[0m:8:1]
   [31m│[0m  [2m 8[0m │         let mut bp = Blueprint::new();
@@ -14,7 +14,7 @@
   [31m│[0m  [2m15[0m │         bp
   [31m│[0m     ╰────
 [31;1mERROR[0m:
-  [31m×[0m You tried to import items from `app::handler`, but
+  [31m×[0m You tried to import from `app::handler`, but
   [31m│[0m `app::handler` is not a module.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mannotations/non_existing_module/src/lib.rs[0m:8:1]
@@ -28,5 +28,5 @@
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe import was registered here[0m
   [31m│[0m  [2m15[0m │         bp
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Pass to `from!` the path to a module that contains the item you want
-  [31m│[0m         to import, rather than the path to the actual item.
+  [31m│[0m   [36mhelp:[0m Specify the path of the module that contains the item you want to
+  [31m│[0m         import, rather than the actual item path.
