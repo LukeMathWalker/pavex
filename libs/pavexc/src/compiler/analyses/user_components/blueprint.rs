@@ -549,7 +549,7 @@ fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_sco
         .identifiers_interner
         .get_or_intern(si.input.type_.clone());
     let component = UserComponent::PrebuiltType {
-        source: identifiers_id,
+        source: identifiers_id.into(),
     };
     let id = aux.intern_component(
         component,

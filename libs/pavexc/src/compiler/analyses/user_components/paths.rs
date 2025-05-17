@@ -124,6 +124,9 @@ impl FQPaths {
                 continue;
             };
             if let UserComponent::PrebuiltType { .. } = &user_component {
+                if aux.id2registration[id].kind.is_attribute() {
+                    continue;
+                }
                 match resolve_type_path(resolved_path, krate_collection) {
                     Ok(ty) => match PrebuiltType::new(ty) {
                         Ok(prebuilt) => {
@@ -134,6 +137,9 @@ impl FQPaths {
                     Err(e) => cannot_resolve_type_path(e, id, aux, diagnostics),
                 };
             } else if let UserComponent::ConfigType { key, .. } = &user_component {
+                if aux.id2registration[id].kind.is_attribute() {
+                    continue;
+                }
                 match resolve_type_path(resolved_path, krate_collection) {
                     Ok(ty) => match ConfigType::new(ty, key.into()) {
                         Ok(config) => {
@@ -160,7 +166,7 @@ impl FQPaths {
     }
 }
 
-fn invalid_prebuilt_type(
+pub(super) fn invalid_prebuilt_type(
     e: PrebuiltTypeValidationError,
     resolved_path: &FQPath,
     id: UserComponentId,
@@ -178,23 +184,26 @@ fn invalid_prebuilt_type(
         PrebuiltTypeValidationError::CannotHaveLifetimeParameters { ty } => {
             if ty.has_implicit_lifetime_parameters() {
                 writeln!(
-                        &mut error_msg,
-                        "\n`{resolved_path}` has elided lifetime parameters, which might be non-'static."
-                    ).unwrap();
+                    &mut error_msg,
+                    "\n`{resolved_path}` has elided lifetime parameters."
+                )
+                .unwrap();
             } else {
                 let named_lifetimes = ty.named_lifetime_parameters();
                 if named_lifetimes.len() == 1 {
                     write!(
-                            &mut error_msg,
-                            "\n`{resolved_path}` has a named lifetime parameter, `'{}`, that you haven't constrained to be 'static.",
-                            named_lifetimes[0]
-                        ).unwrap();
+                        &mut error_msg,
+                        "\n`{resolved_path}` has a named lifetime parameter, `'{}`.",
+                        named_lifetimes[0]
+                    )
+                    .unwrap();
                 } else {
                     write!(
-                            &mut error_msg,
-                            "\n`{resolved_path}` has {} named lifetime parameters that you haven't constrained to be 'static: ",
-                            named_lifetimes.len(),
-                        ).unwrap();
+                        &mut error_msg,
+                        "\n`{resolved_path}` has {} named lifetime parameters: ",
+                        named_lifetimes.len(),
+                    )
+                    .unwrap();
                     comma_separated_list(
                         &mut error_msg,
                         named_lifetimes.iter(),
@@ -205,22 +214,26 @@ fn invalid_prebuilt_type(
                     write!(&mut error_msg, ".").unwrap();
                 }
             };
-            "Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(t!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.".to_string()
+
+            "Remove all lifetime parameters from the definition of your configuration type."
+                .to_string()
         }
         PrebuiltTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
             let generic_type_parameters = ty.unassigned_generic_type_parameters();
             if generic_type_parameters.len() == 1 {
                 write!(
-                        &mut error_msg,
-                        "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
-                        generic_type_parameters[0]
-                    ).unwrap();
+                    &mut error_msg,
+                    "\n`{resolved_path}` has a generic type parameter, `{}`.",
+                    generic_type_parameters[0]
+                )
+                .unwrap();
             } else {
                 write!(
-                        &mut error_msg,
-                        "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
-                        generic_type_parameters.len(),
-                    ).unwrap();
+                    &mut error_msg,
+                    "\n`{resolved_path}` has {} generic type parameters: ",
+                    generic_type_parameters.len(),
+                )
+                .unwrap();
                 comma_separated_list(
                     &mut error_msg,
                     generic_type_parameters.iter(),
@@ -230,7 +243,8 @@ fn invalid_prebuilt_type(
                 .unwrap();
                 write!(&mut error_msg, ".").unwrap();
             }
-            "Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string()
+            "Remove all generic type parameters from the definition of your configuration type."
+                .into()
         }
     };
     let e = anyhow::anyhow!(e).context(error_msg);

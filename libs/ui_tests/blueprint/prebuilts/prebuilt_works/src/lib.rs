@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -11,12 +11,17 @@ pub struct B<T>(pub T);
 #[derive(Clone)]
 pub struct C<'a>(pub &'a str);
 
-pub fn handler(_a: &A, _b: &B<String>, _c: C<'static>, _d: Vec<String>) -> Response {
+#[derive(Clone)]
+#[pavex::prebuilt(clone_if_necessary)]
+pub struct A1;
+
+pub fn handler(_a: &A, _b: &B<String>, _c: C<'static>, _d: Vec<String>, _a1: &A1) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.import(from![crate]);
     bp.prebuilt(t!(crate::A));
     bp.prebuilt(t!(crate::B<std::string::String>));
     bp.prebuilt(t!(crate::C<'static>)).clone_if_necessary();

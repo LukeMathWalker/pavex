@@ -48,6 +48,9 @@ pub enum AnnotationProperties {
         cloning_strategy: Option<CloningStrategy>,
         error_handler: Option<String>,
     },
+    Prebuilt {
+        cloning_strategy: Option<CloningStrategy>,
+    },
     Config {
         key: String,
         cloning_strategy: Option<CloningStrategy>,
@@ -85,6 +88,9 @@ impl AnnotationProperties {
             AnnotationKind::ErrorObserver => {
                 model::ErrorObserverProperties::from_meta(item).map(Into::into)
             }
+            AnnotationKind::Prebuilt => {
+                model::PrebuiltProperties::from_meta(item).map(Into::into)
+            }
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
     }
@@ -98,6 +104,7 @@ pub enum AnnotationKind {
     PreProcessingMiddleware,
     PostProcessingMiddleware,
     ErrorObserver,
+    Prebuilt,
 }
 
 impl AnnotationKind {
@@ -109,6 +116,7 @@ impl AnnotationKind {
             "post_process" => Ok(AnnotationKind::PostProcessingMiddleware),
             "pre_process" => Ok(AnnotationKind::PreProcessingMiddleware),
             "error_observer" => Ok(AnnotationKind::ErrorObserver),
+            "prebuilt" => Ok(AnnotationKind::Prebuilt),
             _ => Err(()),
         }
     }
@@ -123,6 +131,7 @@ impl AnnotationKind {
             PreProcessingMiddleware => "pavex::diagnostic::pre_process",
             PostProcessingMiddleware => "pavex::diagnostic::post_process",
             ErrorObserver => "pavex::diagnostic::error_observer",
+            Prebuilt => "pavex::diagnostic::prebuilt",
         }
     }
 }
@@ -144,6 +153,7 @@ impl AnnotationProperties {
                 AnnotationKind::PostProcessingMiddleware
             }
             AnnotationProperties::ErrorObserver => AnnotationKind::ErrorObserver,
+            AnnotationProperties::Prebuilt { .. } => AnnotationKind::Prebuilt,
         }
     }
 }

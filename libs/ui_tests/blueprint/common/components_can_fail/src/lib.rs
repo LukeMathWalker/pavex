@@ -1,6 +1,5 @@
 use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::f;
-use pavex::middleware::Processing;
 use pavex::response::Response;
 
 pub mod constructor {

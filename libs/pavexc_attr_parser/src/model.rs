@@ -110,6 +110,21 @@ impl From<ConfigProperties> for AnnotationProperties {
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect prebuilt properties to be represented in
+/// `pavex::diagnostic::prebuilt`.
+pub struct PrebuiltProperties {
+    pub cloning_strategy: Option<CloningStrategy>,
+}
+
+impl From<PrebuiltProperties> for AnnotationProperties {
+    fn from(value: PrebuiltProperties) -> Self {
+        AnnotationProperties::Prebuilt {
+            cloning_strategy: value.cloning_strategy.map(Into::into),
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 #[darling(rename_all = "snake_case")]
 pub enum Lifecycle {
     Singleton,

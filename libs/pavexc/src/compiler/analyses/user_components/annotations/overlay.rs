@@ -45,6 +45,7 @@ pub fn augment_from_annotation(
         let error_handler = match properties {
             AnnotationProperties::ErrorObserver
             | AnnotationProperties::Constructor { .. }
+            | AnnotationProperties::Prebuilt { .. }
             | AnnotationProperties::Config { .. } => {
                 panic!("Unexpected annotation kind")
             }

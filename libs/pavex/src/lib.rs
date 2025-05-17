@@ -36,6 +36,31 @@ pub mod time {
     pub use jiff::*;
 }
 
+/// Define a [prebuilt type](https://pavex.dev/docs/guide/configuration/).
+///
+/// # Example
+///
+/// ```
+///
+/// #[pavex::prebuilt]
+/// #[derive(Debug, Clone)]
+/// pub struct StaticAssets(/* */);
+/// ```
+///
+/// # Imports
+///
+/// The annotated type must be imported via [`Blueprint::import`], otherwise it won't be considered
+/// by Pavex.
+///
+/// # Guide
+///
+/// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
+/// section of Pavex's guide for a thorough introduction to dependency injection
+/// in Pavex applications.
+///
+/// [`Blueprint::import`]: crate::blueprint::Blueprint::import
+pub use pavex_macros::prebuilt;
+
 /// Define a [configuration type](https://pavex.dev/docs/guide/configuration/).
 ///
 /// # Example

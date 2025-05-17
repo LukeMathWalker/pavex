@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -6,9 +6,14 @@ use pavex::{f, t};
 pub struct A;
 
 #[derive(Clone)]
+#[pavex::prebuilt(clone_if_necessary)]
+pub struct A1;
+
+#[derive(Clone)]
 pub struct B;
 
-pub fn b(_a: A) -> B {
+#[pavex::singleton]
+pub fn b(_a: A, _a1: A1) -> B {
     todo!()
 }
 
@@ -18,8 +23,8 @@ pub fn handler(_a: A, _b: &B) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.import(from![crate]);
     bp.prebuilt(t!(crate::A)).clone_if_necessary();
-    bp.singleton(f!(crate::b));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

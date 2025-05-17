@@ -7,6 +7,7 @@ mod error_observer;
 mod from;
 mod middlewares;
 mod path_params;
+mod prebuilt;
 pub(crate) mod utils;
 
 #[allow(non_snake_case)]
@@ -18,6 +19,11 @@ pub fn PathParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn config(metadata: TokenStream, input: TokenStream) -> TokenStream {
     config::config(metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn prebuilt(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    prebuilt::prebuilt(metadata, input)
 }
 
 #[proc_macro_attribute]
