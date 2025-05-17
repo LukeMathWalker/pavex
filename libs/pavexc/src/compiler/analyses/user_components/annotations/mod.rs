@@ -14,12 +14,12 @@ use super::{
     ScopeId, UserComponent, UserComponentId, UserComponentSource,
     auxiliary::AuxiliaryData,
     imports::ResolvedImport,
-    paths::{cannot_resolve_callable_path, invalid_config_type},
+    paths::{cannot_resolve_callable_path, invalid_config_type, invalid_prebuilt_type},
 };
 use crate::{
     compiler::{
-        analyses::computations::ComputationDb,
-        component::{ConfigType, DefaultStrategy},
+        analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
+        component::{ConfigType, DefaultStrategy, PrebuiltType},
         resolvers::{
             CallableResolutionError, GenericBindings, InputParameterResolutionError,
             OutputTypeResolutionError, SelfResolutionError, resolve_type,
@@ -46,6 +46,7 @@ pub(super) fn register_imported_components(
     imported_modules: &[(ResolvedImport, usize)],
     aux: &mut AuxiliaryData,
     computation_db: &mut ComputationDb,
+    prebuilt_type_db: &mut PrebuiltTypeDb,
     registry: &AnnotationRegistry,
     krate_collection: &CrateCollection,
     diagnostics: &mut DiagnosticSink,
@@ -101,8 +102,15 @@ pub(super) fn register_imported_components(
             // In particular, those that are position-sensitive *must* be
             // registered individually by the user.
             let kind = annotation.properties.kind();
-            if !(kind == AnnotationKind::Config || kind == AnnotationKind::Constructor) {
-                continue;
+            match kind {
+                AnnotationKind::Prebuilt | AnnotationKind::Config | AnnotationKind::Constructor => {
+                }
+                AnnotationKind::WrappingMiddleware
+                | AnnotationKind::PreProcessingMiddleware
+                | AnnotationKind::PostProcessingMiddleware
+                | AnnotationKind::ErrorObserver => {
+                    continue;
+                }
             }
 
             // First check if the item is in scope for the import
@@ -127,6 +135,7 @@ pub(super) fn register_imported_components(
                     .expect("Failed to determine created at for an annotated item"),
                 scope_id,
                 aux,
+                prebuilt_type_db,
                 diagnostics,
                 krate_collection,
             ) else {
@@ -170,6 +179,7 @@ fn intern_annotated(
     created_at: &CreatedAt,
     scope_id: ScopeId,
     aux: &mut AuxiliaryData,
+    prebuilt_type_db: &mut PrebuiltTypeDb,
     diagnostics: &mut DiagnosticSink,
     krate_collection: &CrateCollection,
 ) -> Result<UserComponentId, ()> {
@@ -273,6 +283,43 @@ fn intern_annotated(
             };
 
             Ok(config_id)
+        }
+        AnnotationProperties::Prebuilt { cloning_strategy } => {
+            let prebuilt = UserComponent::PrebuiltType { source };
+            let prebuilt_id =
+                aux.intern_component(prebuilt, scope_id, Lifecycle::Singleton, registration);
+            aux.id2cloning_strategy.insert(
+                prebuilt_id,
+                cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary),
+            );
+
+            let ty = match rustdoc_item_def2type(item, krate) {
+                Ok(t) => t,
+                Err(e) => {
+                    const_generics_are_not_supported(e, item, diagnostics);
+                    return Err(());
+                }
+            };
+            match PrebuiltType::new(ty) {
+                Ok(prebuilt) => {
+                    prebuilt_type_db.get_or_intern(prebuilt, prebuilt_id);
+                }
+                Err(e) => {
+                    let path = FQPath {
+                        segments: krate.import_index.items[&item.id]
+                            .canonical_path()
+                            .iter()
+                            .cloned()
+                            .map(FQPathSegment::new)
+                            .collect(),
+                        qualified_self: None,
+                        package_id: krate.core.package_id.clone(),
+                    };
+                    invalid_prebuilt_type(e, &path, prebuilt_id, aux, diagnostics)
+                }
+            };
+
+            Ok(prebuilt_id)
         }
         AnnotationProperties::PreProcessingMiddleware { .. }
         | AnnotationProperties::PostProcessingMiddleware { .. }

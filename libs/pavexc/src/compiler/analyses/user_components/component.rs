@@ -30,7 +30,7 @@ pub enum UserComponent {
         source: UserComponentSource,
     },
     PrebuiltType {
-        source: RawIdentifierId,
+        source: UserComponentSource,
     },
     ConfigType {
         source: UserComponentSource,
@@ -58,13 +58,15 @@ impl UserComponent {
         match self {
             UserComponent::RequestHandler { source, .. }
             | UserComponent::Fallback { source }
-            | UserComponent::PrebuiltType { source }
             | UserComponent::WrappingMiddleware { source }
             | UserComponent::PostProcessingMiddleware { source }
             | UserComponent::PreProcessingMiddleware { source }
             | UserComponent::ConfigType {
                 source: UserComponentSource::Identifiers(source),
                 ..
+            }
+            | UserComponent::PrebuiltType {
+                source: UserComponentSource::Identifiers(source),
             }
             | UserComponent::Constructor {
                 source: UserComponentSource::Identifiers(source),

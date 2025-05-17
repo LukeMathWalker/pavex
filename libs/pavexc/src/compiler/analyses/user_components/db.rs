@@ -127,6 +127,7 @@ impl UserComponentDb {
             &imported_modules,
             &mut aux,
             computation_db,
+            prebuilt_type_db,
             &registry,
             krate_collection,
             diagnostics,

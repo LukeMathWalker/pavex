@@ -1,0 +1,27 @@
+error: Prebuilt types must be public.
+       Mark `A` as `pub`, and make sure it can be imported from outside your crate.
+ --> tests/prebuilt/fail/not_public.rs:4:1
+  |
+4 | struct A;
+  | ^^^^^^^^
+
+error: Prebuilt types must be public.
+       Mark `A1` as `pub`, and make sure it can be imported from outside your crate.
+ --> tests/prebuilt/fail/not_public.rs:7:1
+  |
+7 | enum A1 {}
+  | ^^^^^^^
+
+error: Prebuilt types must be public.
+       Mark `B` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/prebuilt/fail/not_public.rs:10:1
+   |
+10 | pub(crate) struct B;
+   | ^^^^^^^^^^
+
+error: Prebuilt types must be public.
+       Mark `B1` as `pub`, and make sure it can be imported from outside your crate.
+  --> tests/prebuilt/fail/not_public.rs:13:1
+   |
+13 | enum B1 {}
+   | ^^^^^^^
