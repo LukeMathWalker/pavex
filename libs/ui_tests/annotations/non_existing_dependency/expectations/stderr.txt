@@ -1,6 +1,6 @@
 [31;1mERROR[0m:
-  [31m×[0m You tried to import items from `non_existing_dep`, but `app` has
-  [31m│[0m no direct dependency named `non_existing_dep`.
+  [31m×[0m You tried to import from `non_existing_dep`, but `app` has no
+  [31m│[0m direct dependency named `non_existing_dep`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mannotations/non_existing_dependency/src/lib.rs[0m:8:1]
   [31m│[0m  [2m 8[0m │         let mut bp = Blueprint::new();
@@ -13,4 +13,4 @@
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Check your `Cargo.toml` file for typos or missing dependencies.
   [31m│[0m   [36mhelp:[0m The path must start with either `crate` or `super` if you want to
-  [31m│[0m         import a local module.
+  [31m│[0m         import from a local module.

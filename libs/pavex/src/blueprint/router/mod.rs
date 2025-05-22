@@ -1,4 +1,4 @@
-//! Specify the routes exposed by your application.  
+//! Specify the routes exposed by your application.
 //!
 //! # Guide
 //!
@@ -10,7 +10,9 @@ pub use method_guard::{
     TRACE,
 };
 pub use route::{RegisteredRoute, Route};
+pub use routes::RegisteredRoutes;
 
 mod fallback;
 mod method_guard;
 mod route;
+mod routes;

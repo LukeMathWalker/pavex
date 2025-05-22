@@ -13,8 +13,11 @@ pub use registry::*;
 use super::{
     ScopeId, UserComponent, UserComponentId, UserComponentSource,
     auxiliary::AuxiliaryData,
-    imports::ResolvedImport,
+    blueprint::validate_route_path,
+    imports::{ImportKind, ResolvedImport},
     paths::{cannot_resolve_callable_path, invalid_config_type, invalid_prebuilt_type},
+    router_key::RouterKey,
+    scope_graph::ScopeGraphBuilder,
 };
 use crate::{
     compiler::{
@@ -45,6 +48,7 @@ pub type AnnotatedItemId = la_arena::Idx<GlobalItemId>;
 pub(super) fn register_imported_components(
     imported_modules: &[(ResolvedImport, usize)],
     aux: &mut AuxiliaryData,
+    scope_graph_builder: &mut ScopeGraphBuilder,
     computation_db: &mut ComputationDb,
     prebuilt_type_db: &mut PrebuiltTypeDb,
     registry: &AnnotationRegistry,
@@ -55,8 +59,9 @@ pub(super) fn register_imported_components(
         let ResolvedImport {
             path: module_path,
             package_id,
+            kind: import_kind,
+            scope_id,
         } = import;
-        let scope_id = aux.imports[*import_id].1;
         let Some(krate) = krate_collection.get_crate_by_package_id(package_id) else {
             unreachable!(
                 "The JSON documentation for packages that may contain annotated components \
@@ -81,14 +86,14 @@ pub(super) fn register_imported_components(
             {
                 Some(_) => {
                     // We have a matching item. Let's report the kind confusion.
-                    not_a_module(module_path, &aux.imports[*import_id].0, diagnostics);
+                    not_a_module(module_path, &aux.imports[*import_id], diagnostics);
                 }
                 None => {
                     // Nope, no match at all. Let's just report it as an unknown path.
                     unknown_module_path(
                         module_path,
                         &krate.crate_name(),
-                        &aux.imports[*import_id].0,
+                        &aux.imports[*import_id],
                         diagnostics,
                     );
                 }
@@ -104,6 +109,11 @@ pub(super) fn register_imported_components(
             let kind = annotation.properties.kind();
             match kind {
                 AnnotationKind::Prebuilt | AnnotationKind::Config | AnnotationKind::Constructor => {
+                }
+                AnnotationKind::Route => {
+                    if !matches!(import_kind, ImportKind::Routes { .. }) {
+                        continue;
+                    }
                 }
                 AnnotationKind::WrappingMiddleware
                 | AnnotationKind::PreProcessingMiddleware
@@ -133,8 +143,10 @@ pub(super) fn register_imported_components(
                 &annotation
                     .created_at(krate, krate_collection.package_graph())
                     .expect("Failed to determine created at for an annotated item"),
-                scope_id,
+                import_kind,
+                *scope_id,
                 aux,
+                scope_graph_builder,
                 prebuilt_type_db,
                 diagnostics,
                 krate_collection,
@@ -177,8 +189,10 @@ fn intern_annotated(
     item: &rustdoc_types::Item,
     krate: &Crate,
     created_at: &CreatedAt,
+    import_kind: &ImportKind,
     scope_id: ScopeId,
     aux: &mut AuxiliaryData,
+    scope_graph_builder: &mut ScopeGraphBuilder,
     prebuilt_type_db: &mut PrebuiltTypeDb,
     diagnostics: &mut DiagnosticSink,
     krate_collection: &CrateCollection,
@@ -229,6 +243,61 @@ fn intern_annotated(
                 aux.intern_component(component, scope_id, lifecycle, registration);
             }
             Ok(constructor_id)
+        }
+        AnnotationProperties::Route {
+            method,
+            path,
+            error_handler,
+        } => {
+            let ImportKind::Routes {
+                path_prefix,
+                domain_guard,
+                observer_chain,
+                middleware_chain,
+            } = import_kind
+            else {
+                unreachable!()
+            };
+            let prefixed_path = if let Some(path_prefix) = path_prefix {
+                format!("{path_prefix}{path}")
+            } else {
+                path.clone()
+            };
+            let router_key = RouterKey {
+                path: prefixed_path,
+                method_guard: method,
+                domain_guard: domain_guard.clone(),
+            };
+            let request_handler = UserComponent::RequestHandler { source, router_key };
+
+            let route_scope_id = scope_graph_builder.add_scope(scope_id, None);
+            let request_handler_id = aux.intern_component(
+                request_handler,
+                route_scope_id,
+                Lifecycle::RequestScoped,
+                registration.clone(),
+            );
+            aux.handler_id2middleware_ids
+                .insert(request_handler_id, middleware_chain.to_owned());
+            aux.handler_id2error_observer_ids
+                .insert(request_handler_id, observer_chain.to_owned());
+
+            validate_route_path(aux, request_handler_id, &path, diagnostics);
+
+            if let Some(error_handler) = error_handler {
+                let identifiers = RawIdentifiers {
+                    created_at: created_at.clone(),
+                    created_by: CreatedBy::macro_name("route"),
+                    import_path: error_handler,
+                };
+                let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
+                let component = UserComponent::ErrorHandler {
+                    source: identifiers_id.into(),
+                    fallible_id: request_handler_id,
+                };
+                aux.intern_component(component, scope_id, Lifecycle::RequestScoped, registration);
+            }
+            Ok(request_handler_id)
         }
         AnnotationProperties::Config {
             key,

@@ -84,6 +84,38 @@ pub(crate) fn attribute_error_handler_span(
     ))
 }
 
+/// A span matching the `path = "/my/route/path"` portion of a route attribute.
+pub(crate) fn route_path_attr_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    use darling::FromMeta;
+
+    let raw_source = &source.contents;
+    let def = find_callable_def(location, &source.parsed)?;
+    let attrs = match &def {
+        CallableDef::Method(m) => &m.attrs,
+        CallableDef::Function(f) => &f.attrs,
+    };
+
+    #[derive(darling::FromMeta)]
+    struct Property {
+        path: darling::util::SpannedValue<String>,
+    }
+
+    for attr in attrs {
+        if let Ok(property) = Property::from_meta(&attr.meta) {
+            return Some(convert_proc_macro_span(raw_source, property.path.span()));
+        }
+    }
+
+    // Fall back to the full sign+attr span if we can't find a precise one.
+    Some(convert_proc_macro_span(
+        raw_source,
+        def.attrs_and_sig_span(),
+    ))
+}
+
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
 /// `.` in the method invocation for `route` and `constructor`.
 /// E.g.

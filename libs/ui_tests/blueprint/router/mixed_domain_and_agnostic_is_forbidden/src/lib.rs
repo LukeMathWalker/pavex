@@ -1,5 +1,10 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::f;
+
+#[pavex::get(path = "/")]
+pub fn non_domain() -> String {
+    todo!()
+}
 
 pub fn handler() -> String {
     todo!()
@@ -14,6 +19,6 @@ pub fn blueprint() -> Blueprint {
         bp
     });
     // Domain-agnostic
-    bp.route(GET, "/login", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

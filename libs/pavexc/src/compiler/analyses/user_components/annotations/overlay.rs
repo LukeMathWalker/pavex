@@ -46,6 +46,7 @@ pub fn augment_from_annotation(
             AnnotationProperties::ErrorObserver
             | AnnotationProperties::Constructor { .. }
             | AnnotationProperties::Prebuilt { .. }
+            | AnnotationProperties::Route { .. }
             | AnnotationProperties::Config { .. } => {
                 panic!("Unexpected annotation kind")
             }

@@ -1,12 +1,13 @@
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
-    Domain, ErrorObserver, Fallback, Lifecycle, Location, NestedBlueprint, PathPrefix,
+    Domain, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix,
     PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route,
-    WrappingMiddleware,
+    RoutesImport, WrappingMiddleware,
 };
 
 use super::UserComponentId;
 use super::auxiliary::AuxiliaryData;
+use super::imports::{ImportKind, UnresolvedImport};
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
@@ -24,7 +25,7 @@ pub(super) fn process_blueprint(
     bp: &Blueprint,
     aux: &mut AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
-) -> ScopeGraph {
+) -> ScopeGraphBuilder {
     let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
     let root_scope_id = scope_graph_builder.root_scope_id();
     // The middleware chain that will wrap around all the request handlers in the current scope.
@@ -103,7 +104,7 @@ pub(super) fn process_blueprint(
     #[cfg(debug_assertions)]
     aux.check_invariants();
 
-    scope_graph_builder.build()
+    scope_graph_builder
 }
 
 /// Used in [`process_blueprint`] to keep track of the nested blueprints that we still
@@ -202,8 +203,33 @@ fn _process_blueprint<'a>(
             Component::ConfigType(t) => {
                 process_config_type(aux, t, current_scope_id);
             }
-            Component::Import(import) => {
-                aux.imports.push((import.clone(), current_scope_id));
+            Component::RoutesImport(RoutesImport {
+                sources,
+                created_at,
+                registered_at,
+            })
+            | Component::Import(Import {
+                sources,
+                created_at,
+                registered_at,
+            }) => {
+                let kind = if matches!(component, Component::Import(_)) {
+                    ImportKind::Injectables
+                } else {
+                    ImportKind::Routes {
+                        path_prefix: path_prefix.map(ToOwned::to_owned),
+                        domain_guard: domain_guard.clone(),
+                        observer_chain: current_observer_chain.clone(),
+                        middleware_chain: current_middleware_chain.clone(),
+                    }
+                };
+                aux.imports.push(UnresolvedImport {
+                    scope_id: current_scope_id,
+                    sources: sources.to_owned(),
+                    created_at: created_at.to_owned(),
+                    registered_at: registered_at.to_owned(),
+                    kind,
+                });
             }
         }
     }
@@ -287,7 +313,7 @@ fn process_route(
     };
     let component = UserComponent::RequestHandler {
         router_key,
-        source: raw_callable_identifiers_id,
+        source: raw_callable_identifiers_id.into(),
     };
     let request_handler_id = aux.intern_component(
         component,
@@ -305,7 +331,7 @@ fn process_route(
     aux.handler_id2error_observer_ids
         .insert(request_handler_id, current_observer_chain.to_owned());
 
-    validate_route(aux, request_handler_id, registered_route, diagnostics);
+    validate_route_path(aux, request_handler_id, &registered_route.path, diagnostics);
 
     process_error_handler(
         aux,
@@ -632,18 +658,18 @@ fn process_error_handler(
 
 /// Check the path of the registered route.
 /// Emit diagnostics if the path is invalid—i.e. empty or missing a leading slash.
-fn validate_route(
+pub(super) fn validate_route_path(
     aux: &mut AuxiliaryData,
     route_id: UserComponentId,
-    route: &Route,
+    path: &str,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     // Empty paths are OK.
-    if route.path.is_empty() {
+    if path.is_empty() {
         return;
     }
-    if !route.path.starts_with('/') {
-        diagnostics::route_path_must_start_with_a_slash(aux, route, route_id, diagnostics);
+    if !path.starts_with('/') {
+        diagnostics::route_path_must_start_with_a_slash(aux, path, route_id, diagnostics);
     }
 }
 
@@ -713,35 +739,36 @@ mod diagnostics {
 
     use crate::{
         compiler::analyses::domain::InvalidDomainConstraint,
-        diagnostic::{self, OptionalLabeledSpanExt, OptionalSourceSpanExt, TargetSpan},
+        diagnostic::{
+            self, DiagnosticSink, OptionalLabeledSpanExt, OptionalSourceSpanExt, TargetSpan,
+        },
     };
 
     use super::*;
 
     pub(super) fn route_path_must_start_with_a_slash(
         aux: &AuxiliaryData,
-        route: &Route,
+        path: &str,
         route_id: UserComponentId,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             TargetSpan::RoutePath(&aux.id2registration[route_id]),
             "The path missing a leading '/'",
         );
-        let path = &route.path;
         let err = anyhow::anyhow!(
-            "Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",
+            "Non-empty route paths must begin with a forward slash, `/`.\n`{path}` doesn't have one.",
         );
         let diagnostic = CompilerDiagnostic::builder(err)
-                .optional_source(source)
-                .help(format!("Add a '/' at the beginning of the route path to fix this error: use `/{path}` instead of `{path}`."));
+            .optional_source(source)
+            .help(format!("Use `/{path}` instead of `{path}`."));
         diagnostics.push(diagnostic.build());
     }
 
     pub(super) fn invalid_domain_guard(
         location: &Location,
         e: InvalidDomainConstraint,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::domain_span(s.source(), location)
@@ -754,7 +781,7 @@ mod diagnostics {
 
     pub(super) fn path_prefix_cannot_be_empty(
         location: &Location,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
@@ -775,7 +802,7 @@ mod diagnostics {
     pub(super) fn path_prefix_must_start_with_a_slash(
         prefix: &str,
         location: &Location,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
@@ -795,7 +822,7 @@ mod diagnostics {
     pub(super) fn path_prefix_cannot_end_with_a_slash(
         prefix: &str,
         location: &Location,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &mut DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)

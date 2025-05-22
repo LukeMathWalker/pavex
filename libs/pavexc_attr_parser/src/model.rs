@@ -1,6 +1,7 @@
 use darling::util::Ignored;
+use pavex_bp_schema::MethodGuard;
 
-use crate::AnnotationProperties;
+use crate::{AnnotationProperties, atoms::MethodArgument};
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// The way we expect constructor properties to be represented in
@@ -105,6 +106,50 @@ impl From<ConfigProperties> for AnnotationProperties {
             cloning_strategy: value.cloning_strategy.map(Into::into),
             default_if_missing: value.default_if_missing,
             include_if_unused: value.include_if_unused,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect route properties to be represented in
+/// `pavex::diagnostic::route`.
+pub struct RouteProperties {
+    pub path: String,
+    pub method: Option<MethodArgument>,
+    pub error_handler: Option<String>,
+    pub allow_any_method: Option<bool>,
+    pub allow_non_standard_methods: Option<bool>,
+}
+
+impl From<RouteProperties> for AnnotationProperties {
+    fn from(value: RouteProperties) -> Self {
+        let method = match value.method {
+            Some(m) => m.into(),
+            None => {
+                if value.allow_any_method != Some(true) {
+                    panic!(
+                        "Malformed `pavex::diagnostic::route` attribute. You must either accept a list of given methods or allow any method to pass through."
+                    );
+                }
+                if value.allow_non_standard_methods == Some(true) {
+                    MethodGuard::Any
+                } else {
+                    MethodGuard::Some(
+                        [
+                            "CONNECT", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD",
+                            "TRACE",
+                        ]
+                        .iter()
+                        .map(|&method| method.to_string())
+                        .collect(),
+                    )
+                }
+            }
+        };
+        AnnotationProperties::Route {
+            path: value.path,
+            method,
+            error_handler: value.error_handler,
         }
     }
 }

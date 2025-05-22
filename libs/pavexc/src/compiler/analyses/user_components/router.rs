@@ -120,9 +120,8 @@ impl Router {
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
         let e = anyhow::anyhow!(
-            "When registering request handlers, you must make a choice: either all \
-            handlers have a domain constraint, or none do.\n\
-            Your application violates this rule: there are both domain-specific and domain-agnostic handlers."
+            "Your application has both domain-specific handlers and domain-agnostic handlers.\n\
+            Either all request handlers have a domain constraint, or none do."
         );
         let diagnostic = CompilerDiagnostic::builder(e).help(
             "To avoid routing ambiguity, you must either:\n- Add a domain guard to all handlers that \
@@ -145,7 +144,7 @@ impl Router {
                 })
                 .unwrap();
             diagnostics.annotated(
-                TargetSpan::RoutePath(&aux.id2registration[id]),
+                TargetSpan::Registration(&aux.id2registration[id], ComponentKind::RequestHandler),
                 "A handler restricted to a specific domain",
             )
         };
@@ -164,7 +163,7 @@ impl Router {
                 })
                 .unwrap();
             diagnostics.annotated(
-                TargetSpan::RoutePath(&aux.id2registration[id]),
+                TargetSpan::Registration(&aux.id2registration[id], ComponentKind::RequestHandler),
                 "A handler without a domain restriction",
             )
         };
@@ -438,7 +437,7 @@ impl PathRouter {
         for (path, routes) in path2method2component_id.into_iter() {
             for method in METHODS {
                 let mut relevant_handler_ids = IndexSet::new();
-                for &(ref guard, &id) in &routes {
+                for &(guard, &id) in &routes {
                     match guard {
                         // `None` stands for the `ANY` guard, it matches all well-known methods
                         MethodGuard::Any => {
@@ -451,17 +450,11 @@ impl PathRouter {
                         }
                     }
                 }
-                // We don't want to return an error if the _same_ callable is being registered
-                // as a request handler for the same path+method multiple times.
-                let unique_handlers = relevant_handler_ids
-                    .iter()
-                    .unique_by(|id| aux[**id].raw_identifiers_id())
-                    .collect::<Vec<_>>();
-                if unique_handlers.len() > 1 {
+                if relevant_handler_ids.len() > 1 {
                     push_router_conflict_diagnostic(
                         path,
                         method,
-                        &unique_handlers,
+                        &relevant_handler_ids,
                         aux,
                         diagnostics,
                     );
@@ -1056,23 +1049,22 @@ fn push_matchit_diagnostic(
 fn push_router_conflict_diagnostic(
     path: &str,
     method: &str,
-    ids: &[&UserComponentId],
+    ids: &IndexSet<UserComponentId>,
     db: &AuxiliaryData,
     diagnostics: &mut crate::diagnostic::DiagnosticSink,
 ) {
     let mut builder = CompilerDiagnostic::builder(anyhow!(
-        "I don't know how to route incoming `{method} {path}` requests: you have registered {} \
-        different request handlers for this path+method combination.",
+        "There are {} different request handlers for `{method} {path}` requests.",
         ids.len(),
     ));
     for (i, id) in ids.iter().enumerate() {
         builder = builder.optional_source(diagnostics.annotated(
             db.registration_target(id),
-            format!("The {} conflicting handler", ZeroBasedOrdinal(i)),
+            format!("The {} handler", ZeroBasedOrdinal(i)),
         ));
     }
     let builder = builder.help(
-        "You can only register one request handler for each path+method combination. \
+        "You can only register one request handler for a given path+method combination. \
         Remove all but one of the conflicting request handlers."
             .into(),
     );

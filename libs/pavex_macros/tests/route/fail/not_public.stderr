@@ -1,0 +1,13 @@
+error: Routes must be public.
+       Mark `a` as `pub`, and make sure it can be imported from outside your crate.
+ --> tests/route/fail/not_public.rs:4:1
+  |
+4 | fn a() {
+  | ^^^^^^
+
+error: Routes must be public.
+       Mark `b` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+ --> tests/route/fail/not_public.rs:9:1
+  |
+9 | pub(crate) fn b() {
+  | ^^^^^^^^^^

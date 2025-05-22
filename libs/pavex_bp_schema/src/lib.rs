@@ -30,6 +30,7 @@ pub enum Component {
     PrebuiltType(PrebuiltType),
     ConfigType(ConfigType),
     Import(Import),
+    RoutesImport(RoutesImport),
 }
 
 impl From<PrebuiltType> for Component {
@@ -96,6 +97,19 @@ impl From<Import> for Component {
     fn from(i: Import) -> Self {
         Self::Import(i)
     }
+}
+
+impl From<RoutesImport> for Component {
+    fn from(i: RoutesImport) -> Self {
+        Self::RoutesImport(i)
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct RoutesImport {
+    pub sources: Sources,
+    pub created_at: CreatedAt,
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

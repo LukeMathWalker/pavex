@@ -9,6 +9,8 @@ version.workspace = true
 [dependencies]
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.80" }
 syn = { workspace = true, features = ["full"] }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
 itertools = { workspace = true }
 thiserror = { workspace = true }
 darling = { workspace = true }

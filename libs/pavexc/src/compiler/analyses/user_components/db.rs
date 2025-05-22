@@ -107,12 +107,10 @@ impl UserComponentDb {
 
         let mut registry = AnnotationRegistry::default();
         let mut aux = AuxiliaryData::default();
-        let scope_graph = process_blueprint(bp, &mut aux, diagnostics);
+        let mut scope_graph_builder = process_blueprint(bp, &mut aux, diagnostics);
         let mut paths = FQPaths::new();
         paths.process_identifiers(&aux, krate_collection.package_graph(), diagnostics);
         let imported_modules = resolve_imports(&aux, krate_collection.package_graph(), diagnostics);
-        let router = Router::new(&aux, &scope_graph, diagnostics)?;
-        exit_on_errors!(diagnostics);
 
         precompute_crate_docs(
             krate_collection,
@@ -121,11 +119,11 @@ impl UserComponentDb {
             imported_modules.iter().map(|(i, _)| &i.package_id),
             diagnostics,
         );
-        exit_on_errors!(diagnostics);
 
         register_imported_components(
             &imported_modules,
             &mut aux,
+            &mut scope_graph_builder,
             computation_db,
             prebuilt_type_db,
             &registry,
@@ -156,6 +154,10 @@ impl UserComponentDb {
             krate_collection,
             diagnostics,
         );
+
+        let scope_graph = scope_graph_builder.build();
+        let router = Router::new(&aux, &scope_graph, diagnostics)?;
+        exit_on_errors!(diagnostics);
 
         let AuxiliaryData {
             component_interner,
