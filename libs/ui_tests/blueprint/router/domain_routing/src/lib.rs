@@ -8,7 +8,7 @@ pub fn blueprint() -> Blueprint {
     bp.domain("admin.company.com").nest({
         let mut bp = Blueprint::new();
         bp.route(GET, "/", f!(crate::admin_root));
-        bp.fallback(f!(crate::admin_fallback));
+        bp.fallback(ADMIN_FALLBACK);
         bp
     });
     bp.domain("company.com").nest({
@@ -20,7 +20,7 @@ pub fn blueprint() -> Blueprint {
     });
     bp.domain("ops.company.com").nest({
         let mut bp = Blueprint::new();
-        bp.fallback(f!(crate::ops_fallback));
+        bp.fallback(OPS_FALLBACK);
         bp
     });
     bp.domain("{sub}.company.com").nest({
@@ -33,7 +33,7 @@ pub fn blueprint() -> Blueprint {
         bp.route(GET, "/", f!(crate::base_any));
         bp
     });
-    bp.fallback(f!(crate::root_fallback));
+    bp.fallback(ROOT_FALLBACK);
     bp
 }
 
@@ -41,10 +41,12 @@ pub fn admin_root() -> pavex::response::Response {
     Response::ok().set_typed_body("admin.company.com /")
 }
 
+#[pavex::fallback]
 pub fn admin_fallback() -> pavex::response::Response {
     Response::ok().set_typed_body("admin.company.com fallback")
 }
 
+#[pavex::fallback]
 pub fn ops_fallback() -> pavex::response::Response {
     Response::ok().set_typed_body("ops.company.com fallback")
 }
@@ -65,6 +67,7 @@ pub fn base_any() -> pavex::response::Response {
     Response::ok().set_typed_body("{*any}.{sub}.company.com /")
 }
 
+#[pavex::fallback]
 pub fn root_fallback(head: &RequestHead) -> pavex::response::Response {
     let host = head
         .headers

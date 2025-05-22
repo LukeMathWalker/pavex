@@ -52,6 +52,7 @@ pub fn augment_from_annotation(
             }
             AnnotationProperties::WrappingMiddleware { error_handler }
             | AnnotationProperties::PreProcessingMiddleware { error_handler }
+            | AnnotationProperties::Fallback { error_handler }
             | AnnotationProperties::PostProcessingMiddleware { error_handler } => error_handler,
         };
         let Some(error_handler) = error_handler else {

@@ -8,6 +8,7 @@ pub fn handler() -> pavex::response::Response {
     todo!()
 }
 
+#[pavex::fallback]
 pub fn fallback1() -> pavex::response::Response {
     todo!()
 }
@@ -21,7 +22,7 @@ pub fn blueprint() -> Blueprint {
     bp.nest({
         let mut bp = Blueprint::new();
         bp.route(GET, "/id", f!(crate::handler));
-        bp.fallback(f!(crate::fallback1));
+        bp.fallback(FALLBACK_1);
         bp
     });
     bp.nest({

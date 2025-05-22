@@ -118,6 +118,7 @@ pub(super) fn register_imported_components(
                 AnnotationKind::WrappingMiddleware
                 | AnnotationKind::PreProcessingMiddleware
                 | AnnotationKind::PostProcessingMiddleware
+                | AnnotationKind::Fallback
                 | AnnotationKind::ErrorObserver => {
                     continue;
                 }
@@ -393,6 +394,7 @@ fn intern_annotated(
         AnnotationProperties::PreProcessingMiddleware { .. }
         | AnnotationProperties::PostProcessingMiddleware { .. }
         | AnnotationProperties::ErrorObserver
+        | AnnotationProperties::Fallback { .. }
         | AnnotationProperties::WrappingMiddleware { .. } => {
             unreachable!()
         }

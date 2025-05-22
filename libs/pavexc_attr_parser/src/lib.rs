@@ -73,29 +73,30 @@ pub enum AnnotationProperties {
         path: String,
         error_handler: Option<String>,
     },
+    Fallback {
+        error_handler: Option<String>,
+    },
 }
 
 impl AnnotationProperties {
     fn from_meta(kind: AnnotationKind, item: &syn::Meta) -> Result<Self, InvalidAttributeParams> {
+        use AnnotationKind::*;
+        use model::*;
+
         match kind {
-            AnnotationKind::Constructor => {
-                model::ConstructorProperties::from_meta(item).map(Into::into)
+            Constructor => ConstructorProperties::from_meta(item).map(Into::into),
+            Config => ConfigProperties::from_meta(item).map(Into::into),
+            WrappingMiddleware => WrappingMiddlewareProperties::from_meta(item).map(Into::into),
+            PreProcessingMiddleware => {
+                PreProcessingMiddlewareProperties::from_meta(item).map(Into::into)
             }
-            AnnotationKind::Config => model::ConfigProperties::from_meta(item).map(Into::into),
-            AnnotationKind::WrappingMiddleware => {
-                model::WrappingMiddlewareProperties::from_meta(item).map(Into::into)
+            PostProcessingMiddleware => {
+                PostProcessingMiddlewareProperties::from_meta(item).map(Into::into)
             }
-            AnnotationKind::PreProcessingMiddleware => {
-                model::PreProcessingMiddlewareProperties::from_meta(item).map(Into::into)
-            }
-            AnnotationKind::PostProcessingMiddleware => {
-                model::PostProcessingMiddlewareProperties::from_meta(item).map(Into::into)
-            }
-            AnnotationKind::ErrorObserver => {
-                model::ErrorObserverProperties::from_meta(item).map(Into::into)
-            }
-            AnnotationKind::Prebuilt => model::PrebuiltProperties::from_meta(item).map(Into::into),
-            AnnotationKind::Route => model::RouteProperties::from_meta(item).map(Into::into),
+            ErrorObserver => ErrorObserverProperties::from_meta(item).map(Into::into),
+            Prebuilt => PrebuiltProperties::from_meta(item).map(Into::into),
+            Route => RouteProperties::from_meta(item).map(Into::into),
+            Fallback => FallbackProperties::from_meta(item).map(Into::into),
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
     }
@@ -111,6 +112,7 @@ pub enum AnnotationKind {
     ErrorObserver,
     Prebuilt,
     Route,
+    Fallback,
 }
 
 impl AnnotationKind {
@@ -124,6 +126,7 @@ impl AnnotationKind {
             "error_observer" => Ok(AnnotationKind::ErrorObserver),
             "prebuilt" => Ok(AnnotationKind::Prebuilt),
             "route" => Ok(AnnotationKind::Route),
+            "fallback" => Ok(AnnotationKind::Fallback),
             _ => Err(()),
         }
     }
@@ -140,6 +143,7 @@ impl AnnotationKind {
             ErrorObserver => "pavex::diagnostic::error_observer",
             Prebuilt => "pavex::diagnostic::prebuilt",
             Route => "pavex::diagnostic::route",
+            Fallback => "pavex::diagnostic::fallback",
         }
     }
 }
@@ -163,6 +167,7 @@ impl AnnotationProperties {
             AnnotationProperties::ErrorObserver => AnnotationKind::ErrorObserver,
             AnnotationProperties::Prebuilt { .. } => AnnotationKind::Prebuilt,
             AnnotationProperties::Route { .. } => AnnotationKind::Route,
+            AnnotationProperties::Fallback { .. } => AnnotationKind::Fallback,
         }
     }
 }

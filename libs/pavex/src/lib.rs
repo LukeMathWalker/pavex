@@ -615,6 +615,7 @@ pub use pavex_macros::post_process;
 pub use pavex_macros::error_observer;
 
 pub use pavex_macros::delete;
+pub use pavex_macros::fallback;
 pub use pavex_macros::get;
 pub use pavex_macros::head;
 pub use pavex_macros::options;

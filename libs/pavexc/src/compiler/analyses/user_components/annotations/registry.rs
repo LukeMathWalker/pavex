@@ -185,6 +185,7 @@ fn check_item_compatibility(
         AnnotationKind::PreProcessingMiddleware
         | AnnotationKind::PostProcessingMiddleware
         | AnnotationKind::WrappingMiddleware
+        | AnnotationKind::Fallback
         | AnnotationKind::ErrorObserver
         | AnnotationKind::Constructor
         | AnnotationKind::Route
@@ -196,6 +197,7 @@ fn check_item_compatibility(
         | AnnotationKind::WrappingMiddleware
         | AnnotationKind::Constructor
         | AnnotationKind::ErrorObserver
+        | AnnotationKind::Fallback
         | AnnotationKind::Prebuilt
         | AnnotationKind::Route
         | AnnotationKind::Config => {
@@ -279,6 +281,7 @@ impl AnnotatedItem {
             AnnotationKind::ErrorObserver => "error_observer",
             AnnotationKind::Prebuilt => "prebuilt",
             AnnotationKind::Route => "route",
+            AnnotationKind::Fallback => "fallback",
         };
         CreatedBy::macro_name(name)
     }

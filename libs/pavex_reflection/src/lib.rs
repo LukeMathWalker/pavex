@@ -64,7 +64,7 @@ impl CreatedBy {
         match value {
             "f" | "t" => CreatedBy::Blueprint,
             "pre_process" | "post_process" | "wrap" | "constructor" | "request_scoped"
-            | "transient" | "singleton" | "config" | "error_observer" => {
+            | "transient" | "singleton" | "config" | "error_observer" | "fallback" | "route" => {
                 CreatedBy::Attribute { name: value.into() }
             }
             _ => panic!(
