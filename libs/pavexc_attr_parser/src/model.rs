@@ -111,6 +111,22 @@ impl From<ConfigProperties> for AnnotationProperties {
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
+/// The way we expect fallback properties to be represented in
+/// `pavex::diagnostic::fallback`.
+pub struct FallbackProperties {
+    pub error_handler: Option<String>,
+    pub id: Ignored,
+}
+
+impl From<FallbackProperties> for AnnotationProperties {
+    fn from(value: FallbackProperties) -> Self {
+        AnnotationProperties::Fallback {
+            error_handler: value.error_handler,
+        }
+    }
+}
+
+#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// The way we expect route properties to be represented in
 /// `pavex::diagnostic::route`.
 pub struct RouteProperties {

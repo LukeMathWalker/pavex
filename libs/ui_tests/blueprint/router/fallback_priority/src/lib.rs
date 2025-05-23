@@ -6,10 +6,12 @@ pub fn handler() -> pavex::response::Response {
     todo!()
 }
 
+#[pavex::fallback]
 pub fn unauthorized() -> pavex::response::Response {
     Response::unauthorized()
 }
 
+#[pavex::fallback]
 pub fn forbidden() -> pavex::response::Response {
     Response::forbidden()
 }
@@ -22,10 +24,10 @@ pub fn blueprint() -> Blueprint {
         bp.nest({
             let mut bp = Blueprint::new();
             bp.route(GET, "/id", f!(crate::handler));
-            bp.fallback(f!(crate::forbidden));
+            bp.fallback(FORBIDDEN);
             bp
         });
-        bp.fallback(f!(crate::unauthorized));
+        bp.fallback(UNAUTHORIZED);
         bp
     });
     bp

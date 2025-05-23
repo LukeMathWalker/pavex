@@ -5,6 +5,7 @@ mod config;
 mod config_profile;
 mod constructor;
 mod error_observer;
+mod fallback;
 mod from;
 mod middlewares;
 mod path_params;
@@ -116,4 +117,9 @@ pub fn derive_config_profile(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn from(input: TokenStream) -> TokenStream {
     from::from_(input)
+}
+
+#[proc_macro_attribute]
+pub fn fallback(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    fallback::fallback(metadata, input)
 }
