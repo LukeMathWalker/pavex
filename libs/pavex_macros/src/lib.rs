@@ -1,12 +1,18 @@
+use error_handler::ErrorHandlerOutput;
 use proc_macro::TokenStream;
+use quote::quote;
 use routes::Method;
+use syn::visit_mut::VisitMut;
+use utils::PxStripper;
 
 mod config;
 mod config_profile;
 mod constructor;
+mod error_handler;
 mod error_observer;
 mod fallback;
 mod from;
+mod methods;
 mod middlewares;
 mod path_params;
 mod prebuilt;
@@ -17,6 +23,13 @@ pub(crate) mod utils;
 #[proc_macro_attribute]
 pub fn PathParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     path_params::path_params(input)
+}
+
+#[proc_macro_attribute]
+pub fn methods(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    match methods::methods(metadata, input) {
+        Ok(t) | Err(t) => t,
+    }
 }
 
 #[proc_macro_attribute]
@@ -32,6 +45,28 @@ pub fn prebuilt(metadata: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn error_observer(metadata: TokenStream, input: TokenStream) -> TokenStream {
     error_observer::error_observer(metadata, input)
+}
+
+#[proc_macro_attribute]
+pub fn error_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    match error_handler::error_handler(None, metadata.into(), input.clone()) {
+        Ok(ErrorHandlerOutput {
+            id_def,
+            new_attributes,
+        }) => {
+            let mut input: syn::Item = syn::parse2(input).expect("Input is not a valid syn::Item");
+            PxStripper.visit_item_mut(&mut input);
+            quote! {
+                #id_def
+
+                #(#new_attributes)*
+                #input
+            }
+            .into()
+        }
+        Err(t) => t,
+    }
 }
 
 #[proc_macro_attribute]

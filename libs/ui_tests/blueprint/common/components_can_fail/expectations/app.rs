@@ -160,9 +160,10 @@ pub mod route_0 {
                             };
                         }
                     };
-                    let v5 = app::constructor::raw::GenericError::<
-                        std::string::String,
-                    >::handle(&v2, &v4);
+                    let v5 = app::constructor::raw::GenericError::handle(
+                        &v2,
+                        &v4,
+                    );
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v5,
                     )
