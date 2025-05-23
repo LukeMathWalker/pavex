@@ -13,6 +13,8 @@ members = [
   "annotations/non_existing_module/generated_app",
   "app_builder",
   "app_builder/generated_app",
+  "blueprint/common/a_warning_is_emitted_for_copyable_never_clone",
+  "blueprint/common/a_warning_is_emitted_for_copyable_never_clone/generated_app",
   "blueprint/common/async_callable_are_supported",
   "blueprint/common/async_callable_are_supported/generated_app",
   "blueprint/common/cannot_return_the_unit_type",
