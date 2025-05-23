@@ -1,0 +1,5 @@
+error: #[pavex::error_handler] can only be applied to free functions.
+ --> tests/error_handler/fail/not_a_function.rs:7:5
+  |
+7 |     const A: usize = 42;
+  |     ^^^^^^^^^^^^^^^^^^^^

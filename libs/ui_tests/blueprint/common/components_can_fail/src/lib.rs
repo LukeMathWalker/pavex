@@ -14,8 +14,13 @@ pub mod constructor {
         #[derive(Debug)]
         pub struct GenericError<T>(T);
 
+        #[pavex::methods]
         impl GenericError<String> {
-            pub fn handle(&self, _b: &super::annotated::B) -> pavex::response::Response {
+            #[pavex::error_handler]
+            pub fn handle(
+                #[px(error_ref)] &self,
+                _b: &super::annotated::B,
+            ) -> pavex::response::Response {
                 todo!()
             }
         }
@@ -25,7 +30,7 @@ pub mod constructor {
     pub mod annotated {
         pub struct B;
 
-        #[pavex::request_scoped(error_handler = "self::ErrorB::into_response")]
+        #[pavex::request_scoped]
         pub fn b() -> Result<B, ErrorB> {
             todo!()
         }
@@ -33,7 +38,9 @@ pub mod constructor {
         #[derive(Debug)]
         pub struct ErrorB;
 
+        #[pavex::methods]
         impl ErrorB {
+            #[pavex::error_handler]
             pub fn into_response(&self) -> pavex::response::Response {
                 todo!()
             }
@@ -65,12 +72,10 @@ pub fn handler(
 #[derive(Debug)]
 pub struct CustomError;
 
+#[pavex::methods]
 impl CustomError {
+    #[pavex::error_handler]
     pub fn into_response(&self) -> Response {
-        todo!()
-    }
-
-    pub fn into_response_override(&self) -> Response {
         todo!()
     }
 }
@@ -78,12 +83,7 @@ impl CustomError {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from!(crate));
-    bp.request_scoped(f!(crate::constructor::raw::a))
-        .error_handler(f!(crate::constructor::raw::GenericError::<
-            std::string::String,
-        >::handle));
-
-    bp.route(GET, "/", f!(crate::handler))
-        .error_handler(f!(crate::CustomError::into_response));
+    bp.request_scoped(f!(crate::constructor::raw::a));
+    bp.route(GET, "/", f!(crate::handler));
     bp
 }
