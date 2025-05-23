@@ -1,5 +1,5 @@
 pub use annotations::AnnotatedItemId;
-pub use component::{UserComponent, UserComponentId};
+pub use component::{ErrorHandlerTarget, UserComponent, UserComponentId};
 pub use db::UserComponentDb;
 pub(crate) use router::{DomainRouter, PathRouter, Router};
 pub use scope_graph::{ScopeGraph, ScopeId};

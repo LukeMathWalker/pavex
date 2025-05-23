@@ -27,6 +27,7 @@ pub enum Component {
     FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
     ErrorObserver(ErrorObserver),
+    ErrorHandler(ErrorHandler),
     PrebuiltType(PrebuiltType),
     ConfigType(ConfigType),
     Import(Import),
@@ -93,6 +94,12 @@ impl From<ErrorObserver> for Component {
     }
 }
 
+impl From<ErrorHandler> for Component {
+    fn from(e: ErrorHandler) -> Self {
+        Self::ErrorHandler(e)
+    }
+}
+
 impl From<Import> for Component {
     fn from(i: Import) -> Self {
         Self::Import(i)
@@ -148,6 +155,15 @@ pub struct Fallback {
 pub struct ErrorObserver {
     /// The callable in charge of processing unhandled errors.
     pub error_observer: Callable,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+/// An error handler registered against a `Blueprint` via `Blueprint::error_handler`.
+pub struct ErrorHandler {
+    /// The callable in charge of processing the error.
+    pub error_handler: Callable,
+    /// The index (as an input parameter) of the reference to the error type being handled.
+    pub error_ref_input_index: usize,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

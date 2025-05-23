@@ -6,6 +6,7 @@ pub(crate) mod components;
 pub(crate) mod computations;
 pub(crate) mod constructibles;
 pub(crate) mod domain;
+pub(crate) mod error_handlers;
 pub(crate) mod framework_items;
 pub(crate) mod into_error;
 pub(crate) mod prebuilt_types;

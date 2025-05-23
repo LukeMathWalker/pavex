@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::compiler::component::CannotTakeMutReferenceError;
 use crate::compiler::utils::get_err_variant;
+use ahash::HashMap;
 use indexmap::IndexSet;
 use itertools::Itertools;
 
@@ -13,32 +14,38 @@ use crate::language::{Callable, FQPath, Lifetime, ResolvedType};
 pub(crate) struct ErrorHandler {
     pub(crate) callable: Callable,
     /// The index of the error type in the vector of input types for `callable`.
-    pub(crate) error_input_index: usize,
+    pub(crate) error_ref_input_index: usize,
 }
 
 impl ErrorHandler {
+    /// Validate an error handler.
     pub fn new(
+        error_handler: Callable,
+        error_ref_input_index: usize,
+    ) -> Result<Self, ErrorHandlerValidationError> {
+        Self::check_output_type(&error_handler)?;
+        CannotTakeMutReferenceError::check_callable(&error_handler)?;
+        Self::check_generic_params(
+            &error_handler,
+            error_ref_input_index,
+            &error_handler.inputs[error_ref_input_index],
+        )?;
+        Ok(Self {
+            callable: error_handler,
+            error_ref_input_index,
+        })
+    }
+
+    /// Validate an error handler for a specific fallible callable.
+    pub fn for_fallible(
         error_handler: Callable,
         fallible_callable: &Callable,
         pavex_error: &ResolvedType,
     ) -> Result<Self, ErrorHandlerValidationError> {
-        match &error_handler.output {
-            None => {
-                return Err(ErrorHandlerValidationError::CannotReturnTheUnitType(
-                    error_handler.path,
-                ));
-            }
-            Some(output_type) => {
-                if output_type.is_result() {
-                    return Err(ErrorHandlerValidationError::CannotBeFallible(
-                        error_handler.path,
-                    ));
-                }
-            }
-        }
+        Self::check_output_type(&error_handler)?;
 
         let error_type = get_err_variant(fallible_callable.output.as_ref().unwrap());
-        let (error_input_index, error_ref_parameter) = error_handler
+        let (error_ref_input_index, error_ref) = error_handler
             .inputs
             .iter()
             .find_position(|t| {
@@ -60,16 +67,63 @@ impl ErrorHandler {
             )?;
 
         CannotTakeMutReferenceError::check_callable(&error_handler)?;
+        Self::check_generic_params(&error_handler, error_ref_input_index, error_ref)?;
+
+        Ok(Self {
+            callable: error_handler,
+            error_ref_input_index,
+        })
+    }
+
+    /// Return the error type that this error handler takes as input.
+    ///
+    /// This is a **reference** to the error type returned by the fallible callable
+    /// that this is error handler is associated with.
+    pub(crate) fn error_type_ref(&self) -> &ResolvedType {
+        &self.callable.inputs[self.error_ref_input_index]
+    }
+
+    /// Replace all unassigned generic type parameters in this error handler with the
+    /// concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" handler will be returned.
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
+        Self {
+            callable: self.callable.bind_generic_type_parameters(bindings),
+            error_ref_input_index: self.error_ref_input_index,
+        }
+    }
+
+    fn check_output_type(h: &Callable) -> Result<(), ErrorHandlerValidationError> {
+        use ErrorHandlerValidationError::*;
+        match &h.output {
+            None => Err(CannotReturnTheUnitType(h.path.clone())),
+            Some(output_type) => {
+                if output_type.is_result() {
+                    Err(CannotBeFallible(h.path.clone()))
+                } else {
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    fn check_generic_params(
+        h: &Callable,
+        error_ref_index: usize,
+        error_ref: &ResolvedType,
+    ) -> Result<(), ErrorHandlerValidationError> {
+        use ErrorHandlerValidationError::*;
 
         // All "free" generic parameters in the error handler must be assigned to concrete types.
         // The only ones that are allowed to be unassigned are those used by the error type,
         // because they might/will be dictated by the fallible callable that this error handler
         // is associated with.
         let error_ref_unassigned_generic_parameters =
-            error_ref_parameter.unassigned_generic_type_parameters();
+            error_ref.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
-        for (i, input) in error_handler.inputs.iter().enumerate() {
-            if i == error_input_index {
+        for (i, input) in h.inputs.iter().enumerate() {
+            if i == error_ref_index {
                 continue;
             }
             free_parameters.extend(
@@ -80,26 +134,13 @@ impl ErrorHandler {
             );
         }
         if !free_parameters.is_empty() {
-            return Err(
-                ErrorHandlerValidationError::UnderconstrainedGenericParameters {
-                    parameters: free_parameters,
-                    error_ref_input_index: error_input_index,
-                },
-            );
+            Err(UnderconstrainedGenericParameters {
+                parameters: free_parameters,
+                error_ref_input_index: error_ref_index,
+            })
+        } else {
+            Ok(())
         }
-
-        Ok(Self {
-            callable: error_handler,
-            error_input_index,
-        })
-    }
-
-    /// Return the error type that this error handler takes as input.
-    ///
-    /// This is a **reference** to the error type returned by the fallible callable
-    /// that this is error handler is associated with.
-    pub(crate) fn error_type_ref(&self) -> &ResolvedType {
-        &self.callable.inputs[self.error_input_index]
     }
 }
 

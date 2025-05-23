@@ -14,6 +14,7 @@ mod blueprint;
 pub mod config;
 pub mod constructor;
 mod conversions;
+pub mod error_handler;
 pub mod error_observer;
 pub mod import;
 pub mod linter;

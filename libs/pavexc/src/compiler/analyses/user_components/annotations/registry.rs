@@ -187,6 +187,7 @@ fn check_item_compatibility(
         | AnnotationKind::WrappingMiddleware
         | AnnotationKind::Fallback
         | AnnotationKind::ErrorObserver
+        | AnnotationKind::ErrorHandler
         | AnnotationKind::Constructor
         | AnnotationKind::Route
             if matches!(item.inner, ItemEnum::Function(_)) => {}
@@ -197,6 +198,7 @@ fn check_item_compatibility(
         | AnnotationKind::WrappingMiddleware
         | AnnotationKind::Constructor
         | AnnotationKind::ErrorObserver
+        | AnnotationKind::ErrorHandler
         | AnnotationKind::Fallback
         | AnnotationKind::Prebuilt
         | AnnotationKind::Route
@@ -279,6 +281,7 @@ impl AnnotatedItem {
             AnnotationKind::Constructor => "constructor",
             AnnotationKind::Config => "config",
             AnnotationKind::ErrorObserver => "error_observer",
+            AnnotationKind::ErrorHandler => "error_handler",
             AnnotationKind::Prebuilt => "prebuilt",
             AnnotationKind::Route => "route",
             AnnotationKind::Fallback => "fallback",

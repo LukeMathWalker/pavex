@@ -15,6 +15,7 @@ use pavex_reflection::Location;
 use super::config::RegisteredConfigType;
 use super::constructor::{Lifecycle, RegisteredConstructor};
 use super::conversions::{created_at2created_at, sources2sources};
+use super::error_handler::RegisteredErrorHandler;
 use super::import::RegisteredImport;
 use super::middleware::{
     RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
@@ -1102,6 +1103,29 @@ impl Blueprint {
         };
         self.push_component(eo);
         RegisteredErrorObserver {
+            blueprint: &mut self.schema,
+        }
+    }
+
+    #[track_caller]
+    /// Register an error handler.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Error handlers"](https://pavex.dev/docs/guide/errors/error_handlers)
+    /// section of Pavex's guide for a thorough introduction to error handlers
+    /// in Pavex applications.
+    pub fn error_handler(
+        &mut self,
+        callable: WithLocation<RawIdentifiers>,
+        error_ref_index: usize,
+    ) -> RegisteredErrorHandler {
+        let registered = pavex_bp_schema::ErrorHandler {
+            error_handler: raw_identifiers2callable(callable),
+            error_ref_input_index: error_ref_index,
+        };
+        self.push_component(registered);
+        RegisteredErrorHandler {
             blueprint: &mut self.schema,
         }
     }

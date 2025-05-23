@@ -3,7 +3,10 @@ use pavex_cli_diagnostic::CompilerDiagnostic;
 use pavexc_attr_parser::AnnotationProperties;
 
 use crate::{
-    compiler::analyses::{computations::ComputationDb, user_components::UserComponent},
+    compiler::analyses::{
+        computations::ComputationDb,
+        user_components::{ErrorHandlerTarget, UserComponent},
+    },
     rustdoc::CrateCollection,
 };
 
@@ -44,6 +47,7 @@ pub fn augment_from_annotation(
         let AnnotatedItem { properties, .. } = &annotation;
         let error_handler = match properties {
             AnnotationProperties::ErrorObserver
+            | AnnotationProperties::ErrorHandler { .. }
             | AnnotationProperties::Constructor { .. }
             | AnnotationProperties::Prebuilt { .. }
             | AnnotationProperties::Route { .. }
@@ -85,7 +89,7 @@ pub fn augment_from_annotation(
         let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
         let component = UserComponent::ErrorHandler {
             source: identifiers_id.into(),
-            fallible_id: id,
+            target: ErrorHandlerTarget::FallibleComponent { fallible_id: id },
         };
         let registration = {
             let item = krate.get_item_by_local_type_id(&source_id.rustdoc_item_id);
