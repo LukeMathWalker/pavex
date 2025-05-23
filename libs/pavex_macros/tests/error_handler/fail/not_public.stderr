@@ -1,0 +1,13 @@
+error: Error handlers must be public.
+       Mark `handler` as `pub`, and make sure it can be imported from outside your crate.
+ --> tests/error_handler/fail/not_public.rs:6:1
+  |
+6 | fn handler(_e: &pavex::Error) -> A {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: Error handlers must be public.
+       Mark `b` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/error_handler/fail/not_public.rs:13:1
+   |
+13 | pub(crate) fn b(_e: &pavex::Error) -> B {
+   | ^^^^^^^^^^

@@ -543,6 +543,7 @@ pub use pavex_macros::pre_process;
 /// [`Blueprint`]: crate::blueprint::Blueprint
 pub use pavex_macros::post_process;
 
+pub use pavex_macros::error_handler;
 /// Define an [error observer](https://pavex.dev/docs/guide/errors/error_observers/).
 ///
 /// # Example
@@ -623,3 +624,5 @@ pub use pavex_macros::patch;
 pub use pavex_macros::post;
 pub use pavex_macros::put;
 pub use pavex_macros::route;
+
+pub use pavex_macros::methods;

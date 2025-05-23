@@ -36,7 +36,7 @@ pub struct UnresolvedImport {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ImportKind {
     /// Constructors, configuration types, prebuilt types, error handlers.
-    Injectables,
+    OrderIndependentComponents,
     /// Request handlers.
     Routes {
         path_prefix: Option<String>,
@@ -260,7 +260,7 @@ fn unknown_registration_crate(
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
         let msg = match import.kind {
-            ImportKind::Injectables => "The import was registered here",
+            ImportKind::OrderIndependentComponents => "The import was registered here",
             ImportKind::Routes { .. } => "The routes were imported here",
         };
         diagnostic::imported_sources_span(s.source(), &import.registered_at)
@@ -293,7 +293,7 @@ fn unknown_dependency_crate(
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
         let msg = match import.kind {
-            ImportKind::Injectables => "The import was registered here",
+            ImportKind::OrderIndependentComponents => "The import was registered here",
             ImportKind::Routes { .. } => "The routes were imported here",
         };
         diagnostic::imported_sources_span(s.source(), &import.registered_at)
@@ -330,7 +330,7 @@ fn invalid_module_path(
 
     let source = diagnostics.source(&import.registered_at).map(|s| {
         let msg = match import.kind {
-            ImportKind::Injectables => "The import was registered here",
+            ImportKind::OrderIndependentComponents => "The import was registered here",
             ImportKind::Routes { .. } => "The routes were imported here",
         };
         diagnostic::imported_sources_span(s.source(), &import.registered_at)

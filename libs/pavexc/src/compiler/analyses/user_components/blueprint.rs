@@ -5,9 +5,9 @@ use pavex_bp_schema::{
     RoutesImport, WrappingMiddleware,
 };
 
-use super::UserComponentId;
 use super::auxiliary::AuxiliaryData;
 use super::imports::{ImportKind, UnresolvedImport};
+use super::{ErrorHandlerTarget, UserComponentId};
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
@@ -197,6 +197,9 @@ fn _process_blueprint<'a>(
             Component::ErrorObserver(eo) => {
                 process_error_observer(aux, eo, current_scope_id, current_observer_chain);
             }
+            Component::ErrorHandler(eh) => {
+                process_error_handler(aux, eh, current_scope_id);
+            }
             Component::PrebuiltType(si) => {
                 process_prebuilt_type(aux, si, current_scope_id);
             }
@@ -214,7 +217,7 @@ fn _process_blueprint<'a>(
                 registered_at,
             }) => {
                 let kind = if matches!(component, Component::Import(_)) {
-                    ImportKind::Injectables
+                    ImportKind::OrderIndependentComponents
                 } else {
                     ImportKind::Routes {
                         path_prefix: path_prefix.map(ToOwned::to_owned),
@@ -333,7 +336,7 @@ fn process_route(
 
     validate_route_path(aux, request_handler_id, &registered_route.path, diagnostics);
 
-    process_error_handler(
+    process_component_specific_error_handler(
         aux,
         &registered_route.error_handler,
         ROUTE_LIFECYCLE,
@@ -380,7 +383,7 @@ fn process_fallback(
     aux.fallback_id2domain_guard
         .insert(fallback_id, domain_guard);
 
-    process_error_handler(
+    process_component_specific_error_handler(
         aux,
         &fallback.error_handler,
         ROUTE_LIFECYCLE,
@@ -416,7 +419,7 @@ fn process_middleware(
     );
     current_middleware_chain.push(component_id);
 
-    process_error_handler(
+    process_component_specific_error_handler(
         aux,
         &middleware.error_handler,
         MIDDLEWARE_LIFECYCLE,
@@ -452,7 +455,7 @@ fn process_pre_processing_middleware(
     );
     current_middleware_chain.push(component_id);
 
-    process_error_handler(
+    process_component_specific_error_handler(
         aux,
         &middleware.error_handler,
         MIDDLEWARE_LIFECYCLE,
@@ -488,7 +491,7 @@ fn process_post_processing_middleware(
     );
     current_middleware_chain.push(component_id);
 
-    process_error_handler(
+    process_component_specific_error_handler(
         aux,
         &middleware.error_handler,
         MIDDLEWARE_LIFECYCLE,
@@ -530,7 +533,7 @@ fn process_constructor(
             .insert(constructor_id, constructor.lints.clone());
     }
 
-    process_error_handler(
+    process_component_specific_error_handler(
         aux,
         &constructor.error_handler,
         lifecycle,
@@ -563,6 +566,33 @@ fn process_error_observer(
         eo.error_observer.registered_at.clone().into(),
     );
     current_observer_chain.push(id);
+}
+
+/// Process an error handler that has been
+/// registered against the provided `Blueprint`.
+/// It is associated with or nested under the provided `current_scope_id`.
+fn process_error_handler(
+    aux: &mut AuxiliaryData,
+    eh: &pavex_bp_schema::ErrorHandler,
+    current_scope_id: ScopeId,
+) {
+    const LIFECYCLE: Lifecycle = Lifecycle::Transient;
+
+    let identifiers_id = aux
+        .identifiers_interner
+        .get_or_intern(eh.error_handler.callable.clone());
+    let component = UserComponent::ErrorHandler {
+        source: identifiers_id.into(),
+        target: ErrorHandlerTarget::ErrorType {
+            error_ref_input_index: eh.error_ref_input_index,
+        },
+    };
+    aux.intern_component(
+        component,
+        current_scope_id,
+        LIFECYCLE,
+        eh.error_handler.registered_at.clone().into(),
+    );
 }
 
 /// Process a prebuilt type that has been
@@ -629,7 +659,7 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
 
 /// Process the error handler registered against a (supposedly) fallible component, if
 /// any.
-fn process_error_handler(
+fn process_component_specific_error_handler(
     aux: &mut AuxiliaryData,
     error_handler: &Option<Callable>,
     lifecycle: Lifecycle,
@@ -644,7 +674,7 @@ fn process_error_handler(
         .get_or_intern(error_handler.callable.clone());
     let component = UserComponent::ErrorHandler {
         source: identifiers_id.into(),
-        fallible_id,
+        target: ErrorHandlerTarget::FallibleComponent { fallible_id },
     };
     let error_handler_id = aux.intern_component(
         component,

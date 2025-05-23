@@ -68,6 +68,9 @@ pub enum AnnotationProperties {
         error_handler: Option<String>,
     },
     ErrorObserver,
+    ErrorHandler {
+        error_ref_input_index: usize,
+    },
     Route {
         method: MethodGuard,
         path: String,
@@ -94,6 +97,7 @@ impl AnnotationProperties {
                 PostProcessingMiddlewareProperties::from_meta(item).map(Into::into)
             }
             ErrorObserver => ErrorObserverProperties::from_meta(item).map(Into::into),
+            ErrorHandler => ErrorHandlerProperties::from_meta(item).map(Into::into),
             Prebuilt => PrebuiltProperties::from_meta(item).map(Into::into),
             Route => RouteProperties::from_meta(item).map(Into::into),
             Fallback => FallbackProperties::from_meta(item).map(Into::into),
@@ -110,6 +114,7 @@ pub enum AnnotationKind {
     PreProcessingMiddleware,
     PostProcessingMiddleware,
     ErrorObserver,
+    ErrorHandler,
     Prebuilt,
     Route,
     Fallback,
@@ -127,6 +132,7 @@ impl AnnotationKind {
             "prebuilt" => Ok(AnnotationKind::Prebuilt),
             "route" => Ok(AnnotationKind::Route),
             "fallback" => Ok(AnnotationKind::Fallback),
+            "error_handler" => Ok(AnnotationKind::ErrorHandler),
             _ => Err(()),
         }
     }
@@ -141,6 +147,7 @@ impl AnnotationKind {
             PreProcessingMiddleware => "pavex::diagnostic::pre_process",
             PostProcessingMiddleware => "pavex::diagnostic::post_process",
             ErrorObserver => "pavex::diagnostic::error_observer",
+            ErrorHandler => "pavex::diagnostic::error_handler",
             Prebuilt => "pavex::diagnostic::prebuilt",
             Route => "pavex::diagnostic::route",
             Fallback => "pavex::diagnostic::fallback",
@@ -168,6 +175,7 @@ impl AnnotationProperties {
             AnnotationProperties::Prebuilt { .. } => AnnotationKind::Prebuilt,
             AnnotationProperties::Route { .. } => AnnotationKind::Route,
             AnnotationProperties::Fallback { .. } => AnnotationKind::Fallback,
+            AnnotationProperties::ErrorHandler { .. } => AnnotationKind::ErrorHandler,
         }
     }
 }

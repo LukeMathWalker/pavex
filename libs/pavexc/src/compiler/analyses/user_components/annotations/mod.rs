@@ -11,7 +11,7 @@ pub use overlay::augment_from_annotation;
 pub use registry::*;
 
 use super::{
-    ScopeId, UserComponent, UserComponentId, UserComponentSource,
+    ErrorHandlerTarget, ScopeId, UserComponent, UserComponentId, UserComponentSource,
     auxiliary::AuxiliaryData,
     blueprint::validate_route_path,
     imports::{ImportKind, ResolvedImport},
@@ -108,7 +108,13 @@ pub(super) fn register_imported_components(
             // registered individually by the user.
             let kind = annotation.properties.kind();
             match kind {
-                AnnotationKind::Prebuilt | AnnotationKind::Config | AnnotationKind::Constructor => {
+                AnnotationKind::Prebuilt
+                | AnnotationKind::Config
+                | AnnotationKind::Constructor
+                | AnnotationKind::ErrorHandler => {
+                    if !matches!(import_kind, ImportKind::OrderIndependentComponents { .. }) {
+                        continue;
+                    }
                 }
                 AnnotationKind::Route => {
                     if !matches!(import_kind, ImportKind::Routes { .. }) {
@@ -205,6 +211,22 @@ fn intern_annotated(
         .into();
 
     match annotation {
+        AnnotationProperties::ErrorHandler {
+            error_ref_input_index,
+        } => {
+            let error_handler = UserComponent::ErrorHandler {
+                source,
+                target: ErrorHandlerTarget::ErrorType {
+                    error_ref_input_index,
+                },
+            };
+            Ok(aux.intern_component(
+                error_handler,
+                scope_id,
+                Lifecycle::Transient,
+                registration.clone(),
+            ))
+        }
         AnnotationProperties::Constructor {
             lifecycle,
             cloning_strategy,
@@ -239,7 +261,9 @@ fn intern_annotated(
                 let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
                 let component = UserComponent::ErrorHandler {
                     source: identifiers_id.into(),
-                    fallible_id: constructor_id,
+                    target: ErrorHandlerTarget::FallibleComponent {
+                        fallible_id: constructor_id,
+                    },
                 };
                 aux.intern_component(component, scope_id, lifecycle, registration);
             }
@@ -294,7 +318,9 @@ fn intern_annotated(
                 let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
                 let component = UserComponent::ErrorHandler {
                     source: identifiers_id.into(),
-                    fallible_id: request_handler_id,
+                    target: ErrorHandlerTarget::FallibleComponent {
+                        fallible_id: request_handler_id,
+                    },
                 };
                 aux.intern_component(component, scope_id, Lifecycle::RequestScoped, registration);
             }
