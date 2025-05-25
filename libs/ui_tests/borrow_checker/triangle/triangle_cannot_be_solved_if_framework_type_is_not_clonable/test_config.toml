@@ -1,4 +1,4 @@
-description = """Test what happens when we give pavex a graph that can't satisfy the consstraints of the Rust borrow checker
+description = """Test what happens when we give pavex a graph that can't satisfy the constraints of the Rust borrow checker
 due to a non-clonable framework type"""
 
 [expectations]

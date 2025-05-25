@@ -1,7 +1,7 @@
 [31;1mERROR[0m:
   [31m×[0m Path prefixes can't end with a trailing slash, `/`. `/api/` does.
   [31m│[0m Trailing slashes in path prefixes increase the likelihood of having
-  [31m│[0m consecutive slashes in the final route path, which is rarely desireable.
+  [31m│[0m consecutive slashes in the final route path, which is rarely desirable.
   [31m│[0m If you want consecutive slashes in the final route path, you can add
   [31m│[0m them explicitly in the paths of the routes registered against the nested
   [31m│[0m blueprint.

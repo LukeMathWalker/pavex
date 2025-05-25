@@ -833,7 +833,7 @@ mod diagnostics {
             "Path prefixes can't end with a trailing slash, `/`. \
                 `{prefix}` does.\n\
                 Trailing slashes in path prefixes increase the likelihood of having consecutive \
-                slashes in the final route path, which is rarely desireable. If you want consecutive \
+                slashes in the final route path, which is rarely desirable. If you want consecutive \
                 slashes in the final route path, you can add them explicitly in the paths of the routes \
                 registered against the nested blueprint.",
         );
