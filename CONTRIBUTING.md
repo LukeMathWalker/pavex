@@ -39,6 +39,13 @@ In a nutshell:
 - if the test is expected to pass, we check the generated code and the graph diagnostics;
 - if the test is expected to fail, we check `stderr` to verify the quality of the error message returned to users.
 
+UI tests are located in `libs/ui_tests` and need to invoke `pavexc`.
+For initial setup, it is therefore advised to run:
+
+```bash
+cargo build --bin pavexc && cargo test
+```
+
 ## Test runtime environment
 
 For each test, a runtime environment is created as a sub-folder of `ui_test_envs`, which is in turn generated at the root of Pavex's workspace.\
