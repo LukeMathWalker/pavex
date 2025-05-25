@@ -53,7 +53,7 @@ impl AnnotationRegistry {
         let mut items = AnnotatedItems::default();
         let Some(krate) = collection.get_crate_by_package_id(&package_id) else {
             unreachable!(
-                "The JSON documention for {} should have been computed at this point.",
+                "The JSON documentation for {} should have been computed at this point.",
                 package_id.repr()
             )
         };
