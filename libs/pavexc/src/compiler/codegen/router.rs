@@ -263,7 +263,7 @@ fn domain_router_init(
     syn::parse2(quote! {
         fn domain_router() -> #matchit::Router<u32> {
             let mut #router = #matchit::Router::new();
-            // Pavex has validated at compile-time that all domain paterns are valid
+            // Pavex has validated at compile-time that all domain patterns are valid
             // and that there are no conflicts, therefore we can safely unwrap
             // every `insert`.
             #(#inserts)*

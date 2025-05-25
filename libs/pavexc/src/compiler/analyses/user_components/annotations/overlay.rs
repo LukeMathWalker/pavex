@@ -58,7 +58,7 @@ pub fn augment_from_annotation(
         let Some(error_handler) = error_handler else {
             continue;
         };
-        // The user may have used the `.error_handler` method on the `Blueprint` to overridde
+        // The user may have used the `.error_handler` method on the `Blueprint` to override
         // the error handler provided by the annotation.
         if aux.fallible_id2error_handler_id.contains_key(&id) {
             // If that's the case, nothing to do here.
