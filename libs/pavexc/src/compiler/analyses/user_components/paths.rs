@@ -34,14 +34,14 @@ pub struct FQPaths {
     id2resolved_path: IndexMap<UserComponentId, FQPath>,
     /// All paths until `resolved_up_to` (excluded) have been resolved to a type/callable.
     ///
-    /// This field is used as cursor to avoid performing redudant resolutions if
+    /// This field is used as cursor to avoid performing redundant resolutions if
     /// later stages need to add (and then resolve) new paths.
     resolved_up_to: usize,
     /// All raw identifiers until `fully_qualified_up_to` (excluded) have been
     /// converted into a fully qualified path and add to [`Self::id2resolved_path`]
     /// (if the conversion was successful).
     ///
-    /// This field is used as cursor to avoid performing redudant work if
+    /// This field is used as cursor to avoid performing redundant work if
     /// later stages need to process new identifiers.
     fully_qualified_up_to: usize,
 }

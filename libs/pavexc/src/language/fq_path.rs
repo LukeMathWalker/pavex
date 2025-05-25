@@ -648,7 +648,7 @@ impl FQPath {
         &self.segments.first().unwrap().ident
     }
 
-    /// Find the `rustdoc` items requied to analyze the callable that `self` points to.
+    /// Find the `rustdoc` items required to analyze the callable that `self` points to.
     pub fn find_rustdoc_callable_items<'a>(
         &self,
         krate_collection: &'a CrateCollection,
