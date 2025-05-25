@@ -16,3 +16,4 @@ We contributors to Pavex:
 - Lukas Slanius (@bosukas)
 - Ben Wishovich (@benwis)
 - Donmai (@donmai-me)
+- Leon Qadirie (@leonqadirie)
