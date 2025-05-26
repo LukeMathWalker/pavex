@@ -772,7 +772,7 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// A common prefix will be preprended to the path of routes nested under this condition.
+    /// A common prefix will be prepended to the path of routes nested under this condition.
     ///
     /// ```rust
     /// use pavex::f;

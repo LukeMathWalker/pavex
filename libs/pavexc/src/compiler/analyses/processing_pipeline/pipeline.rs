@@ -1029,7 +1029,7 @@ impl Bindings {
             return Some(syn::parse2(block).unwrap());
         }
 
-        // If we are loooking for a `&T` and we have a `&mut T`,
+        // If we are looking for a `&T` and we have a `&mut T`,
         // we can use the latter as the former thanks to Rust's coercion rules.
         if !ref_.is_mutable {
             let new_ref = ResolvedType::Reference(TypeReference {

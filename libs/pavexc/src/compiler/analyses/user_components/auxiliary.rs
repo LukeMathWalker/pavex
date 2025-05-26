@@ -93,7 +93,7 @@ pub(super) struct AuxiliaryData {
 
 impl AuxiliaryData {
     /// A helper function to intern a component without forgetting to do the necessary
-    /// bookeeping for the metadata (location and lifecycle) that are common to all
+    /// bookkeeping for the metadata (location and lifecycle) that are common to all
     /// components.
     pub(super) fn intern_component(
         &mut self,
