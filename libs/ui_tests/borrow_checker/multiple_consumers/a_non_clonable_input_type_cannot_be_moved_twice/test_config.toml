@@ -1,4 +1,0 @@
-description = "An input type that is not clonable cannot be consumed by two different other constructors by value"
-
-[expectations]
-codegen = "fail"

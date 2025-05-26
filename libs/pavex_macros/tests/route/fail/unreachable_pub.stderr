@@ -1,0 +1,15 @@
+error: unreachable `pub` item
+ --> tests/route/fail/unreachable_pub.rs:5:5
+  |
+5 |     pub fn a() {
+  |     ---^^^^^^^
+  |     |
+  |     help: consider restricting its visibility: `pub(crate)`
+  |
+  = help: or consider exporting it for use by other crates
+note: the lint level is defined here
+ --> tests/route/fail/unreachable_pub.rs:4:5
+  |
+4 |     #[get(path = "/a")]
+  |     ^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `get` (in Nightly builds, run with -Z macro-backtrace for more info)

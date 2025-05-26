@@ -1,4 +1,4 @@
-description = "A type that is not-clonable can have multiple consumers that take it by value as long as they do not get invoked within the same control flow execution branch"
+description = "A type that is not-cloneable can have multiple consumers that take it by value as long as they do not get invoked within the same control flow execution branch"
 
 [expectations]
 codegen = "pass"

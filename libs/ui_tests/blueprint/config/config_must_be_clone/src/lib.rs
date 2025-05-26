@@ -2,17 +2,17 @@ use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
-// Not clonable.
+// Not cloneable.
 pub struct A;
 
-// Not clonable.
+// Not cloneable.
 pub struct B;
 
-// Not clonable.
+// Not cloneable.
 #[pavex::config(key = "a1")]
 pub struct A1;
 
-// Not clonable.
+// Not cloneable.
 // Should error even if marked as never clone.
 #[pavex::config(key = "b1", never_clone)]
 pub struct B1;
