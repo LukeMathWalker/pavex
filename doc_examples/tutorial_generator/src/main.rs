@@ -138,13 +138,13 @@ fn generate_tutorial(
     fs_err::remove_dir_all(&tmp_project_dir).ok();
     fs_err::create_dir_all(&tmp_project_dir)?;
 
-    // Boostrap the project
+    // Bootstrap the project
     if let Some(bootstrap) = tutorial_manifest.bootstrap.as_ref() {
         println!("Running bootstrap script");
         let script_outcome = script_runner
             .run(bootstrap, tmp_project_dir.clone())
-            .context("Failed to run the boostrap script")?;
-        script_outcome.exit_on_failure("Failed to run the boostrap script");
+            .context("Failed to run the bootstrap script")?;
+        script_outcome.exit_on_failure("Failed to run the bootstrap script");
         tmp_project_dir = tmp_project_dir.join(tutorial_manifest.starter_project_folder.clone());
     } else {
         copy_dir_all(
