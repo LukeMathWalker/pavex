@@ -205,7 +205,7 @@ impl ConstructibleDb {
                                         if let Some(user_component_id) =
                                             component_db.user_component_id(component_id)
                                         {
-                                            Self::mut_ref_to_clonable_request_scoped(
+                                            Self::mut_ref_to_cloneable_request_scoped(
                                                 user_component_id,
                                                 component_db.user_db(),
                                                 input,
@@ -750,7 +750,7 @@ impl ConstructibleDb {
         diagnostics.push(diagnostic);
     }
 
-    fn mut_ref_to_clonable_request_scoped(
+    fn mut_ref_to_cloneable_request_scoped(
         id: UserComponentId,
         db: &UserComponentDb,
         scoped_input_type: &ResolvedType,

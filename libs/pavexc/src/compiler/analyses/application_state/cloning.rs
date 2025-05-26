@@ -95,7 +95,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                     else {
                         continue;
                     };
-                    must_be_clonable(
+                    must_be_cloneable(
                         type_,
                         is_clone,
                         id,
@@ -110,7 +110,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     }
 }
 
-fn must_be_clonable(
+fn must_be_cloneable(
     type_: &ResolvedType,
     is_clone: bool,
     component_id: ComponentId,
