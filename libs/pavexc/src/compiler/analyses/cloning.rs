@@ -16,8 +16,8 @@ use crate::{
 
 /// Verify that all types whose cloning strategy is set to "CloneIfNecessary" can actually
 /// be cloned.
-#[tracing::instrument(name = "If cloning is allowed, types must be clonable", skip_all)]
 pub(crate) fn clonables_can_be_cloned<'a>(
+#[tracing::instrument(name = "If cloning is allowed, types must be cloneable", skip_all)]
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
@@ -94,7 +94,7 @@ fn must_be_clonable(
         }
         ComponentKind::ConfigType => {
             format!(
-                "All configuration types must be clonable.\n\
+                "All configuration types must be cloneable.\n\
                 `{output_type}` is a configuration type, but it doesn't implement the `Clone` trait.",
             )
         }
