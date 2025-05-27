@@ -5,7 +5,7 @@ use crate::request::body::errors::{
     UrlEncodedContentTypeMismatch,
 };
 use http::HeaderMap;
-use pavex_macros::request_scoped;
+use pavex_macros::methods;
 use serde::Deserialize;
 
 #[doc(alias = "UrlEncoded")]
@@ -46,10 +46,9 @@ use serde::Deserialize;
 /// ```
 pub struct UrlEncodedBody<T>(pub T);
 
+#[methods]
 impl<T> UrlEncodedBody<T> {
-    #[request_scoped(
-        error_handler = "crate::request::body::errors::ExtractUrlEncodedBodyError::into_response"
-    )]
+    #[request_scoped]
     pub fn extract<'head, 'body>(
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,

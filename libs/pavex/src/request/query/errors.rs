@@ -1,5 +1,7 @@
 //! Errors that can happen when extracting query parameters.
 
+use pavex_macros::methods;
+
 use crate::response::Response;
 
 /// The error returned by [`QueryParams::extract`] when the extraction fails.
@@ -18,10 +20,12 @@ pub enum ExtractQueryParamsError {
     QueryDeserializationError(QueryDeserializationError),
 }
 
+#[methods]
 impl ExtractQueryParamsError {
     /// Convert an [`ExtractQueryParamsError`] into an HTTP response.
     ///
     /// It returns a `400 Bad Request` to the caller.
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         match self {
             Self::QueryDeserializationError(e) => Response::bad_request()

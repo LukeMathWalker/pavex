@@ -1,8 +1,10 @@
 ```rust title="app/src/user_agent.rs"
 use pavex::http::header::USER_AGENT;
+use pavex::methods;
 use pavex::request::RequestHead;
 // [...]
 
+#[methods]
 impl UserAgent {
     #[request_scoped]
     pub fn extract(request_head: &RequestHead) -> Self {
@@ -15,4 +17,5 @@ impl UserAgent {
             Err(_e) => todo!(),
         }
     }
+}
 ```

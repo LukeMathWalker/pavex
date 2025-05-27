@@ -172,7 +172,10 @@ pub(crate) fn codegen_call(
     let callable_path: syn::ExprPath = {
         let mut buffer = String::new();
         callable.path.render_path(package_id2name, &mut buffer);
-        syn::parse_str(&buffer).unwrap()
+        match syn::parse_str(&buffer) {
+            Ok(p) => p,
+            Err(e) => panic!("Couldn't parse `{buffer}` as an expression path: {e}"),
+        }
     };
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {

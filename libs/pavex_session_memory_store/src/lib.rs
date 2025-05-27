@@ -1,10 +1,10 @@
 //! An in-memory session store for `pavex_session`, geared towards testing and local development.
-use pavex::time::Timestamp;
+use pavex::{methods, time::Timestamp};
 use std::{borrow::Cow, collections::HashMap, num::NonZeroUsize, sync::Arc, time::Duration};
 use tokio::sync::{Mutex, MutexGuard};
 
 use pavex_session::{
-    SessionId,
+    SessionId, SessionStore,
     store::{
         SessionRecord, SessionRecordRef, SessionStorageBackend,
         errors::{
@@ -33,6 +33,14 @@ impl std::fmt::Debug for InMemorySessionStore {
     }
 }
 
+#[methods]
+impl From<InMemorySessionStore> for SessionStore {
+    #[singleton]
+    fn from(value: InMemorySessionStore) -> Self {
+        SessionStore::new(value)
+    }
+}
+
 #[doc(hidden)]
 // Here for backwards compatibility.
 pub type SessionStoreMemory = InMemorySessionStore;
@@ -54,8 +62,10 @@ impl Default for InMemorySessionStore {
     }
 }
 
+#[methods]
 impl InMemorySessionStore {
     /// Creates a new (empty) in-memory session store.
+    #[singleton]
     pub fn new() -> Self {
         Self(Arc::new(Mutex::new(HashMap::new())))
     }
@@ -222,13 +232,7 @@ impl SessionStorageBackend for InMemorySessionStore {
 }
 
 mod kit {
-    use pavex::{
-        blueprint::{
-            Blueprint, config::ConfigType, constructor::Constructor, linter::Lint,
-            middleware::PostProcessingMiddleware,
-        },
-        f,
-    };
+    use pavex::blueprint::{Blueprint, middleware::PostProcessingMiddleware};
 
     #[derive(Clone, Debug)]
     #[non_exhaustive]
@@ -256,42 +260,6 @@ mod kit {
     /// CookieKit::new().register(&mut bp);
     /// ```
     pub struct InMemorySessionKit {
-        /// The constructor for [`Session`].
-        ///
-        /// By default, it uses [`Session::new`].
-        ///
-        /// [`Session`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session.html
-        /// [`Session::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session.html#method.new
-        pub session: Option<Constructor>,
-        /// The constructor for [`IncomingSession`].
-        ///
-        /// By default, it uses [`IncomingSession::extract`].
-        ///
-        /// [`IncomingSession`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession.html
-        /// [`IncomingSession::extract`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession.html#method.extract
-        pub incoming_session: Option<Constructor>,
-        /// Register [`SessionConfig`] as a configuration type.
-        ///
-        /// By default, it uses `session` as configuration key.
-        ///
-        /// [`SessionConfig`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionConfig.html
-        pub session_config: Option<ConfigType>,
-        /// The constructor for [`InMemorySessionStore`].
-        ///
-        /// By default, it uses [`InMemorySessionStore::new`].
-        ///
-        /// [`InMemorySessionStore`]: crate::InMemorySessionStore
-        /// [`InMemorySessionStore::new`]: crate::InMemorySessionStore::new
-        pub in_memory_session_store: Option<Constructor>,
-        /// The constructor for [`SessionStore`].
-        ///
-        /// By default, it uses [`SessionStore::new`] with [`InMemorySessionStore`]
-        /// as its underlying storage backend.
-        ///
-        /// [`SessionStore`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore.html
-        /// [`SessionStore::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore.html#method.new
-        /// [`InMemorySessionStore`]: crate::InMemorySessionStore
-        pub session_store: Option<Constructor>,
         /// A post-processing middleware to sync the session state with the session store
         /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
         ///
@@ -313,28 +281,9 @@ mod kit {
         /// Create a new [`InMemorySessionKit`] with all the bundled constructors and middlewares.
         pub fn new() -> Self {
             let pavex_session::SessionKit {
-                session,
-                session_config,
-                session_finalizer,
-                incoming_session,
-                ..
+                session_finalizer, ..
             } = pavex_session::SessionKit::new();
-            Self {
-                session,
-                incoming_session,
-                session_config,
-                session_finalizer,
-                in_memory_session_store: Some(
-                    Constructor::singleton(f!(crate::InMemorySessionStore::new))
-                        .ignore(Lint::Unused),
-                ),
-                session_store: Some(
-                    Constructor::singleton(f!(pavex_session::SessionStore::new::<
-                        crate::InMemorySessionStore,
-                    >))
-                    .ignore(Lint::Unused),
-                ),
-            }
+            Self { session_finalizer }
         }
 
         #[doc(hidden)]
@@ -349,17 +298,8 @@ mod kit {
         /// If a component is set to `None` it will not be registered.
         pub fn register(self, bp: &mut Blueprint) -> RegisteredInMemorySessionKit {
             let mut kit = pavex_session::SessionKit::new();
-            kit.session = self.session;
-            kit.incoming_session = self.incoming_session;
-            kit.session_config = self.session_config;
             kit.session_finalizer = self.session_finalizer;
             kit.register(bp);
-            if let Some(in_memory_session_store) = self.in_memory_session_store {
-                in_memory_session_store.register(bp);
-            }
-            if let Some(session_store) = self.session_store {
-                session_store.register(bp);
-            }
 
             RegisteredInMemorySessionKit {}
         }

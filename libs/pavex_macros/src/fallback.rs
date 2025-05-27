@@ -1,10 +1,11 @@
 use convert_case::{Case, Casing};
-use darling::FromMeta as _;
-use proc_macro::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-use crate::utils::{deny_unreachable_pub_attr, validation::must_be_public};
+use crate::{
+    fn_like::{Callable, CallableAnnotation, ImplContext},
+    utils::AnnotationCodegen,
+};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for fallbacks.
@@ -28,50 +29,30 @@ pub struct Properties {
     pub error_handler: Option<String>,
 }
 
-pub fn fallback(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let name = match reject_invalid_input(input.clone(), "#[pavex::fallback]") {
-        Ok(name) => name,
-        Err(err) => return err,
-    };
-    let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
-        Ok(attrs) => attrs,
-        Err(err) => return err.to_compile_error().into(),
-    };
-    let schema = match InputSchema::from_list(&attrs) {
-        Ok(parsed) => parsed,
-        Err(err) => return err.write_errors().into(),
-    };
-    let properties = match schema.try_into() {
-        Ok(properties) => properties,
-        Err(err) => {
-            let err: darling::Error = err;
-            return err.write_errors().into();
-        }
-    };
-    emit(name, properties, input)
-}
+pub struct FallbackAnnotation;
 
-fn reject_invalid_input(
-    input: TokenStream,
-    macro_attr: &'static str,
-) -> Result<Ident, TokenStream> {
-    // Check if the input is a function
-    let Ok(i) = syn::parse::<syn::ItemFn>(input.clone()) else {
-        // Neither ItemFn nor ImplItemFn - return an error
-        let msg = format!("{macro_attr} can only be applied to free functions.");
-        return Err(
-            syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-                .to_compile_error()
-                .into(),
-        );
-    };
-    must_be_public("Fallbacks", &i.vis, &i.sig.ident, &i.sig)?;
-    Ok(i.sig.ident)
+impl CallableAnnotation for FallbackAnnotation {
+    const PLURAL_COMPONENT_NAME: &str = "Fallbacks";
+
+    const ATTRIBUTE: &str = "#[pavex::fallback]";
+
+    type InputSchema = InputSchema;
+
+    fn codegen(
+        _impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        let properties = metadata
+            .try_into()
+            .map_err(|e: darling::Error| e.write_errors())?;
+        Ok(emit(item.sig.ident, properties))
+    }
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::fallback]` attribute
 /// that matches the provided properties.
-fn emit(name: Ident, properties: Properties, input: TokenStream) -> TokenStream {
+fn emit(name: Ident, properties: Properties) -> AnnotationCodegen {
     let Properties { id, error_handler } = properties;
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
@@ -116,15 +97,8 @@ bp.fallback({id});
             });
     };
 
-    let deny_unreachable_pub = deny_unreachable_pub_attr();
-
-    let input: proc_macro2::TokenStream = input.into();
-    quote! {
-        #id_def
-
-        #[diagnostic::pavex::fallback(#properties)]
-        #deny_unreachable_pub
-        #input
+    AnnotationCodegen {
+        id_def: Some(id_def),
+        new_attributes: vec![syn::parse_quote! { #[diagnostic::pavex::fallback(#properties)] }],
     }
-    .into()
 }

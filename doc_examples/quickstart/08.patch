@@ -1,18 +1,17 @@
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
-index 7418512..a080d37 100644
 --- a/app/src/user_agent.rs
 +++ b/app/src/user_agent.rs
 @@ -1,6 +1,7 @@
  use pavex::http::header::{ToStrError, USER_AGENT};
+ use pavex::methods;
  use pavex::request::RequestHead;
- use pavex::request_scoped;
 +use pavex::response::Response;
 
  pub enum UserAgent {
      /// No `User-Agent` header was provided.
-@@ -10,8 +11,8 @@ pub enum UserAgent {
- }
+@@ -11,8 +12,8 @@ pub enum UserAgent {
 
+ #[methods]
  impl UserAgent {
 -    #[request_scoped]
 -    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
@@ -21,7 +20,7 @@ index 7418512..a080d37 100644
          let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
              return Ok(UserAgent::Unknown);
          };
-@@ -19,3 +20,8 @@ impl UserAgent {
+@@ -20,3 +21,8 @@ impl UserAgent {
          user_agent.to_str().map(|s| UserAgent::Known(s.into()))
      }
  }

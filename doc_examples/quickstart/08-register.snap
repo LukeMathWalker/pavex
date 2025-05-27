@@ -3,7 +3,7 @@
     #[request_scoped(error_handler = "crate::user_agent::invalid_user_agent")]
     pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError> {
         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-            return Ok(UserAgent::Unknown);
+            return Ok(Self::Unknown);
         };
 
         user_agent.to_str().map(|s| UserAgent::Known(s.into()))

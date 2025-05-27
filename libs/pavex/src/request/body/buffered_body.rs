@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
-use pavex_macros::request_scoped;
+use pavex_macros::methods;
 use ubyte::ByteUnit;
 
 use crate::{request::RequestHead, request::body::errors::SizeLimitExceeded};
@@ -53,13 +53,12 @@ pub struct BufferedBody {
     pub bytes: Bytes,
 }
 
+#[methods]
 impl BufferedBody {
     /// Default constructor for [`BufferedBody`].
     ///
     /// If extraction fails, an [`ExtractBufferedBodyError`] is returned.
-    #[request_scoped(
-        error_handler = "crate::request::body::errors::ExtractBufferedBodyError::into_response"
-    )]
+    #[request_scoped]
     pub async fn extract(
         request_head: &RequestHead,
         body: RawIncomingBody,
