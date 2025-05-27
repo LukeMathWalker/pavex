@@ -1,5 +1,6 @@
 //! Errors that can occur while extracting information from the request body.
 use crate::response::Response;
+use pavex_macros::methods;
 use ubyte::ByteUnit;
 
 #[derive(Debug, thiserror::Error)]
@@ -19,8 +20,10 @@ pub enum ExtractJsonBodyError {
     DeserializationError(#[from] JsonDeserializationError),
 }
 
+#[methods]
 impl ExtractJsonBodyError {
     /// Convert an [`ExtractJsonBodyError`] into an HTTP response.
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         match self {
             ExtractJsonBodyError::MissingContentType(_)
@@ -45,8 +48,10 @@ pub enum ExtractBufferedBodyError {
     UnexpectedBufferError(#[from] UnexpectedBufferError),
 }
 
+#[methods]
 impl ExtractBufferedBodyError {
     /// Convert an [`ExtractBufferedBodyError`] into an HTTP response.
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         match self {
             ExtractBufferedBodyError::SizeLimitExceeded(_) => Response::payload_too_large(),
@@ -73,8 +78,10 @@ pub enum ExtractUrlEncodedBodyError {
     DeserializationError(#[from] UrlEncodedBodyDeserializationError),
 }
 
+#[methods]
 impl ExtractUrlEncodedBodyError {
     /// Convert an [`ExtractUrlEncodedBodyError`] into an HTTP response.
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         match self {
             ExtractUrlEncodedBodyError::MissingContentType(_)
@@ -95,9 +102,9 @@ pub struct SizeLimitExceeded {
     /// The maximum size limit enforced by this server.
     pub max_size: ByteUnit,
     /// The value of the `Content-Length` header for the request that breached the body
-    /// size limit.  
+    /// size limit.
     ///
-    /// It's set to `None` if the `Content-Length` header was missing or invalid.  
+    /// It's set to `None` if the `Content-Length` header was missing or invalid.
     /// If it's set to `Some(n)` and `n` is smaller than `max_n_bytes`, then the request
     /// lied about the size of its body in the `Content-Length` header.
     pub content_length: Option<usize>,

@@ -1,69 +1,60 @@
 use convert_case::{Case, Casing};
-use darling::FromMeta as _;
-use proc_macro::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use syn::{Ident, ItemFn};
+use syn::Ident;
 
-use crate::utils::{deny_unreachable_pub_attr, validation::must_be_public};
+use crate::{
+    fn_like::{Callable, CallableAnnotation, ImplContext},
+    utils::AnnotationCodegen,
+};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for the error handler macro.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
+    pub pavex: Option<syn::Ident>,
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct Properties {
     pub id: Option<syn::Ident>,
     pub error_ref_input_index: usize,
+    pub pavex: Option<syn::Ident>,
 }
 
 impl Properties {
     pub fn new(schema: InputSchema, error_ref_input_index: usize) -> Self {
-        let InputSchema { id } = schema;
+        let InputSchema { id, pavex } = schema;
         Self {
             id,
             error_ref_input_index,
+            pavex,
         }
     }
 }
 
-pub fn error_handler(
-    self_ty: Option<&syn::Type>,
-    metadata: proc_macro2::TokenStream,
-    input: proc_macro2::TokenStream,
-) -> Result<ErrorHandlerOutput, TokenStream> {
-    let attr_name = "#[pavex::error_handler]";
-    let func = reject_invalid_input(input.clone(), attr_name)?;
-    let attrs = darling::ast::NestedMeta::parse_meta_list(metadata.into())
-        .map_err(|e| e.to_compile_error())?;
-    let schema = InputSchema::from_list(&attrs).map_err(|e| e.write_errors())?;
-    let error_ref_index = find_error_ref_index(&func).map_err(|e| e.write_errors())?;
-    let properties = Properties::new(schema, error_ref_index);
-    Ok(emit(self_ty, func.sig.ident, properties))
-}
+pub struct ErrorHandlerAnnotation;
 
-fn reject_invalid_input(
-    input: proc_macro2::TokenStream,
-    macro_attr: &'static str,
-) -> Result<ItemFn, TokenStream> {
-    // Check if the input is a function
-    let Ok(i) = syn::parse2::<syn::ItemFn>(input.clone()) else {
-        // Neither ItemFn nor ImplItemFn - return an error
-        let msg = format!("{macro_attr} can only be applied to free functions.");
-        return Err(
-            syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-                .to_compile_error()
-                .into(),
-        );
-    };
-    must_be_public("Error handlers", &i.vis, &i.sig.ident, &i.sig)?;
-    Ok(i)
+impl CallableAnnotation for ErrorHandlerAnnotation {
+    const PLURAL_COMPONENT_NAME: &str = "Error handlers";
+
+    const ATTRIBUTE: &str = "#[pavex::error_handler]";
+
+    type InputSchema = InputSchema;
+
+    fn codegen(
+        impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        let error_ref_index = find_error_ref_index(&item).map_err(|e| e.write_errors())?;
+        let properties = Properties::new(metadata, error_ref_index);
+        Ok(emit(impl_.map(|i| i.self_ty), item.sig.ident, properties))
+    }
 }
 
 /// Returns the index of the input parameter annotated `#[px(error_ref)]`.
 /// The annotation can be omitted if there is only one input parameter.
-fn find_error_ref_index(func: &ItemFn) -> Result<usize, darling::Error> {
+fn find_error_ref_index(func: &Callable) -> Result<usize, darling::Error> {
     use darling::FromAttributes;
 
     #[derive(FromAttributes, Debug, Clone)]
@@ -106,17 +97,13 @@ fn find_error_ref_index(func: &ItemFn) -> Result<usize, darling::Error> {
     }
 }
 
-pub struct ErrorHandlerOutput {
-    pub id_def: proc_macro2::TokenStream,
-    pub new_attributes: Vec<syn::Attribute>,
-}
-
 /// Decorate the input with a `#[diagnostic::pavex::wrap]` attribute
 /// that matches the provided properties.
-fn emit(self_ty: Option<&syn::Type>, name: Ident, properties: Properties) -> ErrorHandlerOutput {
+fn emit(self_ty: Option<&syn::Type>, name: Ident, properties: Properties) -> AnnotationCodegen {
     let Properties {
         id,
         error_ref_input_index,
+        pavex,
     } = properties;
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
@@ -161,20 +148,23 @@ let mut bp = Blueprint::new();
 bp.error_handler({id});
 ```"#
     );
+    let pavex = match pavex {
+        Some(c) => quote! { #c },
+        None => quote! { ::pavex },
+    };
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
-        pub const #id: ::pavex::blueprint::reflection::WithLocation<::pavex::blueprint::reflection::RawIdentifiers> =
-            ::pavex::with_location!(::pavex::blueprint::reflection::RawIdentifiers {
+        pub const #id: #pavex::blueprint::reflection::WithLocation<#pavex::blueprint::reflection::RawIdentifiers> =
+            #pavex::with_location!(#pavex::blueprint::reflection::RawIdentifiers {
                 import_path: concat!(module_path!(), "::", #handler_path),
                 macro_name: "error_handler",
             });
     };
 
-    ErrorHandlerOutput {
-        id_def,
+    AnnotationCodegen {
+        id_def: Some(id_def),
         new_attributes: vec![
             syn::parse_quote! { #[diagnostic::pavex::error_handler(#properties)] },
-            deny_unreachable_pub_attr(),
         ],
     }
 }

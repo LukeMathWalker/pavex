@@ -8,7 +8,7 @@ use guppy::{PackageId, graph::PackageGraph};
 use itertools::Itertools as _;
 use pavex_bp_schema::{CreatedAt, CreatedBy};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
-use rustdoc_types::{Enum, ItemEnum, Struct};
+use rustdoc_types::{Enum, ItemEnum, Struct, Trait};
 
 use crate::rustdoc::{Crate, CrateCollection, GlobalItemId};
 
@@ -72,7 +72,11 @@ impl AnnotationRegistry {
 
                     // Enqueue other items for analysis.
                     if let ItemEnum::Struct(Struct { impls, .. })
-                    | ItemEnum::Enum(Enum { impls, .. }) = &item.inner
+                    | ItemEnum::Enum(Enum { impls, .. })
+                    | ItemEnum::Trait(Trait {
+                        implementations: impls,
+                        ..
+                    }) = &item.inner
                     {
                         queue.extend(impls.iter().map(|impl_id| QueueItem::Impl {
                             self_: id,
@@ -145,12 +149,36 @@ impl AnnotationRegistry {
                     if check_item_compatibility(&annotation, &item, diagnostics).is_err() {
                         continue;
                     }
+
+                    // Check that the `impl` block has been annotated with #[pavex::methods].
+                    let impl_item = krate.get_item_by_local_type_id(&impl_);
+                    match pavexc_attr_parser::parse(&impl_item.attrs) {
+                        Ok(Some(AnnotationProperties::Methods)) => {}
+                        Ok(_) => {
+                            missing_methods_attribute(
+                                annotation.kind(),
+                                impl_item.as_ref(),
+                                item.as_ref(),
+                                diagnostics,
+                            );
+                            continue;
+                        }
+                        Err(e) => {
+                            // TODO: Only report an error if it's a crate from the current workspace
+                            invalid_diagnostic_attribute(e, item.as_ref(), diagnostics);
+                            continue;
+                        }
+                    };
+
                     items.item_id2details.insert(
                         id.into(),
                         AnnotatedItem {
                             id,
                             properties: annotation,
-                            impl_: Some(ImplInfo { self_, impl_ }),
+                            impl_: Some(ImplInfo {
+                                attached_to: self_,
+                                impl_,
+                            }),
                         },
                     );
                 }
@@ -202,6 +230,7 @@ fn check_item_compatibility(
         | AnnotationKind::Fallback
         | AnnotationKind::Prebuilt
         | AnnotationKind::Route
+        | AnnotationKind::Methods
         | AnnotationKind::Config => {
             // TODO: Only emit an error if it's a workspace package.
             unsupported_item_kind(annotation.attribute(), item, diagnostics);
@@ -249,12 +278,15 @@ impl AnnotatedItem {
                 // where `Self` is defined.
                 // See https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/Module.20items.20don't.20link.20to.20impls.20.5Brustdoc-json.5D
                 // for a discussion on this issue.
-                impl_info.self_
+                impl_info.attached_to
             }
         };
         let item = krate.get_item_by_local_type_id(&id);
         match &item.inner {
-            ItemEnum::Struct(..) | ItemEnum::Enum(..) | ItemEnum::Function(..) => {
+            ItemEnum::Struct(..)
+            | ItemEnum::Enum(..)
+            | ItemEnum::Function(..)
+            | ItemEnum::Trait(..) => {
                 let module_path = {
                     let fn_path = krate.import_index.items[&item.id]
                         .defined_at
@@ -285,6 +317,7 @@ impl AnnotatedItem {
             AnnotationKind::Prebuilt => "prebuilt",
             AnnotationKind::Route => "route",
             AnnotationKind::Fallback => "fallback",
+            AnnotationKind::Methods => "methods",
         };
         CreatedBy::macro_name(name)
     }
@@ -292,8 +325,10 @@ impl AnnotatedItem {
 
 /// Information about the `impl` block the item belongs to, if any.
 pub struct ImplInfo {
-    /// The `id` of the `Self` type for this `impl` block.
-    pub self_: rustdoc_types::Id,
+    /// The `id` of the item this `impl` block was attached to.
+    /// For inherent methods, that's the `Self` type.
+    /// For trait methods, it can either be `Self` or the trait itself.
+    pub attached_to: rustdoc_types::Id,
     /// The `id` of the `impl` block that this item belongs to.
     pub impl_: rustdoc_types::Id,
 }

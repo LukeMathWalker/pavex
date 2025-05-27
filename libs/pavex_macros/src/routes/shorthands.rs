@@ -1,9 +1,6 @@
-use darling::FromMeta as _;
-use proc_macro::TokenStream;
+use crate::fn_like::{Callable, CallableAnnotation, ImplContext};
+use crate::utils::AnnotationCodegen;
 use quote::quote;
-use syn::Ident;
-
-use crate::utils::{deny_unreachable_pub_attr, validation::must_be_public};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for route macros.
@@ -28,13 +25,13 @@ impl TryFrom<InputSchema> for Properties {
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
-pub struct Properties {
+struct Properties {
     pub path: String,
     pub error_handler: Option<String>,
 }
 
 #[derive(Clone, Copy)]
-pub enum Method {
+enum Method {
     Get,
     Delete,
     Head,
@@ -57,65 +54,58 @@ impl Method {
             Put => "PUT",
         }
     }
-
-    pub fn attr(&self) -> &'static str {
-        use Method::*;
-        match self {
-            Get => "#[pavex::get]",
-            Delete => "#[pavex::delete]",
-            Head => "#[pavex::head]",
-            Options => "#[pavex::options]",
-            Patch => "#[pavex::patch]",
-            Post => "#[pavex::post]",
-            Put => "#[pavex::put]",
-        }
-    }
 }
 
-pub fn method_shorthand(method: Method, metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let _name = match reject_invalid_input(input.clone(), method.attr()) {
-        Ok(name) => name,
-        Err(err) => return err,
-    };
-    let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
-        Ok(attrs) => attrs,
-        Err(err) => return err.to_compile_error().into(),
-    };
-    let schema = match InputSchema::from_list(&attrs) {
-        Ok(parsed) => parsed,
-        Err(err) => return err.write_errors().into(),
-    };
-    let properties = match schema.try_into() {
-        Ok(properties) => properties,
-        Err(err) => {
-            let err: darling::Error = err;
-            return err.write_errors().into();
+macro_rules! method_annotation {
+    ($method:ident) => {
+        paste::paste! {
+            method_annotation!($method, [<$method:lower>]);
         }
     };
-    emit(method, properties, input)
+    ($method:ident,$lowercased:ident) => {
+        paste::paste! {
+            pub struct [<$method Annotation>];
+
+            impl CallableAnnotation for [<$method Annotation>] {
+                const PLURAL_COMPONENT_NAME: &str = "Request handlers";
+
+                const ATTRIBUTE: &str = concat!("#[pavex::", stringify!($lowercased), "]");
+
+                type InputSchema = InputSchema;
+
+                fn codegen(
+                    _impl_: Option<ImplContext>,
+                    metadata: Self::InputSchema,
+                    _item: Callable,
+                ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+                    method_shorthand(Method::$method, metadata)
+                }
+            }
+        }
+    };
 }
 
-fn reject_invalid_input(
-    input: TokenStream,
-    macro_attr: &'static str,
-) -> Result<Ident, TokenStream> {
-    // Check if the input is a function
-    let Ok(i) = syn::parse::<syn::ItemFn>(input.clone()) else {
-        // Neither ItemFn nor ImplItemFn - return an error
-        let msg = format!("{macro_attr} can only be applied to free functions.");
-        return Err(
-            syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-                .to_compile_error()
-                .into(),
-        );
-    };
-    must_be_public("Routes", &i.vis, &i.sig.ident, &i.sig)?;
-    Ok(i.sig.ident)
+method_annotation!(Get);
+method_annotation!(Post);
+method_annotation!(Patch);
+method_annotation!(Put);
+method_annotation!(Delete);
+method_annotation!(Head);
+method_annotation!(Options);
+
+fn method_shorthand(
+    method: Method,
+    schema: InputSchema,
+) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+    let properties = schema
+        .try_into()
+        .map_err(|e: darling::Error| e.write_errors())?;
+    Ok(emit(method, properties))
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::route]` attribute
 /// that matches the provided properties.
-fn emit(method: Method, properties: Properties, input: TokenStream) -> TokenStream {
+fn emit(method: Method, properties: Properties) -> AnnotationCodegen {
     let Properties {
         path,
         error_handler,
@@ -133,12 +123,10 @@ fn emit(method: Method, properties: Properties, input: TokenStream) -> TokenStre
         });
     }
 
-    let deny_unreachable_pub = deny_unreachable_pub_attr();
-    let input: proc_macro2::TokenStream = input.into();
-    quote! {
-        #[diagnostic::pavex::route(#properties)]
-        #deny_unreachable_pub
-        #input
+    AnnotationCodegen {
+        id_def: None,
+        new_attributes: vec![syn::parse_quote! {
+            #[diagnostic::pavex::route(#properties)]
+        }],
     }
-    .into()
 }

@@ -59,6 +59,9 @@ pub struct FQPath {
     /// E.g. `Type` in `<Type as Trait>::Method`.
     pub qualified_self: Option<FQQualifiedSelf>,
     /// The package id of the crate that this path belongs to.
+    ///
+    /// For trait methods, it must be set to the package id of the crate where the
+    /// trait is defined.
     pub package_id: PackageId,
 }
 

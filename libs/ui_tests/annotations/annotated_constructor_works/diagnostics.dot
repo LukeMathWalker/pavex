@@ -17,7 +17,7 @@ digraph "GET /handler - 1" {
     3 [ label = "3| app_9d63a47c::c(&app_9d63a47c::B<app_9d63a47c::A>) -> core::result::Result<app_9d63a47c::C, pavex::Error>"]
     4 [ label = "4| `match`"]
     5 [ label = "5| core::result::Result<app_9d63a47c::C, pavex::Error> -> pavex::Error"]
-    6 [ label = "6| app_9d63a47c::error_handler(&pavex::Error) -> pavex::response::Response"]
+    6 [ label = "6| app_9d63a47c::default_error_handler(&pavex::Error) -> pavex::response::Response"]
     7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     8 [ label = "8| app_9d63a47c::H::with_e() -> app_9d63a47c::H<app_9d63a47c::E>"]
     9 [ label = "9| app_9d63a47c::H::with_a() -> app_9d63a47c::H<app_9d63a47c::A>"]

@@ -1,6 +1,8 @@
 //! Errors that can happen when extracting path parameters.
 use std::str::Utf8Error;
 
+use pavex_macros::methods;
+
 use crate::response::Response;
 
 /// The error returned by [`PathParams::extract`] when the extraction fails.
@@ -79,14 +81,16 @@ pub struct DecodeError {
     pub(super) source: Utf8Error,
 }
 
+#[methods]
 impl ExtractPathParamsError {
     /// Convert an [`ExtractPathParamsError`] into an HTTP response.
     ///
     /// It returns a `500 Internal Server Error` to the caller if the failure was caused by a
-    /// programmer error (e.g. `T` in [`PathParams<T>`] is an unsupported type).  
+    /// programmer error (e.g. `T` in [`PathParams<T>`] is an unsupported type).
     /// It returns a `400 Bad Request` for all other cases.
     ///
     /// [`PathParams<T>`]: struct@crate::request::path::PathParams
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         match self {
             ExtractPathParamsError::InvalidUtf8InPathParameter(e) => {

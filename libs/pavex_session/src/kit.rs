@@ -1,9 +1,9 @@
 use pavex::blueprint::Blueprint;
-use pavex::blueprint::config::ConfigType;
-use pavex::blueprint::constructor::Constructor;
 use pavex::blueprint::linter::Lint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
-use pavex::{f, t};
+use pavex::f;
+
+use crate::middleware::FINALIZE_SESSION;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -30,26 +30,6 @@ use pavex::{f, t};
 /// CookieKit::new().register(&mut bp);
 /// ```
 pub struct SessionKit {
-    /// The constructor for [`Session`].
-    ///
-    /// By default, it uses [`Session::new`].
-    ///
-    /// [`Session`]: crate::Session
-    /// [`Session::new`]: crate::Session::new
-    pub session: Option<Constructor>,
-    /// The constructor for [`IncomingSession`].
-    ///
-    /// By default, it uses [`IncomingSession::extract`].
-    ///
-    /// [`IncomingSession`]: crate::IncomingSession
-    /// [`IncomingSession::extract`]: crate::IncomingSession::extract
-    pub incoming_session: Option<Constructor>,
-    /// Register [`SessionConfig`] as configuration.
-    ///
-    /// By default, it uses the `session` key.
-    ///
-    /// [`SessionConfig`]: crate::SessionConfig
-    pub session_config: Option<ConfigType>,
     /// A post-processing middleware to sync the session state with the session store
     /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
     ///
@@ -70,19 +50,8 @@ impl Default for SessionKit {
 impl SessionKit {
     /// Create a new [`SessionKit`] with all the bundled constructors and middlewares.
     pub fn new() -> Self {
-        let session = Constructor::request_scoped(f!(crate::Session::new)).ignore(Lint::Unused);
-        let incoming_session =
-            Constructor::request_scoped(f!(crate::IncomingSession::extract)).ignore(Lint::Unused);
-        let session_finalizer =
-            PostProcessingMiddleware::new(f!(crate::middleware::finalize_session))
-                .error_handler(f!(crate::errors::FinalizeError::into_response));
-        let session_config =
-            ConfigType::new("session", t!(crate::SessionConfig)).default_if_missing();
         Self {
-            session: Some(session),
-            incoming_session: Some(incoming_session),
-            session_config: Some(session_config),
-            session_finalizer: Some(session_finalizer),
+            session_finalizer: Some(PostProcessingMiddleware::new(FINALIZE_SESSION)),
         }
     }
 
@@ -97,15 +66,6 @@ impl SessionKit {
     ///
     /// If a component is set to `None` it will not be registered.
     pub fn register(self, bp: &mut Blueprint) -> RegisteredSessionKit {
-        if let Some(session) = self.session {
-            session.register(bp);
-        }
-        if let Some(incoming_session) = self.incoming_session {
-            incoming_session.register(bp);
-        }
-        if let Some(session_config) = self.session_config {
-            session_config.register(bp);
-        }
         // Accessors for the fields on session config.
         bp.transient(f!(crate::SessionConfig::cookie_config))
             .ignore(Lint::Unused);

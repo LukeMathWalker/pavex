@@ -1,5 +1,6 @@
 use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::f;
+use pavex::{error_handler, methods};
 
 #[derive(Clone)]
 pub struct A;
@@ -20,7 +21,7 @@ pub fn b<T>(_i: T) -> B<T> {
 
 pub struct C;
 
-#[pavex::transient(error_handler = "crate::error_handler")]
+#[pavex::transient]
 /// Fallible.
 pub fn c(_b: &B<A>) -> Result<C, pavex::Error> {
     todo!()
@@ -37,12 +38,14 @@ pub fn d<'a>(_c: &'a C, _a: &'a A) -> D<'a> {
     todo!()
 }
 
-pub fn error_handler(_error: &pavex::Error) -> pavex::response::Response {
+#[error_handler]
+pub fn default_error_handler(_error: &pavex::Error) -> pavex::response::Response {
     todo!()
 }
 
 pub struct E;
 
+#[methods]
 impl E {
     // Simple method constructor.
     #[pavex::request_scoped]
@@ -55,6 +58,7 @@ pub struct F<'a> {
     _e: &'a E,
 }
 
+#[methods]
 impl F<'_> {
     // With an (elided) lifetime parameter.
     #[pavex::request_scoped]
@@ -65,6 +69,7 @@ impl F<'_> {
 
 pub struct G<T>(T);
 
+#[methods]
 impl<T> G<T> {
     // With a generic parameter in the output type.
     #[pavex::request_scoped]
@@ -75,6 +80,7 @@ impl<T> G<T> {
 
 pub struct H<T>(T);
 
+#[methods]
 impl H<A> {
     // With a generic parameter that's specified in the `impl` block definition.
     #[pavex::request_scoped]
@@ -83,6 +89,7 @@ impl H<A> {
     }
 }
 
+#[methods]
 impl H<E> {
     // With a generic parameter that's specified in the `impl` block definition.
     #[pavex::request_scoped]

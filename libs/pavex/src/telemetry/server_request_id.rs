@@ -1,5 +1,5 @@
 use crate::http::HeaderValue;
-use pavex_macros::request_scoped;
+use pavex_macros::methods;
 use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use type_safe_id::{StaticType, TypeSafeId};
@@ -49,6 +49,7 @@ impl StaticType for SriTag {
     const TYPE: &'static str = "sri";
 }
 
+#[methods]
 impl ServerRequestId {
     /// The default constructor for [`ServerRequestId`].
     ///

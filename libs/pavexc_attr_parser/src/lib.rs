@@ -79,6 +79,7 @@ pub enum AnnotationProperties {
     Fallback {
         error_handler: Option<String>,
     },
+    Methods,
 }
 
 impl AnnotationProperties {
@@ -101,6 +102,7 @@ impl AnnotationProperties {
             Prebuilt => PrebuiltProperties::from_meta(item).map(Into::into),
             Route => RouteProperties::from_meta(item).map(Into::into),
             Fallback => FallbackProperties::from_meta(item).map(Into::into),
+            Methods => Ok(AnnotationProperties::Methods),
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
     }
@@ -118,6 +120,25 @@ pub enum AnnotationKind {
     Prebuilt,
     Route,
     Fallback,
+    Methods,
+}
+
+impl std::fmt::Display for AnnotationKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AnnotationKind::Constructor => write!(f, "constructor"),
+            AnnotationKind::Config => write!(f, "config"),
+            AnnotationKind::WrappingMiddleware => write!(f, "wrap"),
+            AnnotationKind::PreProcessingMiddleware => write!(f, "pre_process"),
+            AnnotationKind::PostProcessingMiddleware => write!(f, "post_process"),
+            AnnotationKind::ErrorObserver => write!(f, "error_observer"),
+            AnnotationKind::ErrorHandler => write!(f, "error_handler"),
+            AnnotationKind::Prebuilt => write!(f, "prebuilt"),
+            AnnotationKind::Route => write!(f, "route"),
+            AnnotationKind::Fallback => write!(f, "fallback"),
+            AnnotationKind::Methods => write!(f, "methods"),
+        }
+    }
 }
 
 impl AnnotationKind {
@@ -133,11 +154,12 @@ impl AnnotationKind {
             "route" => Ok(AnnotationKind::Route),
             "fallback" => Ok(AnnotationKind::Fallback),
             "error_handler" => Ok(AnnotationKind::ErrorHandler),
+            "methods" => Ok(AnnotationKind::Methods),
             _ => Err(()),
         }
     }
 
-    pub fn attribute(&self) -> &'static str {
+    pub fn diagnostic_attribute(&self) -> &'static str {
         use AnnotationKind::*;
 
         match self {
@@ -151,13 +173,14 @@ impl AnnotationKind {
             Prebuilt => "pavex::diagnostic::prebuilt",
             Route => "pavex::diagnostic::route",
             Fallback => "pavex::diagnostic::fallback",
+            Methods => "pavex::diagnostic::methods",
         }
     }
 }
 
 impl AnnotationProperties {
     pub fn attribute(&self) -> &'static str {
-        self.kind().attribute()
+        self.kind().diagnostic_attribute()
     }
 
     pub fn kind(&self) -> AnnotationKind {
@@ -176,6 +199,7 @@ impl AnnotationProperties {
             AnnotationProperties::Route { .. } => AnnotationKind::Route,
             AnnotationProperties::Fallback { .. } => AnnotationKind::Fallback,
             AnnotationProperties::ErrorHandler { .. } => AnnotationKind::ErrorHandler,
+            AnnotationProperties::Methods => AnnotationKind::Methods,
         }
     }
 }

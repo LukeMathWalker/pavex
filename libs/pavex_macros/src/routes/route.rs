@@ -1,10 +1,11 @@
-use darling::{FromMeta as _, util::Flag};
+use darling::util::Flag;
 use pavexc_attr_parser::atoms::MethodArgument;
-use proc_macro::TokenStream;
 use quote::quote;
-use syn::Ident;
 
-use crate::utils::{deny_unreachable_pub_attr, validation::must_be_public};
+use crate::{
+    fn_like::{Callable, CallableAnnotation, ImplContext},
+    utils::AnnotationCodegen,
+};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::route]`.
@@ -120,50 +121,30 @@ pub struct Properties {
     pub allow_any_method: bool,
 }
 
-pub fn route(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let _name = match reject_invalid_input(input.clone(), "#[pavex::route]") {
-        Ok(name) => name,
-        Err(err) => return err,
-    };
-    let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
-        Ok(attrs) => attrs,
-        Err(err) => return err.to_compile_error().into(),
-    };
-    let schema = match InputSchema::from_list(&attrs) {
-        Ok(parsed) => parsed,
-        Err(err) => return err.write_errors().into(),
-    };
-    let properties = match schema.try_into() {
-        Ok(properties) => properties,
-        Err(err) => {
-            let err: darling::Error = err;
-            return err.write_errors().into();
-        }
-    };
-    emit(properties, input)
-}
+pub struct RouteAnnotation;
 
-fn reject_invalid_input(
-    input: TokenStream,
-    macro_attr: &'static str,
-) -> Result<Ident, TokenStream> {
-    // Check if the input is a function
-    let Ok(i) = syn::parse::<syn::ItemFn>(input.clone()) else {
-        // Neither ItemFn nor ImplItemFn - return an error
-        let msg = format!("{macro_attr} can only be applied to free functions.");
-        return Err(
-            syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-                .to_compile_error()
-                .into(),
-        );
-    };
-    must_be_public("Routes", &i.vis, &i.sig.ident, &i.sig)?;
-    Ok(i.sig.ident)
+impl CallableAnnotation for RouteAnnotation {
+    const PLURAL_COMPONENT_NAME: &str = "Request handlers";
+
+    const ATTRIBUTE: &str = "#[pavex::route]";
+
+    type InputSchema = InputSchema;
+
+    fn codegen(
+        _impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        _item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        let properties = metadata
+            .try_into()
+            .map_err(|e: darling::Error| e.write_errors())?;
+        Ok(emit(properties))
+    }
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::route]` attribute
 /// that matches the provided properties.
-fn emit(properties: Properties, input: TokenStream) -> TokenStream {
+fn emit(properties: Properties) -> AnnotationCodegen {
     let Properties {
         method,
         path,
@@ -197,12 +178,10 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
         });
     }
 
-    let deny_unreachable_pub = deny_unreachable_pub_attr();
-    let input: proc_macro2::TokenStream = input.into();
-    quote! {
-        #[diagnostic::pavex::route(#properties)]
-        #deny_unreachable_pub
-        #input
+    AnnotationCodegen {
+        id_def: None,
+        new_attributes: vec![syn::parse_quote! {
+            #[diagnostic::pavex::route(#properties)]
+        }],
     }
-    .into()
 }

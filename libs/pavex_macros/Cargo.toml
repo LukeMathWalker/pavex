@@ -18,6 +18,7 @@ allow_unreachable_pub = []
 
 [dependencies]
 pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.1.80" }
+paste = { workspace = true }
 darling = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
