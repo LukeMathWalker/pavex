@@ -66,6 +66,7 @@ pub struct DatabaseConfig {
     pub require_ssl: bool,
 }
 
+#[pavex::methods]
 impl DatabaseConfig {
     /// Return the database connection options.
     pub fn connection_options(&self) -> PgConnectOptions {
@@ -84,7 +85,7 @@ impl DatabaseConfig {
     }
 
     /// Return a database connection pool.
-    #[pavex::singleton(clone_if_necessary)]
+    #[singleton(clone_if_necessary)]
     pub async fn get_pool(&self) -> Result<sqlx::PgPool, sqlx::Error> {
         let pool = sqlx::PgPool::connect_with(self.connection_options()).await?;
         Ok(pool)
@@ -101,9 +102,10 @@ pub struct AuthConfig {
     pub eddsa_public_key_pem: String,
 }
 
+#[pavex::methods]
 impl AuthConfig {
     /// Return the private key to be used for JWT signing.
-    #[pavex::singleton]
+    #[singleton]
     pub fn encoding_key(&self) -> Result<EncodingKey, jsonwebtoken::errors::Error> {
         EncodingKey::from_ed_pem(self.eddsa_private_key_pem.expose_secret().as_bytes())
     }

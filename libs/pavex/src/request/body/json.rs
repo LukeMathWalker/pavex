@@ -1,6 +1,6 @@
 use crate::request::RequestHead;
 use http::HeaderMap;
-use pavex_macros::request_scoped;
+use pavex_macros::methods;
 use serde::Deserialize;
 
 use super::{
@@ -45,6 +45,7 @@ use super::{
 /// ```
 pub struct JsonBody<T>(pub T);
 
+#[methods]
 impl<T> JsonBody<T> {
     /// The default constructor for [`JsonBody`].
     ///
@@ -59,9 +60,7 @@ impl<T> JsonBody<T> {
     //
     // We are using two separate lifetimes here to make it clear to the compiler
     // that `JsonBody` doesn't borrow from `RequestHead`.
-    #[request_scoped(
-        error_handler = "crate::request::body::errors::ExtractJsonBodyError::into_response"
-    )]
+    #[request_scoped]
     pub fn extract<'head, 'body>(
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,

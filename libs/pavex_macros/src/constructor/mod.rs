@@ -1,9 +1,7 @@
-use crate::utils::validation::must_be_public;
-use crate::utils::{CloningStrategy, CloningStrategyFlags, deny_unreachable_pub_attr};
-use darling::FromMeta;
+use crate::fn_like::{Callable, CallableAnnotation, ImplContext};
+use crate::utils::{AnnotationCodegen, CloningStrategy, CloningStrategyFlags};
 use darling::util::Flag;
 use lifecycle::Lifecycle;
-use proc_macro::TokenStream;
 use quote::quote;
 
 mod lifecycle;
@@ -120,86 +118,102 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
     }
 }
 
-pub fn constructor(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    if let Err(e) = reject_invalid_input(input.clone(), "#[pavex::constructor]") {
-        return e;
+pub struct ConstructorAnnotataion;
+
+impl CallableAnnotation for ConstructorAnnotataion {
+    const PLURAL_COMPONENT_NAME: &str = "Constructors";
+
+    const ATTRIBUTE: &str = "#[pavex::constructor]";
+
+    type InputSchema = InputSchema;
+
+    fn codegen(
+        _impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        _item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        let properties = metadata
+            .try_into()
+            .map_err(|e: darling::Error| e.write_errors())?;
+        Ok(emit(properties))
     }
-    let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
-        Ok(attrs) => attrs,
-        Err(err) => return err.to_compile_error().into(),
-    };
-    let schema = match InputSchema::from_list(&attrs) {
-        Ok(parsed) => parsed,
-        Err(err) => return err.write_errors().into(),
-    };
-    let properties = match schema.try_into() {
-        Ok(properties) => properties,
-        Err(err) => {
-            let err: darling::Error = err;
-            return err.write_errors().into();
-        }
-    };
-    emit(properties, input)
 }
 
-/// An annotation for a request-scoped constructor.
-pub fn request_scoped(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    shorthand(
-        metadata,
-        input,
-        Lifecycle::RequestScoped,
-        "#[pavex::request_scoped]",
-    )
+pub struct RequestScopedAnnotation;
+
+impl CallableAnnotation for RequestScopedAnnotation {
+    const PLURAL_COMPONENT_NAME: &str = "Request-scoped constructors";
+
+    const ATTRIBUTE: &str = "#[pavex::request_scoped]";
+
+    type InputSchema = ShorthandSchema;
+
+    fn codegen(
+        _impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        _item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        shorthand(metadata, Lifecycle::RequestScoped)
+    }
 }
 
-/// An annotation for a transient constructor.
-pub fn transient(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    shorthand(metadata, input, Lifecycle::Transient, "#[pavex::transient]")
+pub struct TransientAnnotation;
+
+impl CallableAnnotation for TransientAnnotation {
+    const PLURAL_COMPONENT_NAME: &str = "Transient constructors";
+
+    const ATTRIBUTE: &str = "#[pavex::transient]";
+
+    type InputSchema = ShorthandSchema;
+
+    fn codegen(
+        _impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        _item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        shorthand(metadata, Lifecycle::Transient)
+    }
 }
 
-/// An annotation for a singleton constructor.
-pub fn singleton(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    shorthand(metadata, input, Lifecycle::Singleton, "#[pavex::singleton]")
+pub struct SingletonAnnotation;
+
+impl CallableAnnotation for SingletonAnnotation {
+    const PLURAL_COMPONENT_NAME: &str = "Singleton constructors";
+
+    const ATTRIBUTE: &str = "#[pavex::singleton]";
+
+    type InputSchema = ShorthandSchema;
+
+    fn codegen(
+        _impl_: Option<ImplContext>,
+        metadata: Self::InputSchema,
+        _item: Callable,
+    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
+        shorthand(metadata, Lifecycle::Singleton)
+    }
 }
 
 fn shorthand(
-    metadata: TokenStream,
-    input: TokenStream,
+    schema: ShorthandSchema,
     lifecycle: Lifecycle,
-    macro_attr: &'static str,
-) -> TokenStream {
-    if let Err(e) = reject_invalid_input(input.clone(), macro_attr) {
-        return e;
-    }
-    let attrs = match darling::ast::NestedMeta::parse_meta_list(metadata.into()) {
-        Ok(attrs) => attrs,
-        Err(err) => return err.to_compile_error().into(),
-    };
-    let schema = match ShorthandSchema::from_list(&attrs) {
-        Ok(parsed) => parsed,
-        Err(err) => return err.write_errors().into(),
-    };
+) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
     let ShorthandProperties {
         cloning_strategy,
         error_handler,
-    } = match schema.try_into() {
-        Ok(properties) => properties,
-        Err(err) => {
-            let err: darling::Error = err;
-            return err.write_errors().into();
-        }
-    };
+    } = schema
+        .try_into()
+        .map_err(|e: darling::Error| e.write_errors())?;
     let properties = Properties {
         lifecycle,
         cloning_strategy,
         error_handler,
     };
-    emit(properties, input)
+    Ok(emit(properties))
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::constructor]` attribute
 /// that matches the provided properties.
-fn emit(properties: Properties, input: TokenStream) -> TokenStream {
+fn emit(properties: Properties) -> AnnotationCodegen {
     let Properties {
         lifecycle,
         cloning_strategy,
@@ -219,34 +233,10 @@ fn emit(properties: Properties, input: TokenStream) -> TokenStream {
         });
     }
 
-    let deny_unreachable_pub = deny_unreachable_pub_attr();
-
-    let input: proc_macro2::TokenStream = input.into();
-    quote! {
-        #[diagnostic::pavex::constructor(#properties)]
-        #deny_unreachable_pub
-        #input
+    AnnotationCodegen {
+        id_def: None,
+        new_attributes: vec![syn::parse_quote! {
+            #[diagnostic::pavex::constructor(#properties)]
+        }],
     }
-    .into()
-}
-
-fn reject_invalid_input(input: TokenStream, macro_attr: &'static str) -> Result<(), TokenStream> {
-    // Check if the input is a function or a method.
-    let (vis, sig) = match (
-        syn::parse::<syn::ItemFn>(input.clone()),
-        syn::parse::<syn::ImplItemFn>(input.clone()),
-    ) {
-        (Ok(item_fn), _) => (item_fn.vis, item_fn.sig),
-        (_, Ok(impl_fn)) => (impl_fn.vis, impl_fn.sig),
-        _ => {
-            let msg = format!("{macro_attr} can only be applied to functions and methods.");
-            return Err(
-                syn::Error::new_spanned(proc_macro2::TokenStream::from(input), msg)
-                    .to_compile_error()
-                    .into(),
-            );
-        }
-    };
-    must_be_public("Constructors", &vis, &sig.ident, &sig)?;
-    Ok(())
 }

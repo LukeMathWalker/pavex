@@ -1,3 +1,5 @@
+use pavex_macros::methods;
+
 use super::{Processor, ResponseCookie, ResponseCookieId};
 use crate::cookie::response::ResponseCookiesIter;
 
@@ -55,6 +57,7 @@ use crate::cookie::response::ResponseCookiesIter;
 #[derive(Default, Debug, Clone)]
 pub struct ResponseCookies(biscotti::ResponseCookies<'static>);
 
+#[methods(pavex = crate)]
 impl ResponseCookies {
     /// Creates an empty cookie set.
     ///
@@ -66,6 +69,7 @@ impl ResponseCookies {
     /// let set = ResponseCookies::new();
     /// assert_eq!(set.iter().count(), 0);
     /// ```
+    #[request_scoped]
     pub fn new() -> ResponseCookies {
         ResponseCookies::default()
     }

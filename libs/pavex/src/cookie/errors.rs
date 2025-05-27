@@ -3,6 +3,7 @@ use crate::error::UnexpectedError;
 use crate::response::Response;
 pub use biscotti::errors::*;
 use http::header::ToStrError;
+use pavex_macros::methods;
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -48,11 +49,13 @@ impl std::error::Error for ExtractRequestCookiesError {
     }
 }
 
+#[methods]
 impl ExtractRequestCookiesError {
     /// Convert an [`ExtractRequestCookiesError`] into an HTTP response.
     ///
     /// It returns a `400 Bad Request` to the caller.
     /// The body provides details on what exactly went wrong.
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         use std::fmt::Write as _;
 
@@ -84,12 +87,14 @@ pub struct InjectResponseCookiesError {
     pub invalid_header_value: String,
 }
 
+#[methods]
 impl InjectResponseCookiesError {
     /// Convert an [`InjectResponseCookiesError`] into an HTTP response.
     ///
     /// It returns a `500 Internal Server Error` to the caller,
     /// since failure is likely due to misconfiguration or
     /// mismanagement on the server side.
+    #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         Response::internal_server_error()
     }

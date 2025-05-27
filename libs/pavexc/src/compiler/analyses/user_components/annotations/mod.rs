@@ -30,8 +30,9 @@ use crate::{
     },
     diagnostic::{DiagnosticSink, Registration},
     language::{
-        Callable, FQPath, FQPathSegment, Generic, GenericArgument, GenericLifetimeParameter,
-        InvocationStyle, PathType, ResolvedType,
+        Callable, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf, Generic,
+        GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
+        ResolvedType,
     },
     rustdoc::{Crate, CrateCollection, GlobalItemId, RustdocKindExt},
 };
@@ -39,7 +40,7 @@ use pavex_bp_schema::{
     CloningStrategy, CreatedAt, CreatedBy, Lifecycle, Lint, LintSetting, RawIdentifiers,
 };
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
-use rustdoc_types::{Item, ItemEnum};
+use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
 /// An id pointing at the coordinates of an annotated component.
 pub type AnnotatedItemId = la_arena::Idx<GlobalItemId>;
@@ -112,7 +113,7 @@ pub(super) fn register_imported_components(
                 | AnnotationKind::Config
                 | AnnotationKind::Constructor
                 | AnnotationKind::ErrorHandler => {
-                    if !matches!(import_kind, ImportKind::OrderIndependentComponents { .. }) {
+                    if !matches!(import_kind, ImportKind::OrderIndependentComponents) {
                         continue;
                     }
                 }
@@ -123,6 +124,7 @@ pub(super) fn register_imported_components(
                 }
                 AnnotationKind::WrappingMiddleware
                 | AnnotationKind::PreProcessingMiddleware
+                | AnnotationKind::Methods
                 | AnnotationKind::PostProcessingMiddleware
                 | AnnotationKind::Fallback
                 | AnnotationKind::ErrorObserver => {
@@ -133,7 +135,7 @@ pub(super) fn register_imported_components(
             // First check if the item is in scope for the import
             {
                 let id = match &annotation.impl_ {
-                    Some(impl_info) => impl_info.self_,
+                    Some(impl_info) => impl_info.attached_to,
                     None => id,
                 };
                 let entry = &krate.import_index.items[&id];
@@ -166,8 +168,8 @@ pub(super) fn register_imported_components(
             }
 
             let outcome = match annotation.impl_ {
-                Some(ImplInfo { self_, impl_ }) => {
-                    rustdoc_method2callable(self_, impl_, &item, krate, krate_collection)
+                Some(ImplInfo { attached_to, impl_ }) => {
+                    rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection)
                 }
                 None => rustdoc_free_fn2callable(&item, krate, krate_collection),
             };
@@ -420,6 +422,7 @@ fn intern_annotated(
         AnnotationProperties::PreProcessingMiddleware { .. }
         | AnnotationProperties::PostProcessingMiddleware { .. }
         | AnnotationProperties::ErrorObserver
+        | AnnotationProperties::Methods
         | AnnotationProperties::Fallback { .. }
         | AnnotationProperties::WrappingMiddleware { .. } => {
             unreachable!()
@@ -557,16 +560,131 @@ fn rustdoc_free_fn2callable(
     })
 }
 
+/// Convert a method item retrieved from `rustdoc`'s JSON output to Pavex's internal
+/// representation for callables (i.e. methods and functions).
+///
+/// # Input constraints
+///
+/// - `method_item` belongs to `krate`.
+/// - `impl_id` is local to `krate`.
+/// - `attached_to` can either point to a trait or a type.
+///   It'll always point to the `Self` type if we're working with an inherent method.
+///
+/// `attached_to`, in the trait case, may not be local to `krate`.
+/// E.g. the user is implementing a trait defined in another crate
+/// for one of their local types.
 fn rustdoc_method2callable(
-    self_id: rustdoc_types::Id,
+    attached_to: rustdoc_types::Id,
     impl_id: rustdoc_types::Id,
     method_item: &Item,
     krate: &Crate,
     krate_collection: &CrateCollection,
 ) -> Result<Callable, CallableResolutionError> {
-    let method_path = {
+    let impl_item = krate.get_item_by_local_type_id(&impl_id);
+    let ItemEnum::Impl(impl_item) = &impl_item.inner else {
+        unreachable!("The impl item id doesn't point to an impl item")
+    };
+
+    let mut generic_bindings = GenericBindings::default();
+
+    let self_ty = match resolve_type(
+        &impl_item.for_,
+        &krate.core.package_id,
+        krate_collection,
+        &generic_bindings,
+    ) {
+        Ok(t) => t,
+        Err(e) => {
+            return Err(SelfResolutionError {
+                // This path is not strictly correctly, since we may be dealing with a trait method,
+                // but it's good enough for an error at this point in the flow.
+                path: FQPath {
+                    segments: krate.import_index.items[&attached_to]
+                        .canonical_path()
+                        .iter()
+                        .cloned()
+                        .map(FQPathSegment::new)
+                        .chain(std::iter::once(FQPathSegment::new(
+                            method_item.name.clone().expect("Method without a name"),
+                        )))
+                        .collect(),
+                    qualified_self: None,
+                    package_id: krate.core.package_id.clone(),
+                },
+                source: Arc::new(e),
+            }
+            .into());
+        }
+    };
+
+    generic_bindings
+        .types
+        .insert("Self".into(), self_ty.clone());
+
+    let method_path = if let Some(trait_) = &impl_item.trait_ {
+        let (trait_global_id, trait_path) = krate_collection
+            .get_canonical_path_by_local_type_id(&krate.core.package_id, &trait_.id, None)
+            // FIXME: handle the error
+            .unwrap();
+        let mut segments: Vec<_> = trait_path.iter().cloned().map(FQPathSegment::new).collect();
+        let qualified_self = FQQualifiedSelf {
+            position: segments.len(),
+            type_: self_ty.into(),
+        };
+        let mut generic_args = Vec::new();
+        if let Some(args) = &trait_.args {
+            let GenericArgs::AngleBracketed { args, .. } = args.as_ref() else {
+                // TODO: fixme.
+                todo!();
+            };
+            for arg in args {
+                let parsed_arg = match arg {
+                    rustdoc_types::GenericArg::Lifetime(l) => {
+                        let l = l.strip_prefix("'").unwrap_or(l.as_str());
+                        if l == "static" {
+                            FQGenericArgument::Lifetime(ResolvedPathLifetime::Static)
+                        } else {
+                            FQGenericArgument::Lifetime(ResolvedPathLifetime::Named(l.into()))
+                        }
+                    }
+                    rustdoc_types::GenericArg::Type(t) => {
+                        let Ok(t) = resolve_type(
+                            t,
+                            &krate.core.package_id,
+                            krate_collection,
+                            &generic_bindings,
+                        ) else {
+                            todo!()
+                        };
+                        FQGenericArgument::Type(t.into())
+                    }
+                    rustdoc_types::GenericArg::Const(_) => {
+                        todo!()
+                    }
+                    rustdoc_types::GenericArg::Infer => {
+                        // The placeholder `_` is not allowed within types on item signatures for implementations
+                        unreachable!()
+                    }
+                };
+                generic_args.push(parsed_arg);
+            }
+        }
+        if let Some(last) = segments.last_mut() {
+            last.generic_arguments = generic_args;
+        }
         FQPath {
-            segments: krate.import_index.items[&self_id]
+            segments: {
+                segments.push(FQPathSegment::new(
+                    method_item.name.clone().expect("Method without a name"),
+                ));
+                segments
+            },
+            qualified_self: Some(qualified_self),
+            package_id: trait_global_id.package_id.clone(),
+        }
+    } else {
+        FQPath {
+            segments: krate.import_index.items[&attached_to]
                 .canonical_path()
                 .iter()
                 .cloned()
@@ -583,29 +701,6 @@ fn rustdoc_method2callable(
     let ItemEnum::Function(inner) = &method_item.inner else {
         unreachable!("Expected a function item");
     };
-
-    let impl_item = krate.get_item_by_local_type_id(&impl_id);
-    let ItemEnum::Impl(impl_item) = &impl_item.inner else {
-        unreachable!("The impl item id doesn't point to an impl item")
-    };
-    let self_ty = match resolve_type(
-        &impl_item.for_,
-        &krate.core.package_id,
-        krate_collection,
-        &Default::default(),
-    ) {
-        Ok(t) => t,
-        Err(e) => {
-            return Err(SelfResolutionError {
-                path: method_path,
-                source: Arc::new(e),
-            }
-            .into());
-        }
-    };
-
-    let mut generic_bindings = GenericBindings::default();
-    generic_bindings.types.insert("Self".into(), self_ty);
 
     let mut inputs = Vec::new();
     let mut takes_self_as_ref = false;

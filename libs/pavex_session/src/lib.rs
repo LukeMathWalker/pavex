@@ -45,6 +45,7 @@ pub(crate) type State = HashMap<std::borrow::Cow<'static, str>, serde_json::Valu
 ///
 /// The default configuration follows
 /// [OWASP's guidelines for secure session management](https://github.com/OWASP/ASVS/blob/67726f1976a759c58a82669d0dad3b16b9c04ecc/4.0/en/0x12-V3-Session-management.md).
+#[pavex::config(key = "session")]
 pub struct SessionConfig {
     #[serde(default)]
     /// Configure the session cookie.

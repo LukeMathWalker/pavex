@@ -1,8 +1,8 @@
+use pavex_macros::methods;
 use serde::Deserialize;
 
 use crate::request::path::deserializer::PathDeserializer;
 use crate::request::path::errors::{DecodeError, ExtractPathParamsError, InvalidUtf8InPathParam};
-use crate::request_scoped;
 
 use super::RawPathParams;
 
@@ -54,13 +54,12 @@ pub struct PathParams<T>(
     pub T,
 );
 
+#[methods]
 impl<T> PathParams<T> {
     /// The default constructor for [`PathParams`].
     ///
     /// If the extraction fails, an [`ExtractPathParamsError`] is returned.
-    #[request_scoped(
-        error_handler = "crate::request::path::errors::ExtractPathParamsError::into_response"
-    )]
+    #[request_scoped]
     pub fn extract<'server, 'request>(
         params: RawPathParams<'server, 'request>,
     ) -> Result<Self, ExtractPathParamsError>

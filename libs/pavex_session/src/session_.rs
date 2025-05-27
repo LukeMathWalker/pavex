@@ -3,6 +3,7 @@ use errors::{
     ValueDeserializationError, ValueLocation, ValueSerializationError,
 };
 use pavex::cookie::{RemovalCookie, ResponseCookie};
+use pavex::methods;
 use pavex::time::SignedDuration;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -155,12 +156,14 @@ enum ServerState {
     },
 }
 
+#[methods]
 impl<'store> Session<'store> {
     /// Create a new HTTP session.
     ///
     /// It is a continuation of the existing session if there was a valid session cookie
     /// attached to the request.
     /// It is a brand-new session otherwise.
+    #[request_scoped]
     pub fn new(
         store: &'store SessionStore,
         config: &'store SessionConfig,
@@ -1033,7 +1036,7 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
 pub mod errors {
     use std::borrow::Cow;
 
-    use pavex::response::Response;
+    use pavex::{methods, response::Response};
 
     use crate::store::errors::{
         ChangeIdError, CreateError, DeleteError, LoadError, UpdateError, UpdateTtlError,
@@ -1144,8 +1147,10 @@ pub mod errors {
         SyncErr(#[from] SyncError),
     }
 
+    #[methods]
     impl FinalizeError {
         /// Convert the error into a response.
+        #[error_handler]
         pub fn into_response(&self) -> Response {
             Response::internal_server_error()
         }
