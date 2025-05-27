@@ -9,11 +9,11 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "0| app_01492b3d::a() -> app_01492b3d::A"]
-    1 [ label = "1| crate::route_0::Next1(&'a app_01492b3d::A) -> crate::route_0::Next1<'a>"]
+    0 [ label = "0| app_c4ef979d::a() -> app_c4ef979d::A"]
+    1 [ label = "1| crate::route_0::Next1(&'a app_c4ef979d::A) -> crate::route_0::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next1<'a>) -> pavex::middleware::Next<crate::route_0::Next1<'a>>"]
-    3 [ label = "3| <app_01492b3d::A as core::clone::Clone>::clone(&app_01492b3d::A) -> app_01492b3d::A"]
-    4 [ label = "4| app_01492b3d::mw(app_01492b3d::A, pavex::middleware::Next<crate::route_0::Next1<'a>>) -> pavex::response::Response"]
+    3 [ label = "3| <app_c4ef979d::A as core::clone::Clone>::clone(&app_c4ef979d::A) -> app_c4ef979d::A"]
+    4 [ label = "4| app_c4ef979d::mw(app_c4ef979d::A, pavex::middleware::Next<crate::route_0::Next1<'a>>) -> pavex::response::Response"]
     5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 4 [ ]
     1 -> 2 [ ]
@@ -24,8 +24,8 @@ digraph "GET /home - 1" {
 }
 
 digraph "GET /home - 2" {
-    0 [ label = "0| &app_01492b3d::A"]
-    1 [ label = "1| app_01492b3d::handler(&app_01492b3d::A) -> pavex::response::Response"]
+    0 [ label = "0| &app_c4ef979d::A"]
+    1 [ label = "1| app_c4ef979d::handler(&app_c4ef979d::A) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -47,8 +47,8 @@ digraph "* * - 1" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| crate::route_1::Next1(&'a pavex::router::AllowedMethods) -> crate::route_1::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
-    3 [ label = "3| app_01492b3d::a() -> app_01492b3d::A"]
-    4 [ label = "4| app_01492b3d::mw(app_01492b3d::A, pavex::middleware::Next<crate::route_1::Next1<'a>>) -> pavex::response::Response"]
+    3 [ label = "3| app_c4ef979d::a() -> app_c4ef979d::A"]
+    4 [ label = "4| app_c4ef979d::mw(app_c4ef979d::A, pavex::middleware::Next<crate::route_1::Next1<'a>>) -> pavex::response::Response"]
     5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 4 [ ]
     1 -> 2 [ ]

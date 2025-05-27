@@ -9,11 +9,11 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "0| app_9b6ffdef::a() -> app_9b6ffdef::A"]
-    1 [ label = "1| <app_9b6ffdef::A as core::clone::Clone>::clone(&app_9b6ffdef::A) -> app_9b6ffdef::A"]
-    2 [ label = "2| app_9b6ffdef::b(app_9b6ffdef::A) -> app_9b6ffdef::B"]
-    3 [ label = "3| app_9b6ffdef::c(app_9b6ffdef::A) -> app_9b6ffdef::C"]
-    4 [ label = "4| app_9b6ffdef::handler(app_9b6ffdef::B, app_9b6ffdef::C) -> pavex::response::Response"]
+    0 [ label = "0| app_8769849e::a() -> app_8769849e::A"]
+    1 [ label = "1| <app_8769849e::A as core::clone::Clone>::clone(&app_8769849e::A) -> app_8769849e::A"]
+    2 [ label = "2| app_8769849e::b(app_8769849e::A) -> app_8769849e::B"]
+    3 [ label = "3| app_8769849e::c(app_8769849e::A) -> app_8769849e::C"]
+    4 [ label = "4| app_8769849e::handler(app_8769849e::B, app_8769849e::C) -> pavex::response::Response"]
     5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     3 -> 4 [ ]
     0 -> 3 [ ]

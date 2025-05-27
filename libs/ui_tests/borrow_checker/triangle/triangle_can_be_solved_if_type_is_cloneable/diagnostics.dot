@@ -9,10 +9,10 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "0| app_835fd2b1::a() -> app_835fd2b1::A"]
-    1 [ label = "1| <app_835fd2b1::A as core::clone::Clone>::clone(&app_835fd2b1::A) -> app_835fd2b1::A"]
-    2 [ label = "2| app_835fd2b1::b(app_835fd2b1::A) -> app_835fd2b1::B"]
-    3 [ label = "3| app_835fd2b1::handler(&app_835fd2b1::A, app_835fd2b1::B) -> pavex::response::Response"]
+    0 [ label = "0| app_a837b935::a() -> app_a837b935::A"]
+    1 [ label = "1| <app_a837b935::A as core::clone::Clone>::clone(&app_a837b935::A) -> app_a837b935::A"]
+    2 [ label = "2| app_a837b935::b(app_a837b935::A) -> app_a837b935::B"]
+    3 [ label = "3| app_a837b935::handler(&app_a837b935::A, app_a837b935::B) -> pavex::response::Response"]
     4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 3 [ ]
     0 -> 3 [ label = "&"]

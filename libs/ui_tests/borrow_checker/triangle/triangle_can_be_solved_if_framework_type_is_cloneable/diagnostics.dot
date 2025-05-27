@@ -13,8 +13,8 @@ digraph "GET /home - 0" {
 digraph "GET /home - 1" {
     0 [ label = "0| pavex::request::path::RawPathParams<'server, 'request>"]
     1 [ label = "1| <pavex::request::path::RawPathParams::<server, request> as core::clone::Clone>::clone(&pavex::request::path::RawPathParams<'server, 'request>) -> pavex::request::path::RawPathParams<'server, 'request>"]
-    2 [ label = "2| app_802eb683::b(pavex::request::path::RawPathParams<'_, '_>) -> app_802eb683::B"]
-    3 [ label = "3| app_802eb683::handler(&pavex::request::path::RawPathParams<'_, '_>, app_802eb683::B) -> pavex::response::Response"]
+    2 [ label = "2| app_2f58149a::b(pavex::request::path::RawPathParams<'_, '_>) -> app_2f58149a::B"]
+    3 [ label = "3| app_2f58149a::handler(&pavex::request::path::RawPathParams<'_, '_>, app_2f58149a::B) -> pavex::response::Response"]
     4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 3 [ ]
     0 -> 3 [ label = "&"]

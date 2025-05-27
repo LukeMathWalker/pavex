@@ -13,9 +13,9 @@ digraph "GET /home - 0" {
 digraph "GET /home - 1" {
     0 [ label = "0| pavex::request::path::RawPathParams<'server, 'request>"]
     1 [ label = "1| <pavex::request::path::RawPathParams::<server, request> as core::clone::Clone>::clone(&pavex::request::path::RawPathParams<'server, 'request>) -> pavex::request::path::RawPathParams<'server, 'request>"]
-    2 [ label = "2| app_821d919e::b(pavex::request::path::RawPathParams<'_, '_>) -> app_821d919e::B"]
-    3 [ label = "3| app_821d919e::c(pavex::request::path::RawPathParams<'_, '_>) -> app_821d919e::C"]
-    4 [ label = "4| app_821d919e::handler(app_821d919e::B, app_821d919e::C) -> pavex::response::Response"]
+    2 [ label = "2| app_bc5c8029::b(pavex::request::path::RawPathParams<'_, '_>) -> app_bc5c8029::B"]
+    3 [ label = "3| app_bc5c8029::c(pavex::request::path::RawPathParams<'_, '_>) -> app_bc5c8029::C"]
+    4 [ label = "4| app_bc5c8029::handler(app_bc5c8029::B, app_bc5c8029::C) -> pavex::response::Response"]
     5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     3 -> 4 [ ]
     0 -> 3 [ ]
