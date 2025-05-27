@@ -1,4 +1,4 @@
-use pavex::{cookie::ResponseCookies, response::Response};
+use pavex::{cookie::ResponseCookies, post_process, response::Response};
 use tracing::Span;
 
 use crate::{Session, errors::FinalizeError};
@@ -11,6 +11,7 @@ use crate::{Session, errors::FinalizeError};
     level = tracing::Level::DEBUG, skip_all,
     fields(session.cookie.set = tracing::field::Empty)
 )]
+#[post_process]
 pub async fn finalize_session<'store>(
     response: Response,
     response_cookies: &mut ResponseCookies,

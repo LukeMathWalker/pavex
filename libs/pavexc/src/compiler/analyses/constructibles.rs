@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 
 use ahash::{HashMap, HashMapExt, HashSet};
 use indexmap::{IndexMap, IndexSet};
@@ -95,159 +95,131 @@ impl ConstructibleDb {
         framework_items_db: &FrameworkItemDb,
         diagnostics: &mut crate::diagnostic::DiagnosticSink,
     ) {
-        let mut component_ids = component_db.iter().map(|(id, _)| id).collect::<Vec<_>>();
-        let mut n_component_ids = component_ids.len();
+        struct Queue {
+            processed: BTreeSet<ComponentId>,
+            to_be_processed: BTreeSet<ComponentId>,
+        }
+
+        impl Queue {
+            fn bootstrap(db: &ComponentDb, computation_db: &ComputationDb) -> Self {
+                let to_be_processed = db
+                    .iter()
+                    .filter_map(|(id, _)| {
+                        let hydrated = db.hydrated_component(id, computation_db);
+                        match hydrated {
+                            HydratedComponent::RequestHandler(_)
+                            | HydratedComponent::WrappingMiddleware(_)
+                            | HydratedComponent::PreProcessingMiddleware(_)
+                            | HydratedComponent::PostProcessingMiddleware(_)
+                            | HydratedComponent::ErrorObserver(_) => Some(id),
+                            // These components may or may not be needed.
+                            // We'll enqueue them for analysis if they're brought in
+                            // by one of the components in the group right above.
+                            HydratedComponent::PrebuiltType(_)
+                            | HydratedComponent::ConfigType(_)
+                            | HydratedComponent::Constructor(_)
+                            | HydratedComponent::Transformer(..) => None,
+                        }
+                    })
+                    .collect();
+                Self {
+                    processed: BTreeSet::new(),
+                    to_be_processed,
+                }
+            }
+
+            fn pop(&mut self) -> Option<ComponentId> {
+                let id = self.to_be_processed.pop_last()?;
+                self.processed.insert(id);
+                Some(id)
+            }
+
+            /// Returns `true` if the element has neither been processed nor enqueued for processing.
+            /// `false` otherwise.
+            fn enqueue(&mut self, id: ComponentId) -> bool {
+                if !self.processed.contains(&id) {
+                    self.to_be_processed.insert(id)
+                } else {
+                    false
+                }
+            }
+        }
+
+        let mut queue = Queue::bootstrap(component_db, computation_db);
         // In the process of detecting missing constructors,
         // we might generate _new_ constructors by specializing generic constructors.
         // The newly generated constructors might themselves be missing constructors, so we
         // add them to set of components to check and iterate until we no longer have any new
         // components to check.
-        loop {
-            for component_id in component_ids {
-                let scope_id = component_db.scope_id(component_id);
-                let resolved_component =
-                    component_db.hydrated_component(component_id, computation_db);
-                let input_types = {
-                    let mut input_types: Vec<Option<ResolvedType>> = resolved_component
-                        .input_types()
-                        .iter()
-                        .map(|i| Some(i.to_owned()))
-                        .collect();
-                    match &resolved_component {
-                        // `Next` is a special case: it's not a pre-determined type, but rather
-                        // an ad-hoc type that is constructed by the framework at compile-time,
-                        // specific to each request handling chain.
-                        HydratedComponent::WrappingMiddleware(mw) => {
-                            input_types[mw.next_input_index()] = None;
-                        }
-                        HydratedComponent::PostProcessingMiddleware(pp) => {
-                            input_types[pp.response_input_index(&component_db.pavex_response)] =
-                                None;
-                        }
-                        HydratedComponent::ErrorObserver(eo) => {
-                            input_types[eo.error_input_index] = None;
-                        }
-                        HydratedComponent::Transformer(_, info) => {
-                            // The transformer is only invoked when the transformed component is
-                            // present in the graph, so we don't need to check for the transformed
-                            // component's constructor.
-                            input_types[info.input_index] = None;
-                        }
-                        HydratedComponent::Constructor(_)
-                        | HydratedComponent::PrebuiltType(_)
-                        | HydratedComponent::ConfigType(_)
-                        | HydratedComponent::PreProcessingMiddleware(_)
-                        | HydratedComponent::RequestHandler(_) => {}
+        while let Some(component_id) = queue.pop() {
+            let scope_id = component_db.scope_id(component_id);
+            let resolved_component = component_db.hydrated_component(component_id, computation_db);
+            let input_types = {
+                let mut input_types: Vec<Option<ResolvedType>> = resolved_component
+                    .input_types()
+                    .iter()
+                    .map(|i| Some(i.to_owned()))
+                    .collect();
+                match &resolved_component {
+                    // `Next` is a special case: it's not a pre-determined type, but rather
+                    // an ad-hoc type that is constructed by the framework at compile-time,
+                    // specific to each request handling chain.
+                    HydratedComponent::WrappingMiddleware(mw) => {
+                        input_types[mw.next_input_index()] = None;
                     }
-                    input_types
+                    HydratedComponent::PostProcessingMiddleware(pp) => {
+                        input_types[pp.response_input_index(&component_db.pavex_response)] = None;
+                    }
+                    HydratedComponent::ErrorObserver(eo) => {
+                        input_types[eo.error_input_index] = None;
+                    }
+                    HydratedComponent::Transformer(_, info) => {
+                        // The transformer is only invoked when the transformed component is
+                        // present in the graph, so we don't need to check for the transformed
+                        // component's constructor.
+                        input_types[info.input_index] = None;
+                    }
+                    HydratedComponent::Constructor(_)
+                    | HydratedComponent::PrebuiltType(_)
+                    | HydratedComponent::ConfigType(_)
+                    | HydratedComponent::PreProcessingMiddleware(_)
+                    | HydratedComponent::RequestHandler(_) => {}
+                }
+                input_types
+            };
+
+            for (input_index, input) in input_types.into_iter().enumerate() {
+                let Some(input) = input.as_ref() else {
+                    continue;
                 };
-
-                for (input_index, input) in input_types.into_iter().enumerate() {
-                    let Some(input) = input.as_ref() else {
+                // TODO: do we need this?
+                if let Some(id) = framework_items_db.get_id(input) {
+                    if let Lifecycle::RequestScoped = framework_items_db.lifecycle(id) {
                         continue;
-                    };
-                    // TODO: do we need this?
-                    if let Some(id) = framework_items_db.get_id(input) {
-                        if let Lifecycle::RequestScoped = framework_items_db.lifecycle(id) {
+                    }
+                }
+
+                // Both `T` and `&T` are always constructibles, when looking at generic constructors that take them
+                // as input. The actual check will happen when they are bound to a specific type.
+                match input {
+                    ResolvedType::Reference(ref_) => {
+                        if let ResolvedType::Generic(_) = ref_.inner.as_ref() {
                             continue;
                         }
                     }
-
-                    // Both `T` and `&T` are always constructibles, when looking at generic constructors that take them
-                    // as input. The actual check will happen when they are bound to a specific type.
-                    match input {
-                        ResolvedType::Reference(ref_) => {
-                            if let ResolvedType::Generic(_) = ref_.inner.as_ref() {
-                                continue;
-                            }
-                        }
-                        ResolvedType::Generic(_) => {
-                            continue;
-                        }
-                        _ => {}
-                    }
-
-                    if let Some((input_component_id, mode)) = self.get_or_try_bind(
-                        scope_id,
-                        input,
-                        component_db,
-                        computation_db,
-                        framework_items_db,
-                    ) {
-                        if ConsumptionMode::ExclusiveBorrow == mode {
-                            let lifecycle = component_db.lifecycle(input_component_id);
-                            match lifecycle {
-                                Lifecycle::Singleton => {
-                                    if let Some(user_component_id) =
-                                        component_db.user_component_id(component_id)
-                                    {
-                                        Self::mut_ref_to_singleton(
-                                            user_component_id,
-                                            component_db.user_db(),
-                                            input,
-                                            input_index,
-                                            krate_collection,
-                                            computation_db,
-                                            diagnostics,
-                                        )
-                                    } else {
-                                        tracing::warn!(
-                                            "&mut singleton input ({:?}) for component {:?}, but the component is not a user component.",
-                                            input,
-                                            component_id
-                                        );
-                                    };
-                                }
-                                Lifecycle::RequestScoped => {
-                                    let cloning_strategy =
-                                        component_db.cloning_strategy(input_component_id);
-                                    if cloning_strategy == CloningStrategy::CloneIfNecessary {
-                                        if let Some(user_component_id) =
-                                            component_db.user_component_id(component_id)
-                                        {
-                                            Self::mut_ref_to_cloneable_request_scoped(
-                                                user_component_id,
-                                                component_db.user_db(),
-                                                input,
-                                                input_index,
-                                                krate_collection,
-                                                computation_db,
-                                                diagnostics,
-                                            )
-                                        } else {
-                                            tracing::warn!(
-                                                "&mut cloneable request-scoped input ({:?}) for component {:?}, but the component is not a user component.",
-                                                input,
-                                                component_id
-                                            );
-                                        };
-                                    }
-                                }
-                                Lifecycle::Transient => {
-                                    if let Some(user_component_id) =
-                                        component_db.user_component_id(component_id)
-                                    {
-                                        Self::mut_ref_to_transient(
-                                            user_component_id,
-                                            component_db.user_db(),
-                                            input,
-                                            input_index,
-                                            krate_collection,
-                                            computation_db,
-                                            diagnostics,
-                                        )
-                                    } else {
-                                        tracing::warn!(
-                                            "&mut transient input ({:?}) for component {:?}, but the component is not a user component.",
-                                            input,
-                                            component_id
-                                        );
-                                    };
-                                }
-                            }
-                        }
+                    ResolvedType::Generic(_) => {
                         continue;
                     }
+                    _ => {}
+                }
+
+                let Some((input_component_id, mode)) = self.get_or_try_bind(
+                    scope_id,
+                    input,
+                    component_db,
+                    computation_db,
+                    framework_items_db,
+                ) else {
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         self.missing_constructor(
                             user_component_id,
@@ -265,21 +237,87 @@ impl ConstructibleDb {
                             component_id
                         );
                     }
-                }
-            }
+                    continue;
+                };
 
-            // If we didn't add any new component IDs, we're done.
-            // Otherwise, we need to determine the list of component IDs that we are yet to examine.
-            let new_component_ids: Vec<_> = component_db
-                .iter()
-                .skip(n_component_ids)
-                .map(|(id, _)| id)
-                .collect();
-            if new_component_ids.is_empty() {
-                break;
-            } else {
-                n_component_ids += new_component_ids.len();
-                component_ids = new_component_ids;
+                if queue.enqueue(input_component_id) {
+                    for derived_id in component_db.derived_component_ids(input_component_id) {
+                        queue.enqueue(derived_id);
+                    }
+                }
+
+                if ConsumptionMode::ExclusiveBorrow == mode {
+                    let lifecycle = component_db.lifecycle(input_component_id);
+                    match lifecycle {
+                        Lifecycle::Singleton => {
+                            if let Some(user_component_id) =
+                                component_db.user_component_id(component_id)
+                            {
+                                Self::mut_ref_to_singleton(
+                                    user_component_id,
+                                    component_db.user_db(),
+                                    input,
+                                    input_index,
+                                    krate_collection,
+                                    computation_db,
+                                    diagnostics,
+                                )
+                            } else {
+                                tracing::warn!(
+                                    "&mut singleton input ({:?}) for component {:?}, but the component is not a user component.",
+                                    input,
+                                    component_id
+                                );
+                            };
+                        }
+                        Lifecycle::RequestScoped => {
+                            let cloning_strategy =
+                                component_db.cloning_strategy(input_component_id);
+                            if cloning_strategy == CloningStrategy::CloneIfNecessary {
+                                if let Some(user_component_id) =
+                                    component_db.user_component_id(component_id)
+                                {
+                                    Self::mut_ref_to_cloneable_request_scoped(
+                                        user_component_id,
+                                        component_db.user_db(),
+                                        input,
+                                        input_index,
+                                        krate_collection,
+                                        computation_db,
+                                        diagnostics,
+                                    )
+                                } else {
+                                    tracing::warn!(
+                                        "&mut clonable request-scoped input ({:?}) for component {:?}, but the component is not a user component.",
+                                        input,
+                                        component_id
+                                    );
+                                };
+                            }
+                        }
+                        Lifecycle::Transient => {
+                            if let Some(user_component_id) =
+                                component_db.user_component_id(component_id)
+                            {
+                                Self::mut_ref_to_transient(
+                                    user_component_id,
+                                    component_db.user_db(),
+                                    input,
+                                    input_index,
+                                    krate_collection,
+                                    computation_db,
+                                    diagnostics,
+                                )
+                            } else {
+                                tracing::warn!(
+                                    "&mut transient input ({:?}) for component {:?}, but the component is not a user component.",
+                                    input,
+                                    component_id
+                                );
+                            };
+                        }
+                    }
+                }
             }
         }
     }

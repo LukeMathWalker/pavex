@@ -1,4 +1,4 @@
-use pavex_macros::request_scoped;
+use pavex_macros::methods;
 
 use crate::request::RequestHead;
 
@@ -38,15 +38,14 @@ pub struct QueryParams<T>(
     pub T,
 );
 
+#[methods]
 impl<T> QueryParams<T> {
     /// The default constructor for [`QueryParams`].
     ///
     /// If the extraction fails, an [`ExtractQueryParamsError`] is returned.
     ///
     /// Check out [`QueryParams`] for more information on query parameters.
-    #[request_scoped(
-        error_handler = "crate::request::query::errors::ExtractQueryParamsError::into_response"
-    )]
+    #[request_scoped]
     pub fn extract<'request>(
         request_head: &'request RequestHead,
     ) -> Result<Self, ExtractQueryParamsError>

@@ -92,7 +92,7 @@ steps:
     snippets:
       - name: "extract"
         source_path: "app/src/user_agent.rs"
-        ranges: ["0..2", "10..23"]
+        ranges: ["0..3", "10..25"]
       - name: "register"
         source_path: "app/src/blueprint.rs"
         ranges: ["9..16"]
@@ -104,7 +104,7 @@ steps:
     snippets:
       - name: "extract"
         source_path: "app/src/user_agent.rs"
-        ranges: ["0..2", "10..21"]
+        ranges: ["0..1", "10..22"]
     commands:
       - command: "cargo px c -q"
         expected_outcome: "failure"
@@ -113,10 +113,10 @@ steps:
     snippets:
       - name: "error_handler"
         source_path: "app/src/user_agent.rs"
-        ranges: ["23..28"]
+        ranges: ["24..28"]
       - name: "register"
         source_path: "app/src/user_agent.rs"
-        ranges: ["13..21"]
+        ranges: ["14..22"]
         hl_lines: [2]
     commands:
       - command: "cargo px c"

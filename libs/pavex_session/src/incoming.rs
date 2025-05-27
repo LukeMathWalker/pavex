@@ -1,5 +1,5 @@
 use crate::{SessionId, State, config::SessionCookieConfig, wire::WireClientState};
-use pavex::cookie::RequestCookies;
+use pavex::{cookie::RequestCookies, methods};
 use pavex_tracing::fields::{ERROR_DETAILS, ERROR_MESSAGE, error_details, error_message};
 
 /// The session information attached to the incoming request.
@@ -10,10 +10,12 @@ pub struct IncomingSession {
     pub(crate) client_state: State,
 }
 
+#[methods]
 impl IncomingSession {
     /// Extract a session cookie from the incoming request, if it exists.
     ///
     /// If the cookie is not found, or if the cookie is invalid, this method will return `None`.
+    #[request_scoped]
     pub fn extract(cookies: &RequestCookies<'_>, config: &SessionCookieConfig) -> Option<Self> {
         let cookie = cookies.get(&config.name)?;
         match serde_json::from_str::<WireClientState>(cookie.value()) {

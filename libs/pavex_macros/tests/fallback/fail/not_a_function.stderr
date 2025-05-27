@@ -1,4 +1,4 @@
-error: #[pavex::fallback] can only be applied to free functions.
+error: #[pavex::fallback] can only be applied to functions and methods.
  --> tests/fallback/fail/not_a_function.rs:7:5
   |
 7 |     const A: usize = 42;

@@ -53,7 +53,6 @@ pub trait OptionalLabeledSpanExt {
 }
 
 impl OptionalLabeledSpanExt for Option<LabeledSpan> {
-    #[must_use]
     fn attach<S>(self, s: AnnotatedSource<S>) -> AnnotatedSource<S> {
         s.label(self)
     }

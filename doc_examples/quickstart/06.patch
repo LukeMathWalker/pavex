@@ -1,10 +1,10 @@
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
 --- a/app/src/user_agent.rs
 +++ b/app/src/user_agent.rs
-@@ -1,6 +1,24 @@
+@@ -1,6 +1,25 @@
 +use pavex::http::header::USER_AGENT;
++use pavex::methods;
 +use pavex::request::RequestHead;
-+use pavex::request_scoped;
 +
  pub enum UserAgent {
      /// No `User-Agent` header was provided.
@@ -13,6 +13,7 @@ diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
      Known(String),
  }
 +
++#[methods]
 +impl UserAgent {
 +    #[request_scoped]
 +    pub fn extract(request_head: &RequestHead) -> Self {

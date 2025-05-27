@@ -116,6 +116,22 @@ pub(crate) fn route_path_attr_span(
     ))
 }
 
+/// A span matching the `impl MyType` portion of an impl item.
+pub(crate) fn impl_header_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let raw_source = &source.contents;
+    let impl_ = find_impl(location, &source.parsed)?;
+
+    let mut span = impl_.impl_token.span();
+    // Expand the span to everything until the `{` starting the impl block.
+    span = span.join(impl_.brace_token.span.open()).unwrap_or(span);
+
+    // Fall back to the full sign+attr span if we can't find a precise one.
+    Some(convert_proc_macro_span(raw_source, span))
+}
+
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
 /// `.` in the method invocation for `route` and `constructor`.
 /// E.g.
@@ -644,13 +660,14 @@ impl CallableDef<'_> {
         };
 
         let mut span = attrs
-            .first()
+            .iter()
+            .find(|a| a.path().segments.first().map(|s| s.ident.to_string()) != Some("doc".into()))
             .map(|attr| attr.span())
             .unwrap_or_else(|| vis.span());
         // Expand the span to include visibility
         span = span.join(vis.span()).unwrap_or(span);
         // Expand to include the function signature
-        span = span.join(sig.span()).unwrap_or(span);
+        span = span.join(sig.output.span()).unwrap_or(span);
 
         span
     }
@@ -752,6 +769,46 @@ fn find_type_def<'a>(location: &'a Location, file: &'a syn::File) -> Option<Type
     }
 
     let mut locator = TypeLocator {
+        location,
+        node: None,
+    };
+    locator.visit_file(file);
+    locator.node
+}
+
+/// Visits the abstract syntax tree of a parsed `syn::File` to find an impl block node
+/// that contains the given `location`.
+/// It then converts the span associated with the node to a [`SourceSpan`].
+///
+/// # Ambiguity
+///
+/// There may be multiple nodes that match (e.g. an impl defined inside another impl).
+/// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
+/// is also the smallest node that contains it—exactly what we are looking for.
+fn find_impl<'a>(location: &'a Location, file: &'a syn::File) -> Option<&'a syn::ItemImpl> {
+    /// A visitor that locates the impl def that contains the given `location`.
+    struct Locator<'a> {
+        location: &'a Location,
+        node: Option<&'a syn::ItemImpl>,
+    }
+
+    impl<'a> Visit<'a> for Locator<'a> {
+        fn visit_item_impl(&mut self, node: &'a syn::ItemImpl) {
+            if node.span().contains(self.location) {
+                self.node = Some(node);
+                syn::visit::visit_item_impl(self, node)
+            }
+        }
+        fn visit_stmt(&mut self, node: &'a Stmt) {
+            // This is an optimization—it allows the visitor to skip the entire sub-tree
+            // under a top-level statement that is not relevant to our search.
+            if node.span().contains(self.location) {
+                syn::visit::visit_stmt(self, node)
+            }
+        }
+    }
+
+    let mut locator = Locator {
         location,
         node: None,
     };

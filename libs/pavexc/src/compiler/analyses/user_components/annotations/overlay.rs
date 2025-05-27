@@ -49,6 +49,7 @@ pub fn augment_from_annotation(
             AnnotationProperties::ErrorObserver
             | AnnotationProperties::ErrorHandler { .. }
             | AnnotationProperties::Constructor { .. }
+            | AnnotationProperties::Methods
             | AnnotationProperties::Prebuilt { .. }
             | AnnotationProperties::Route { .. }
             | AnnotationProperties::Config { .. } => {

@@ -117,13 +117,11 @@ impl ErrorHandlersInScope {
         }
         let (bindings, templated_error_type) =
             self.templated.iter().find_map(|templated_error_type| {
-                let Some(bindings) = templated_error_type.is_a_template_for(type_) else {
-                    return None;
-                };
+                let bindings = templated_error_type.is_a_template_for(type_)?;
                 Some((bindings, templated_error_type))
             })?;
         let (templated_error_handler, component_id) =
-            self.get(&templated_error_type).cloned().unwrap();
+            self.get(templated_error_type).cloned().unwrap();
         let bound_handler = templated_error_handler.bind_generic_type_parameters(&bindings);
         self.insert(bound_handler, component_id);
         let bound = self.get(type_);

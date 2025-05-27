@@ -1,5 +1,6 @@
 use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::f;
+use pavex::methods;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
 use pavex::response::Response;
@@ -12,6 +13,7 @@ pub fn constructor(_r: &mut RequestHead) -> B {
 
 pub struct A;
 
+#[methods]
 impl A {
     #[pavex::request_scoped]
     pub fn new(_r: &mut RequestHead) -> Self {

@@ -4,13 +4,12 @@
 extern crate alloc;
 struct ServerState {
     router: Router,
+    #[allow(dead_code)]
     application_state: ApplicationState,
 }
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ApplicationConfig {}
-pub struct ApplicationState {
-    pub a: app::A,
-}
+pub struct ApplicationState {}
 impl ApplicationState {
     pub async fn new(
         _app_config: crate::ApplicationConfig,
@@ -18,8 +17,7 @@ impl ApplicationState {
         Ok(Self::_new().await)
     }
     async fn _new() -> crate::ApplicationState {
-        let v0 = app::a();
-        crate::ApplicationState { a: v0 }
+        crate::ApplicationState {}
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]
@@ -61,7 +59,7 @@ impl Router {
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
-        router.insert("/handler", 0u32).unwrap();
+        router.insert("/", 0u32).unwrap();
         router
     }
     pub async fn route(
@@ -78,20 +76,18 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_1::entrypoint(&allowed_methods).await;
+            return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_0::entrypoint(state.a.clone()).await
-                    }
+                    &pavex::http::Method::GET => route_1::entrypoint().await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_1::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
@@ -100,67 +96,6 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint(s_0: app::A) -> pavex::response::Response {
-        let response = wrapping_0(s_0).await;
-        response
-    }
-    async fn stage_1(s_0: app::A) -> pavex::response::Response {
-        let response = handler(s_0).await;
-        response
-    }
-    async fn wrapping_0(v0: app::A) -> pavex::response::Response {
-        let v1 = crate::route_0::Next0 {
-            s_0: v0,
-            next: stage_1,
-        };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = pavex::middleware::wrap_noop(v2).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
-    }
-    async fn handler(v0: app::A) -> pavex::response::Response {
-        let v1 = <app::A as core::clone::Clone>::clone(&v0);
-        let v2 = app::b(v1);
-        let v3 = app::c(&v2);
-        let v4 = match v3 {
-            Ok(ok) => ok,
-            Err(v4) => {
-                return {
-                    let v5 = app::default_error_handler(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
-                };
-            }
-        };
-        let v5 = app::H::with_e();
-        let v6 = app::H::with_a();
-        let v7 = <app::A as core::clone::Clone>::clone(&v0);
-        let v8 = app::G::new(v7);
-        let v9 = app::E::new();
-        let v10 = app::F::new(&v9);
-        let v11 = app::d(&v4, &v0);
-        let v12 = app::handler(&v0, &v2, &v11, &v9, &v10, &v8, &v6, &v5);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
-    }
-    struct Next0<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: app::A,
-        next: fn(app::A) -> T,
-    }
-    impl<T> std::future::IntoFuture for Next0<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
-        }
-    }
-}
-pub mod route_1 {
     pub async fn entrypoint<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
@@ -176,7 +111,7 @@ pub mod route_1 {
     async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let v1 = crate::route_1::Next0 {
+        let v1 = crate::route_0::Next0 {
             s_0: v0,
             next: stage_1,
         };
@@ -203,6 +138,59 @@ pub mod route_1 {
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0)
+        }
+    }
+}
+pub mod route_1 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = wrapping_0().await;
+        response
+    }
+    async fn stage_1() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
+    async fn wrapping_0() -> pavex::response::Response {
+        let v0 = crate::route_1::Next0 {
+            next: stage_1,
+        };
+        let v1 = pavex::middleware::Next::new(v0);
+        let v2 = pavex::middleware::wrap_noop(v1).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    async fn handler() -> pavex::response::Response {
+        let v0 = <&str as app::LocalTrait>::new();
+        let v1 = <[u32] as app::LocalTraitWithLifetime<'_>>::new(v0);
+        let v2 = <&str as app::LocalTrait>::new();
+        let v3 = <[u8] as app::LocalTraitWithLifetime<'_>>::new(v2);
+        let v4 = <alloc::borrow::Cow<'_, [u8]> as app::LocalTrait>::new();
+        let v5 = <alloc::borrow::Cow<'_, str> as app::LocalTrait>::new();
+        let v6 = <&str as app::LocalTrait>::new();
+        let v7 = <app::D<
+            app::A,
+        > as app::LocalGenericTrait<app::D<app::A>>>::t();
+        let v8 = <app::C<app::A> as core::default::Default>::default();
+        let v9 = <app::B as core::default::Default>::default();
+        let v10 = <app::A as app::LocalGenericTrait<
+            app::A,
+        >>::t();
+        let v11 = app::handler(&v10, &v9, &v8, &v7, v6, v5, v4, v3, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
+    }
+    struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)()
         }
     }
 }

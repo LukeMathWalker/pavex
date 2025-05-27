@@ -362,6 +362,10 @@ fn warm_up_target_dir(
     runtime_directory: &Path,
     test_name2test_data: &BTreeMap<String, TestData>,
 ) -> Result<(), anyhow::Error> {
+    if test_name2test_data.is_empty() {
+        return Ok(());
+    }
+
     let timer = std::time::Instant::now();
     println!("Warming up the target directory");
     let mut cmd = Command::new("cargo");
