@@ -25,11 +25,12 @@ Anything beyond 20 lines of code? **Open an issue first**.
 # Running tests
 
 ```bash
-cargo test
+cargo build --bin pavexc && cargo test
 ```
 
-We primarily rely on end-to-end testing to check that Pavex's behaviour meets our expectations.\
-All tests are located in `libs/pavex_cli/tests` and are launched using a custom test runner that you can find in `libs/pavex_test_runner`.
+We primarily rely on end-to-end testing to check that Pavex's behaviour meets our expectations. We refer to these end-to-end tests
+as **UI tests**.\
+The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/libs/pavex_test_runner`. The actual UI tests are found under `libs/ui_tests`.
 
 In a nutshell:
 
