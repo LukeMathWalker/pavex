@@ -30,7 +30,7 @@ cargo build --bin pavexc && cargo test
 
 We primarily rely on end-to-end testing to check that Pavex's behaviour meets our expectations. We refer to these end-to-end tests
 as **UI tests**.\
-The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/libs/pavex_test_runner`. The actual UI tests are found under `libs/ui_tests`. 
+The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/libs/pavex_test_runner`. The actual UI tests are found under `libs/ui_tests`.
 
 In a nutshell:
 
