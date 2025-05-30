@@ -117,7 +117,7 @@ You now want to work with `MyType` in your request handler:
 - If the request handler takes `&mut MyType` as an input parameter, you'll get an error:
   the immutable reference to `MyType` borrowed by the wrapping middleware is still alive when the request handler is executed.
 - If the request handler takes `MyType` by value, Pavex is forced to clone the value to satisfy the borrow checker.
-  That's inefficient. If `MyType` isn't clonable, you'll get an error.
+  That's inefficient. If `MyType` isn't cloneable, you'll get an error.
 - If the request handler takes `&MyType` as an input parameter, all is well. You can have as many immutable references to `MyType` as you want.
 
 You wouldn't have these problems with pre-processing or post-processing middlewares: whatever you inject into them is going to be borrowed

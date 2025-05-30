@@ -11,11 +11,11 @@ use pavex::response::Response;
 // |   |
 // handler
 //
-// `A` is not clonable and:
+// `A` is not cloneable and:
 // - it is consumed by `B`;
 // - it is borrowed by `C`, which holds a reference to `A` as one of its fields.
 //
-// Pavex should detect that this graph can't satisfy the borrow checker (since `A` is not clonable) and report an error.
+// Pavex should detect that this graph can't satisfy the borrow checker (since `A` is not cloneable) and report an error.
 
 pub struct A;
 

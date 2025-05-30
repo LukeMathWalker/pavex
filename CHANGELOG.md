@@ -339,7 +339,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Don't complain about missing constructors when looking at a naked generic input parameter
 - Bind generic parameters correctly in all instances
 - Panic eagerly if internal invariants are not upheld when binding generic parameters
-- Pavex correctly handles type alises with generic parameters that differ from the target type
+- Pavex correctly handles type aliases with generic parameters that differ from the target type
 - Pavex will correctly set the name of the defining crate when resolving local type aliases that refer to remote types
 - Pavex will never use private modules in the paths used to refer to methods in the generated server SDK code. ([#355](https://github.com/LukeMathWalker/pavex/pull/355))
 

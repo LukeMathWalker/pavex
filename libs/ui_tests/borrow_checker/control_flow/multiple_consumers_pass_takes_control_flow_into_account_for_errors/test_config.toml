@@ -1,5 +1,5 @@
 description = """
-A type that is not clonable cannot be consumed by two different other constructors by value.
+A type that is not cloneable cannot be consumed by two different other constructors by value.
 When reporting errors, pavex takes into the control flow information embedded in the graph to only
 report about _actually_ conflicting consumers"""
 

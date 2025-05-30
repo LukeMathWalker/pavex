@@ -1,0 +1,15 @@
+error: unreachable `pub` item
+ --> tests/pre_process/fail/unreachable_pub.rs:7:5
+  |
+7 |     pub fn a() -> A {
+  |     ---^^^^^^^^^^^^
+  |     |
+  |     help: consider restricting its visibility: `pub(crate)`
+  |
+  = help: or consider exporting it for use by other crates
+note: the lint level is defined here
+ --> tests/pre_process/fail/unreachable_pub.rs:6:5
+  |
+6 |     #[pre_process(id = "A_")]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `pre_process` (in Nightly builds, run with -Z macro-backtrace for more info)
