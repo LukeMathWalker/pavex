@@ -24,7 +24,7 @@ pub enum UserComponent {
     },
     ErrorHandler {
         source: UserComponentSource,
-        fallible_id: UserComponentId,
+        target: ErrorHandlerTarget,
     },
     Constructor {
         source: UserComponentSource,
@@ -47,6 +47,23 @@ pub enum UserComponent {
     },
     ErrorObserver {
         source: RawIdentifierId,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ErrorHandlerTarget {
+    /// The error handler was directly associated with a single fallible component,
+    /// thus overriding the default error handler for its error type (if one existed).
+    FallibleComponent {
+        /// The id of the fallible component.
+        fallible_id: UserComponentId,
+    },
+    /// The error handler is used as the "default" whenever a specific error type
+    /// is returned as error variant for a fallible component.
+    ErrorType {
+        /// The index of the error reference within the vector of input parameters
+        /// for the error handler callable.
+        error_ref_input_index: usize,
     },
 }
 

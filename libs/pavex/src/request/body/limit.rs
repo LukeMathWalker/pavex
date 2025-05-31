@@ -1,5 +1,5 @@
 use crate::unit::ByteUnit;
-use pavex_macros::request_scoped;
+use pavex_macros::methods;
 use ubyte::ToByteUnit;
 
 #[derive(Debug, Clone, Copy)]
@@ -16,6 +16,7 @@ pub enum BodySizeLimit {
     Disabled,
 }
 
+#[methods]
 impl BodySizeLimit {
     /// Create a new [`BodySizeLimit`] using the default limit (2 MBs).
     #[request_scoped]

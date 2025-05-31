@@ -11,6 +11,8 @@ members = [
   "annotations/non_existing_dependency/generated_app",
   "annotations/non_existing_module",
   "annotations/non_existing_module/generated_app",
+  "annotations/trait_methods_are_supported",
+  "annotations/trait_methods_are_supported/generated_app",
   "app_builder",
   "app_builder/generated_app",
   "blueprint/common/async_callable_are_supported",

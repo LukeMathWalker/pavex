@@ -1,0 +1,61 @@
+digraph "* * - 0" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| crate::route_0::Next0(&'a pavex::router::AllowedMethods) -> crate::route_0::Next0<'a>"]
+    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 -> 3 [ ]
+    1 -> 2 [ ]
+    3 -> 4 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "* * - 1" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "GET / - 0" {
+    0 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
+}
+
+digraph "GET / - 1" {
+    0 [ label = "0| <&str as app_8bb73ba6::LocalTrait>::new() -> &str"]
+    1 [ label = "1| <[u32] as app_8bb73ba6::LocalTraitWithLifetime::<a>>::new(&''a str) -> &''a [u32]"]
+    2 [ label = "2| <&str as app_8bb73ba6::LocalTrait>::new() -> &str"]
+    3 [ label = "3| <[u8] as app_8bb73ba6::LocalTraitWithLifetime::<_>>::new(&str) -> &[u8]"]
+    4 [ label = "4| <alloc::borrow::Cow::<a, [u8]> as app_8bb73ba6::LocalTrait>::new() -> alloc::borrow::Cow<'a, [u8]>"]
+    5 [ label = "5| <alloc::borrow::Cow::<_, str> as app_8bb73ba6::LocalTrait>::new() -> alloc::borrow::Cow<'_, str>"]
+    6 [ label = "6| <&str as app_8bb73ba6::LocalTrait>::new() -> &str"]
+    7 [ label = "7| <app_8bb73ba6::D::<app_8bb73ba6::A> as app_8bb73ba6::LocalGenericTrait::<app_8bb73ba6::D::<app_8bb73ba6::A>>>::t() -> app_8bb73ba6::D<app_8bb73ba6::A>"]
+    8 [ label = "8| <app_8bb73ba6::C::<app_8bb73ba6::A> as core::default::Default>::default() -> app_8bb73ba6::C<app_8bb73ba6::A>"]
+    9 [ label = "9| <app_8bb73ba6::B as core::default::Default>::default() -> app_8bb73ba6::B"]
+    10 [ label = "10| <app_8bb73ba6::A as app_8bb73ba6::LocalGenericTrait::<app_8bb73ba6::A>>::t() -> app_8bb73ba6::A"]
+    11 [ label = "11| app_8bb73ba6::handler(&app_8bb73ba6::A, &app_8bb73ba6::B, &app_8bb73ba6::C<app_8bb73ba6::A>, &app_8bb73ba6::D<app_8bb73ba6::A>, &str, alloc::borrow::Cow<'_, str>, alloc::borrow::Cow<'_, [u8]>, &[u8], &[u32]) -> pavex::response::Response"]
+    12 [ label = "12| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 11 [ ]
+    0 -> 1 [ ]
+    3 -> 11 [ ]
+    2 -> 3 [ ]
+    4 -> 11 [ ]
+    5 -> 11 [ ]
+    6 -> 11 [ ]
+    7 -> 11 [ label = "&"]
+    8 -> 11 [ label = "&"]
+    9 -> 11 [ label = "&"]
+    10 -> 11 [ label = "&"]
+    11 -> 12 [ ]
+}
+
+digraph app_state {
+    0 [ label = "0| crate::ApplicationState() -> crate::ApplicationState"]
+}

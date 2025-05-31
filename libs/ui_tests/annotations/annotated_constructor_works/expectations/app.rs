@@ -125,7 +125,7 @@ pub mod route_0 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = app::error_handler(&v4);
+                    let v5 = app::default_error_handler(&v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v5,
                     )

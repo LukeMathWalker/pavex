@@ -6,8 +6,8 @@ use crate::{
     },
     rustdoc::RustdocKindExt,
 };
-use pavex_cli_diagnostic::CompilerDiagnostic;
-use pavexc_attr_parser::errors::AttributeParserError;
+use pavex_cli_diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
+use pavexc_attr_parser::{AnnotationKind, errors::AttributeParserError};
 use rustdoc_types::Item;
 
 use super::ConstGenericsAreNotSupported;
@@ -64,6 +64,50 @@ pub(super) fn invalid_diagnostic_attribute(
         .help("Have you manually added the `diagnostic::pavex::*` attribute on the item? \
             The syntax for `diagnostic::pavex::*` attributes is an implementation detail of Pavex's own macros, \
             which are guaranteed to output well-formed annotations.".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+pub(super) fn missing_methods_attribute(
+    kind: AnnotationKind,
+    impl_item: &Item,
+    item: &Item,
+    diagnostics: &mut DiagnosticSink,
+) {
+    let source = item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
+            format!("The {kind}"),
+        )
+    });
+    let err_msg = match &item.name {
+        Some(name) => {
+            format!(
+                "Missing `#[pavex::methods]` attribute on the `impl` block that defines `{name}`, a Pavex {kind}.",
+            )
+        }
+        None => {
+            format!(
+                "Missing `#[pavex::methods]` attribute on an `impl` block that defines a Pavex {kind}."
+            )
+        }
+    };
+
+    let help_annotation = impl_item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Impl(&Registration::attribute(s)),
+            "Add #[pavex::methods] right above this line",
+        )
+    });
+    let help_msg = "Add `#[pavex::methods]` as an attribute on top of the `impl` block.";
+    let help = match help_annotation {
+        Some(a) => HelpWithSnippet::new(help_msg.into(), a).normalize(),
+        None => HelpWithSnippet::new(help_msg.into(), AnnotatedSource::empty()),
+    };
+
+    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err_msg))
+        .optional_source(source)
+        .help_with_snippet(help)
         .build();
     diagnostics.push(diagnostic);
 }

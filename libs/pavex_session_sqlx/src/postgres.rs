@@ -1,11 +1,10 @@
 //! Types related to [`PostgresSessionStore`].
 use jiff_sqlx::ToSqlx;
-use pavex::blueprint::constructor::Constructor;
-use pavex::blueprint::linter::Lint;
+use pavex::blueprint::Blueprint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
-use pavex::blueprint::{Blueprint, config::ConfigType};
-use pavex::f;
 use pavex::time::Timestamp;
+use pavex::methods;
+use pavex_session::SessionStore;
 use pavex_session::{
     SessionId,
     store::{
@@ -36,11 +35,21 @@ use std::num::NonZeroUsize;
 /// (e.g. as part of your database migration scripts).
 pub struct PostgresSessionStore(sqlx::PgPool);
 
+#[methods]
+impl From<PostgresSessionStore> for SessionStore {
+    #[singleton]
+    fn from(value: PostgresSessionStore) -> Self {
+        SessionStore::new(value)
+    }
+}
+
+#[methods]
 impl PostgresSessionStore {
     /// Creates a new Postgres session store instance.
     ///
     /// It requires a pool of Postgres connections to interact with the database
     /// where the session records are stored.
+    #[singleton]
     pub fn new(pool: PgPool) -> Self {
         Self(pool)
     }
@@ -378,42 +387,6 @@ fn as_unknown_id_error(r: &PgQueryResult, id: &SessionId) -> Result<(), UnknownI
 /// CookieKit::new().register(&mut bp);
 /// ```
 pub struct PostgresSessionKit {
-    /// The constructor for [`Session`].
-    ///
-    /// By default, it uses [`Session::new`].
-    ///
-    /// [`Session`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session.html
-    /// [`Session::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.Session.html#method.new
-    pub session: Option<Constructor>,
-    /// The constructor for [`IncomingSession`].
-    ///
-    /// By default, it uses [`IncomingSession::extract`].
-    ///
-    /// [`IncomingSession`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession.html
-    /// [`IncomingSession::extract`]: https://pavex.dev/docs/api_reference/pavex_session/struct.IncomingSession.html#method.extract
-    pub incoming_session: Option<Constructor>,
-    /// Register [`SessionConfig`] as a configuration type.
-    ///
-    /// By default, it uses `session` as configuration key.
-    ///
-    /// [`SessionConfig`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionConfig.html
-    pub session_config: Option<ConfigType>,
-    /// The constructor for [`PostgresSessionStore`].
-    ///
-    /// By default, it uses [`PostgresSessionStore::new`].
-    ///
-    /// [`PostgresSessionStore`]: crate::PostgresSessionStore
-    /// [`PostgresSessionStore::new`]: crate::PostgresSessionStore::new
-    pub postgres_session_store: Option<Constructor>,
-    /// The constructor for [`SessionStore`].
-    ///
-    /// By default, it uses [`SessionStore::new`] with [`PostgresSessionStore`]
-    /// as its underlying storage backend.
-    ///
-    /// [`SessionStore`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore.html
-    /// [`SessionStore::new`]: https://pavex.dev/docs/api_reference/pavex_session/struct.SessionStore.html#method.new
-    /// [`PostgresSessionStore`]: crate::PostgresSessionStore
-    pub session_store: Option<Constructor>,
     /// A post-processing middleware to sync the session state with the session store
     /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
     ///
@@ -435,27 +408,9 @@ impl PostgresSessionKit {
     /// Create a new [`PostgresSessionKit`] with all the bundled constructors and middlewares.
     pub fn new() -> Self {
         let pavex_session::SessionKit {
-            session,
-            session_config,
-            session_finalizer,
-            incoming_session,
-            ..
+            session_finalizer, ..
         } = pavex_session::SessionKit::new();
-        Self {
-            session,
-            incoming_session,
-            session_config,
-            session_finalizer,
-            postgres_session_store: Some(
-                Constructor::singleton(f!(crate::PostgresSessionStore::new)).ignore(Lint::Unused),
-            ),
-            session_store: Some(
-                Constructor::singleton(f!(pavex_session::SessionStore::new::<
-                    crate::PostgresSessionStore,
-                >))
-                .ignore(Lint::Unused),
-            ),
-        }
+        Self { session_finalizer }
     }
 
     #[doc(hidden)]
@@ -470,17 +425,8 @@ impl PostgresSessionKit {
     /// If a component is set to `None` it will not be registered.
     pub fn register(self, bp: &mut Blueprint) -> RegisteredPostgresSessionKit {
         let mut kit = pavex_session::SessionKit::new();
-        kit.session = self.session;
-        kit.incoming_session = self.incoming_session;
-        kit.session_config = self.session_config;
         kit.session_finalizer = self.session_finalizer;
         kit.register(bp);
-        if let Some(postgres_session_store) = self.postgres_session_store {
-            postgres_session_store.register(bp);
-        }
-        if let Some(session_store) = self.session_store {
-            session_store.register(bp);
-        }
 
         RegisteredPostgresSessionKit {}
     }

@@ -25,22 +25,6 @@ use crate::{f, t};
 /// let kit = CookieKit::new().register(&mut bp);
 /// ```
 pub struct CookieKit {
-    /// The constructor for [`RequestCookies`].
-    ///
-    /// By default, it uses [`extract_request_cookies`].
-    /// The error is handled by [`ExtractRequestCookiesError::into_response`].
-    ///
-    /// [`ExtractRequestCookiesError::into_response`]: super::errors::ExtractRequestCookiesError::into_response
-    /// [`extract_request_cookies`]: super::extract_request_cookies
-    /// [`RequestCookies`]: super::RequestCookies
-    pub request_cookies: Option<Constructor>,
-    /// The constructor for [`ResponseCookies`].
-    ///
-    /// By default, it uses [`ResponseCookies::new`].
-    ///
-    /// [`ResponseCookies::new`]: super::ResponseCookies::new
-    /// [`ResponseCookies`]: super::ResponseCookies
-    pub response_cookies: Option<Constructor>,
     /// The constructor for [`Processor`].
     ///
     /// By default, it uses [`Processor::from`]
@@ -74,14 +58,8 @@ impl Default for CookieKit {
 impl CookieKit {
     /// Create a new [`CookieKit`] with all the bundled constructors and middlewares.
     pub fn new() -> Self {
-        let request_cookies = Constructor::request_scoped(f!(super::extract_request_cookies))
-            .error_handler(f!(super::errors::ExtractRequestCookiesError::into_response))
-            .ignore(Lint::Unused);
-        let response_cookies =
-            Constructor::request_scoped(f!(super::ResponseCookies::new)).ignore(Lint::Unused);
         let response_cookie_injector =
-            PostProcessingMiddleware::new(f!(super::inject_response_cookies))
-                .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
+            PostProcessingMiddleware::new(super::components::INJECT_RESPONSE_COOKIES);
         let processor = Constructor::singleton(f!(<super::Processor as std::convert::From<
             super::ProcessorConfig,
         >>::from))
@@ -89,8 +67,6 @@ impl CookieKit {
         let processor_config =
             ConfigType::new("cookies", t!(super::ProcessorConfig)).default_if_missing();
         Self {
-            request_cookies: Some(request_cookies),
-            response_cookies: Some(response_cookies),
             response_cookie_injector: Some(response_cookie_injector),
             processor: Some(processor),
             processor_config: Some(processor_config),
@@ -108,12 +84,6 @@ impl CookieKit {
     ///
     /// If a component is set to `None` it will not be registered.
     pub fn register(self, bp: &mut Blueprint) -> RegisteredCookieKit {
-        if let Some(request_cookies) = self.request_cookies {
-            request_cookies.register(bp);
-        }
-        if let Some(response_cookies) = self.response_cookies {
-            response_cookies.register(bp);
-        }
         if let Some(response_cookie_injector) = self.response_cookie_injector {
             response_cookie_injector.register(bp);
         }

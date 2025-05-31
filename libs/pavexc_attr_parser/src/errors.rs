@@ -36,6 +36,6 @@ pub struct InvalidAttributeParams(darling::Error, &'static str);
 
 impl InvalidAttributeParams {
     pub fn new(e: darling::Error, kind: AnnotationKind) -> Self {
-        Self(e, kind.attribute())
+        Self(e, kind.diagnostic_attribute())
     }
 }

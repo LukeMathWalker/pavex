@@ -1,22 +1,53 @@
+use constructor::{
+    ConstructorAnnotataion, RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation,
+};
+use error_handler::ErrorHandlerAnnotation;
+use error_observer::ErrorObserverAnnotation;
+use fallback::FallbackAnnotation;
+use fn_like::direct_entrypoint;
+use middlewares::{PostProcessAnnotation, PreProcessAnnotation, WrapAnnotation};
 use proc_macro::TokenStream;
-use routes::Method;
+use routes::{
+    DeleteAnnotation, GetAnnotation, HeadAnnotation, OptionsAnnotation, PatchAnnotation,
+    PostAnnotation, PutAnnotation, RouteAnnotation,
+};
 
 mod config;
 mod config_profile;
 mod constructor;
+mod error_handler;
 mod error_observer;
 mod fallback;
+mod fn_like;
 mod from;
+mod methods;
 mod middlewares;
 mod path_params;
 mod prebuilt;
 mod routes;
 pub(crate) mod utils;
 
+#[proc_macro_derive(ConfigProfile, attributes(pavex))]
+pub fn derive_config_profile(input: TokenStream) -> TokenStream {
+    config_profile::derive_config_profile(input)
+}
+
+#[proc_macro]
+pub fn from(input: TokenStream) -> TokenStream {
+    from::from_(input)
+}
+
 #[allow(non_snake_case)]
 #[proc_macro_attribute]
 pub fn PathParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     path_params::path_params(input)
+}
+
+#[proc_macro_attribute]
+pub fn methods(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    match methods::methods(metadata, input) {
+        Ok(t) | Err(t) => t,
+    }
 }
 
 #[proc_macro_attribute]
@@ -31,95 +62,90 @@ pub fn prebuilt(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn error_observer(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    error_observer::error_observer(metadata, input)
+    direct_entrypoint::<ErrorObserverAnnotation>(metadata.into(), input.into())
+}
+
+#[proc_macro_attribute]
+pub fn error_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    direct_entrypoint::<ErrorHandlerAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn wrap(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    middlewares::wrap(metadata, input)
+    direct_entrypoint::<WrapAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn pre_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    middlewares::pre_process(metadata, input)
+    direct_entrypoint::<PreProcessAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn post_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    middlewares::post_process(metadata, input)
+    direct_entrypoint::<PostProcessAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn constructor(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    constructor::constructor(metadata, input)
+    direct_entrypoint::<ConstructorAnnotataion>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn singleton(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    constructor::singleton(metadata, input)
+    direct_entrypoint::<SingletonAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn transient(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    constructor::transient(metadata, input)
+    direct_entrypoint::<TransientAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn request_scoped(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    constructor::request_scoped(metadata, input)
+    direct_entrypoint::<RequestScopedAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn route(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::route(metadata, input)
+    direct_entrypoint::<RouteAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn get(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Get, metadata, input)
+    direct_entrypoint::<GetAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn post(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Post, metadata, input)
+    direct_entrypoint::<PostAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn put(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Put, metadata, input)
+    direct_entrypoint::<PutAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn delete(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Delete, metadata, input)
+    direct_entrypoint::<DeleteAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn patch(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Patch, metadata, input)
+    direct_entrypoint::<PatchAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn head(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Head, metadata, input)
+    direct_entrypoint::<HeadAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn options(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    routes::method_shorthand(Method::Options, metadata, input)
-}
-
-#[proc_macro_derive(ConfigProfile, attributes(pavex))]
-pub fn derive_config_profile(input: TokenStream) -> TokenStream {
-    config_profile::derive_config_profile(input)
-}
-
-#[proc_macro]
-pub fn from(input: TokenStream) -> TokenStream {
-    from::from_(input)
+    direct_entrypoint::<OptionsAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn fallback(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    fallback::fallback(metadata, input)
+    direct_entrypoint::<FallbackAnnotation>(metadata.into(), input.into())
 }

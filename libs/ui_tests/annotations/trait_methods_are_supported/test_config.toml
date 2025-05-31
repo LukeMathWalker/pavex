@@ -1,0 +1,4 @@
+description = "Pavex can handle annotated trait methods"
+
+[expectations]
+codegen = "pass"
