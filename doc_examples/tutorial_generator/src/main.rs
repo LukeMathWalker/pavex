@@ -68,7 +68,7 @@ enum StepCommandOutcome {
     Failure,
 }
 
-fn main() -> Result<(), anyhow::Error> {
+fn main() {
     // Check if we have a `--verify` flag
     let verify = {
         let mut args = std::env::args();
@@ -99,18 +99,32 @@ fn main() -> Result<(), anyhow::Error> {
 
     let script_runner = ScriptRunner::new(tutorial_envs_dir.join("target"));
 
+    let mut any_failures = false;
     for tutorial_manifest_path in tutorial_manifests {
-        println!("Generating tutorial from {:?}", tutorial_manifest_path);
-        generate_tutorial(
+        println!(
+            "Generating tutorial from {}",
+            tutorial_manifest_path.display()
+        );
+        if let Err(e) = generate_tutorial(
             &script_runner,
             &tutorial_manifest_path,
             &doc_examples_dir,
             &tutorial_envs_dir,
             verify,
-        )?;
+        ) {
+            eprintln!(
+                "Failed to generate the tutorial for {}.\n{e:?}",
+                tutorial_manifest_path.display()
+            );
+            any_failures = true;
+        }
     }
 
-    Ok(())
+    if any_failures {
+        std::process::exit(1)
+    } else {
+        std::process::exit(0)
+    }
 }
 
 fn generate_tutorial(
