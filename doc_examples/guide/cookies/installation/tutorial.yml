@@ -5,5 +5,5 @@ commands:
 snippets:
   - name: "kit"
     source_path: "src/blueprint.rs"
-    ranges: ["0..6", "7..8"]
-    hl_lines: [6]
+    ranges: ["0..7", "8..9"]
+    hl_lines: [6, 7]

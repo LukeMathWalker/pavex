@@ -232,7 +232,7 @@ impl SessionStorageBackend for InMemorySessionStore {
 }
 
 mod kit {
-    use pavex::blueprint::{Blueprint, middleware::PostProcessingMiddleware};
+    use pavex::blueprint::{Blueprint, from, middleware::PostProcessingMiddleware};
 
     #[derive(Clone, Debug)]
     #[non_exhaustive]
@@ -297,6 +297,7 @@ mod kit {
         ///
         /// If a component is set to `None` it will not be registered.
         pub fn register(self, bp: &mut Blueprint) -> RegisteredInMemorySessionKit {
+            bp.import(from![crate]);
             let mut kit = pavex_session::SessionKit::new();
             kit.session_finalizer = self.session_finalizer;
             kit.register(bp);
