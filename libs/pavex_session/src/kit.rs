@@ -1,6 +1,6 @@
-use pavex::blueprint::Blueprint;
 use pavex::blueprint::linter::Lint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
+use pavex::blueprint::{Blueprint, from};
 use pavex::f;
 
 use crate::middleware::FINALIZE_SESSION;
@@ -66,6 +66,7 @@ impl SessionKit {
     ///
     /// If a component is set to `None` it will not be registered.
     pub fn register(self, bp: &mut Blueprint) -> RegisteredSessionKit {
+        bp.import(from![crate, pavex::cookie]);
         // Accessors for the fields on session config.
         bp.transient(f!(crate::SessionConfig::cookie_config))
             .ignore(Lint::Unused);

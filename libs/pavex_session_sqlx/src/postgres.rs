@@ -1,9 +1,9 @@
 //! Types related to [`PostgresSessionStore`].
 use jiff_sqlx::ToSqlx;
-use pavex::blueprint::Blueprint;
 use pavex::blueprint::middleware::PostProcessingMiddleware;
-use pavex::time::Timestamp;
+use pavex::blueprint::{Blueprint, from};
 use pavex::methods;
+use pavex::time::Timestamp;
 use pavex_session::SessionStore;
 use pavex_session::{
     SessionId,
@@ -424,6 +424,7 @@ impl PostgresSessionKit {
     ///
     /// If a component is set to `None` it will not be registered.
     pub fn register(self, bp: &mut Blueprint) -> RegisteredPostgresSessionKit {
+        bp.import(from![crate]);
         let mut kit = pavex_session::SessionKit::new();
         kit.session_finalizer = self.session_finalizer;
         kit.register(bp);
