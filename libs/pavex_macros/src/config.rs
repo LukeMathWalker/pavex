@@ -118,9 +118,32 @@ fn reject_invalid_input(input: TokenStream) -> Result<(), TokenStream> {
     let raw_item = match (
         syn::parse::<syn::ItemEnum>(input.clone()),
         syn::parse::<syn::ItemStruct>(input.clone()),
+        syn::parse::<syn::ItemUse>(input.clone()),
     ) {
-        (Ok(item), _) => RawConfigItem::Enum(item),
-        (_, Ok(item)) => RawConfigItem::Struct(item),
+        (Ok(item), _, _) => RawConfigItem::Enum(item),
+        (_, Ok(item), _) => RawConfigItem::Struct(item),
+        (_, _, Ok(item)) => {
+            let mut current = &item.tree;
+            loop {
+                match current {
+                    syn::UseTree::Path(use_path) => {
+                        current = &use_path.tree;
+                    }
+                    syn::UseTree::Name(_) | syn::UseTree::Rename(_) => {
+                        break;
+                    }
+                    syn::UseTree::Glob(_) | syn::UseTree::Group(_) => {
+                        return Err(syn::Error::new_spanned(
+                            item,
+                            "Only single concrete item imports are allowed. No globs or multi-imports.",
+                        )
+                        .to_compile_error()
+                        .into());
+                    }
+                }
+            }
+            RawConfigItem::Use(item)
+        }
         _ => {
             return Err(syn::Error::new_spanned(
                 proc_macro2::TokenStream::from(input),
@@ -146,6 +169,7 @@ fn reject_invalid_input(input: TokenStream) -> Result<(), TokenStream> {
 enum RawConfigItem {
     Enum(syn::ItemEnum),
     Struct(syn::ItemStruct),
+    Use(syn::ItemUse),
 }
 
 impl RawConfigItem {
@@ -153,6 +177,25 @@ impl RawConfigItem {
         match self {
             RawConfigItem::Enum(item) => &item.ident,
             RawConfigItem::Struct(item) => &item.ident,
+            RawConfigItem::Use(item) => {
+                let mut current = &item.tree;
+                loop {
+                    match current {
+                        syn::UseTree::Path(use_path) => {
+                            current = &use_path.tree;
+                        }
+                        syn::UseTree::Name(name) => {
+                            return &name.ident;
+                        }
+                        syn::UseTree::Rename(rename) => {
+                            return &rename.ident;
+                        }
+                        _ => {
+                            panic!("Unexpected UseTree variant encountered while recursing.");
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -160,6 +203,7 @@ impl RawConfigItem {
         match self {
             RawConfigItem::Enum(item) => &item.vis,
             RawConfigItem::Struct(item) => &item.vis,
+            RawConfigItem::Use(item) => &item.vis,
         }
     }
 }
@@ -178,6 +222,12 @@ impl ToTokens for RawConfigItem {
                 item.struct_token.to_tokens(tokens);
                 item.ident.to_tokens(tokens);
                 item.generics.to_tokens(tokens);
+            }
+            RawConfigItem::Use(item) => {
+                item.vis.to_tokens(tokens);
+                item.use_token.to_tokens(tokens);
+                item.leading_colon.to_tokens(tokens);
+                item.tree.to_tokens(tokens);
             }
         }
     }

@@ -33,7 +33,7 @@ pub(crate) fn verify_path_parameters(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
         "pavex::serialization::StructuralDeserialize",
@@ -168,7 +168,7 @@ pub(crate) fn verify_path_parameters(
 fn report_non_existing_path_parameters(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
     path: &str,
     call_graph: &RawCallGraph,
     ok_path_params_node_id: NodeIndex,
@@ -260,7 +260,7 @@ fn must_be_a_plain_struct(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
     call_graph: &RawCallGraph,
     ok_path_params_node_id: NodeIndex,
     extracted_type: &ResolvedType,

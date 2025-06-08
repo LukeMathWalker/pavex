@@ -21,7 +21,7 @@ pub(crate) fn cloneables_can_be_cloned<'a>(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let clone = process_framework_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
@@ -63,7 +63,7 @@ fn must_be_cloneable(
     id: ComponentId,
     db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let id = db.derived_from(&id).unwrap_or(id);
     let user_id = db.user_component_id(id).unwrap();

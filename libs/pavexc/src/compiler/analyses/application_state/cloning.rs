@@ -31,7 +31,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let copy = process_framework_path("core::marker::Copy", krate_collection);
     let ResolvedType::ResolvedPath(copy) = copy else {
@@ -117,7 +117,7 @@ fn must_be_cloneable(
     consumer_id: ComponentId,
     db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let component_id = db.derived_from(&component_id).unwrap_or(component_id);
     if db.user_component_id(consumer_id).is_none() && db.derived_from(&consumer_id).is_none() {

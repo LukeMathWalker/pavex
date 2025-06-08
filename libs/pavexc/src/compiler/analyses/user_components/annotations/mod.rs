@@ -2,13 +2,9 @@ use std::{collections::BTreeMap, ops::Deref, sync::Arc};
 
 mod diagnostic;
 mod overlay;
-mod queue;
-mod registry;
-mod sortable;
 
 use diagnostic::{const_generics_are_not_supported, not_a_module, unknown_module_path};
 pub use overlay::augment_from_annotation;
-pub use registry::*;
 
 use super::{
     ErrorHandlerTarget, ScopeId, UserComponent, UserComponentId, UserComponentSource,
@@ -34,7 +30,7 @@ use crate::{
         GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
         ResolvedType,
     },
-    rustdoc::{Crate, CrateCollection, GlobalItemId, RustdocKindExt},
+    rustdoc::{Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt},
 };
 use pavex_bp_schema::{
     CloningStrategy, CreatedAt, CreatedBy, Lifecycle, Lint, LintSetting, RawIdentifiers,
@@ -52,9 +48,8 @@ pub(super) fn register_imported_components(
     scope_graph_builder: &mut ScopeGraphBuilder,
     computation_db: &mut ComputationDb,
     prebuilt_type_db: &mut PrebuiltTypeDb,
-    registry: &AnnotationRegistry,
     krate_collection: &CrateCollection,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) {
     for (import, import_id) in imported_modules {
         let ResolvedImport {
@@ -102,7 +97,10 @@ pub(super) fn register_imported_components(
             continue;
         }
 
-        let annotated_items = &registry[package_id];
+        let annotated_items = &krate_collection
+            .get_crate_by_package_id(package_id)
+            .unwrap()
+            .annotated_items;
         for (id, annotation) in annotated_items.iter() {
             // Not all components are auto-registered via imports.
             // In particular, those that are position-sensitive *must* be
@@ -203,7 +201,7 @@ fn intern_annotated(
     aux: &mut AuxiliaryData,
     scope_graph_builder: &mut ScopeGraphBuilder,
     prebuilt_type_db: &mut PrebuiltTypeDb,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
     krate_collection: &CrateCollection,
 ) -> Result<UserComponentId, ()> {
     let registration = Registration::annotated_item(item, krate);

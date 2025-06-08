@@ -2805,6 +2805,7 @@ dependencies = [
  "proc-macro2",
  "px_workspace_hack",
  "quote",
+ "serde",
  "syn",
  "thiserror 2.0.12",
 ]

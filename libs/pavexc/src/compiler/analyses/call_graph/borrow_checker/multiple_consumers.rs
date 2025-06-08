@@ -33,7 +33,7 @@ pub(super) fn multiple_consumers(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
@@ -193,7 +193,7 @@ fn emit_multiple_consumers_error(
     computation_db: &ComputationDb,
     db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     use std::fmt::Write as _;
 

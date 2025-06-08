@@ -38,7 +38,7 @@ impl ApplicationConfig {
     pub fn new(
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) -> Self {
         let mut bindings = BiHashMap::new();
         let mut binding2default = BTreeMap::new();
@@ -97,7 +97,7 @@ impl ApplicationConfig {
         handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
         state_call_graph: &ApplicationStateCallGraph,
         db: &ComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         // Configuration type ids are not directly used in call graphs.
         // We need to look for the corresponding (synthetic) constructor ids.
@@ -157,7 +157,7 @@ fn same_key_different_types(
     key: &ConfigKey,
     type2id: &IndexMap<ResolvedType, ComponentId>,
     db: &ComponentDb,
-    diagnostics: &mut diagnostic::DiagnosticSink,
+    diagnostics: &diagnostic::DiagnosticSink,
 ) {
     let mut counter = 0;
     let snippets: Vec<_> = type2id
@@ -209,7 +209,7 @@ fn same_type_different_key(
     ty: &ResolvedType,
     key2component_id: &BTreeMap<ConfigKey, ComponentId>,
     db: &ComponentDb,
-    diagnostics: &mut diagnostic::DiagnosticSink,
+    diagnostics: &diagnostic::DiagnosticSink,
 ) {
     let mut counter = 0;
     let snippets: Vec<_> = key2component_id
@@ -262,7 +262,7 @@ fn unused_configuration_type(
     id: ComponentId,
     ty: &ResolvedType,
     db: &ComponentDb,
-    diagnostics: &mut diagnostic::DiagnosticSink,
+    diagnostics: &diagnostic::DiagnosticSink,
 ) {
     let user_id = db.user_component_id(id).unwrap();
     let s = diagnostics.annotated(db.registration_target(user_id), "Registered here");

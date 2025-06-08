@@ -57,7 +57,7 @@ impl FQPaths {
         &mut self,
         db: &AuxiliaryData,
         package_graph: &PackageGraph,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         for (id, _) in db.iter().skip(self.fully_qualified_up_to) {
             self.process_identifier(id, db, package_graph, diagnostics);
@@ -71,7 +71,7 @@ impl FQPaths {
         id: UserComponentId,
         db: &AuxiliaryData,
         package_graph: &PackageGraph,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let component = &db[id];
         let Some(identifiers_id) = component.raw_identifiers_id() else {
@@ -112,7 +112,7 @@ impl FQPaths {
         computation_db: &mut ComputationDb,
         prebuilt_type_db: &mut PrebuiltTypeDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         // First make sure we have processed all newly registered identifiers.
         self.process_identifiers(aux, krate_collection.package_graph(), diagnostics);
@@ -171,7 +171,7 @@ pub(super) fn invalid_prebuilt_type(
     resolved_path: &FQPath,
     id: UserComponentId,
     db: &AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     use std::fmt::Write as _;
 
@@ -260,7 +260,7 @@ pub(super) fn invalid_config_type(
     resolved_path: &FQPath,
     id: UserComponentId,
     db: &AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     use ConfigTypeValidationError::*;
     use std::fmt::Write as _;
@@ -371,7 +371,7 @@ fn cannot_resolve_type_path(
     e: TypeResolutionError,
     id: UserComponentId,
     db: &AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let component = &db[id];
     let source = diagnostics.annotated(
@@ -390,7 +390,7 @@ pub(super) fn cannot_resolve_callable_path(
     id: UserComponentId,
     db: &AuxiliaryData,
     package_graph: &PackageGraph,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let component = &db[id];
     let kind = component.kind();
@@ -490,7 +490,7 @@ fn invalid_identifiers(
     e: ParseError,
     id: UserComponentId,
     db: &AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let label_msg = match &e {
         ParseError::InvalidPath(_) => "The invalid path",

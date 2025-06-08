@@ -15,7 +15,8 @@ pub(crate) use registration_locations::{
     bp_new_span, config_key_span, domain_span, f_macro_span, imported_sources_span,
     nest_blueprint_span, prefix_span, registration_span, route_path_span,
 };
-pub(crate) use sink::{DiagnosticSink, TargetSpan};
+pub use sink::DiagnosticSink;
+pub(crate) use sink::TargetSpan;
 pub(crate) use source_file::{LocationExt, ParsedSourceFile, read_source_file};
 
 mod callable_definition;

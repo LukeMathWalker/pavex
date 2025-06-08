@@ -20,7 +20,7 @@ use pavex_cli_deps::{IfAutoinstallable, RustdocJson, RustupToolchain, verify_ins
 use pavex_cli_diagnostic::AnyhowBridge;
 use pavex_cli_shell::try_init_shell;
 use pavexc::rustdoc::CrateCollection;
-use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN};
+use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN, DiagnosticSink};
 use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
 use telemetry::Filtered;
@@ -380,24 +380,27 @@ fn generate(
     let mut reporter = DiagnosticReporter::new();
 
     let package_graph = package_graph::retrieve_or_compute_package_graph(precomputed_metadata)?;
+    let sink = DiagnosticSink::new(package_graph.clone());
     let krate_collection = CrateCollection::new(
         docs_toolchain,
         package_graph,
         blueprint.creation_location.file.clone(),
         cache_workspace_packages,
+        sink.clone(),
     )?;
-    let (app, sink) = match App::build(blueprint, krate_collection) {
+    let (app, reports) = match App::build(blueprint, krate_collection, sink) {
         Ok((a, sink)) => {
-            for e in sink.diagnostics() {
+            let reports = sink.drain();
+            for e in &reports {
                 assert_eq!(e.severity(), Some(Severity::Warning));
             }
-            (Some(a), sink)
+            (Some(a), reports)
         }
-        Err(issues) => (None, issues),
+        Err(sink) => (None, sink.drain()),
     };
 
-    for e in sink.diagnostics() {
-        reporter.print_report(e);
+    for e in reports {
+        reporter.print_report(&e);
     }
 
     let Some(app) = app else {

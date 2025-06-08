@@ -15,11 +15,14 @@ use tracing::Span;
 use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
+use crate::diagnostic::DiagnosticSink;
 use crate::language::{FQGenericArgument, FQPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
 
+use super::AnnotatedItem;
+use super::annotations::{self, AnnotatedItems, QueueItem, invalid_diagnostic_attribute};
 use super::compute::{RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
 
 /// The main entrypoint for accessing the documentation of the crates
@@ -49,6 +52,8 @@ pub struct CrateCollection {
     /// The name of the toolchain used to generate the JSON documentation of a crate.
     /// It is assumed to be a toolchain available via `rustup`.
     toolchain_name: String,
+    /// A handle pointing at the diagnostic sink for this compilation attempt.
+    diagnostic_sink: DiagnosticSink,
 }
 
 impl std::fmt::Debug for CrateCollection {
@@ -79,11 +84,13 @@ impl CrateCollection {
         package_graph: PackageGraph,
         project_fingerprint: String,
         cache_workspace_package_docs: bool,
+        diagnostic_sink: DiagnosticSink,
     ) -> Result<Self, anyhow::Error> {
         let disk_cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
         Ok(Self {
             package_id2krate: FrozenMap::new(),
             package_graph,
+            diagnostic_sink,
             disk_cache,
             project_fingerprint,
             access_log: FrozenMap::new(),
@@ -154,10 +161,15 @@ impl CrateCollection {
             package_id: PackageId,
             package_graph: PackageGraph,
             cache: RustdocGlobalFsCache,
+            diagnostic_sink: &DiagnosticSink,
         ) -> (PackageId, Option<Crate>) {
             let cache_key = RustdocCacheKey::new(&package_id, &package_graph);
             match cache.get(&cache_key, &package_graph) {
-                Ok(o) => (package_id, o),
+                Ok(None) => (package_id, None),
+                Ok(Some(entry)) => (
+                    package_id.clone(),
+                    Some(entry.process(package_id, diagnostic_sink)),
+                ),
                 Err(e) => {
                     log_error!(
                         *e,
@@ -179,9 +191,11 @@ impl CrateCollection {
         // so we parallelize the operation.
         let package_graph = self.package_graph.clone();
         let cache = self.disk_cache.clone();
+        let sink = self.diagnostic_sink.clone();
         let tracing_span = Span::current();
         let map_op = move |id| {
-            tracing_span.in_scope(|| get_if_cached(id, package_graph.clone(), cache.clone()))
+            tracing_span
+                .in_scope(|| get_if_cached(id, package_graph.clone(), cache.clone(), &sink.clone()))
         };
 
         let mut to_be_computed = vec![];
@@ -204,17 +218,16 @@ impl CrateCollection {
         )?;
 
         for (package_id, krate) in results {
-            let krate =
-                Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
-                    package_spec: package_id.to_string(),
-                    source: Arc::new(e),
-                })?;
+            let n_diagnostics = self.diagnostic_sink.len();
+            let krate = Crate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
 
+            // No issues arose in the indexing phase.
             // Let's make sure to store them in the on-disk cache for next time.
+            let cache_indexes = n_diagnostics == self.diagnostic_sink.len();
             let cache_key = RustdocCacheKey::new(&package_id, &self.package_graph);
-            if let Err(e) = self
-                .disk_cache
-                .insert(&cache_key, &krate, &self.package_graph)
+            if let Err(e) =
+                self.disk_cache
+                    .insert(&cache_key, &krate, cache_indexes, &self.package_graph)
             {
                 log_error!(
                     *e,
@@ -223,6 +236,7 @@ impl CrateCollection {
                     "Failed to store the computed JSON docs in the on-disk cache",
                 );
             }
+
             self.package_id2krate
                 .insert(package_id.to_owned(), Box::new(krate));
         }
@@ -248,6 +262,7 @@ impl CrateCollection {
         let cache_key = RustdocCacheKey::new(package_id, &self.package_graph);
         match self.disk_cache.get(&cache_key, &self.package_graph) {
             Ok(Some(krate)) => {
+                let krate = krate.process(package_id.clone(), &self.diagnostic_sink);
                 self.package_id2krate
                     .insert(package_id.to_owned(), Box::new(krate));
                 return Ok(self.get_crate_by_package_id(package_id).unwrap());
@@ -271,15 +286,16 @@ impl CrateCollection {
         })?
         .remove(package_id)
         .unwrap();
-        let krate = Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
-            package_spec: package_id.to_string(),
-            source: Arc::new(e),
-        })?;
 
+        let n_diagnostics = self.diagnostic_sink.len();
+        let krate = Crate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
+
+        // No issues arose in the indexing phase.
         // Let's make sure to store them in the on-disk cache for next time.
-        if let Err(e) = self
-            .disk_cache
-            .insert(&cache_key, &krate, &self.package_graph)
+        let cache_indexes = n_diagnostics == self.diagnostic_sink.len();
+        if let Err(e) =
+            self.disk_cache
+                .insert(&cache_key, &krate, cache_indexes, &self.package_graph)
         {
             log_error!(
                 *e,
@@ -288,6 +304,7 @@ impl CrateCollection {
                 "Failed to store the computed JSON docs in the on-disk cache",
             );
         }
+
         self.package_id2krate
             .insert(package_id.to_owned(), Box::new(krate));
         Ok(self.get_crate_by_package_id(package_id).unwrap())
@@ -299,6 +316,12 @@ impl CrateCollection {
     /// It returns `None` if no documentation is found for the specified [`PackageId`].
     pub fn get_crate_by_package_id(&self, package_id: &PackageId) -> Option<&Crate> {
         self.package_id2krate.get(package_id)
+    }
+
+    /// Retrieve the annotation associated with the given item, if any.
+    pub fn annotation(&self, item_id: &GlobalItemId) -> Option<&AnnotatedItem> {
+        let krate = self.get_crate_by_package_id(&item_id.package_id)?;
+        krate.annotated_items.get(item_id.rustdoc_item_id)
     }
 
     /// Retrieve type information given its [`GlobalItemId`].
@@ -542,6 +565,8 @@ pub struct Crate {
     /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
     /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
+    /// All the items in this crate that have been annotated with an attribute from the `diagnostic::pavex::*` namespace.
+    pub(crate) annotated_items: AnnotatedItems,
     /// An in-memory index of all modules, traits, structs, enums, and functions that were defined in the current crate.
     ///
     /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
@@ -605,11 +630,6 @@ impl ImportIndexEntry {
             EntryVisibility::Private => entry.private_paths.insert(SortablePath(path)),
         };
         entry
-    }
-
-    /// Returns `true` if there is at least one public path.
-    pub fn is_public(&self) -> bool {
-        !self.public_paths.is_empty()
     }
 
     /// Add a new private path for this item.
@@ -782,9 +802,27 @@ impl CrateCore {
 }
 
 impl Crate {
+    pub(super) fn index_raw(
+        krate: rustdoc_types::Crate,
+        package_id: PackageId,
+        diagnostics: &DiagnosticSink,
+    ) -> Self {
+        let crate_data = CrateData {
+            root_item_id: krate.root,
+            index: CrateItemIndex::Eager(EagerCrateItemIndex { index: krate.index }),
+            external_crates: krate.external_crates,
+            format_version: krate.format_version,
+            paths: krate.paths,
+        };
+        Self::index(crate_data, package_id, diagnostics)
+    }
+
     #[tracing::instrument(skip_all, name = "index_crate_docs", fields(package.id = package_id.repr()))]
-    #[allow(clippy::disallowed_types)]
-    fn new(krate: rustdoc_types::Crate, package_id: PackageId) -> Result<Self, anyhow::Error> {
+    pub(super) fn index(
+        krate: CrateData,
+        package_id: PackageId,
+        diagnostics: &DiagnosticSink,
+    ) -> Self {
         let mut import_path2id: HashMap<_, _> = krate
             .paths
             .iter()
@@ -805,6 +843,7 @@ impl Crate {
             })
             .collect();
 
+        let mut annotation_queue = BTreeSet::<QueueItem>::new();
         let mut import_index = ImportIndex::default();
         let mut re_exports = HashMap::new();
         index_local_types(
@@ -814,10 +853,12 @@ impl Crate {
             vec![],
             &mut import_index,
             &mut re_exports,
-            &krate.root,
+            &mut annotation_queue,
+            &krate.root_item_id,
             true,
             false,
-        )?;
+            diagnostics,
+        );
 
         import_path2id.reserve(import_index.items.len());
         for (id, entry) in import_index.items.iter() {
@@ -828,21 +869,17 @@ impl Crate {
             }
         }
 
-        Ok(Self {
-            core: CrateCore {
-                package_id,
-                krate: CrateData {
-                    root_item_id: krate.root,
-                    index: CrateItemIndex::Eager(EagerCrateItemIndex { index: krate.index }),
-                    external_crates: krate.external_crates,
-                    format_version: krate.format_version,
-                    paths: krate.paths,
-                },
-            },
+        let mut self_ = Self {
+            core: CrateCore { package_id, krate },
             import_path2id,
             import_index,
             re_exports,
-        })
+            annotated_items: AnnotatedItems::default(),
+        };
+
+        let annotated_items = annotations::process_queue(annotation_queue, &self_, diagnostics);
+        self_.annotated_items = annotated_items;
+        self_
     }
 
     /// The name of the crate.
@@ -1000,20 +1037,22 @@ impl Crate {
 }
 
 fn index_local_types<'a>(
-    krate: &'a rustdoc_types::Crate,
+    krate: &'a CrateData,
     package_id: &'a PackageId,
     // The ordered set of modules we navigated to reach this item.
     // It used to detect infinite loops.
     mut navigation_history: IndexSet<rustdoc_types::Id>,
-    mut current_path: Vec<&'a str>,
+    mut current_path: Vec<String>,
     import_index: &mut ImportIndex,
     re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
+    annotation_queue: &mut BTreeSet<QueueItem>,
     current_item_id: &rustdoc_types::Id,
     is_public: bool,
     // If `true`, we've encountered at least a `pub use`/`use` statement while
     // navigating to this item.
     encountered_use: bool,
-) -> Result<(), anyhow::Error> {
+    diagnostics: &DiagnosticSink,
+) {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
     let current_item = match krate.index.get(current_item_id) {
@@ -1021,7 +1060,7 @@ fn index_local_types<'a>(
             if let Some(summary) = krate.paths.get(current_item_id) {
                 if summary.kind == ItemKind::Primitive {
                     // This is a known bug—see https://github.com/rust-lang/rust/issues/104064
-                    return Ok(());
+                    return;
                 }
             }
             panic!(
@@ -1031,6 +1070,17 @@ fn index_local_types<'a>(
             )
         }
         Some(i) => i,
+    };
+
+    match pavexc_attr_parser::parse(&current_item.attrs) {
+        Ok(Some(_)) => {
+            annotation_queue.insert(QueueItem::Standalone(*current_item_id));
+        }
+        Ok(None) => {}
+        Err(e) => {
+            // TODO: Only report an error if it's a crate from the current workspace
+            invalid_diagnostic_attribute(e, current_item.as_ref(), diagnostics);
+        }
     };
 
     let is_public = is_public && current_item.visibility == Visibility::Public;
@@ -1063,13 +1113,14 @@ fn index_local_types<'a>(
         }
     };
 
+    let current_item = current_item.as_ref();
     match &current_item.inner {
         ItemEnum::Module(m) => {
             let current_path_segment = current_item
                 .name
                 .as_deref()
                 .expect("All 'module' items have a 'name' property");
-            current_path.push(current_path_segment);
+            current_path.push(current_path_segment.to_owned());
 
             add_to_import_index(
                 current_path
@@ -1088,10 +1139,12 @@ fn index_local_types<'a>(
                     current_path.clone(),
                     import_index,
                     re_exports,
+                    annotation_queue,
                     item_id,
                     is_public,
                     encountered_use,
-                )?;
+                    diagnostics,
+                );
             }
         }
         ItemEnum::Use(i) => {
@@ -1109,7 +1162,7 @@ fn index_local_types<'a>(
                             // picture of all the types available in this crate.
                             let external_crate_id = imported_summary.crate_id;
                             let re_exported_path = &imported_summary.path;
-                            current_path.push(&i.name);
+                            current_path.push(i.name.clone());
 
                             re_exports.insert(
                                 current_path.into_iter().map(|s| s.to_string()).collect(),
@@ -1123,7 +1176,7 @@ fn index_local_types<'a>(
                     Some(imported_item) => {
                         if let ItemEnum::Module(re_exported_module) = &imported_item.inner {
                             if !i.is_glob {
-                                current_path.push(&i.name);
+                                current_path.push(i.name.clone());
                             }
                             // In Rust it is possible to create infinite loops with local modules!
                             // Minimal example:
@@ -1148,10 +1201,12 @@ fn index_local_types<'a>(
                                         current_path.clone(),
                                         import_index,
                                         re_exports,
+                                        annotation_queue,
                                         re_exported_item_id,
                                         is_public,
                                         true,
-                                    )?;
+                                        diagnostics,
+                                    );
                                 }
                             }
                         } else {
@@ -1209,10 +1264,12 @@ fn index_local_types<'a>(
                                 current_path.clone(),
                                 import_index,
                                 re_exports,
+                                annotation_queue,
                                 imported_id,
                                 is_public,
                                 true,
-                            )?;
+                                diagnostics,
+                            );
                         }
                     }
                 }
@@ -1231,15 +1288,17 @@ fn index_local_types<'a>(
                 // E.g. `std::bool` won't work, `std::primitive::bool` does work but the `primitive` module
                 // is not visible in the JSON docs for `std`/`core`.
                 // A hacky workaround, but it works.
-                current_path.push("primitive");
+                current_path.push("primitive".into());
             }
-            current_path.push(name);
+            current_path.push(name.to_owned());
             let path: Vec<_> = current_path.into_iter().map(|s| s.to_string()).collect();
             add_to_import_index(path, false);
+
+            // Even if the item itself may not be annotated, one of its impls may be.
+            annotation_queue.insert(QueueItem::Standalone(*current_item_id));
         }
         _ => {}
     }
-    Ok(())
 }
 
 /// An identifier that unequivocally points to a type within a [`CrateCollection`].

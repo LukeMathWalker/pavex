@@ -47,7 +47,7 @@ pub(super) fn complex_borrow_check(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
@@ -253,7 +253,7 @@ fn emit_borrow_checking_error(
     computation_db: &ComputationDb,
     db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     for incoming_blocked_id in incoming_blocked_ids {
         let (component_id, type_) = match &call_graph[incoming_blocked_id] {

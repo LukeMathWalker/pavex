@@ -31,7 +31,7 @@ impl Router {
     pub(super) fn new(
         aux: &AuxiliaryData,
         scope_graph: &ScopeGraph,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<Self, ()> {
         let Ok(is_domain_based) = Router::is_domain_based(aux) else {
             Self::either_all_domain_based_or_all_agnostic(aux, diagnostics);
@@ -117,7 +117,7 @@ impl Router {
 
     fn either_all_domain_based_or_all_agnostic(
         aux: &AuxiliaryData,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let e = anyhow::anyhow!(
             "Your application has both domain-specific handlers and domain-agnostic handlers.\n\
@@ -212,7 +212,7 @@ impl DomainRouter {
         db: &AuxiliaryData,
         scope_graph: &ScopeGraph,
         scope_based_fallback_tree: &ScopeBasedFallbackTree,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<Self, ()> {
         let (domain2components, root_fallback_id) = {
             let mut domain2components: BTreeMap<_, Vec<_>> = Default::default();
@@ -279,7 +279,7 @@ impl DomainRouter {
     /// If it works now, it'll work at runtime too.
     fn detect_domain_conflicts(
         aux: &AuxiliaryData,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<(), ()> {
         let mut router = matchit::Router::new();
         let mut has_errored = false;
@@ -307,7 +307,7 @@ impl DomainRouter {
         aux: &AuxiliaryData,
         domain_1: &DomainGuard,
         domain_2: &DomainGuard,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let error = anyhow::anyhow!(
             "There is an overlap between two of the domain constraints you registered, `{}` and `{}`.\n\
@@ -355,7 +355,7 @@ impl PathRouter {
         aux: &AuxiliaryData,
         scope_graph: &ScopeGraph,
         scope_based_fallback_router: &ScopeBasedFallbackTree,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<Self, ()> {
         let root_scope_id = scope_graph.find_common_ancestor(
             component_ids
@@ -419,7 +419,7 @@ impl PathRouter {
     fn detect_method_conflicts(
         aux: &AuxiliaryData,
         component_ids: &[UserComponentId],
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<(), ()> {
         let n_diagnostics = diagnostics.len();
 
@@ -479,7 +479,7 @@ impl PathRouter {
     fn detect_path_conflicts(
         aux: &AuxiliaryData,
         component_ids: &[UserComponentId],
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<matchit::Router<()>, ()> {
         let mut path_router = matchit::Router::new();
         let mut errored = false;
@@ -521,7 +521,7 @@ impl PathRouter {
         component_ids: &[UserComponentId],
         db: &AuxiliaryData,
         scope_graph: &ScopeGraph,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<
         (
             BTreeMap<UserComponentId, UserComponentId>,
@@ -678,7 +678,7 @@ impl PathRouter {
         route_id2fallback_id: &BTreeMap<UserComponentId, UserComponentId>,
         component_ids: &[UserComponentId],
         db: &AuxiliaryData,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<(), ()> {
         let n_diagnostics = diagnostics.len();
 
@@ -858,7 +858,7 @@ fn push_fallback_ambiguity_diagnostic(
     scope_fallback_id: UserComponentId,
     path_fallback_id: UserComponentId,
     route_id: UserComponentId,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let UserComponent::RequestHandler { router_key, .. } = &db[route_id] else {
         unreachable!()
@@ -914,7 +914,7 @@ fn push_fallback_method_ambiguity_diagnostic(
     methods_without_handler: BTreeSet<String>,
     fallback_id2handler_id: &BTreeMap<UserComponentId, BTreeMap<UserComponentId, BTreeSet<String>>>,
     db: &AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     use std::fmt::Write;
 
@@ -1009,7 +1009,7 @@ fn push_matchit_diagnostic(
     path: &str,
     id: UserComponentId,
     error: matchit::InsertError,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     // We want to control the error message for style consistency with the rest of the
     // diagnostics we emit.
@@ -1051,7 +1051,7 @@ fn push_router_conflict_diagnostic(
     method: &str,
     ids: &IndexSet<UserComponentId>,
     db: &AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let mut builder = CompilerDiagnostic::builder(anyhow!(
         "There are {} different request handlers for `{method} {path}` requests.",

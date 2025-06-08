@@ -54,7 +54,7 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
         framework_items_db: &FrameworkItemDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Self {
         let mut self_ = Self::_build(component_db, computation_db);
         self_.detect_missing_constructors(
@@ -93,7 +93,7 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
         framework_items_db: &FrameworkItemDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         struct Queue {
             processed: BTreeSet<ComponentId>,
@@ -337,7 +337,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
@@ -398,7 +398,7 @@ impl ConstructibleDb {
                         type_: &ResolvedType,
                         common_ancestor_id: ScopeId,
                         scope_graph: &ScopeGraph,
-                        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+                        diagnostics: &crate::diagnostic::DiagnosticSink,
                     ) -> Option<HelpWithSnippet<ParsedSourceFile>> {
                         let location = scope_graph.get_location(common_ancestor_id).unwrap();
                         let mut s = diagnostics.source(&location)?;
@@ -464,7 +464,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         for (component_id, _) in component_db.iter() {
             if component_db.lifecycle(component_id) != Lifecycle::Singleton {
@@ -505,7 +505,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         'outer: for (error_observer_id, _) in component_db.iter() {
             let HydratedComponent::ErrorObserver(eo) =
@@ -655,7 +655,7 @@ impl ConstructibleDb {
         unconstructible_type_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         fn get_definition_info(
             callable: &Callable,
@@ -710,7 +710,7 @@ impl ConstructibleDb {
         singleton_input_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,
@@ -753,7 +753,7 @@ impl ConstructibleDb {
         transient_input_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,
@@ -795,7 +795,7 @@ impl ConstructibleDb {
         scoped_input_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,
@@ -843,7 +843,7 @@ impl ConstructibleDb {
         dependency_id: ComponentId,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let singleton_type = component_db
             .hydrated_component(singleton_id, computation_db)
@@ -883,7 +883,7 @@ impl ConstructibleDb {
         fallible_id: ComponentId,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let HydratedComponent::ErrorObserver(error_observer) =
             component_db.hydrated_component(error_observer_id, computation_db)

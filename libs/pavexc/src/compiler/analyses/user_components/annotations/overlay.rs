@@ -7,13 +7,10 @@ use crate::{
         computations::ComputationDb,
         user_components::{ErrorHandlerTarget, UserComponent},
     },
-    rustdoc::CrateCollection,
+    rustdoc::{AnnotatedItem, CrateCollection},
 };
 
-use super::{
-    AuxiliaryData, DiagnosticSink, Registration,
-    registry::{AnnotatedItem, AnnotationRegistry},
-};
+use super::{AuxiliaryData, DiagnosticSink, Registration};
 
 /// For each registered component, check if the item it refers to has been annotated with one of
 /// Pavex's macros.
@@ -22,11 +19,10 @@ use super::{
 /// Properties specified directly on the blueprint have higher priority than ones specified
 /// in the annotation.
 pub fn augment_from_annotation(
-    registry: &AnnotationRegistry,
     aux: &mut AuxiliaryData,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) {
     let component_ids: Vec<_> = aux.iter().map(|(id, _)| id).collect();
     for id in component_ids {
@@ -41,7 +37,7 @@ pub fn augment_from_annotation(
         let Some(source_id) = &computation_db[id].source_coordinates else {
             continue;
         };
-        let Some(annotation) = registry.annotation(source_id) else {
+        let Some(annotation) = krate_collection.annotation(source_id) else {
             continue;
         };
         let AnnotatedItem { properties, .. } = &annotation;

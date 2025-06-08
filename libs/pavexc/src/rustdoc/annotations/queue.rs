@@ -1,5 +1,5 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(super) enum QueueItem {
+pub(crate) enum QueueItem {
     /// The `id` of an enum, struct, trait or function.
     Standalone(rustdoc_types::Id),
     Impl {
@@ -21,8 +21,9 @@ pub(super) enum QueueItem {
 /// A lot of unnecessary jumping through hoops to implement `Ord`/`PartialOrd`
 /// since `rustdoc_types::Id` doesn't implement `Ord`/`PartialOrd`.
 mod sortable_queue {
+    use crate::rustdoc::SortableId;
+
     use super::QueueItem;
-    use crate::compiler::analyses::user_components::annotations::sortable::SortableId;
 
     impl QueueItem {
         fn as_sortable(&self) -> (SortableId, Option<SortableId>, Option<SortableId>) {

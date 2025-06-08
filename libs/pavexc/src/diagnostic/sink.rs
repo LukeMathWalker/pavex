@@ -1,3 +1,8 @@
+use std::{
+    ops::DerefMut,
+    sync::{Arc, Mutex},
+};
+
 use guppy::graph::PackageGraph;
 use pavex_bp_schema::Location;
 use pavex_cli_diagnostic::AnnotatedSource;
@@ -10,9 +15,13 @@ use super::{
 };
 
 /// An accumulator for diagnostics.
+///
+/// The sink can be cheaply cloned, since it's a wrapper around a reference-counted
+/// vector.
+#[derive(Clone)]
 pub struct DiagnosticSink {
     package_graph: PackageGraph,
-    diagnostics: Vec<miette::Error>,
+    diagnostics: Arc<Mutex<Vec<miette::Error>>>,
 }
 
 impl DiagnosticSink {
@@ -20,35 +29,62 @@ impl DiagnosticSink {
     pub fn new(package_graph: PackageGraph) -> Self {
         Self {
             package_graph,
-            diagnostics: Vec::new(),
+            diagnostics: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
     /// Push a new diagnostic into the sink.
-    pub fn push<D: miette::Diagnostic + Into<miette::Error>>(&mut self, diagnostic: D) {
-        self.diagnostics.push(diagnostic.into());
+    pub fn push<D: miette::Diagnostic + Into<miette::Error>>(&self, diagnostic: D) {
+        self.diagnostics
+            .lock()
+            .expect("The lock around the diagnostic sink was poisoned")
+            .push(diagnostic.into());
     }
 
-    /// Get the diagnostics accumulated so far.
-    pub fn diagnostics(&self) -> &[miette::Error] {
-        &self.diagnostics
+    /// Drain the sink, retrieving all the diagnostics accumulated so far.
+    pub fn drain(&self) -> Vec<miette::Error> {
+        std::mem::take(
+            self.diagnostics
+                .lock()
+                .expect("The lock around the diagnostic sink was poisoned")
+                .deref_mut(),
+        )
+    }
+
+    /// Returns `true` if at least one diagnostic with severity "ERROR" has been
+    /// pushed into the sink.
+    pub fn has_errored(&self) -> bool {
+        self.diagnostics
+            .lock()
+            .expect("The lock around the diagnostic sink was poisoned")
+            .iter()
+            .any(|e| {
+                let severity = e.severity();
+                severity == Some(miette::Severity::Error) || severity.is_none()
+            })
     }
 
     /// Check if the sink is empty.
     pub fn is_empty(&self) -> bool {
-        self.diagnostics.is_empty()
+        self.diagnostics
+            .lock()
+            .expect("The lock around the diagnostic sink was poisoned")
+            .is_empty()
     }
 
     /// Get the number of diagnostics accumulated so far.
     pub fn len(&self) -> usize {
-        self.diagnostics.len()
+        self.diagnostics
+            .lock()
+            .expect("The lock around the diagnostic sink was poisoned")
+            .len()
     }
 }
 
 /// Source-related methods.
 impl DiagnosticSink {
     /// Read and parse the source file that contains the given location.
-    pub fn source(&mut self, location: &Location) -> Option<AnnotatedSource<ParsedSourceFile>> {
+    pub fn source(&self, location: &Location) -> Option<AnnotatedSource<ParsedSourceFile>> {
         use super::LocationExt as _;
 
         match location.source_file(&self.package_graph) {
@@ -62,7 +98,7 @@ impl DiagnosticSink {
 
     /// Return a source file with a label around the given target span.
     pub fn annotated(
-        &mut self,
+        &self,
         target: TargetSpan,
         label_msg: impl Into<String>,
     ) -> Option<AnnotatedSource<ParsedSourceFile>> {
@@ -134,7 +170,7 @@ impl TargetSpan<'_> {
     /// Try to read and parse the file returned by [`Self::file`].
     pub fn parse_source(
         &self,
-        diagnostic_sink: &mut DiagnosticSink,
+        diagnostic_sink: &DiagnosticSink,
     ) -> Option<AnnotatedSource<ParsedSourceFile>> {
         match ParsedSourceFile::new(
             self.path().into(),
