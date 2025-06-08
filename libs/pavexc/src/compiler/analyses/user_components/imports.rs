@@ -72,7 +72,7 @@ pub struct ResolvedImport {
 pub(super) fn resolve_imports(
     db: &AuxiliaryData,
     package_graph: &PackageGraph,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Vec<(ResolvedImport, usize)> {
     let mut resolved_imports = Vec::new();
     for (import_id, raw_import) in db.imports.iter().enumerate() {
@@ -231,7 +231,7 @@ impl syn::parse::Parse for RawModulePath {
 fn crate_resolution_error(
     e: CrateNameResolutionError,
     import: &UnresolvedImport,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) {
     match e {
         CrateNameResolutionError::UnknownDependency(e) => {
@@ -246,7 +246,7 @@ fn crate_resolution_error(
 fn unknown_registration_crate(
     e: UnknownCrate,
     import: &UnresolvedImport,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) {
     #[derive(Debug, thiserror::Error)]
     #[error(
@@ -279,7 +279,7 @@ fn unknown_registration_crate(
 fn unknown_dependency_crate(
     e: UnknownDependency,
     import: &UnresolvedImport,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) {
     #[derive(Debug, thiserror::Error)]
     #[error(
@@ -319,7 +319,7 @@ fn invalid_module_path(
     e: syn::Error,
     raw_path: String,
     import: &UnresolvedImport,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) {
     #[derive(Debug, thiserror::Error)]
     #[error("`{path}` is not a valid import path.")]

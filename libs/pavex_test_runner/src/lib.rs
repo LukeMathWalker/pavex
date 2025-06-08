@@ -11,8 +11,8 @@ use console::style;
 use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
-use pavexc::DEFAULT_DOCS_TOOLCHAIN;
 use pavexc::rustdoc::CrateCollection;
+use pavexc::{DEFAULT_DOCS_TOOLCHAIN, DiagnosticSink};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sha2::Digest;
 use toml::toml;
@@ -405,6 +405,7 @@ fn warm_up_rustdoc_cache(
         package_graph.clone(),
         package_graph.workspace().root().to_string(),
         true,
+        DiagnosticSink::new(package_graph.clone()),
     )?;
     let app_names = test_name2test_data
         .values()

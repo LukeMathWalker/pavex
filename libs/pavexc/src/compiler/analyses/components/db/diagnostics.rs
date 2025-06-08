@@ -29,7 +29,7 @@ impl ComponentDb {
         db: &UserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             db.registration_target(id),
@@ -210,7 +210,7 @@ impl ComponentDb {
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             db.registration_target(id),
@@ -338,7 +338,7 @@ impl ComponentDb {
         db: &UserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         use crate::compiler::component::WrappingMiddlewareValidationError::*;
 
@@ -446,7 +446,7 @@ impl ComponentDb {
         db: &UserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         use crate::compiler::component::PreProcessingMiddlewareValidationError::*;
 
@@ -523,7 +523,7 @@ impl ComponentDb {
         db: &UserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         use crate::compiler::component::PostProcessingMiddlewareValidationError::*;
 
@@ -614,7 +614,7 @@ impl ComponentDb {
         id: UserComponentId,
         db: &UserComponentDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let kind = db[id].kind();
         let source = diagnostics.annotated(
@@ -646,7 +646,7 @@ impl ComponentDb {
         output_type: &ResolvedType,
         id: UserComponentId,
         db: &UserComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let kind = db[id].kind();
         let source = diagnostics.annotated(
@@ -672,7 +672,7 @@ impl ComponentDb {
         db: &UserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             db.registration_target(id),
@@ -734,7 +734,7 @@ impl ComponentDb {
         db: &UserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             db.registration_target(id),
@@ -843,7 +843,7 @@ impl ComponentDb {
         error_handler_id: UserComponentId,
         fallible_id: UserComponentId,
         db: &UserComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let fallible_kind = db[fallible_id].kind();
         let source = diagnostics.annotated(
@@ -867,7 +867,7 @@ impl ComponentDb {
         error_handler_id: UserComponentId,
         fallible_id: UserComponentId,
         db: &UserComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         debug_assert_eq!(db[fallible_id].kind(), ComponentKind::Constructor);
         let source = diagnostics.annotated(
@@ -888,7 +888,7 @@ impl ComponentDb {
     pub(super) fn missing_error_handler(
         fallible_id: UserComponentId,
         db: &UserComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let fallible_kind = db[fallible_id].kind();
         let source = diagnostics.annotated(
@@ -912,7 +912,7 @@ impl ComponentDb {
         output_type: &ResolvedType,
         id: UserComponentId,
         db: &UserComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             db.registration_target(id),
@@ -937,7 +937,7 @@ impl ComponentDb {
         output_type: &ResolvedType,
         id: UserComponentId,
         db: &UserComponentDb,
-        diagnostics: &mut diagnostic::DiagnosticSink,
+        diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             db.registration_target(id),

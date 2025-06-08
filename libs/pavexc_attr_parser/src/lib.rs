@@ -42,7 +42,7 @@ pub fn parse(
     Ok(component)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum AnnotationProperties {
     Constructor {
         lifecycle: Lifecycle,

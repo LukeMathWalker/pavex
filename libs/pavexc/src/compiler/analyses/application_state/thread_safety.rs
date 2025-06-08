@@ -23,7 +23,7 @@ pub(crate) fn runtime_singletons_are_thread_safe(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let send = process_framework_path("core::marker::Send", krate_collection);
     let sync = process_framework_path("core::marker::Sync", krate_collection);
@@ -50,7 +50,7 @@ fn missing_trait_implementation(
     id: ComponentId,
     db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let HydratedComponent::Constructor(c) = db.hydrated_component(id, computation_db) else {
         unreachable!()

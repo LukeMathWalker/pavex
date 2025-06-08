@@ -24,7 +24,7 @@ pub type RawIdentifierId = la_arena::Idx<RawIdentifiers>;
 pub(super) fn process_blueprint(
     bp: &Blueprint,
     aux: &mut AuxiliaryData,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> ScopeGraphBuilder {
     let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
     let root_scope_id = scope_graph_builder.root_scope_id();
@@ -135,7 +135,7 @@ fn _process_blueprint<'a>(
     current_observer_chain: &mut Vec<UserComponentId>,
     is_root: bool,
     bp_queue: &mut Vec<QueueItem<'a>>,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let mut fallback: Option<&Fallback> = None;
     for component in &bp.components {
@@ -295,7 +295,7 @@ fn process_route(
     domain_guard: Option<DomainGuard>,
     path_prefix: Option<&str>,
     scope_graph_builder: &mut ScopeGraphBuilder,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
@@ -692,7 +692,7 @@ pub(super) fn validate_route_path(
     aux: &mut AuxiliaryData,
     route_id: UserComponentId,
     path: &str,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     // Empty paths are OK.
     if path.is_empty() {
@@ -708,7 +708,7 @@ pub(super) fn validate_route_path(
 fn process_nesting_constraints(
     aux: &mut AuxiliaryData,
     nested_bp: &NestedBlueprint,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Result<(Option<String>, Option<DomainGuard>), ()> {
     let mut prefix = None;
     if let Some(path_prefix) = &nested_bp.path_prefix {
@@ -780,7 +780,7 @@ mod diagnostics {
         aux: &AuxiliaryData,
         path: &str,
         route_id: UserComponentId,
-        diagnostics: &mut DiagnosticSink,
+        diagnostics: &DiagnosticSink,
     ) {
         let source = diagnostics.annotated(
             TargetSpan::RoutePath(&aux.id2registration[route_id]),
@@ -798,7 +798,7 @@ mod diagnostics {
     pub(super) fn invalid_domain_guard(
         location: &Location,
         e: InvalidDomainConstraint,
-        diagnostics: &mut DiagnosticSink,
+        diagnostics: &DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::domain_span(s.source(), location)
@@ -809,10 +809,7 @@ mod diagnostics {
         diagnostics.push(diagnostic.build());
     }
 
-    pub(super) fn path_prefix_cannot_be_empty(
-        location: &Location,
-        diagnostics: &mut DiagnosticSink,
-    ) {
+    pub(super) fn path_prefix_cannot_be_empty(location: &Location, diagnostics: &DiagnosticSink) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
                 .labeled("The empty prefix".to_string())
@@ -832,7 +829,7 @@ mod diagnostics {
     pub(super) fn path_prefix_must_start_with_a_slash(
         prefix: &str,
         location: &Location,
-        diagnostics: &mut DiagnosticSink,
+        diagnostics: &DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)
@@ -852,7 +849,7 @@ mod diagnostics {
     pub(super) fn path_prefix_cannot_end_with_a_slash(
         prefix: &str,
         location: &Location,
-        diagnostics: &mut DiagnosticSink,
+        diagnostics: &DiagnosticSink,
     ) {
         let source = diagnostics.source(location).map(|s| {
             diagnostic::prefix_span(s.source(), location)

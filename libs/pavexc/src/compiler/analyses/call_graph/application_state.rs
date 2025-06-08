@@ -36,7 +36,7 @@ pub(crate) fn application_state_call_graph(
     constructible_db: &mut ConstructibleDb,
     framework_item_db: &FrameworkItemDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Result<ApplicationStateCallGraph, ()> {
     fn lifecycle2invocations(lifecycle: Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match lifecycle {

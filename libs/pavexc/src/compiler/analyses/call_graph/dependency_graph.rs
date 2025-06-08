@@ -259,7 +259,7 @@ impl DependencyGraph {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<(), ()> {
         let cycles = find_cycles(&self.graph);
 

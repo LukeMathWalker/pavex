@@ -17,7 +17,7 @@ pub(crate) fn detect_unused<'a, I>(
     application_state_call_graph: &ApplicationStateCallGraph,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) where
     I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
@@ -73,7 +73,7 @@ fn emit_unused_warning(
     id: ComponentId,
     db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let Some(user_id) = db.user_component_id(id) else {
         return;

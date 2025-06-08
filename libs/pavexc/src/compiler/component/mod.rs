@@ -58,7 +58,7 @@ impl CannotTakeMutReferenceError {
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
         callable_type: ComponentKind,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         fn get_snippet(
             callable: &Callable,

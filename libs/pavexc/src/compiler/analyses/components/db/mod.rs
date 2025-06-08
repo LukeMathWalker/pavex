@@ -144,7 +144,7 @@ impl ComponentDb {
         prebuilt_type_db: PrebuiltTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> ComponentDb {
         // We only need to resolve these once.
         let pavex_error = process_framework_path("pavex::Error", krate_collection);
@@ -571,7 +571,7 @@ impl ComponentDb {
         needs_error_handler: IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         error_handlers_db: &mut ErrorHandlersDb,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         for fallible_user_id in needs_error_handler.into_iter() {
             let Some(&fallible_id) = self.user_component_id2component_id.get(&fallible_user_id)
@@ -612,7 +612,7 @@ impl ComponentDb {
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let constructor_ids = self
             .user_db
@@ -717,7 +717,7 @@ impl ComponentDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let request_handler_ids = self
             .user_db
@@ -757,7 +757,7 @@ impl ComponentDb {
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let wrapping_middleware_ids = self
             .user_db
@@ -796,7 +796,7 @@ impl ComponentDb {
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let middleware_ids = self
             .user_db
@@ -835,7 +835,7 @@ impl ComponentDb {
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let middleware_ids = self
             .user_db
@@ -874,7 +874,7 @@ impl ComponentDb {
         pavex_error_ref: &ResolvedType,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let error_observer_ids = self
             .user_db
@@ -933,7 +933,7 @@ impl ComponentDb {
         error_handlers_db: &mut ErrorHandlersDb,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let iter = self
             .user_db
@@ -1153,7 +1153,7 @@ impl ComponentDb {
         &mut self,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let into_response = {
             let into_response =
@@ -1726,7 +1726,7 @@ impl ComponentDb {
     pub fn registration_span(
         &self,
         id: ComponentId,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
         label: String,
     ) -> Option<AnnotatedSource<ParsedSourceFile>> {
         let user_id = self.user_component_id(id)?;

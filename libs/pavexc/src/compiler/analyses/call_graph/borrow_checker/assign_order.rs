@@ -31,7 +31,7 @@ impl OrderedCallGraph {
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<OrderedCallGraph, ()> {
         let copy_checker = CopyChecker::new(krate_collection);
         let call_graph = Self::borrow_check(
@@ -59,7 +59,7 @@ impl OrderedCallGraph {
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<CallGraph, ()> {
         let n_diagnostics = diagnostics.len();
 

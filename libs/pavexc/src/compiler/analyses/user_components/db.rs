@@ -3,7 +3,7 @@ use super::{ScopeGraph, ScopeId};
 use super::{UserComponent, auxiliary::AuxiliaryData};
 use super::{blueprint::process_blueprint, router::Router};
 use crate::compiler::analyses::user_components::annotations::{
-    AnnotationRegistry, augment_from_annotation, register_imported_components,
+    augment_from_annotation, register_imported_components,
 };
 use crate::compiler::analyses::user_components::imports::resolve_imports;
 use crate::compiler::analyses::user_components::paths::FQPaths;
@@ -94,7 +94,7 @@ impl UserComponentDb {
         computation_db: &mut ComputationDb,
         prebuilt_type_db: &mut PrebuiltTypeDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut DiagnosticSink,
+        diagnostics: &DiagnosticSink,
     ) -> Result<(Router, Self), ()> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
@@ -105,7 +105,6 @@ impl UserComponentDb {
             };
         }
 
-        let mut registry = AnnotationRegistry::default();
         let mut aux = AuxiliaryData::default();
         let mut scope_graph_builder = process_blueprint(bp, &mut aux, diagnostics);
         let mut paths = FQPaths::new();
@@ -114,7 +113,6 @@ impl UserComponentDb {
 
         precompute_crate_docs(
             krate_collection,
-            &mut registry,
             paths.values(),
             imported_modules.iter().map(|(i, _)| &i.package_id),
             diagnostics,
@@ -126,7 +124,6 @@ impl UserComponentDb {
             &mut scope_graph_builder,
             computation_db,
             prebuilt_type_db,
-            &registry,
             krate_collection,
             diagnostics,
         );
@@ -139,13 +136,7 @@ impl UserComponentDb {
         );
         exit_on_errors!(diagnostics);
 
-        augment_from_annotation(
-            &registry,
-            &mut aux,
-            computation_db,
-            krate_collection,
-            diagnostics,
-        );
+        augment_from_annotation(&mut aux, computation_db, krate_collection, diagnostics);
         // New paths have been registered, which must be resolved now!
         paths.resolve(
             &mut aux,
@@ -382,10 +373,9 @@ impl UserComponentDb {
 /// for projects that pull in a lot of dependencies in the signature of their components.
 fn precompute_crate_docs<'a, I, J>(
     krate_collection: &CrateCollection,
-    registry: &mut AnnotationRegistry,
     paths: I,
     imported_package_ids: J,
-    diagnostics: &mut DiagnosticSink,
+    diagnostics: &DiagnosticSink,
 ) where
     I: Iterator<Item = &'a FQPath>,
     J: Iterator<Item = &'a PackageId>,
@@ -402,8 +392,6 @@ fn precompute_crate_docs<'a, I, J>(
             "I failed to compute the JSON documentation for one or more crates in the workspace.",
         );
         diagnostics.push(e.into_miette());
-    } else {
-        registry.bootstrap(package_ids, krate_collection, diagnostics);
     }
 }
 

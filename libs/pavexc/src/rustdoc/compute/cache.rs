@@ -13,7 +13,13 @@ use rusqlite::params;
 use tracing::instrument;
 use tracing_log_error::log_error;
 
-use crate::rustdoc::queries::{CrateData, CrateItemIndex, LazyCrateItemIndex};
+use crate::{
+    DiagnosticSink,
+    rustdoc::{
+        annotations::AnnotatedItems,
+        queries::{CrateData, CrateItemIndex, LazyCrateItemIndex},
+    },
+};
 
 use super::{checksum::checksum_crate, rustdoc_options};
 
@@ -32,6 +38,47 @@ pub(crate) struct RustdocGlobalFsCache {
 pub(crate) enum RustdocCacheKey<'a> {
     ThirdPartyCrate(PackageMetadata<'a>),
     ToolchainCrate(&'a str),
+}
+
+impl<'a> std::fmt::Debug for RustdocCacheKey<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RustdocCacheKey::ThirdPartyCrate(metadata) => f
+                .debug_struct("ThirdPartyCrate")
+                .field("id", &metadata.id())
+                .field("name", &metadata.name())
+                .field("version", &metadata.version())
+                .finish(),
+            RustdocCacheKey::ToolchainCrate(name) => f
+                .debug_struct("ToolchainCrate")
+                .field("name", name)
+                .finish(),
+        }
+    }
+}
+
+/// An entry retrieved from the on-disk cache.
+pub(crate) enum RustdocCacheEntry {
+    /// Only the "raw" output returned by `rustdoc` was stored in the cache.
+    ///
+    /// This happens when the indexing phase emitted one or more diagnostics,
+    /// thus forcing to go through that step (and report those errors)
+    /// every single time we attempt a compilation.
+    Raw(CrateData),
+    /// The cache holds both the raw `rustdoc` output and our secondary indexes.
+    /// It's ready to be used as is!
+    Processed(crate::rustdoc::Crate),
+}
+
+impl RustdocCacheEntry {
+    pub fn process(self, package_id: PackageId, sink: &DiagnosticSink) -> crate::rustdoc::Crate {
+        match self {
+            RustdocCacheEntry::Raw(crate_data) => {
+                crate::rustdoc::Crate::index(crate_data, package_id, sink)
+            }
+            RustdocCacheEntry::Processed(c) => c,
+        }
+    }
 }
 
 static BINCODE_CONFIG: bincode::config::Configuration = bincode::config::standard();
@@ -73,7 +120,7 @@ impl RustdocGlobalFsCache {
         &self,
         cache_key: &RustdocCacheKey,
         package_graph: &PackageGraph,
-    ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
+    ) -> Result<Option<RustdocCacheEntry>, anyhow::Error> {
         let connection = self.connection_pool.get()?;
         match cache_key {
             RustdocCacheKey::ThirdPartyCrate(metadata) => self.third_party_cache.get(
@@ -94,6 +141,7 @@ impl RustdocGlobalFsCache {
         &self,
         cache_key: &RustdocCacheKey,
         krate: &crate::rustdoc::Crate,
+        cache_indexes: bool,
         package_graph: &PackageGraph,
     ) -> Result<(), anyhow::Error> {
         let connection = self.connection_pool.get()?;
@@ -103,6 +151,7 @@ impl RustdocGlobalFsCache {
                 krate,
                 &self.cargo_fingerprint,
                 &connection,
+                cache_indexes,
                 package_graph,
             ),
             RustdocCacheKey::ToolchainCrate(name) => {
@@ -227,7 +276,7 @@ impl ToolchainCache {
         name: &str,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
-    ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
+    ) -> Result<Option<RustdocCacheEntry>, anyhow::Error> {
         // Retrieve from rustdoc's output from cache, if available.
         let mut stmt = connection.prepare_cached(
             "SELECT
@@ -274,9 +323,13 @@ impl ToolchainCache {
             format_version,
             items: Cow::Owned(items),
             item_id2delimiters: Cow::Borrowed(item_id2delimiters),
-            import_index: Cow::Borrowed(import_index),
-            import_path2id: Cow::Borrowed(import_path2id),
-            re_exports: Cow::Borrowed(re_exports),
+            secondary_indexes: Some(SecondaryIndexes {
+                import_index: Cow::Borrowed(import_index),
+                // Standard library crates don't have Pavex annotations.
+                annotated_items: None,
+                import_path2id: Cow::Borrowed(import_path2id),
+                re_exports: Cow::Borrowed(re_exports),
+            }),
         }
         .hydrate(PackageId::new(name))?;
 
@@ -317,9 +370,21 @@ impl ToolchainCache {
             cached_data.format_version,
             cached_data.items,
             cached_data.item_id2delimiters,
-            cached_data.import_index,
-            cached_data.import_path2id,
-            cached_data.re_exports
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .expect("Indexing never fails for toolchain crates")
+                .import_index,
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .expect("Indexing never fails for toolchain crates")
+                .import_path2id,
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .expect("Indexing never fails for toolchain crates")
+                .re_exports
         ])?;
         Ok(())
     }
@@ -375,14 +440,14 @@ impl ThirdPartyCrateCache {
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
         package_graph: &PackageGraph,
-    ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
+    ) -> Result<Option<RustdocCacheEntry>, anyhow::Error> {
         fn _get(
             package_metadata: &PackageMetadata,
             cargo_fingerprint: &str,
             connection: &rusqlite::Connection,
             cache_workspace_packages: bool,
             package_graph: &PackageGraph,
-        ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
+        ) -> Result<Option<RustdocCacheEntry>, anyhow::Error> {
             let Some(cache_key) = ThirdPartyCrateCacheKey::build(
                 package_graph,
                 package_metadata,
@@ -403,7 +468,8 @@ impl ThirdPartyCrateCache {
                         item_id2delimiters,
                         import_index,
                         import_path2id,
-                        re_exports
+                        re_exports,
+                        annotated_items
                     FROM rustdoc_3d_party_crates_cache
                     WHERE crate_name = ? AND
                         crate_source = ? AND
@@ -445,9 +511,26 @@ impl ThirdPartyCrateCache {
             drop(guard);
 
             let item_id2delimiters = row.get_ref_unwrap(5).as_bytes()?;
-            let import_index = row.get_ref_unwrap(6).as_bytes()?;
-            let import_path2id = row.get_ref_unwrap(7).as_bytes()?;
-            let re_exports = row.get_ref_unwrap(8).as_bytes()?;
+            let import_index = row.get_ref_unwrap(6).as_bytes_or_null()?;
+            let import_path2id = row.get_ref_unwrap(7).as_bytes_or_null()?;
+            let re_exports = row.get_ref_unwrap(8).as_bytes_or_null()?;
+            let annotated_items = row.get_ref_unwrap(9).as_bytes_or_null()?;
+
+            let secondary_indexes =
+                match (import_index, import_path2id, re_exports, annotated_items) {
+                    (
+                        Some(import_index),
+                        Some(import_path2id),
+                        Some(re_exports),
+                        Some(annotated_items),
+                    ) => Some(SecondaryIndexes {
+                        import_index: Cow::Borrowed(import_index),
+                        import_path2id: Cow::Borrowed(import_path2id),
+                        re_exports: Cow::Borrowed(re_exports),
+                        annotated_items: Some(Cow::Borrowed(annotated_items)),
+                    }),
+                    _ => None,
+                };
 
             let krate = CachedData {
                 root_item_id,
@@ -456,9 +539,7 @@ impl ThirdPartyCrateCache {
                 format_version,
                 items: Cow::Owned(items),
                 item_id2delimiters: Cow::Borrowed(item_id2delimiters),
-                import_index: Cow::Borrowed(import_index),
-                import_path2id: Cow::Borrowed(import_path2id),
-                re_exports: Cow::Borrowed(re_exports),
+                secondary_indexes,
             }
             .hydrate(package_metadata.id().to_owned())
             .context("Failed to re-hydrate the stored docs")?;
@@ -497,6 +578,7 @@ impl ThirdPartyCrateCache {
         krate: &crate::rustdoc::Crate,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
+        cache_indexes: bool,
         package_graph: &PackageGraph,
     ) -> Result<(), anyhow::Error> {
         let Some(cache_key) = ThirdPartyCrateCacheKey::build(
@@ -508,7 +590,12 @@ impl ThirdPartyCrateCache {
             return Ok(());
         };
         tracing::Span::current().record("cache_key", tracing::field::debug(&cache_key));
-        let cached_data = CachedData::new(krate).context("Failed to serialize docs")?;
+        let cached_data = if cache_indexes {
+            CachedData::new(krate)
+        } else {
+            CachedData::raw(krate)
+        }
+        .context("Failed to serialize docs")?;
         let mut stmt = connection.prepare_cached(
             "INSERT INTO rustdoc_3d_party_crates_cache (
                 crate_name,
@@ -527,8 +614,9 @@ impl ThirdPartyCrateCache {
                 item_id2delimiters,
                 import_index,
                 import_path2id,
-                re_exports
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                re_exports,
+                annotated_items
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )?;
         stmt.execute(params![
             cache_key.crate_name,
@@ -548,9 +636,22 @@ impl ThirdPartyCrateCache {
             cached_data.format_version,
             cached_data.items,
             cached_data.item_id2delimiters,
-            cached_data.import_index,
-            cached_data.import_path2id,
-            cached_data.re_exports
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .map(|i| i.import_index.as_ref()),
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .map(|indexes| indexes.import_path2id.as_ref()),
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .map(|indexes| indexes.re_exports.as_ref()),
+            cached_data
+                .secondary_indexes
+                .as_ref()
+                .map(|indexes| indexes.annotated_items.as_ref())
         ])?;
         Ok(())
     }
@@ -572,9 +673,10 @@ impl ThirdPartyCrateCache {
                 format_version INTEGER NOT NULL,
                 items BLOB NOT NULL,
                 item_id2delimiters BLOB NOT NULL,
-                import_index BLOB NOT NULL,
-                import_path2id BLOB NOT NULL,
-                re_exports BLOB NOT NULL,
+                annotated_items BLOB,
+                import_index BLOB,
+                import_path2id BLOB,
+                re_exports BLOB,
                 PRIMARY KEY (crate_name, crate_source, crate_version, crate_hash, cargo_fingerprint, rustdoc_options, default_feature_is_enabled, active_named_features)
             )",
             []
@@ -592,13 +694,40 @@ pub(super) struct CachedData<'a> {
     format_version: i64,
     items: Cow<'a, [u8]>,
     item_id2delimiters: Cow<'a, [u8]>,
+    secondary_indexes: Option<SecondaryIndexes<'a>>,
+}
+
+#[derive(Debug)]
+/// Data that can be computed starting from the raw JSON documentation for a crate,
+/// without having to re-invoke `rustdoc`.
+pub(super) struct SecondaryIndexes<'a> {
     import_index: Cow<'a, [u8]>,
+    annotated_items: Option<Cow<'a, [u8]>>,
     import_path2id: Cow<'a, [u8]>,
     re_exports: Cow<'a, [u8]>,
 }
 
 impl<'a> CachedData<'a> {
     pub(super) fn new(krate: &'a crate::rustdoc::Crate) -> Result<CachedData<'a>, anyhow::Error> {
+        let mut cached = Self::raw(krate)?;
+
+        let import_index = bincode::serde::encode_to_vec(&krate.import_index, BINCODE_CONFIG)?;
+        let annotated_items =
+            bincode::serde::encode_to_vec(&krate.annotated_items, BINCODE_CONFIG)?;
+        let import_path2id = bincode::serde::encode_to_vec(&krate.import_path2id, BINCODE_CONFIG)?;
+        let re_exports = bincode::serde::encode_to_vec(&krate.re_exports, BINCODE_CONFIG)?;
+
+        cached.secondary_indexes = Some(SecondaryIndexes {
+            import_index: Cow::Owned(import_index),
+            annotated_items: Some(Cow::Owned(annotated_items)),
+            import_path2id: Cow::Owned(import_path2id),
+            re_exports: Cow::Owned(re_exports),
+        });
+        Ok(cached)
+    }
+
+    /// Cache only `rustdoc`'s output, no secondary indexes.
+    pub(super) fn raw(krate: &'a crate::rustdoc::Crate) -> Result<CachedData<'a>, anyhow::Error> {
         let crate_data = &krate.core.krate;
         let CrateItemIndex::Eager(index) = &crate_data.index else {
             anyhow::bail!(
@@ -614,10 +743,6 @@ impl<'a> CachedData<'a> {
             let end = items.len();
             item_id2delimiters.insert(item_id.0, (start, end));
         }
-
-        let import_index = bincode::serde::encode_to_vec(&krate.import_index, BINCODE_CONFIG)?;
-        let import_path2id = bincode::serde::encode_to_vec(&krate.import_path2id, BINCODE_CONFIG)?;
-        let re_exports = bincode::serde::encode_to_vec(&krate.re_exports, BINCODE_CONFIG)?;
         let external_crates =
             bincode::serde::encode_to_vec(&crate_data.external_crates, BINCODE_CONFIG)?;
         let paths = bincode::serde::encode_to_vec(&crate_data.paths, BINCODE_CONFIG)?;
@@ -632,9 +757,7 @@ impl<'a> CachedData<'a> {
                 &item_id2delimiters,
                 BINCODE_CONFIG,
             )?),
-            import_index: Cow::Owned(import_index),
-            import_path2id: Cow::Owned(import_path2id),
-            re_exports: Cow::Owned(re_exports),
+            secondary_indexes: None,
         })
     }
 
@@ -642,10 +765,7 @@ impl<'a> CachedData<'a> {
     ///
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
-    pub(super) fn hydrate(
-        self,
-        package_id: PackageId,
-    ) -> Result<crate::rustdoc::Crate, anyhow::Error> {
+    pub(super) fn hydrate(self, package_id: PackageId) -> Result<RustdocCacheEntry, anyhow::Error> {
         let span = tracing::trace_span!("Deserialize delimiters");
         let _guard = span.enter();
         let item_id2delimiters =
@@ -676,6 +796,10 @@ impl<'a> CachedData<'a> {
                 item_id2delimiters,
             }),
         };
+        let Some(secondary_indexes) = self.secondary_indexes else {
+            return Ok(RustdocCacheEntry::Raw(crate_data));
+        };
+
         let core = crate::rustdoc::queries::CrateCore {
             package_id,
             krate: crate_data,
@@ -684,26 +808,37 @@ impl<'a> CachedData<'a> {
         let span = tracing::trace_span!("Deserialize import_path2id");
         let _guard = span.enter();
         let import_path2id =
-            bincode::serde::decode_from_slice(&self.import_path2id, BINCODE_CONFIG)
+            bincode::serde::decode_from_slice(&secondary_indexes.import_path2id, BINCODE_CONFIG)
                 .context("Failed to deserialize import_path2id")?
                 .0;
         drop(_guard);
 
-        let re_exports = bincode::serde::decode_from_slice(&self.re_exports, BINCODE_CONFIG)
-            .context("Failed to deserialize re-exports")?
-            .0;
+        let re_exports =
+            bincode::serde::decode_from_slice(&secondary_indexes.re_exports, BINCODE_CONFIG)
+                .context("Failed to deserialize re-exports")?
+                .0;
 
-        let import_index = bincode::serde::decode_from_slice(&self.import_index, BINCODE_CONFIG)
-            .context("Failed to deserialize import_index")?
-            .0;
+        let import_index =
+            bincode::serde::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
+                .context("Failed to deserialize import_index")?
+                .0;
+
+        let annotated_items = if let Some(data) = secondary_indexes.annotated_items {
+            bincode::serde::decode_from_slice(&data, BINCODE_CONFIG)
+                .context("Failed to deserialize annotated_items")?
+                .0
+        } else {
+            AnnotatedItems::default()
+        };
 
         let krate = crate::rustdoc::Crate {
             core,
+            annotated_items,
             import_path2id,
             re_exports,
             import_index,
         };
-        Ok(krate)
+        Ok(RustdocCacheEntry::Processed(krate))
     }
 }
 

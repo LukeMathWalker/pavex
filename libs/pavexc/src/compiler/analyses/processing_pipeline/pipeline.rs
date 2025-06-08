@@ -129,7 +129,7 @@ impl RequestHandlerPipeline {
         constructible_db: &mut ConstructibleDb,
         framework_item_db: &FrameworkItemDb,
         krate_collection: &CrateCollection,
-        diagnostics: &mut crate::diagnostic::DiagnosticSink,
+        diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<Self, ()> {
         let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
 
@@ -1104,7 +1104,7 @@ fn emit_cloning_error(
     component_id: ComponentId,
     db: &ComponentDb,
     computation_db: &ComputationDb,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let Computation::Callable(moved_by_callable) = db
         .hydrated_component(moved_by, computation_db)

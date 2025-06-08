@@ -60,23 +60,18 @@ impl App {
     pub fn build(
         bp: Blueprint,
         krate_collection: CrateCollection,
+        diagnostics: DiagnosticSink,
     ) -> Result<(Self, DiagnosticSink), DiagnosticSink> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
-                if !$var.is_empty()
-                    && $var.diagnostics().iter().any(|e| {
-                        let severity = e.severity();
-                        severity == Some(miette::Severity::Error) || severity.is_none()
-                    })
-                {
+                if $var.has_errored() {
                     return Err($var);
                 }
             };
         }
 
         let package_graph = krate_collection.package_graph().to_owned();
-        let mut diagnostics = DiagnosticSink::new(package_graph.clone());
         let mut computation_db = ComputationDb::new();
         let mut prebuilt_type_db = PrebuiltTypeDb::new();
         let Ok((router, user_component_db)) = UserComponentDb::build(
@@ -84,7 +79,7 @@ impl App {
             &mut computation_db,
             &mut prebuilt_type_db,
             &krate_collection,
-            &mut diagnostics,
+            &diagnostics,
         ) else {
             return Err(diagnostics);
         };
@@ -97,7 +92,7 @@ impl App {
             prebuilt_type_db,
             &package_graph,
             &krate_collection,
-            &mut diagnostics,
+            &diagnostics,
         );
         let router = Router::lift(router, component_db.user_component_id2component_id());
         exit_on_errors!(diagnostics);
@@ -106,13 +101,13 @@ impl App {
             &mut computation_db,
             &krate_collection,
             &framework_item_db,
-            &mut diagnostics,
+            &diagnostics,
         );
         cloneables_can_be_cloned(
             &component_db,
             &computation_db,
             &krate_collection,
-            &mut diagnostics,
+            &diagnostics,
         );
         exit_on_errors!(diagnostics);
         let handler_id2pipeline = {
@@ -131,7 +126,7 @@ impl App {
                     &mut constructible_db,
                     &framework_item_db,
                     &krate_collection,
-                    &mut diagnostics,
+                    &diagnostics,
                 ) else {
                     continue;
                 };
@@ -145,7 +140,7 @@ impl App {
             &computation_db,
             &component_db,
             &krate_collection,
-            &mut diagnostics,
+            &diagnostics,
         );
         let application_state = ApplicationState::new(
             &handler_id2pipeline,
@@ -154,10 +149,10 @@ impl App {
             &component_db,
             &computation_db,
             &krate_collection,
-            &mut diagnostics,
+            &diagnostics,
         );
         let mut application_config =
-            ApplicationConfig::new(&component_db, &computation_db, &mut diagnostics);
+            ApplicationConfig::new(&component_db, &computation_db, &diagnostics);
         exit_on_errors!(diagnostics);
 
         let codegen_deps = codegen_deps(&package_graph);
@@ -168,7 +163,7 @@ impl App {
             &mut constructible_db,
             &framework_item_db,
             &krate_collection,
-            &mut diagnostics,
+            &diagnostics,
         ) else {
             return Err(diagnostics);
         };
@@ -178,14 +173,14 @@ impl App {
             &handler_id2pipeline,
             &application_state_call_graph,
             &component_db,
-            &mut diagnostics,
+            &diagnostics,
         );
         detect_unused(
             handler_id2pipeline.values(),
             &application_state_call_graph,
             &component_db,
             &computation_db,
-            &mut diagnostics,
+            &diagnostics,
         );
         exit_on_errors!(diagnostics);
         Ok((

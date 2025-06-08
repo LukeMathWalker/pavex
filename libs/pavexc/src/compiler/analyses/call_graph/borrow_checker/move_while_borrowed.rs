@@ -45,7 +45,7 @@ pub(super) fn move_while_borrowed(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     krate_collection: &CrateCollection,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> CallGraph {
     let CallGraph {
         mut call_graph,
@@ -286,7 +286,7 @@ fn try_clone(
     computation_db: &mut ComputationDb,
     krate_collection: &CrateCollection,
     root_scope_id: ScopeId,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
     if copy_checker.is_copy(call_graph, dependency_index, component_db, computation_db) {
@@ -340,7 +340,7 @@ fn emit_ancestor_descendant_borrow_error(
     computation_db: &ComputationDb,
     db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     // Find the node that is borrowing the contended node.
     let mut downstream_borrow_node_id = None;
@@ -465,7 +465,7 @@ fn emit_tried_to_borrow_mut_while_borrowed_immutably(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     call_graph: &RawCallGraph,
-    diagnostics: &mut crate::diagnostic::DiagnosticSink,
+    diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     // Find the node that is borrowing the contended node.
     let mut borrower_node_id = None;

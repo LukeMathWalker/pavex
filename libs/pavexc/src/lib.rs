@@ -2,6 +2,7 @@
 extern crate core;
 
 pub use compiler::App;
+pub use diagnostic::DiagnosticSink;
 pub use persistence::AppWriter;
 
 mod compiler;
