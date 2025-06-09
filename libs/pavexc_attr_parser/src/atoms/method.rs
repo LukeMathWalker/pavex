@@ -17,9 +17,7 @@ impl From<MethodArgument> for MethodGuard {
     fn from(arg: MethodArgument) -> Self {
         match arg {
             MethodArgument::Single(m) => MethodGuard::Some(BTreeSet::from_iter(std::iter::once(m))),
-            MethodArgument::Multiple(vec) => {
-                MethodGuard::Some(BTreeSet::from_iter(vec))
-            }
+            MethodArgument::Multiple(vec) => MethodGuard::Some(BTreeSet::from_iter(vec)),
         }
     }
 }

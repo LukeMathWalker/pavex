@@ -40,7 +40,7 @@ pub(crate) enum RustdocCacheKey<'a> {
     ToolchainCrate(&'a str),
 }
 
-impl<'a> std::fmt::Debug for RustdocCacheKey<'a> {
+impl std::fmt::Debug for RustdocCacheKey<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RustdocCacheKey::ThirdPartyCrate(metadata) => f
@@ -715,7 +715,7 @@ impl<'a> CachedData<'a> {
         let annotated_items =
             bincode::serde::encode_to_vec(&krate.annotated_items, BINCODE_CONFIG)?;
         let import_path2id = bincode::serde::encode_to_vec(&krate.import_path2id, BINCODE_CONFIG)?;
-        let re_exports = bincode::serde::encode_to_vec(&krate.re_exports, BINCODE_CONFIG)?;
+        let re_exports = bincode::serde::encode_to_vec(&krate.external_re_exports, BINCODE_CONFIG)?;
 
         cached.secondary_indexes = Some(SecondaryIndexes {
             import_index: Cow::Owned(import_index),
@@ -835,7 +835,7 @@ impl<'a> CachedData<'a> {
             core,
             annotated_items,
             import_path2id,
-            re_exports,
+            external_re_exports: re_exports,
             import_index,
         };
         Ok(RustdocCacheEntry::Processed(krate))

@@ -43,15 +43,6 @@ pub(crate) fn process_queue(
                     }));
                 }
 
-                if !matches!(
-                    &item.inner,
-                    ItemEnum::Struct(Struct { .. })
-                        | ItemEnum::Enum(Enum { .. })
-                        | ItemEnum::Function(_)
-                ) {
-                    // We don't care about other item kinds.
-                    continue;
-                }
                 let annotation = match pavexc_attr_parser::parse(&item.attrs) {
                     Ok(Some(annotation)) => annotation,
                     Ok(None) => {
@@ -63,12 +54,21 @@ pub(crate) fn process_queue(
                         continue;
                     }
                 };
+                if !matches!(
+                    &item.inner,
+                    ItemEnum::Struct(Struct { .. })
+                        | ItemEnum::Enum(Enum { .. })
+                        | ItemEnum::Function(_)
+                        | ItemEnum::Use(_)
+                ) {
+                    continue;
+                }
                 if check_item_compatibility(&annotation, &item, diagnostics).is_err() {
                     continue;
                 }
 
                 items.insert(
-                    id.into(),
+                    id,
                     AnnotatedItem {
                         id,
                         properties: annotation,
@@ -130,7 +130,7 @@ pub(crate) fn process_queue(
                 };
 
                 items.insert(
-                    id.into(),
+                    id,
                     AnnotatedItem {
                         id,
                         properties: annotation,
@@ -164,7 +164,10 @@ fn check_item_compatibility(
         | AnnotationKind::Route
             if matches!(item.inner, ItemEnum::Function(_)) => {}
         AnnotationKind::Prebuilt | AnnotationKind::Config
-            if matches!(item.inner, ItemEnum::Enum(_) | ItemEnum::Struct(_)) => {}
+            if matches!(
+                item.inner,
+                ItemEnum::Enum(_) | ItemEnum::Struct(_) | ItemEnum::Use(_)
+            ) => {}
         AnnotationKind::PreProcessingMiddleware
         | AnnotationKind::PostProcessingMiddleware
         | AnnotationKind::WrappingMiddleware

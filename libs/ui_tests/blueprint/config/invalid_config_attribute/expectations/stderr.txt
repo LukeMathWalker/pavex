@@ -71,3 +71,81 @@
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m You can't register a module as a config type.
+  [31m│[0m The re-exported item must be either an enum or a struct.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:35:1]
+  [31m│[0m  [2m35[0m │
+  [31m│[0m  [2m36[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::config(key = "g")]
+  [31m│[0m  [2m37[0m │ [35;1m│[0m   // Decorating a re-export that doesn't point at a type.
+  [31m│[0m  [2m38[0m │ [35;1m│[0m   // Case 1: function.
+  [31m│[0m  [2m39[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub use private::not_a_type;
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe annotated re-export[0m
+  [31m│[0m  [2m40[0m │
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m You can't register an enum variant as a config type.
+  [31m│[0m The re-exported item must be either an enum or a struct.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:40:1]
+  [31m│[0m  [2m40[0m │
+  [31m│[0m  [2m41[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::config(key = "h")]
+  [31m│[0m  [2m42[0m │ [35;1m│[0m   // Decorating a re-export that doesn't point at a type.
+  [31m│[0m  [2m43[0m │ [35;1m│[0m   // Case 2: enum variant.
+  [31m│[0m  [2m44[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub use private::AnEnum::ItsVariant;
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe annotated re-export[0m
+  [31m│[0m  [2m45[0m │
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m You can't register a function as a config type.
+  [31m│[0m The re-exported item must be either an enum or a struct.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:45:1]
+  [31m│[0m  [2m45[0m │
+  [31m│[0m  [2m46[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::config(key = "i")]
+  [31m│[0m  [2m47[0m │ [35;1m│[0m   // Decorating a re-export that doesn't point at a type.
+  [31m│[0m  [2m48[0m │ [35;1m│[0m   // Case 3: submodule.
+  [31m│[0m  [2m49[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub use private::a_module;
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe annotated re-export[0m
+  [31m│[0m  [2m50[0m │
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m You can't register a function as a config type.
+  [31m│[0m The re-exported item must be either an enum or a struct.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:50:1]
+  [31m│[0m  [2m50[0m │
+  [31m│[0m  [2m51[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::config(key = "j")]
+  [31m│[0m  [2m52[0m │ [35;1m│[0m   // Decorating a re-export from another crate that doesn't point at a type.
+  [31m│[0m  [2m53[0m │ [35;1m│[0m   // Case 1: function.
+  [31m│[0m  [2m54[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub use dep::a_function;
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe annotated re-export[0m
+  [31m│[0m  [2m55[0m │
+  [31m│[0m     ╰────
+[31;1mERROR[0m:
+  [31m×[0m I can't find the definition for the re-exported item.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:55:1]
+  [31m│[0m  [2m55[0m │
+  [31m│[0m  [2m56[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::config(key = "k")]
+  [31m│[0m  [2m57[0m │ [35;1m│[0m   // Decorating a re-export from another crate that doesn't point at a type.
+  [31m│[0m  [2m58[0m │ [35;1m│[0m   // Case 2: enum variant.
+  [31m│[0m  [2m59[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub use dep::AnEnum::ItsSecondVariant;
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe annotated re-export[0m
+  [31m│[0m  [2m60[0m │
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Are you sure that the re-exported item is an enum or a struct?
+[31;1mERROR[0m:
+  [31m×[0m I can't find the definition for the re-exported item.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/invalid_config_attribute/src/lib.rs[0m:60:1]
+  [31m│[0m  [2m60[0m │
+  [31m│[0m  [2m61[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::config(key = "l")]
+  [31m│[0m  [2m62[0m │ [35;1m│[0m   // Decorating a re-export that doesn't point at a type.
+  [31m│[0m  [2m63[0m │ [35;1m│[0m   // Case 3: submodule.
+  [31m│[0m  [2m64[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub use dep::submodule;
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe annotated re-export[0m
+  [31m│[0m  [2m65[0m │
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Are you sure that the re-exported item is an enum or a struct?

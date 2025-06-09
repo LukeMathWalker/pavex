@@ -42,7 +42,13 @@ pub(crate) fn attribute_span(
 
     let raw_source = &source.contents;
     let span = if kind == ComponentKind::ConfigType || kind == ComponentKind::PrebuiltType {
-        find_type_def(location, &source.parsed)?.attrs_and_name_span()
+        if let Some(type_def) = find_type_def(location, &source.parsed) {
+            type_def.attrs_and_name_span()
+        } else if let Some(use_) = find_use(location, &source.parsed) {
+            use_.span()
+        } else {
+            return None;
+        }
     } else {
         find_callable_def(location, &source.parsed)?.attrs_and_sig_span()
     };
@@ -769,6 +775,40 @@ fn find_type_def<'a>(location: &'a Location, file: &'a syn::File) -> Option<Type
     }
 
     let mut locator = TypeLocator {
+        location,
+        node: None,
+    };
+    locator.visit_file(file);
+    locator.node
+}
+
+/// Visits the abstract syntax tree of a parsed `syn::File` to find a `use` statement node
+/// that contains the given `location`.
+/// It then converts the span associated with the node to a [`SourceSpan`].
+fn find_use<'a>(location: &'a Location, file: &'a syn::File) -> Option<&'a syn::ItemUse> {
+    /// A visitor that locates the `use` statement that contains the given `location`.
+    struct UseLocator<'a> {
+        location: &'a Location,
+        node: Option<&'a syn::ItemUse>,
+    }
+
+    impl<'a> Visit<'a> for UseLocator<'a> {
+        fn visit_item_use(&mut self, node: &'a syn::ItemUse) {
+            if node.span().contains(self.location) {
+                self.node = Some(node);
+                syn::visit::visit_item_use(self, node)
+            }
+        }
+        fn visit_stmt(&mut self, node: &'a Stmt) {
+            // This is an optimization—it allows the visitor to skip the entire sub-tree
+            // under a top-level statement that is not relevant to our search.
+            if node.span().contains(self.location) {
+                syn::visit::visit_stmt(self, node)
+            }
+        }
+    }
+
+    let mut locator = UseLocator {
         location,
         node: None,
     };

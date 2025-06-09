@@ -3,7 +3,7 @@ use crate::utils::{CloningStrategy, CloningStrategyFlags, deny_unreachable_pub_a
 use darling::FromMeta;
 use darling::util::Flag;
 use proc_macro::TokenStream;
-use quote::{ToTokens, quote};
+use quote::{ToTokens, format_ident, quote};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::config]`.
@@ -132,10 +132,22 @@ fn reject_invalid_input(input: TokenStream) -> Result<(), TokenStream> {
                     syn::UseTree::Name(_) | syn::UseTree::Rename(_) => {
                         break;
                     }
-                    syn::UseTree::Glob(_) | syn::UseTree::Group(_) => {
+                    syn::UseTree::Glob(_) => {
                         return Err(syn::Error::new_spanned(
                             item,
-                            "Only single concrete item imports are allowed. No globs or multi-imports.",
+                            "Star re-exports can't be annotated with #[pavex::config].\n\
+                            Re-export your configuration types one by one, \
+                            annotating each `use` with #[pavex::config].",
+                        )
+                        .to_compile_error()
+                        .into());
+                    }
+                    syn::UseTree::Group(_) => {
+                        return Err(syn::Error::new_spanned(
+                            item,
+                            "Grouped re-exports can't be annotated with #[pavex::config].\n\
+                            Re-export your configuration types one by one, \
+                            annotating each `use` with #[pavex::config].",
                         )
                         .to_compile_error()
                         .into());
@@ -156,7 +168,13 @@ fn reject_invalid_input(input: TokenStream) -> Result<(), TokenStream> {
     must_be_public(
         "Configuration types",
         raw_item.visibility(),
-        raw_item.ident(),
+        &match &raw_item {
+            RawConfigItem::Enum(item) => item.ident.clone(),
+            RawConfigItem::Struct(item) => item.ident.clone(),
+            // We need the error message to nudge the user towards marking the _re-export_
+            // as `pub`, not the re-exported item.
+            RawConfigItem::Use(_) => format_ident!("use"),
+        },
         &raw_item,
     )?;
     Ok(())
@@ -173,32 +191,6 @@ enum RawConfigItem {
 }
 
 impl RawConfigItem {
-    fn ident(&self) -> &syn::Ident {
-        match self {
-            RawConfigItem::Enum(item) => &item.ident,
-            RawConfigItem::Struct(item) => &item.ident,
-            RawConfigItem::Use(item) => {
-                let mut current = &item.tree;
-                loop {
-                    match current {
-                        syn::UseTree::Path(use_path) => {
-                            current = &use_path.tree;
-                        }
-                        syn::UseTree::Name(name) => {
-                            return &name.ident;
-                        }
-                        syn::UseTree::Rename(rename) => {
-                            return &rename.ident;
-                        }
-                        _ => {
-                            panic!("Unexpected UseTree variant encountered while recursing.");
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     fn visibility(&self) -> &syn::Visibility {
         match self {
             RawConfigItem::Enum(item) => &item.vis,

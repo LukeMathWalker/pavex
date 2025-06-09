@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use ahash::{HashMap, HashMapExt};
+use ahash::HashMap;
 use anyhow::{Context, anyhow};
 use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
@@ -554,17 +554,8 @@ pub struct Crate {
     /// different namespaces and can contain items with the same name.
     /// E.g. `core::clone::Clone` is both a trait and a derive macro.
     pub(super) import_path2id: HashMap<Vec<String>, rustdoc_types::Id>,
-    /// A mapping that keeps track of re-exports of types (or modules!) from
-    /// other crates.
-    ///
-    /// The key is the path under which the type is re-exported.
-    /// The value is a tuple containing:
-    /// - the path of the type in the original crate;
-    /// - the id of the original crate in the `external_crates` section of the JSON documentation.
-    ///
-    /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
-    /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
-    pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
+    /// Types (or modules!) re-exported from other crates.
+    pub(crate) external_re_exports: ExternalReExports,
     /// All the items in this crate that have been annotated with an attribute from the `diagnostic::pavex::*` namespace.
     pub(crate) annotated_items: AnnotatedItems,
     /// An in-memory index of all modules, traits, structs, enums, and functions that were defined in the current crate.
@@ -572,6 +563,114 @@ pub struct Crate {
     /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
     /// for each of them.
     pub(crate) import_index: ImportIndex,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+/// Track re-exports of types (or entire modules!) from other crates.
+pub struct ExternalReExports {
+    /// Key: the path of the re-exported type in the current crate.
+    /// Value: the id of the `rustdoc` item of kind `use` that performed the re-export.
+    ///
+    /// E.g. `pub use hyper::server as sx;` in `lib.rs` would use `vec!["my_crate", "sx"]`
+    /// as key in this map.
+    target_path2use_id: HashMap<Vec<String>, rustdoc_types::Id>,
+    /// Key: the id of the `rustdoc` item of kind `use` that performed the re-export.
+    /// Value: metadata about the re-export.
+    use_id2re_export: HashMap<rustdoc_types::Id, ExternalReExport>,
+}
+
+impl ExternalReExports {
+    /// Iteratore over the external re-exports that have been collected.
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (&Vec<String>, rustdoc_types::Id, &ExternalReExport)> {
+        self.target_path2use_id
+            .iter()
+            .map(|(target_path, id)| (target_path, *id, &self.use_id2re_export[id]))
+    }
+
+    /// Add another re-export to the database.
+    pub fn insert(
+        &mut self,
+        krate: &CrateData,
+        use_item: &rustdoc_types::Item,
+        current_path: &[String],
+    ) {
+        let ItemEnum::Use(use_) = &use_item.inner else {
+            unreachable!()
+        };
+        let imported_id = use_.id.expect("Import doesn't have an associated id");
+        let Some(imported_summary) = krate.paths.get(&imported_id) else {
+            // TODO: this is firing for std's JSON docs. File a bug report.
+            // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)
+            return;
+        };
+        debug_assert!(imported_summary.crate_id != 0);
+        // We are looking at a public re-export of another crate
+        // (e.g. `pub use hyper;`), one of its modules or one of its items.
+        // Due to how re-exports are handled in `rustdoc`, the re-exported
+        // items inside that foreign module will not be found in the `index`
+        // for this crate.
+        // We intentionally add foreign items to the index to get a "complete"
+        // picture of all the types available in this crate.
+        let external_crate_id = imported_summary.crate_id;
+        let source_path = imported_summary.path.to_owned();
+        let re_exported_path = {
+            let mut p = current_path.to_owned();
+            if !use_.is_glob {
+                p.push(use_.name.clone());
+            }
+            p
+        };
+        let re_export = ExternalReExport {
+            source_path,
+            external_crate_id,
+        };
+
+        self.target_path2use_id
+            .insert(re_exported_path, use_item.id);
+        self.use_id2re_export.insert(use_item.id, re_export);
+    }
+
+    /// Retrieve the re-exported item from the crate it was defined into.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided `use_id` doesn't exist as a key in the re-export registry.
+    pub fn get_target_item_id(
+        &self,
+        // The crate associated with these re-exports.
+        re_exported_from: &Crate,
+        krate_collection: &CrateCollection,
+        use_id: rustdoc_types::Id,
+    ) -> Result<Option<GlobalItemId>, CannotGetCrateData> {
+        let re_export = &self.use_id2re_export[&use_id];
+        let source_package_id = re_exported_from
+            .core
+            .compute_package_id_for_crate_id(re_export.external_crate_id, krate_collection, None)
+            .expect("Failed to compute the package id for a given external crate id");
+        let source_krate =
+            krate_collection.get_or_compute_crate_by_package_id(&source_package_id)?;
+        let Ok(Ok(source_id)) =
+            source_krate.get_item_id_by_path(&re_export.source_path, krate_collection)
+        else {
+            return Ok(None);
+        };
+        Ok(Some(source_id))
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// Information about a type (or module) re-exported from another crate.
+pub struct ExternalReExport {
+    /// The path of the re-exported type in the crate it was re-exported from.
+    ///
+    /// E.g. `pub use hyper::server as sx;` in `lib.rs` would set `source_path` to
+    /// `vec!["hyper", "server"]`.
+    source_path: Vec<String>,
+    /// The id of the source crate in the `external_crates` section of the JSON
+    /// documentation of the crate that re-exported it.
+    external_crate_id: u32,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -584,6 +683,9 @@ pub struct ImportIndex {
     /// A mapping that keeps track of traits, structs, enums and functions
     /// defined in the current crate.
     pub items: HashMap<rustdoc_types::Id, ImportIndexEntry>,
+    /// A mapping that associates the id of each re-export (`pub use ...`) to the id
+    /// of the module it was re-exported from.
+    pub re_export2parent_module: HashMap<rustdoc_types::Id, rustdoc_types::Id>,
 }
 
 /// An entry in [`ImportIndex`].
@@ -845,17 +947,18 @@ impl Crate {
 
         let mut annotation_queue = BTreeSet::<QueueItem>::new();
         let mut import_index = ImportIndex::default();
-        let mut re_exports = HashMap::new();
+        let mut external_re_exports = Default::default();
         index_local_types(
             &krate,
             &package_id,
             IndexSet::new(),
             vec![],
             &mut import_index,
-            &mut re_exports,
+            &mut external_re_exports,
             &mut annotation_queue,
             &krate.root_item_id,
             true,
+            None,
             false,
             diagnostics,
         );
@@ -873,7 +976,7 @@ impl Crate {
             core: CrateCore { package_id, krate },
             import_path2id,
             import_index,
-            re_exports,
+            external_re_exports,
             annotated_items: AnnotatedItems::default(),
         };
 
@@ -950,7 +1053,14 @@ impl Crate {
             )));
         }
 
-        for (re_exported_path_prefix, (source_path_prefix, external_crate_num)) in &self.re_exports
+        for (
+            re_exported_path_prefix,
+            _,
+            ExternalReExport {
+                source_path: source_path_prefix,
+                external_crate_id,
+            },
+        ) in self.external_re_exports.iter()
         {
             if re_exported_path_prefix
                 .iter()
@@ -964,7 +1074,7 @@ impl Crate {
 
                 let source_package_id = self
                     .core
-                    .compute_package_id_for_crate_id(*external_crate_num, krate_collection, None)
+                    .compute_package_id_for_crate_id(*external_crate_id, krate_collection, None)
                     .unwrap();
                 let source_krate = krate_collection
                     .get_or_compute_crate_by_package_id(&source_package_id)
@@ -1044,10 +1154,13 @@ fn index_local_types<'a>(
     mut navigation_history: IndexSet<rustdoc_types::Id>,
     mut current_path: Vec<String>,
     import_index: &mut ImportIndex,
-    re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
+    re_exports: &mut ExternalReExports,
     annotation_queue: &mut BTreeSet<QueueItem>,
     current_item_id: &rustdoc_types::Id,
     is_public: bool,
+    // Set when the current item has been re-exported via a `use` statement
+    // that includes an `as` rename.
+    renamed_to: Option<String>,
     // If `true`, we've encountered at least a `pub use`/`use` statement while
     // navigating to this item.
     encountered_use: bool,
@@ -1116,11 +1229,14 @@ fn index_local_types<'a>(
     let current_item = current_item.as_ref();
     match &current_item.inner {
         ItemEnum::Module(m) => {
-            let current_path_segment = current_item
-                .name
-                .as_deref()
-                .expect("All 'module' items have a 'name' property");
-            current_path.push(current_path_segment.to_owned());
+            let current_path_segment = renamed_to.unwrap_or_else(|| {
+                current_item
+                    .name
+                    .as_deref()
+                    .expect("All 'module' items have a 'name' property")
+                    .to_owned()
+            });
+            current_path.push(current_path_segment);
 
             add_to_import_index(
                 current_path
@@ -1142,137 +1258,130 @@ fn index_local_types<'a>(
                     annotation_queue,
                     item_id,
                     is_public,
+                    None,
                     encountered_use,
                     diagnostics,
                 );
             }
         }
         ItemEnum::Use(i) => {
-            if let Some(imported_id) = &i.id {
-                match krate.index.get(imported_id) {
-                    None => {
-                        if let Some(imported_summary) = krate.paths.get(imported_id) {
-                            debug_assert!(imported_summary.crate_id != 0);
-                            // We are looking at a public re-export of another crate
-                            // (e.g. `pub use hyper;`), one of its modules or one of its items.
-                            // Due to how re-exports are handled in `rustdoc`, the re-exported
-                            // items inside that foreign module will not be found in the `index`
-                            // for this crate.
-                            // We intentionally add foreign items to the index to get a "complete"
-                            // picture of all the types available in this crate.
-                            let external_crate_id = imported_summary.crate_id;
-                            let re_exported_path = &imported_summary.path;
-                            current_path.push(i.name.clone());
+            let Some(imported_id) = &i.id else {
+                return;
+            };
 
-                            re_exports.insert(
-                                current_path.into_iter().map(|s| s.to_string()).collect(),
-                                (re_exported_path.to_owned(), external_crate_id),
-                            );
+            import_index
+                .re_export2parent_module
+                .insert(current_item.id, *navigation_history.last().unwrap());
+
+            let Some(imported_item) = krate.index.get(imported_id) else {
+                // We are looking at a public re-export of another crate
+                // (e.g. `pub use hyper;`), one of its modules or one of its items.
+                // Due to how re-exports are handled in `rustdoc`, the re-exported
+                // items inside that foreign module will not be found in the `index`
+                // for this crate.
+                // We intentionally add foreign items to the index to get a "complete"
+                // picture of all the types available in this crate.
+                re_exports.insert(krate, current_item, &current_path);
+                return;
+            };
+            if let ItemEnum::Module(re_exported_module) = &imported_item.inner {
+                if !i.is_glob {
+                    current_path.push(i.name.clone());
+                }
+                // In Rust it is possible to create infinite loops with local modules!
+                // Minimal example:
+                // ```rust
+                // pub struct A;
+                // mod inner {
+                //   pub use crate as b;
+                // }
+                // ```
+                // We use this check to detect if we're about to get stuck in an infinite
+                // loop, so that we can break early.
+                // It does mean that some paths that _would_ be valid won't be recognised,
+                // but this pattern is rarely used and for the time being we don't want to
+                // take the complexity hit of making visible paths lazily evaluated.
+                let infinite_loop = !navigation_history.insert(*imported_id);
+                if !infinite_loop {
+                    for re_exported_item_id in &re_exported_module.items {
+                        index_local_types(
+                            krate,
+                            package_id,
+                            navigation_history.clone(),
+                            current_path.clone(),
+                            import_index,
+                            re_exports,
+                            annotation_queue,
+                            re_exported_item_id,
+                            is_public,
+                            None,
+                            true,
+                            diagnostics,
+                        );
+                    }
+                }
+            } else {
+                navigation_history.insert(*imported_id);
+
+                if matches!(
+                    imported_item.inner,
+                    ItemEnum::Enum(_)
+                        | ItemEnum::Struct(_)
+                        | ItemEnum::Trait(_)
+                        | ItemEnum::Function(_)
+                        | ItemEnum::Primitive(_)
+                        | ItemEnum::TypeAlias(_)
+                ) {
+                    // We keep track of the source path in our indexes.
+                    // This is useful, in particular, if we don't have
+                    // access to the source module of the imported item.
+                    // This can happen when working with `std`/`alloc`/`core`
+                    // since the JSON output doesn't include private/doc-hidden
+                    // items.
+                    let mut normalized_source_path = vec![];
+                    let source_segments = i.source.split("::");
+                    for segment in source_segments {
+                        if segment == "self" {
+                            normalized_source_path
+                                .extend(current_path.iter().map(|s| s.to_string()));
+                        } else if segment == "crate" {
+                            normalized_source_path.push(current_path[0].to_string())
                         } else {
-                            // TODO: this is firing for std's JSON docs. File a bug report.
-                            // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)
+                            normalized_source_path.push(segment.to_string());
                         }
                     }
-                    Some(imported_item) => {
-                        if let ItemEnum::Module(re_exported_module) = &imported_item.inner {
-                            if !i.is_glob {
-                                current_path.push(i.name.clone());
-                            }
-                            // In Rust it is possible to create infinite loops with local modules!
-                            // Minimal example:
-                            // ```rust
-                            // pub struct A;
-                            // mod inner {
-                            //   pub use crate as b;
-                            // }
-                            // ```
-                            // We use this check to detect if we're about to get stuck in an infinite
-                            // loop, so that we can break early.
-                            // It does mean that some paths that _would_ be valid won't be recognised,
-                            // but this pattern is rarely used and for the time being we don't want to
-                            // take the complexity hit of making visible paths lazily evaluated.
-                            let infinite_loop = !navigation_history.insert(*imported_id);
-                            if !infinite_loop {
-                                for re_exported_item_id in &re_exported_module.items {
-                                    index_local_types(
-                                        krate,
-                                        package_id,
-                                        navigation_history.clone(),
-                                        current_path.clone(),
-                                        import_index,
-                                        re_exports,
-                                        annotation_queue,
-                                        re_exported_item_id,
-                                        is_public,
-                                        true,
-                                        diagnostics,
-                                    );
-                                }
-                            }
-                        } else {
-                            navigation_history.insert(*imported_id);
-
-                            if matches!(
-                                imported_item.inner,
-                                ItemEnum::Enum(_)
-                                    | ItemEnum::Struct(_)
-                                    | ItemEnum::Trait(_)
-                                    | ItemEnum::Function(_)
-                                    | ItemEnum::Primitive(_)
-                                    | ItemEnum::TypeAlias(_)
-                            ) {
-                                // We keep track of the source path in our indexes.
-                                // This is useful, in particular, if we don't have
-                                // access to the source module of the imported item.
-                                // This can happen when working with `std`/`alloc`/`core`
-                                // since the JSON output doesn't include private/doc-hidden
-                                // items.
-                                let mut normalized_source_path = vec![];
-                                let source_segments = i.source.split("::");
-                                for segment in source_segments {
-                                    if segment == "self" {
-                                        normalized_source_path
-                                            .extend(current_path.iter().map(|s| s.to_string()));
-                                    } else if segment == "crate" {
-                                        normalized_source_path.push(current_path[0].to_string())
-                                    } else {
-                                        normalized_source_path.push(segment.to_string());
-                                    }
-                                }
-                                // Assume it's private unless we find out otherwise later on
-                                match import_index.items.get_mut(imported_id) {
-                                    Some(entry) => {
-                                        entry.insert_private(normalized_source_path);
-                                    }
-                                    None => {
-                                        import_index.items.insert(
-                                            *imported_id,
-                                            ImportIndexEntry::new(
-                                                normalized_source_path,
-                                                EntryVisibility::Private,
-                                                false,
-                                            ),
-                                        );
-                                    }
-                                }
-                            }
-
-                            index_local_types(
-                                krate,
-                                package_id,
-                                navigation_history,
-                                current_path.clone(),
-                                import_index,
-                                re_exports,
-                                annotation_queue,
-                                imported_id,
-                                is_public,
-                                true,
-                                diagnostics,
+                    // Assume it's private unless we find out otherwise later on
+                    match import_index.items.get_mut(imported_id) {
+                        Some(entry) => {
+                            entry.insert_private(normalized_source_path);
+                        }
+                        None => {
+                            import_index.items.insert(
+                                *imported_id,
+                                ImportIndexEntry::new(
+                                    normalized_source_path,
+                                    EntryVisibility::Private,
+                                    false,
+                                ),
                             );
                         }
                     }
                 }
+
+                index_local_types(
+                    krate,
+                    package_id,
+                    navigation_history,
+                    current_path.clone(),
+                    import_index,
+                    re_exports,
+                    annotation_queue,
+                    imported_id,
+                    is_public,
+                    Some(i.name.clone()),
+                    true,
+                    diagnostics,
+                );
             }
         }
         ItemEnum::Trait(_)
@@ -1290,7 +1399,7 @@ fn index_local_types<'a>(
                 // A hacky workaround, but it works.
                 current_path.push("primitive".into());
             }
-            current_path.push(name.to_owned());
+            current_path.push(renamed_to.unwrap_or_else(|| name.to_owned()));
             let path: Vec<_> = current_path.into_iter().map(|s| s.to_string()).collect();
             add_to_import_index(path, false);
 

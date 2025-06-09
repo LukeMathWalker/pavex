@@ -74,6 +74,14 @@ impl AnnotatedItem {
                     module_path,
                 })
             }
+            ItemEnum::Use(..) => {
+                let module_path = "[missing]".to_owned();
+                Some(CreatedAt {
+                    package_name: krate.crate_name(),
+                    package_version: krate.crate_version(graph).to_string(),
+                    module_path,
+                })
+            }
             _ => None,
         }
     }

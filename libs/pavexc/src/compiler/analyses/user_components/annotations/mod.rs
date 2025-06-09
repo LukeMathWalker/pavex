@@ -1,9 +1,12 @@
-use std::{collections::BTreeMap, ops::Deref, sync::Arc};
+use std::{borrow::Cow, collections::BTreeMap, ops::Deref, sync::Arc};
 
 mod diagnostic;
 mod overlay;
 
-use diagnostic::{const_generics_are_not_supported, not_a_module, unknown_module_path};
+use diagnostic::{
+    const_generics_are_not_supported, not_a_module, not_a_type_reexport, unknown_module_path,
+    unresolved_external_reexport,
+};
 pub use overlay::augment_from_annotation;
 
 use super::{
@@ -24,7 +27,7 @@ use crate::{
             OutputTypeResolutionError, SelfResolutionError, resolve_type,
         },
     },
-    diagnostic::{DiagnosticSink, Registration},
+    diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
         Callable, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf, Generic,
         GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
@@ -136,7 +139,11 @@ pub(super) fn register_imported_components(
                     Some(impl_info) => impl_info.attached_to,
                     None => id,
                 };
-                let entry = &krate.import_index.items[&id];
+                let entry = krate.import_index.items.get(&id).unwrap_or_else(|| {
+                    // It's a re-export.
+                    let module_id = krate.import_index.re_export2parent_module[&id];
+                    &krate.import_index.modules[&module_id]
+                });
                 if !entry.paths().any(|path| path.starts_with(module_path)) {
                     continue;
                 }
@@ -352,13 +359,7 @@ fn intern_annotated(
             aux.config_id2include_if_unused
                 .insert(config_id, include_if_unused.unwrap_or(false));
 
-            let ty = match rustdoc_item_def2type(item, krate) {
-                Ok(t) => t,
-                Err(e) => {
-                    const_generics_are_not_supported(e, item, diagnostics);
-                    return Err(());
-                }
-            };
+            let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;
             match ConfigType::new(ty, key) {
                 Ok(config) => {
                     aux.config_id2type.insert(config_id, config);
@@ -428,6 +429,88 @@ fn intern_annotated(
     }
 }
 
+/// Given an annotation, retrieve and process the type it points at.
+///
+/// If the annotation is attached to a re-export, it is resolved
+/// as part of the processing.
+///
+/// If procesing fails, it'll emit a diagnostic directly into the sink.
+fn annotated_item2type(
+    item: &Item,
+    krate: &Crate,
+    krate_collection: &CrateCollection,
+    diagnostics: &DiagnosticSink,
+) -> Result<ResolvedType, ()> {
+    /// If the annotated item is a `use` statement, retrieve
+    /// the definition of the re-exported item.
+    fn annotated_item2def<'a>(
+        item: &'a Item,
+        krate: &'a Crate,
+        krate_collection: &'a CrateCollection,
+        diagnostics: &DiagnosticSink,
+    ) -> Result<(Cow<'a, Item>, &'a Crate), ()> {
+        let ItemEnum::Use(use_) = &item.inner else {
+            // Not a re-export, the easy case.
+            return Ok((Cow::Borrowed(item), krate));
+        };
+        let imported_id = use_.id.unwrap();
+        let (source_krate, imported_item) =
+            if let Some(item) = krate.maybe_get_item_by_local_type_id(&imported_id) {
+                // Re-export of a local item.
+                (krate, item)
+            } else {
+                // Re-export of an item defined in another crate.
+                let imported_id = match krate
+                    .external_re_exports
+                    .get_target_item_id(krate, krate_collection, item.id)
+                    .map_err(|_| {
+                        // We failed to compute the crate docs.
+                        // The collection will have emitted a diagnostic, so we can
+                        // just return an `Err` here.
+                    })? {
+                    Some(imported_id) => imported_id,
+                    None => {
+                        // We failed to resolve the target item.
+                        unresolved_external_reexport(item, ComponentKind::ConfigType, diagnostics);
+                        return Err(());
+                    }
+                };
+                let Ok(krate) =
+                    krate_collection.get_or_compute_crate_by_package_id(&imported_id.package_id)
+                else {
+                    return Err(());
+                };
+                (
+                    krate,
+                    krate.get_item_by_local_type_id(&imported_id.rustdoc_item_id),
+                )
+            };
+        match &imported_item.inner {
+            ItemEnum::Enum(_) | ItemEnum::Struct(_) => {}
+            other => {
+                not_a_type_reexport(item, other.kind(), ComponentKind::ConfigType, diagnostics);
+                return Err(());
+            }
+        }
+        Ok((imported_item, source_krate))
+    }
+
+    let (item, krate) = annotated_item2def(item, krate, krate_collection, diagnostics)?;
+    match rustdoc_item_def2type(&item, krate) {
+        Ok(t) => Ok(t),
+        Err(e) => {
+            const_generics_are_not_supported(e, &item, diagnostics);
+            Err(())
+        }
+    }
+}
+
+/// Convert an `enum` or a `struct` definition from the JSON documentation
+/// for a crate into our own representation for types.
+///
+/// # Panics
+///
+/// Panics if the item isn't of kind `enum` or `struct`.
 fn rustdoc_item_def2type(
     item: &Item,
     krate: &Crate,

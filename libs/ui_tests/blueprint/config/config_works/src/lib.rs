@@ -16,7 +16,40 @@ pub struct A1;
 #[pavex::config(key = "b1", default_if_missing)]
 pub struct B1(pub String);
 
-pub fn handler(_a: &A, _b: &B<String>, _a1: &A1, _b1: &B1, _d: Vec<String>) -> Response {
+#[pavex::config(key = "c")]
+// Re-exported type.
+pub use sub::C;
+
+#[pavex::config(key = "e")]
+// Re-exported type with rename.
+pub use sub::D as E;
+
+#[pavex::config(key = "f")]
+// Re-exported type from another crate.
+pub use dep::F;
+
+#[pavex::config(key = "g")]
+// Re-exported type from another crate, with rename.
+pub use dep::Z as G;
+
+mod sub {
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct C;
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct D;
+}
+
+pub fn handler(
+    _a: &A,
+    _b: &B<String>,
+    _a1: &A1,
+    _b1: &B1,
+    _c: &C,
+    _d: Vec<String>,
+    _e: &E,
+    _f: &F,
+    _g: &G,
+) -> Response {
     todo!()
 }
 
