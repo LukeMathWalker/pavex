@@ -39,6 +39,47 @@ pub(super) fn const_generics_are_not_supported(
     diagnostics.push(diagnostic);
 }
 
+pub(super) fn not_a_type_reexport(
+    use_item: &Item,
+    imported_item_kind: &str,
+    component_kind: ComponentKind,
+    diagnostics: &DiagnosticSink,
+) {
+    let source = use_item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s), component_kind),
+            "The annotated re-export",
+        )
+    });
+    let e = anyhow::anyhow!(
+        "You can't register {imported_item_kind} as a {component_kind}.\n\
+        The re-exported item must be either an enum or a struct."
+    );
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(source)
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+pub(super) fn unresolved_external_reexport(
+    use_item: &Item,
+    component_kind: ComponentKind,
+    diagnostics: &DiagnosticSink,
+) {
+    let source = use_item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s), component_kind),
+            "The annotated re-export",
+        )
+    });
+    let e = anyhow::anyhow!("I can't find the definition for the re-exported item.");
+    let diagnostic = CompilerDiagnostic::builder(e)
+        .optional_source(source)
+        .help("Are you sure that the re-exported item is an enum or a struct?".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
 pub(super) fn unknown_module_path(
     module_path: &[String],
     krate_name: &str,

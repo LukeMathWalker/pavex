@@ -25,3 +25,17 @@ error: Configuration types must be public.
    |
 13 | enum B1 {}
    | ^^^^^^^
+
+error: Configuration types must be public.
+       Mark `use` as `pub`, and make sure it can be imported from outside your crate.
+  --> tests/config/fail/not_public.rs:16:1
+   |
+16 | use sub::A as A2;
+   | ^^^^^^^^^^^^^^^^
+
+error: Configuration types must be public.
+       Mark `use` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
+  --> tests/config/fail/not_public.rs:19:1
+   |
+19 | pub(crate) use sub::A as A3;
+   | ^^^^^^^^^^

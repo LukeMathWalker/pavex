@@ -35,11 +35,9 @@ impl Callable {
                 "{} can only be applied to functions and methods.",
                 M::ATTRIBUTE
             );
-            return Err(
-                syn::Error::new_spanned(input, msg)
-                    .to_compile_error()
-                    .into(),
-            );
+            return Err(syn::Error::new_spanned(input, msg)
+                .to_compile_error()
+                .into());
         };
 
         let self_ = Self { vis, sig };
