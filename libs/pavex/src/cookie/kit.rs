@@ -1,9 +1,8 @@
 use crate::blueprint::Blueprint;
-use crate::blueprint::config::ConfigType;
 use crate::blueprint::constructor::Constructor;
 use crate::blueprint::linter::Lint;
 use crate::blueprint::middleware::PostProcessingMiddleware;
-use crate::{f, t};
+use crate::f;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -32,12 +31,6 @@ pub struct CookieKit {
     /// [`Processor`]: super::Processor
     /// [`Processor::from`]: super::Processor::from
     pub processor: Option<Constructor>,
-    /// Register [`ProcessorConfig`] as a configuration type.
-    ///
-    /// By default, it uses `cookies` as its configuration key.
-    ///
-    /// [`ProcessorConfig`]: super::ProcessorConfig
-    pub processor_config: Option<ConfigType>,
     /// A post-processing middleware to inject response cookies into the outgoing response
     /// via the `Set-Cookie` header.
     ///
@@ -64,12 +57,9 @@ impl CookieKit {
             super::ProcessorConfig,
         >>::from))
         .ignore(Lint::Unused);
-        let processor_config =
-            ConfigType::new("cookies", t!(super::ProcessorConfig)).default_if_missing();
         Self {
             response_cookie_injector: Some(response_cookie_injector),
             processor: Some(processor),
-            processor_config: Some(processor_config),
         }
     }
 
@@ -89,9 +79,6 @@ impl CookieKit {
         }
         if let Some(processor) = self.processor {
             processor.register(bp);
-        }
-        if let Some(processor_config) = self.processor_config {
-            processor_config.register(bp);
         }
         RegisteredCookieKit {}
     }
