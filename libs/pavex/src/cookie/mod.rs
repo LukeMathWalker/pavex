@@ -14,7 +14,7 @@
 // - `ResponseCookies`, which is customized in the `response_cookies` module
 // - the `errors` module, which is augmented with additional error types in the `errors` module
 // - the `response` module, which is replaced with a wrapped version in the `response` module
-#[crate::config(key = "cookies")]
+#[crate::config(key = "cookies", default_if_missing)]
 pub use biscotti::ProcessorConfig;
 pub use biscotti::{
     Expiration, Key, Processor, RemovalCookie, RequestCookie, RequestCookies, ResponseCookie,
