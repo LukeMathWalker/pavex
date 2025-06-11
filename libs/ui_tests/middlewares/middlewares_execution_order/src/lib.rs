@@ -45,73 +45,74 @@ pub fn blueprint() -> Blueprint {
 
 pub fn top_level() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::first));
-    bp.wrap(f!(crate::second));
-    bp.post_process(f!(crate::first_post));
-    bp.post_process(f!(crate::second_post));
-    bp.pre_process(f!(crate::first_pre));
-    bp.pre_process(f!(crate::second_pre));
+    bp.wrap(FIRST);
+    bp.wrap(SECOND);
+    bp.post_process(FIRST_POST);
+    bp.post_process(SECOND_POST);
+    bp.pre_process(FIRST_PRE);
+    bp.pre_process(SECOND_PRE);
     bp.route(GET, "/top_level", f!(crate::handler));
     bp
 }
 
 pub fn after_handler() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::first));
-    bp.post_process(f!(crate::first_post));
-    bp.pre_process(f!(crate::first_pre));
+    bp.wrap(FIRST);
+    bp.post_process(FIRST_POST);
+    bp.pre_process(FIRST_PRE);
     bp.route(GET, "/after_handler", f!(crate::handler));
-    bp.wrap(f!(crate::second));
-    bp.pre_process(f!(crate::second_pre));
-    bp.post_process(f!(crate::second_post));
+    bp.wrap(SECOND);
+    bp.pre_process(SECOND_PRE);
+    bp.post_process(SECOND_POST);
     bp
 }
 
 pub fn early_return() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::first));
-    bp.post_process(f!(crate::first_post));
-    bp.pre_process(f!(crate::early_return_pre));
-    bp.wrap(f!(crate::second));
-    bp.pre_process(f!(crate::second_pre));
-    bp.post_process(f!(crate::second_post));
+    bp.wrap(FIRST);
+    bp.post_process(FIRST_POST);
+    bp.pre_process(EARLY_RETURN_PRE);
+    bp.wrap(SECOND);
+    bp.pre_process(SECOND_PRE);
+    bp.post_process(SECOND_POST);
     bp.route(GET, "/early_return", f!(crate::handler));
     bp
 }
 
 pub fn failing_pre() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::first));
-    bp.post_process(f!(crate::first_post));
-    bp.pre_process(f!(crate::failing_pre_)).error_handler(f!(crate::e500));
-    bp.wrap(f!(crate::second));
-    bp.pre_process(f!(crate::second_pre));
-    bp.post_process(f!(crate::second_post));
+    bp.wrap(FIRST);
+    bp.post_process(FIRST_POST);
+    bp.pre_process(FAILING_PRE).error_handler(E_500);
+    bp.wrap(SECOND);
+    bp.pre_process(SECOND_PRE);
+    bp.post_process(SECOND_POST);
     bp.route(GET, "/failing_pre", f!(crate::handler));
     bp
 }
 
 pub fn nested() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::first));
-    bp.pre_process(f!(crate::first_pre));
-    bp.post_process(f!(crate::first_post));
+    bp.wrap(FIRST);
+    bp.pre_process(FIRST_PRE);
+    bp.post_process(FIRST_POST);
     bp.nest({
         let mut bp = Blueprint::new();
-        bp.wrap(f!(crate::second));
-        bp.post_process(f!(crate::second_post));
-        bp.pre_process(f!(crate::second_pre));
+        bp.wrap(SECOND);
+        bp.post_process(SECOND_POST);
+        bp.pre_process(SECOND_PRE);
         bp.route(GET, "/nested", f!(crate::handler));
         bp
     });
-    bp.wrap(f!(crate::third));
-    bp.pre_process(f!(crate::third_pre));
-    bp.post_process(f!(crate::third_post));
+    bp.wrap(THIRD);
+    bp.pre_process(THIRD_PRE);
+    bp.post_process(THIRD_POST);
     bp
 }
 
 macro_rules! spy_mw {
     ($name:ident) => {
+        #[pavex::wrap]
         pub async fn $name<C>(
             spy: &$crate::Spy,
             next: pavex::middleware::Next<C>,
@@ -133,6 +134,7 @@ spy_mw!(third);
 
 macro_rules! spy_post {
     ($name:ident) => {
+        #[pavex::post_process]
         pub async fn $name(
             spy: &$crate::Spy,
             response: pavex::response::Response,
@@ -147,22 +149,26 @@ spy_post!(first_post);
 spy_post!(second_post);
 spy_post!(third_post);
 
+#[pavex::pre_process]
 pub async fn early_return_pre(spy: &Spy) -> pavex::middleware::Processing {
     spy.push("early_return_pre".to_string()).await;
     pavex::middleware::Processing::EarlyReturn(Response::ok())
 }
 
+#[pavex::pre_process]
 pub async fn failing_pre_(spy: &Spy) -> Result<pavex::middleware::Processing, pavex::Error> {
     spy.push("failing_pre".to_string()).await;
     Err(pavex::Error::new("failing_pre"))
 }
 
+#[pavex::error_handler]
 pub fn e500(_e: &pavex::Error) -> Response {
     Response::internal_server_error()
 }
 
 macro_rules! spy_pre {
     ($name:ident) => {
+        #[pavex::pre_process]
         pub async fn $name(spy: &$crate::Spy) -> pavex::middleware::Processing {
             spy.push(format!("{}", stringify!($name))).await;
             pavex::middleware::Processing::Continue

@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::response::Response;
@@ -37,13 +37,7 @@ where
     todo!()
 }
 
-pub fn no_attribute<T>(_next: Next<T>) -> Result<Response, CustomError>
-where
-    T: IntoFuture<Output = Response>,
-{
-    todo!()
-}
-
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -70,9 +64,6 @@ pub fn blueprint() -> Blueprint {
     bp.wrap(EHANDLER_OVERRIDE_VIA_BLUEPRINT)
         .error_handler(f!(crate::CustomError::into_response_override));
 
-    bp.wrap(f!(crate::no_attribute))
-        .error_handler(f!(crate::CustomError::into_response));
-
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

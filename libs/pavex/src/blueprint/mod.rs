@@ -21,5 +21,6 @@ pub mod linter;
 pub mod middleware;
 pub mod nesting;
 pub mod prebuilt;
+pub mod raw;
 pub mod reflection;
 pub mod router;

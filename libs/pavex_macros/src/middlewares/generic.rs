@@ -51,6 +51,15 @@ impl MiddlewareKind {
             MiddlewareKind::PostProcess => "post_process",
         }
     }
+
+    pub fn raw_type_name(&self) -> syn::Ident {
+        let s = match self {
+            MiddlewareKind::Wrap => "RawWrappingMiddleware",
+            MiddlewareKind::PreProcess => "RawPreProcessingMiddleware",
+            MiddlewareKind::PostProcess => "RawPostProcessingMiddleware",
+        };
+        format_ident!("{s}")
+    }
 }
 
 pub fn middleware(
@@ -117,17 +126,20 @@ bp.{bp_method_name}({id});
         )
     };
     let macro_name = kind.macro_name();
+    let raw_type_name = kind.raw_type_name();
     let pavex = match pavex {
         Some(c) => quote! { #c },
         None => quote! { ::pavex },
     };
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
-        pub const #id: #pavex::blueprint::reflection::WithLocation<#pavex::blueprint::reflection::RawIdentifiers> =
-            #pavex::with_location!(#pavex::blueprint::reflection::RawIdentifiers {
+        pub const #id: #pavex::blueprint::raw::#raw_type_name = #pavex::blueprint::raw::#raw_type_name {
+            coordinates: #pavex::with_location!(#pavex::blueprint::reflection::RawIdentifiers {
                 import_path: concat!(module_path!(), "::", #name),
                 macro_name: #macro_name,
-            });
+            }),
+            error_handler: None
+        };
     };
 
     let macro_name = format_ident!("{macro_name}");

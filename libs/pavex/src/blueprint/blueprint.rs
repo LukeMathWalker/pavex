@@ -22,6 +22,7 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
+use super::raw::{RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware};
 use super::reflection::{RawIdentifiers, Sources, WithLocation};
 use super::router::{MethodGuard, RegisteredRoute, RegisteredRoutes};
 
@@ -570,11 +571,12 @@ impl Blueprint {
     /// # Example: a timeout wrapper
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::Blueprint, middleware::Next, response::Response};
+    /// use pavex::{blueprint::Blueprint, middleware::Next, response::Response};
     /// use std::future::{IntoFuture, Future};
     /// use std::time::Duration;
     /// use tokio::time::{timeout, error::Elapsed};
     ///
+    /// #[pavex::wrap]
     /// pub async fn timeout_wrapper<C>(next: Next<C>) -> Result<Response, Elapsed>
     /// where
     ///     C: Future<Output = Response>
@@ -585,16 +587,18 @@ impl Blueprint {
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     // Register the wrapping middleware against the blueprint.
-    ///     bp.wrap(f!(crate::timeout_wrapper));
+    ///     bp.wrap(TIMEOUT_WRAPPER);
     ///     // [...]
     ///     bp
     /// }
     /// ```
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredWrappingMiddleware {
+    pub fn wrap(&mut self, m: RawWrappingMiddleware) -> RegisteredWrappingMiddleware {
         let registered = WrappingMiddleware {
-            middleware: raw_identifiers2callable(callable),
-            error_handler: None,
+            middleware: raw_identifiers2callable(m.coordinates),
+            error_handler: m
+                .error_handler
+                .map(|e| raw_identifiers2callable(e.coordinates)),
         };
         let component_id = self.push_component(registered);
         RegisteredWrappingMiddleware {
@@ -630,12 +634,13 @@ impl Blueprint {
     /// # Example: a logging middleware
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::Blueprint, response::Response};
+    /// use pavex::{blueprint::Blueprint, response::Response};
     /// use pavex_tracing::{
     ///     RootSpan,
     ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
     /// };
     ///
+    /// #[pavex::post_process]
     /// pub fn response_logger(response: Response, root_span: &RootSpan) -> Response
     /// {
     ///     root_span.record(
@@ -648,7 +653,7 @@ impl Blueprint {
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     // Register the post-processing middleware against the blueprint.
-    ///     bp.post_process(f!(crate::response_logger));
+    ///     bp.post_process(RESPONSE_LOGGER);
     ///     // [...]
     ///     bp
     /// }
@@ -657,11 +662,13 @@ impl Blueprint {
     #[doc(alias = "postprocess")]
     pub fn post_process(
         &mut self,
-        callable: WithLocation<RawIdentifiers>,
+        m: RawPostProcessingMiddleware,
     ) -> RegisteredPostProcessingMiddleware {
         let registered = PostProcessingMiddleware {
-            middleware: raw_identifiers2callable(callable),
-            error_handler: None,
+            middleware: raw_identifiers2callable(m.coordinates),
+            error_handler: m
+                .error_handler
+                .map(|e| raw_identifiers2callable(e.coordinates)),
         };
         let component_id = self.push_component(registered);
         RegisteredPostProcessingMiddleware {
@@ -682,13 +689,14 @@ impl Blueprint {
     /// # Example: path normalization
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::Blueprint, response::Response};
+    /// use pavex::{blueprint::Blueprint, response::Response};
     /// use pavex::middleware::Processing;
     /// use pavex::http::{HeaderValue, header::LOCATION};
     /// use pavex::request::RequestHead;
     ///
     /// /// If the request path ends with a `/`,
     /// /// redirect to the same path without the trailing `/`.
+    /// #[pavex::pre_process]
     /// pub fn redirect_to_normalized(request_head: &RequestHead) -> Processing
     /// {
     ///     let Some(normalized_path) = request_head.target.path().strip_suffix('/') else {
@@ -705,7 +713,7 @@ impl Blueprint {
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     // Register the pre-processing middleware against the blueprint.
-    ///     bp.pre_process(f!(crate::redirect_to_normalized));
+    ///     bp.pre_process(REDIRECT_TO_NORMALIZED);
     ///     // [...]
     ///     bp
     /// }
@@ -714,11 +722,13 @@ impl Blueprint {
     #[doc(alias = "preprocess")]
     pub fn pre_process(
         &mut self,
-        callable: WithLocation<RawIdentifiers>,
+        m: RawPreProcessingMiddleware,
     ) -> RegisteredPreProcessingMiddleware {
         let registered = PreProcessingMiddleware {
-            middleware: raw_identifiers2callable(callable),
-            error_handler: None,
+            middleware: raw_identifiers2callable(m.coordinates),
+            error_handler: m
+                .error_handler
+                .map(|e| raw_identifiers2callable(e.coordinates)),
         };
         let component_id = self.push_component(registered);
         RegisteredPreProcessingMiddleware {

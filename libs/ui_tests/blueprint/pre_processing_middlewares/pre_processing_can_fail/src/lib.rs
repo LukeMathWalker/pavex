@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::middleware::Processing;
 use pavex::response::Response;
@@ -28,10 +28,7 @@ pub fn override_in_blueprint() -> Result<Processing, CustomError> {
     todo!()
 }
 
-pub fn no_attribute() -> Result<Processing, CustomError> {
-    todo!()
-}
-
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -58,9 +55,6 @@ pub fn blueprint() -> Blueprint {
     bp.pre_process(EHANDLER_OVERRIDE_VIA_BLUEPRINT)
         .error_handler(f!(crate::CustomError::into_response_override));
 
-    bp.pre_process(f!(crate::no_attribute))
-        .error_handler(f!(crate::CustomError::into_response));
-
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

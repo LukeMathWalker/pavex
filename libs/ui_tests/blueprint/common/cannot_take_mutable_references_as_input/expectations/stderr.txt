@@ -2,19 +2,19 @@
   [31m×[0m You can't inject a mutable reference as an input parameter to
   [31m│[0m `app::wrapping`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:46:1]
-  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::constructor));
-  [31m│[0m  [2m47[0m │     bp.wrap(f!(crate::wrapping));
-  [31m│[0m     · [35;1m            ─────────┬─────────[0m
-  [31m│[0m     ·                      [35;1m╰── The wrapping middleware was registered here[0m
-  [31m│[0m  [2m48[0m │     bp.error_observer(f!(crate::observer));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:47:1]
+  [31m│[0m  [2m47[0m │     bp.request_scoped(f!(crate::constructor));
+  [31m│[0m  [2m48[0m │     bp.wrap(WRAPPING);
+  [31m│[0m     · [35;1m            ────┬───[0m
+  [31m│[0m     ·                 [35;1m╰── The wrapping middleware was registered here[0m
+  [31m│[0m  [2m49[0m │     bp.error_observer(f!(crate::observer));
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │
-  [31m│[0m  [2m28[0m │ pub fn wrapping<C>(_next: Next<C>, _s: &mut B) -> Response
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:28:1]
+  [31m│[0m  [2m28[0m │ #[pavex::wrap]
+  [31m│[0m  [2m29[0m │ pub fn wrapping<C>(_next: Next<C>, _s: &mut B) -> Response
   [31m│[0m     · [35;1m                                   ─────┬────[0m
   [31m│[0m     ·                                         [35;1m╰── The &mut input[0m
-  [31m│[0m  [2m29[0m │ where
+  [31m│[0m  [2m30[0m │ where
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
@@ -23,19 +23,19 @@
   [31m×[0m You can't inject a mutable reference as an input parameter to
   [31m│[0m `app::observer`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:47:1]
-  [31m│[0m  [2m47[0m │     bp.wrap(f!(crate::wrapping));
-  [31m│[0m  [2m48[0m │     bp.error_observer(f!(crate::observer));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:48:1]
+  [31m│[0m  [2m48[0m │     bp.wrap(WRAPPING);
+  [31m│[0m  [2m49[0m │     bp.error_observer(f!(crate::observer));
   [31m│[0m     · [35;1m                      ─────────┬─────────[0m
   [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
-  [31m│[0m  [2m49[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m  [2m50[0m │     bp.route(GET, "/home", f!(crate::handler))
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:34:1]
-  [31m│[0m  [2m34[0m │
-  [31m│[0m  [2m35[0m │ pub fn observer(_e: &pavex::Error, _s: &mut A) {
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:35:1]
+  [31m│[0m  [2m35[0m │
+  [31m│[0m  [2m36[0m │ pub fn observer(_e: &pavex::Error, _s: &mut A) {
   [31m│[0m     · [35;1m                                   ─────┬────[0m
   [31m│[0m     ·                                         [35;1m╰── The &mut input[0m
-  [31m│[0m  [2m36[0m │     todo!()
+  [31m│[0m  [2m37[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Injected inputs can only be taken by value or via a shared reference
   [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
@@ -44,12 +44,12 @@
   [31m×[0m You can't inject a mutable reference as an input parameter to
   [31m│[0m `app::constructor`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:45:1]
-  [31m│[0m  [2m45[0m │     bp.import(from![crate]);
-  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::constructor));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:46:1]
+  [31m│[0m  [2m46[0m │     bp.import(from![crate]);
+  [31m│[0m  [2m47[0m │     bp.request_scoped(f!(crate::constructor));
   [31m│[0m     · [35;1m                      ───────────┬──────────[0m
   [31m│[0m     ·                                  [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m47[0m │     bp.wrap(f!(crate::wrapping));
+  [31m│[0m  [2m48[0m │     bp.wrap(WRAPPING);
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │
@@ -86,12 +86,12 @@
   [31m×[0m You can't inject a mutable reference as an input parameter to
   [31m│[0m `app::error_handler`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:49:1]
-  [31m│[0m  [2m49[0m │     bp.route(GET, "/home", f!(crate::handler))
-  [31m│[0m  [2m50[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:50:1]
+  [31m│[0m  [2m50[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m  [2m51[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m51[0m │     bp
+  [31m│[0m  [2m52[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_take_mutable_references_as_input/src/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │

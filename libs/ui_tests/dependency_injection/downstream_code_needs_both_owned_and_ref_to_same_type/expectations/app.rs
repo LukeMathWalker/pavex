@@ -76,18 +76,18 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_1::entrypoint(&allowed_methods).await;
+            return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_0::entrypoint().await,
+                    &pavex::http::Method::GET => route_1::entrypoint().await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_1::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
@@ -96,107 +96,6 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint() -> pavex::response::Response {
-        let response = wrapping_0().await;
-        response
-    }
-    async fn stage_1() -> pavex::response::Response {
-        let response = wrapping_1().await;
-        response
-    }
-    async fn stage_2(s_0: app::Scoped) -> pavex::response::Response {
-        let response = wrapping_2(s_0).await;
-        response
-    }
-    async fn stage_3(s_0: app::Scoped) -> pavex::response::Response {
-        let response = handler(s_0).await;
-        response
-    }
-    async fn wrapping_0() -> pavex::response::Response {
-        let v0 = crate::route_0::Next0 {
-            next: stage_1,
-        };
-        let v1 = pavex::middleware::Next::new(v0);
-        let v2 = pavex::middleware::wrap_noop(v1).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
-    async fn wrapping_1() -> pavex::response::Response {
-        let v0 = app::Scoped::new();
-        let v1 = <app::Scoped as core::clone::Clone>::clone(&v0);
-        let v2 = crate::route_0::Next1 {
-            s_0: v0,
-            next: stage_2,
-        };
-        let v3 = pavex::middleware::Next::new(v2);
-        let v4 = app::mw(v1, v3);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
-    }
-    async fn wrapping_2(v0: app::Scoped) -> pavex::response::Response {
-        let v1 = <app::Scoped as core::clone::Clone>::clone(&v0);
-        let v2 = crate::route_0::Next2 {
-            s_0: v1,
-            next: stage_3,
-        };
-        let v3 = pavex::middleware::Next::new(v2);
-        let v4 = app::mw2(&v0, v3);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
-    }
-    async fn handler(v0: app::Scoped) -> pavex::response::Response {
-        let v1 = app::handler(v0);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    struct Next0<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        next: fn() -> T,
-    }
-    impl<T> std::future::IntoFuture for Next0<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)()
-        }
-    }
-    struct Next1<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: app::Scoped,
-        next: fn(app::Scoped) -> T,
-    }
-    impl<T> std::future::IntoFuture for Next1<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
-        }
-    }
-    struct Next2<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: app::Scoped,
-        next: fn(app::Scoped) -> T,
-    }
-    impl<T> std::future::IntoFuture for Next2<T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
-        }
-    }
-}
-pub mod route_1 {
     pub async fn entrypoint<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
@@ -225,7 +124,7 @@ pub mod route_1 {
     async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let v1 = crate::route_1::Next0 {
+        let v1 = crate::route_0::Next0 {
             s_0: v0,
             next: stage_1,
         };
@@ -237,7 +136,7 @@ pub mod route_1 {
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = app::Scoped::new();
-        let v2 = crate::route_1::Next1 {
+        let v2 = crate::route_0::Next1 {
             s_0: v0,
             s_1: &v1,
             next: stage_2,
@@ -251,7 +150,7 @@ pub mod route_1 {
         v0: &pavex::router::AllowedMethods,
         v1: &app::Scoped,
     ) -> pavex::response::Response {
-        let v2 = crate::route_1::Next2 {
+        let v2 = crate::route_0::Next2 {
             s_0: v0,
             next: stage_3,
         };
@@ -306,6 +205,107 @@ pub mod route_1 {
         next: fn(&'a pavex::router::AllowedMethods) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next2<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+}
+pub mod route_1 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = wrapping_0().await;
+        response
+    }
+    async fn stage_1() -> pavex::response::Response {
+        let response = wrapping_1().await;
+        response
+    }
+    async fn stage_2(s_0: app::Scoped) -> pavex::response::Response {
+        let response = wrapping_2(s_0).await;
+        response
+    }
+    async fn stage_3(s_0: app::Scoped) -> pavex::response::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    async fn wrapping_0() -> pavex::response::Response {
+        let v0 = crate::route_1::Next0 {
+            next: stage_1,
+        };
+        let v1 = pavex::middleware::Next::new(v0);
+        let v2 = pavex::middleware::wrap_noop(v1).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    async fn wrapping_1() -> pavex::response::Response {
+        let v0 = app::Scoped::new();
+        let v1 = <app::Scoped as core::clone::Clone>::clone(&v0);
+        let v2 = crate::route_1::Next1 {
+            s_0: v0,
+            next: stage_2,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        let v4 = app::mw(v1, v3);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+    }
+    async fn wrapping_2(v0: app::Scoped) -> pavex::response::Response {
+        let v1 = <app::Scoped as core::clone::Clone>::clone(&v0);
+        let v2 = crate::route_1::Next2 {
+            s_0: v1,
+            next: stage_3,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        let v4 = app::mw2(&v0, v3);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+    }
+    async fn handler(v0: app::Scoped) -> pavex::response::Response {
+        let v1 = app::handler(v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+    struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)()
+        }
+    }
+    struct Next1<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: app::Scoped,
+        next: fn(app::Scoped) -> T,
+    }
+    impl<T> std::future::IntoFuture for Next1<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+    struct Next2<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: app::Scoped,
+        next: fn(app::Scoped) -> T,
+    }
+    impl<T> std::future::IntoFuture for Next2<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

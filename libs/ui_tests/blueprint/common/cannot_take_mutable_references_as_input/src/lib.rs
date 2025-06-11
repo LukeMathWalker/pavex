@@ -25,6 +25,7 @@ pub fn error_handler(_e: &pavex::Error, _s: &mut B) -> Response {
     todo!()
 }
 
+#[pavex::wrap]
 pub fn wrapping<C>(_next: Next<C>, _s: &mut B) -> Response
 where
     C: std::future::IntoFuture<Output = Response>,
@@ -44,7 +45,7 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
     bp.request_scoped(f!(crate::constructor));
-    bp.wrap(f!(crate::wrapping));
+    bp.wrap(WRAPPING);
     bp.error_observer(f!(crate::observer));
     bp.route(GET, "/home", f!(crate::handler))
         .error_handler(f!(crate::error_handler));

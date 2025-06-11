@@ -1,39 +1,39 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
-use pavex::post_process;
+use pavex::blueprint::{Blueprint, from};
 use pavex::response::Response;
 
 pub struct A;
 
+#[pavex::request_scoped]
 pub fn a() -> A {
     todo!()
 }
 
-#[post_process]
+#[pavex::post_process]
 pub fn first(_response: Response, _a: &mut A) -> Response {
     todo!()
 }
 
-#[post_process]
+#[pavex::post_process]
 pub fn second(_response: Response, _a: &mut A) -> Response {
     todo!()
 }
 
-#[post_process]
+#[pavex::post_process]
 pub fn third(_response: Response, _a: A) -> Response {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: &mut A) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::a));
+    bp.import(from![crate, pavex]);
     bp.post_process(FIRST);
     bp.post_process(SECOND);
     bp.post_process(THIRD);
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

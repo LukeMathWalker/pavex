@@ -1,5 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::middleware::Next;
 use pavex::response::Response;
 
@@ -21,22 +20,25 @@ use pavex::response::Response;
 #[derive(Clone)]
 pub struct A;
 
+#[pavex::request_scoped(clone_if_necessary)]
 pub fn a() -> A {
     todo!()
 }
 
+#[pavex::wrap]
 pub fn mw<T: std::future::IntoFuture<Output = Response>>(_a: A, _next: Next<T>) -> Response {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_a: &A) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::a)).clone_if_necessary();
-    bp.wrap(f!(crate::mw));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.import(from![crate, pavex]);
+    bp.wrap(MW);
+    bp.routes(from![crate]);
     bp
 }
