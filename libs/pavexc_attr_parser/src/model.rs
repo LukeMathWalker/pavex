@@ -44,12 +44,14 @@ impl From<ErrorObserverProperties> for AnnotationProperties {
 pub struct ErrorHandlerProperties {
     pub id: Ignored,
     pub error_ref_input_index: usize,
+    pub default: Option<bool>,
 }
 
 impl From<ErrorHandlerProperties> for AnnotationProperties {
     fn from(value: ErrorHandlerProperties) -> Self {
         AnnotationProperties::ErrorHandler {
             error_ref_input_index: value.error_ref_input_index,
+            default: value.default,
         }
     }
 }

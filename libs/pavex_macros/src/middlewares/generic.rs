@@ -138,7 +138,6 @@ bp.{bp_method_name}({id});
                 import_path: concat!(module_path!(), "::", #name),
                 macro_name: #macro_name,
             }),
-            error_handler: None
         };
     };
 

@@ -149,6 +149,17 @@ pub(super) fn register_imported_components(
                 }
             }
 
+            // If an error handler is marked as "default = false", it should only be
+            // used when explicitly set by the user as the desired error handler for
+            // a given component via the `error_handler = ...` macro argument.
+            if let AnnotationProperties::ErrorHandler {
+                default: Some(false),
+                ..
+            } = annotation.properties
+            {
+                continue;
+            }
+
             let item = krate.get_item_by_local_type_id(&id);
             let Ok(user_component_id) = intern_annotated(
                 annotation.properties.clone(),
@@ -220,6 +231,7 @@ fn intern_annotated(
     match annotation {
         AnnotationProperties::ErrorHandler {
             error_ref_input_index,
+            default: _,
         } => {
             let error_handler = UserComponent::ErrorHandler {
                 source,

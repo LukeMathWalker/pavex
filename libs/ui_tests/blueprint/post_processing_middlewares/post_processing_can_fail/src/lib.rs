@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::response::Response;
 
 #[pavex::post_process(
@@ -35,11 +34,14 @@ pub fn handler() -> Response {
 #[derive(Debug)]
 pub struct CustomError;
 
+#[pavex::methods]
 impl CustomError {
+    #[error_handler(default = false)]
     pub fn into_response(&self) -> Response {
         todo!()
     }
 
+    #[error_handler(default = false)]
     pub fn into_response_override(&self) -> Response {
         todo!()
     }
@@ -50,9 +52,9 @@ pub fn blueprint() -> Blueprint {
 
     bp.post_process(EHANDLER_VIA_ATTRIBUTE);
     bp.post_process(EHANDLER_VIA_BLUEPRINT)
-        .error_handler(f!(crate::CustomError::into_response));
+        .error_handler(CUSTOM_ERROR_INTO_RESPONSE);
     bp.post_process(EHANDLER_OVERRIDE_VIA_BLUEPRINT)
-        .error_handler(f!(crate::CustomError::into_response_override));
+        .error_handler(CUSTOM_ERROR_INTO_RESPONSE_OVERRIDE);
 
     bp.routes(from![crate]);
     bp

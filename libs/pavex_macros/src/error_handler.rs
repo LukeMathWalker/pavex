@@ -11,6 +11,11 @@ use crate::{
 /// The available options for the error handler macro.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
+    /// Whether the error handler should be use as the default
+    /// whenever an error of the matching type is emitted.
+    ///
+    /// If omitted, default to true.
+    pub default: Option<bool>,
     pub pavex: Option<syn::Ident>,
 }
 
@@ -18,14 +23,16 @@ pub struct InputSchema {
 pub struct Properties {
     pub id: Option<syn::Ident>,
     pub error_ref_input_index: usize,
+    pub default: Option<bool>,
     pub pavex: Option<syn::Ident>,
 }
 
 impl Properties {
     pub fn new(schema: InputSchema, error_ref_input_index: usize) -> Self {
-        let InputSchema { id, pavex } = schema;
+        let InputSchema { id, pavex, default } = schema;
         Self {
             id,
+            default,
             error_ref_input_index,
             pavex,
         }
@@ -104,6 +111,7 @@ fn emit(self_ty: Option<&syn::Type>, name: Ident, properties: Properties) -> Ann
         id,
         error_ref_input_index,
         pavex,
+        default,
     } = properties;
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
@@ -128,10 +136,13 @@ fn emit(self_ty: Option<&syn::Type>, name: Ident, properties: Properties) -> Ann
             handler_path.replace("::", "_").to_case(Case::Constant)
         )
     });
-    let properties = quote! {
+    let mut properties = quote! {
         id = #id,
-        error_ref_input_index = #error_ref_input_index
+        error_ref_input_index = #error_ref_input_index,
     };
+    if let Some(default) = default {
+        properties.extend(quote! { default = #default, });
+    }
 
     let id_docs = format!(
         r#"A strongly-typed id to add [`{handler_path}`] as an error handler to your Pavex application.

@@ -25,9 +25,7 @@ impl crate::blueprint::middleware::WrappingMiddleware {
     pub fn new(m: RawWrappingMiddleware) -> Self {
         Self {
             callable: raw_identifiers2callable(m.coordinates),
-            error_handler: m
-                .error_handler
-                .map(|e| raw_identifiers2callable(e.coordinates)),
+            error_handler: None,
         }
     }
 

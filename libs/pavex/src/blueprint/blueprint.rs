@@ -596,9 +596,7 @@ impl Blueprint {
     pub fn wrap(&mut self, m: RawWrappingMiddleware) -> RegisteredWrappingMiddleware {
         let registered = WrappingMiddleware {
             middleware: raw_identifiers2callable(m.coordinates),
-            error_handler: m
-                .error_handler
-                .map(|e| raw_identifiers2callable(e.coordinates)),
+            error_handler: None,
         };
         let component_id = self.push_component(registered);
         RegisteredWrappingMiddleware {
@@ -666,9 +664,7 @@ impl Blueprint {
     ) -> RegisteredPostProcessingMiddleware {
         let registered = PostProcessingMiddleware {
             middleware: raw_identifiers2callable(m.coordinates),
-            error_handler: m
-                .error_handler
-                .map(|e| raw_identifiers2callable(e.coordinates)),
+            error_handler: None,
         };
         let component_id = self.push_component(registered);
         RegisteredPostProcessingMiddleware {
@@ -726,9 +722,7 @@ impl Blueprint {
     ) -> RegisteredPreProcessingMiddleware {
         let registered = PreProcessingMiddleware {
             middleware: raw_identifiers2callable(m.coordinates),
-            error_handler: m
-                .error_handler
-                .map(|e| raw_identifiers2callable(e.coordinates)),
+            error_handler: None,
         };
         let component_id = self.push_component(registered);
         RegisteredPreProcessingMiddleware {

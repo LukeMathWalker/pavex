@@ -70,6 +70,7 @@ pub enum AnnotationProperties {
     ErrorObserver,
     ErrorHandler {
         error_ref_input_index: usize,
+        default: Option<bool>,
     },
     Route {
         method: MethodGuard,
