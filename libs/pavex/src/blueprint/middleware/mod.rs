@@ -1,4 +1,4 @@
-//! Execute common logic across multiple routes.  
+//! Execute common logic across multiple routes.
 //!
 //! # Guide
 //!
@@ -8,6 +8,6 @@ mod post;
 mod pre;
 mod wrapping;
 
-pub use post::{PostProcessingMiddleware, RegisteredPostProcessingMiddleware};
-pub use pre::{PreProcessingMiddleware, RegisteredPreProcessingMiddleware};
-pub use wrapping::{RegisteredWrappingMiddleware, WrappingMiddleware};
+pub use post::RegisteredPostProcessingMiddleware;
+pub use pre::RegisteredPreProcessingMiddleware;
+pub use wrapping::RegisteredWrappingMiddleware;

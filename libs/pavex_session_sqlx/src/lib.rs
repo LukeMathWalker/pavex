@@ -14,9 +14,4 @@ pub mod postgres;
 #[cfg(feature = "postgres")]
 #[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
 #[doc(inline)]
-pub use postgres::PostgresSessionKit;
-
-#[cfg(feature = "postgres")]
-#[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
-#[doc(inline)]
 pub use postgres::PostgresSessionStore;

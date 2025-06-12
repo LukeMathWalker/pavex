@@ -7,7 +7,6 @@ and how to use them in your application.
 pub mod config;
 mod id;
 mod incoming;
-mod kit;
 mod middleware;
 mod session_;
 mod store_;
@@ -17,8 +16,8 @@ use std::collections::HashMap;
 
 pub use id::SessionId;
 pub use incoming::IncomingSession;
-pub use kit::SessionKit;
-pub use middleware::finalize_session;
+pub use middleware::{FINALIZE_SESSION, finalize_session};
+use pavex::transient;
 pub use session_::Session;
 pub use store_::SessionStore;
 
@@ -62,11 +61,13 @@ impl SessionConfig {
     }
 
     #[doc(hidden)]
+    #[transient]
     pub fn cookie_config(&self) -> &crate::config::SessionCookieConfig {
         &self.cookie
     }
 
     #[doc(hidden)]
+    #[transient]
     pub fn state_config(&self) -> &crate::config::SessionStateConfig {
         &self.state
     }

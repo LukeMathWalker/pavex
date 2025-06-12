@@ -24,10 +24,15 @@ pub mod errors;
 pub mod response;
 
 mod components;
-pub use components::{extract_request_cookies, inject_response_cookies};
-
-mod kit;
-pub use kit::CookieKit;
+pub use components::{INJECT_RESPONSE_COOKIES, extract_request_cookies, inject_response_cookies};
 
 mod response_cookies;
 pub use response_cookies::ResponseCookies;
+
+#[crate::singleton]
+#[doc(hidden)]
+// TODO: Remove once we have Pavex's annotations directly in `biscotti`,
+// behind a `pavex` feature flag.
+pub fn config_into_processor(config: ProcessorConfig) -> Processor {
+    config.into()
+}

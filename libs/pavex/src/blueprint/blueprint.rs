@@ -605,21 +605,6 @@ impl Blueprint {
         }
     }
 
-    pub(super) fn register_wrapping_middleware(
-        &mut self,
-        mw: super::middleware::WrappingMiddleware,
-    ) -> RegisteredWrappingMiddleware {
-        let mw = WrappingMiddleware {
-            middleware: mw.callable,
-            error_handler: mw.error_handler,
-        };
-        let component_id = self.push_component(mw);
-        RegisteredWrappingMiddleware {
-            component_id,
-            blueprint: &mut self.schema,
-        }
-    }
-
     #[track_caller]
     /// Register a post-processing middleware.
     ///
@@ -728,36 +713,6 @@ impl Blueprint {
         RegisteredPreProcessingMiddleware {
             blueprint: &mut self.schema,
             component_id,
-        }
-    }
-
-    pub(super) fn register_post_processing_middleware(
-        &mut self,
-        mw: super::middleware::PostProcessingMiddleware,
-    ) -> RegisteredPostProcessingMiddleware {
-        let mw = PostProcessingMiddleware {
-            middleware: mw.callable,
-            error_handler: mw.error_handler,
-        };
-        let component_id = self.push_component(mw);
-        RegisteredPostProcessingMiddleware {
-            component_id,
-            blueprint: &mut self.schema,
-        }
-    }
-
-    pub(super) fn register_pre_processing_middleware(
-        &mut self,
-        mw: super::middleware::PreProcessingMiddleware,
-    ) -> RegisteredPreProcessingMiddleware {
-        let mw = PostProcessingMiddleware {
-            middleware: mw.callable,
-            error_handler: mw.error_handler,
-        };
-        let component_id = self.push_component(mw);
-        RegisteredPreProcessingMiddleware {
-            component_id,
-            blueprint: &mut self.schema,
         }
     }
 
