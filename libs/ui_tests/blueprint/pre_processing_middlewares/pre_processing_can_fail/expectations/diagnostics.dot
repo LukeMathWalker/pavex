@@ -25,21 +25,6 @@ digraph "* * - 1" {
     0 -> 1 [ ]
 }
 digraph "* * - 2" {
-    0 [ label = "0| app::via_blueprint() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError>"]
-    1 [ label = "1| `match`"]
-    2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError> -> app::CustomError"]
-    3 [ label = "3| app::CustomError::into_response(&app::CustomError) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "5| pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
-    6 [ label = "6| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError> -> pavex::middleware::Processing<pavex::response::Response>"]
-    1 -> 6 [ ]
-    1 -> 2 [ ]
-    2 -> 3 [ label = "&"]
-    3 -> 4 [ ]
-    4 -> 5 [ ]
-    0 -> 1 [ ]
-}
-digraph "* * - 3" {
     0 [ label = "0| app::override_in_blueprint() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError>"]
     1 [ label = "1| `match`"]
     2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError> -> app::CustomError"]
@@ -54,7 +39,7 @@ digraph "* * - 3" {
     4 -> 5 [ ]
     0 -> 1 [ ]
 }
-digraph "* * - 4" {
+digraph "* * - 3" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -86,21 +71,6 @@ digraph "GET / - 1" {
     0 -> 1 [ ]
 }
 digraph "GET / - 2" {
-    0 [ label = "0| app::via_blueprint() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError>"]
-    1 [ label = "1| `match`"]
-    2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError> -> app::CustomError"]
-    3 [ label = "3| app::CustomError::into_response(&app::CustomError) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "5| pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
-    6 [ label = "6| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError> -> pavex::middleware::Processing<pavex::response::Response>"]
-    1 -> 6 [ ]
-    1 -> 2 [ ]
-    2 -> 3 [ label = "&"]
-    3 -> 4 [ ]
-    4 -> 5 [ ]
-    0 -> 1 [ ]
-}
-digraph "GET / - 3" {
     0 [ label = "0| app::override_in_blueprint() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError>"]
     1 [ label = "1| `match`"]
     2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app::CustomError> -> app::CustomError"]
@@ -115,7 +85,7 @@ digraph "GET / - 3" {
     4 -> 5 [ ]
     0 -> 1 [ ]
 }
-digraph "GET / - 4" {
+digraph "GET / - 3" {
     0 [ label = "0| app::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]

@@ -7,12 +7,12 @@ pub fn annotated_constructor() {
     todo!()
 }
 
-#[pavex::request_scoped(error_handler = "crate::error_handler")]
+#[pavex::request_scoped]
 pub fn fallible_annotated_unit_constructor() -> Result<(), Error> {
     todo!()
 }
 
-#[pavex::request_scoped(error_handler = "crate::error_handler")]
+#[pavex::request_scoped]
 pub fn fallible_annotated_constructor() -> Result<u64, Error> {
     todo!()
 }
@@ -25,18 +25,18 @@ pub fn constructor() {
 #[derive(Debug)]
 pub struct Error;
 
+#[pavex::error_handler]
+pub fn error_handler(_e: &Error) {
+    todo!()
+}
+
 #[pavex::request_scoped]
 pub fn fallible_unit_constructor() -> Result<(), Error> {
     todo!()
 }
 
-#[pavex::request_scoped(error_handler = "crate::error_handler")]
+#[pavex::request_scoped]
 pub fn fallible_constructor() -> Result<String, Error> {
-    todo!()
-}
-
-#[pavex::error_handler]
-pub fn error_handler(_e: &Error) {
     todo!()
 }
 
@@ -50,7 +50,7 @@ pub fn unit_wrapping() {
     todo!()
 }
 
-#[pavex::wrap(error_handler = "crate::error_handler")]
+#[pavex::wrap]
 pub fn fallible_unit_wrapping() -> Result<(), Error> {
     todo!()
 }
@@ -65,12 +65,12 @@ pub fn unit_post(_response: Response) {
     todo!()
 }
 
-#[pavex::pre_process(error_handler = "crate::error_handler")]
+#[pavex::pre_process]
 pub fn fallible_unit_pre() -> Result<(), Error> {
     todo!()
 }
 
-#[pavex::post_process(error_handler = "crate::error_handler")]
+#[pavex::post_process]
 pub fn fallible_unit_post(_response: Response) -> Result<(), Error> {
     todo!()
 }
@@ -80,7 +80,7 @@ pub fn unit_handler() {
     todo!()
 }
 
-#[pavex::get(path = "/fallible_unit", error_handler = "crate::error_handler")]
+#[pavex::get(path = "/fallible_unit")]
 pub fn fallible_unit_handler() -> Result<(), Error> {
     todo!()
 }

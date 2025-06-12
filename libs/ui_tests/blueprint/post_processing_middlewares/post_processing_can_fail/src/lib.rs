@@ -1,27 +1,14 @@
 use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
-#[pavex::post_process(
-    id = "EHANDLER_VIA_ATTRIBUTE",
-    error_handler = "crate::CustomError::into_response"
-)]
+#[pavex::post_process(id = "EHANDLER_VIA_DEFAULT")]
+/// The default error handler is invoked.
 pub fn via_attribute(_response: Response) -> Result<Response, CustomError> {
     todo!()
 }
 
-#[pavex::post_process(id = "EHANDLER_VIA_BLUEPRINT")]
-// Error handler isn't specified at the macro-level, it's added
-// directly when the middleware is registered against the blueprint.
-pub fn via_blueprint(_response: Response) -> Result<Response, CustomError> {
-    todo!()
-}
-
-#[pavex::post_process(
-    id = "EHANDLER_OVERRIDE_VIA_BLUEPRINT",
-    error_handler = "crate::CustomError::into_response"
-)]
-// Error handler is specified at the macro-level, but it can be
-// overridden when the middleware is registered against the blueprint.
+#[pavex::post_process(id = "EHANDLER_OVERRIDE_VIA_BLUEPRINT")]
+// Error handler is overridden when the middleware is registered against the blueprint.
 pub fn override_in_blueprint(_response: Response) -> Result<Response, CustomError> {
     todo!()
 }
@@ -36,7 +23,7 @@ pub struct CustomError;
 
 #[pavex::methods]
 impl CustomError {
-    #[error_handler(default = false)]
+    #[error_handler]
     pub fn into_response(&self) -> Response {
         todo!()
     }
@@ -49,10 +36,9 @@ impl CustomError {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.import(from![crate]);
 
-    bp.post_process(EHANDLER_VIA_ATTRIBUTE);
-    bp.post_process(EHANDLER_VIA_BLUEPRINT)
-        .error_handler(CUSTOM_ERROR_INTO_RESPONSE);
+    bp.post_process(EHANDLER_VIA_DEFAULT);
     bp.post_process(EHANDLER_OVERRIDE_VIA_BLUEPRINT)
         .error_handler(CUSTOM_ERROR_INTO_RESPONSE_OVERRIDE);
 

@@ -1,13 +1,11 @@
 use std::{borrow::Cow, collections::BTreeMap, ops::Deref, sync::Arc};
 
 mod diagnostic;
-mod overlay;
 
 use diagnostic::{
     const_generics_are_not_supported, not_a_module, not_a_type_reexport, unknown_module_path,
     unresolved_external_reexport,
 };
-pub use overlay::augment_from_annotation;
 
 use super::{
     ErrorHandlerTarget, ScopeId, UserComponent, UserComponentId, UserComponentSource,
@@ -35,9 +33,7 @@ use crate::{
     },
     rustdoc::{Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt},
 };
-use pavex_bp_schema::{
-    CloningStrategy, CreatedAt, CreatedBy, Lifecycle, Lint, LintSetting, RawIdentifiers,
-};
+use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
@@ -165,9 +161,6 @@ pub(super) fn register_imported_components(
                 annotation.properties.clone(),
                 &item,
                 krate,
-                &annotation
-                    .created_at(krate, krate_collection.package_graph())
-                    .expect("Failed to determine created at for an annotated item"),
                 import_kind,
                 *scope_id,
                 aux,
@@ -213,7 +206,6 @@ fn intern_annotated(
     annotation: AnnotationProperties,
     item: &rustdoc_types::Item,
     krate: &Crate,
-    created_at: &CreatedAt,
     import_kind: &ImportKind,
     scope_id: ScopeId,
     aux: &mut AuxiliaryData,
@@ -249,7 +241,6 @@ fn intern_annotated(
         AnnotationProperties::Constructor {
             lifecycle,
             cloning_strategy,
-            error_handler,
         } => {
             let constructor = UserComponent::Constructor { source };
             let constructor_id =
@@ -271,28 +262,9 @@ fn intern_annotated(
                 aux.id2lints.insert(constructor_id, lints);
             }
 
-            if let Some(error_handler) = error_handler {
-                let identifiers = RawIdentifiers {
-                    created_at: created_at.clone(),
-                    created_by: CreatedBy::macro_name("constructor"),
-                    import_path: error_handler,
-                };
-                let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
-                let component = UserComponent::ErrorHandler {
-                    source: identifiers_id.into(),
-                    target: ErrorHandlerTarget::FallibleComponent {
-                        fallible_id: constructor_id,
-                    },
-                };
-                aux.intern_component(component, scope_id, lifecycle, registration);
-            }
             Ok(constructor_id)
         }
-        AnnotationProperties::Route {
-            method,
-            path,
-            error_handler,
-        } => {
+        AnnotationProperties::Route { method, path } => {
             let ImportKind::Routes {
                 path_prefix,
                 domain_guard,
@@ -328,21 +300,6 @@ fn intern_annotated(
 
             validate_route_path(aux, request_handler_id, &path, diagnostics);
 
-            if let Some(error_handler) = error_handler {
-                let identifiers = RawIdentifiers {
-                    created_at: created_at.clone(),
-                    created_by: CreatedBy::macro_name("route"),
-                    import_path: error_handler,
-                };
-                let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
-                let component = UserComponent::ErrorHandler {
-                    source: identifiers_id.into(),
-                    target: ErrorHandlerTarget::FallibleComponent {
-                        fallible_id: request_handler_id,
-                    },
-                };
-                aux.intern_component(component, scope_id, Lifecycle::RequestScoped, registration);
-            }
             Ok(request_handler_id)
         }
         AnnotationProperties::Config {

@@ -35,23 +35,6 @@ digraph "* * - 2" {
 }
 digraph "* * - 3" {
     0 [ label = "0| pavex::response::Response"]
-    1 [ label = "1| app::via_blueprint(pavex::response::Response) -> core::result::Result<pavex::response::Response, app::CustomError>"]
-    2 [ label = "2| `match`"]
-    3 [ label = "3| core::result::Result<pavex::response::Response, app::CustomError> -> app::CustomError"]
-    4 [ label = "4| app::CustomError::into_response(&app::CustomError) -> pavex::response::Response"]
-    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    6 [ label = "6| core::result::Result<pavex::response::Response, app::CustomError> -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    0 -> 1 [ ]
-    2 -> 6 [ ]
-    2 -> 3 [ ]
-    3 -> 4 [ label = "&"]
-    6 -> 7 [ ]
-    4 -> 5 [ ]
-    1 -> 2 [ ]
-}
-digraph "* * - 4" {
-    0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| app::override_in_blueprint(pavex::response::Response) -> core::result::Result<pavex::response::Response, app::CustomError>"]
     2 [ label = "2| `match`"]
     3 [ label = "3| core::result::Result<pavex::response::Response, app::CustomError> -> app::CustomError"]
@@ -99,23 +82,6 @@ digraph "GET / - 2" {
     1 -> 2 [ ]
 }
 digraph "GET / - 3" {
-    0 [ label = "0| pavex::response::Response"]
-    1 [ label = "1| app::via_blueprint(pavex::response::Response) -> core::result::Result<pavex::response::Response, app::CustomError>"]
-    2 [ label = "2| `match`"]
-    3 [ label = "3| core::result::Result<pavex::response::Response, app::CustomError> -> app::CustomError"]
-    4 [ label = "4| app::CustomError::into_response(&app::CustomError) -> pavex::response::Response"]
-    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    6 [ label = "6| core::result::Result<pavex::response::Response, app::CustomError> -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    0 -> 1 [ ]
-    2 -> 6 [ ]
-    2 -> 3 [ ]
-    3 -> 4 [ label = "&"]
-    6 -> 7 [ ]
-    4 -> 5 [ ]
-    1 -> 2 [ ]
-}
-digraph "GET / - 4" {
     0 [ label = "0| pavex::response::Response"]
     1 [ label = "1| app::override_in_blueprint(pavex::response::Response) -> core::result::Result<pavex::response::Response, app::CustomError>"]
     2 [ label = "2| `match`"]

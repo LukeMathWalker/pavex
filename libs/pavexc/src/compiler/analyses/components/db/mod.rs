@@ -4,7 +4,7 @@ use crate::compiler::analyses::components::{
     unregistered::UnregisteredComponent,
 };
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
-use crate::compiler::analyses::error_handlers::ErrorHandlersDb;
+use crate::compiler::analyses::error_handlers::{ErrorHandlerEntry, ErrorHandlersDb};
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::into_error::register_error_new_transformer;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -584,11 +584,14 @@ impl ComponentDb {
                 .computation();
             let error_type = get_err_variant(fallible_computation.output_type().unwrap());
             match error_handlers_db.get_or_try_bind(scope_id, error_type, self) {
-                Some((error_handler, error_handler_user_id)) => {
+                Some(ErrorHandlerEntry::Valid {
+                    error_handler,
+                    component_id,
+                }) => {
                     let error_matcher_id = self.fallible_id2match_ids.get(&fallible_id).unwrap().1;
                     self.get_or_intern(
                         UnregisteredComponent::ErrorHandler {
-                            source_id: error_handler_user_id.into(),
+                            source_id: component_id.into(),
                             error_handler,
                             error_matcher_id,
                             error_source_id: error_matcher_id,
@@ -596,6 +599,7 @@ impl ComponentDb {
                         computation_db,
                     );
                 }
+                Some(ErrorHandlerEntry::Invalid) => {}
                 None => {
                     Self::missing_error_handler(fallible_user_id, &self.user_db, diagnostics);
                 }
@@ -1051,12 +1055,20 @@ impl ComponentDb {
                 ErrorHandlerTarget::ErrorType {
                     error_ref_input_index,
                 } => {
-                    let e = match ErrorHandler::new(
+                    let scope_id = self.user_db.scope_id(error_handler_user_component_id);
+                    match ErrorHandler::new(
                         error_handler_callable.to_owned(),
                         error_ref_input_index,
                     ) {
-                        Ok(e) => e,
+                        Ok(e) => {
+                            error_handlers_db.insert(e, scope_id, error_handler_user_component_id);
+                        }
                         Err(e) => {
+                            if let Some(error_type_ref) =
+                                error_handler_callable.inputs.get(error_ref_input_index)
+                            {
+                                error_handlers_db.insert_invalid(error_type_ref, scope_id);
+                            }
                             Self::invalid_error_handler(
                                 e,
                                 error_handler_user_component_id,
@@ -1065,14 +1077,8 @@ impl ComponentDb {
                                 krate_collection,
                                 diagnostics,
                             );
-                            continue;
                         }
                     };
-                    error_handlers_db.insert(
-                        e,
-                        self.user_db.scope_id(error_handler_user_component_id),
-                        error_handler_user_component_id,
-                    );
                 }
             }
         }

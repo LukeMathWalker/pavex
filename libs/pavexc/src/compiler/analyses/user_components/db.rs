@@ -2,9 +2,7 @@ use super::UserComponentId;
 use super::{ScopeGraph, ScopeId};
 use super::{UserComponent, auxiliary::AuxiliaryData};
 use super::{blueprint::process_blueprint, router::Router};
-use crate::compiler::analyses::user_components::annotations::{
-    augment_from_annotation, register_imported_components,
-};
+use crate::compiler::analyses::user_components::annotations::register_imported_components;
 use crate::compiler::analyses::user_components::imports::resolve_imports;
 use crate::compiler::analyses::user_components::paths::FQPaths;
 use crate::compiler::component::ConfigType;
@@ -135,16 +133,6 @@ impl UserComponentDb {
             diagnostics,
         );
         exit_on_errors!(diagnostics);
-
-        augment_from_annotation(&mut aux, computation_db, krate_collection, diagnostics);
-        // New paths have been registered, which must be resolved now!
-        paths.resolve(
-            &mut aux,
-            computation_db,
-            prebuilt_type_db,
-            krate_collection,
-            diagnostics,
-        );
 
         let scope_graph = scope_graph_builder.build();
         let router = Router::new(&aux, &scope_graph, diagnostics)?;

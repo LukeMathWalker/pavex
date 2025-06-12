@@ -47,7 +47,6 @@ pub enum AnnotationProperties {
     Constructor {
         lifecycle: Lifecycle,
         cloning_strategy: Option<CloningStrategy>,
-        error_handler: Option<String>,
     },
     Prebuilt {
         cloning_strategy: Option<CloningStrategy>,
@@ -58,15 +57,9 @@ pub enum AnnotationProperties {
         default_if_missing: Option<bool>,
         include_if_unused: Option<bool>,
     },
-    WrappingMiddleware {
-        error_handler: Option<String>,
-    },
-    PreProcessingMiddleware {
-        error_handler: Option<String>,
-    },
-    PostProcessingMiddleware {
-        error_handler: Option<String>,
-    },
+    WrappingMiddleware,
+    PreProcessingMiddleware,
+    PostProcessingMiddleware,
     ErrorObserver,
     ErrorHandler {
         error_ref_input_index: usize,
@@ -75,11 +68,8 @@ pub enum AnnotationProperties {
     Route {
         method: MethodGuard,
         path: String,
-        error_handler: Option<String>,
     },
-    Fallback {
-        error_handler: Option<String>,
-    },
+    Fallback,
     Methods,
 }
 

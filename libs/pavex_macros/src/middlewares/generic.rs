@@ -8,7 +8,6 @@ use crate::{fn_like::Callable, utils::AnnotationCodegen};
 /// The available options for middleware macros.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
-    pub error_handler: Option<String>,
     pub pavex: Option<syn::Ident>,
 }
 
@@ -16,23 +15,14 @@ impl TryFrom<InputSchema> for Properties {
     type Error = darling::Error;
 
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let InputSchema {
-            id,
-            error_handler,
-            pavex,
-        } = input;
-        Ok(Properties {
-            id,
-            error_handler,
-            pavex,
-        })
+        let InputSchema { id, pavex } = input;
+        Ok(Properties { id, pavex })
     }
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct Properties {
     pub id: Option<syn::Ident>,
-    pub error_handler: Option<String>,
     pub pavex: Option<syn::Ident>,
 }
 
@@ -76,11 +66,7 @@ pub fn middleware(
 /// Decorate the input with a diagnostic attribute
 /// that matches the provided properties.
 fn emit(kind: MiddlewareKind, name: Ident, properties: Properties) -> AnnotationCodegen {
-    let Properties {
-        id,
-        error_handler,
-        pavex,
-    } = properties;
+    let Properties { id, pavex } = properties;
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
 
@@ -88,15 +74,9 @@ fn emit(kind: MiddlewareKind, name: Ident, properties: Properties) -> Annotation
 
     // If the user didn't specify an identifier, generate one based on the function name.
     let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
-    let mut properties = quote! {
+    let properties = quote! {
         id = #id,
     };
-
-    if let Some(error_handler) = error_handler {
-        properties.extend(quote! {
-            error_handler = #error_handler,
-        });
-    }
 
     let id_docs = {
         let adj = match kind {

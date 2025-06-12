@@ -112,9 +112,6 @@ pub mod route_0 {
             if let Some(response) = pre_processing_1().await.into_response() {
                 break 'incoming response;
             }
-            if let Some(response) = pre_processing_2().await.into_response() {
-                break 'incoming response;
-            }
             handler(s_0).await
         };
         response
@@ -149,24 +146,6 @@ pub mod route_0 {
         v1
     }
     async fn pre_processing_1() -> pavex::middleware::Processing<
-        pavex::response::Response,
-    > {
-        let v0 = app::via_blueprint();
-        let v1 = match v0 {
-            Ok(ok) => ok,
-            Err(v1) => {
-                return {
-                    let v2 = app::CustomError::into_response(&v1);
-                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v2,
-                    );
-                    pavex::middleware::Processing::EarlyReturn(v3)
-                };
-            }
-        };
-        v1
-    }
-    async fn pre_processing_2() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
         let v0 = app::override_in_blueprint();
@@ -219,9 +198,6 @@ pub mod route_1 {
             if let Some(response) = pre_processing_1().await.into_response() {
                 break 'incoming response;
             }
-            if let Some(response) = pre_processing_2().await.into_response() {
-                break 'incoming response;
-            }
             handler().await
         };
         response
@@ -253,24 +229,6 @@ pub mod route_1 {
         v1
     }
     async fn pre_processing_1() -> pavex::middleware::Processing<
-        pavex::response::Response,
-    > {
-        let v0 = app::via_blueprint();
-        let v1 = match v0 {
-            Ok(ok) => ok,
-            Err(v1) => {
-                return {
-                    let v2 = app::CustomError::into_response(&v1);
-                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v2,
-                    );
-                    pavex::middleware::Processing::EarlyReturn(v3)
-                };
-            }
-        };
-        v1
-    }
-    async fn pre_processing_2() -> pavex::middleware::Processing<
         pavex::response::Response,
     > {
         let v0 = app::override_in_blueprint();

@@ -108,7 +108,6 @@ pub mod route_0 {
         let response = handler(s_0).await;
         let response = post_processing_0(response).await;
         let response = post_processing_1(response).await;
-        let response = post_processing_2(response).await;
         response
     }
     async fn wrapping_0(
@@ -144,23 +143,6 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
-    ) -> pavex::response::Response {
-        let v1 = app::via_blueprint(v0);
-        let v2 = match v1 {
-            Ok(ok) => ok,
-            Err(v2) => {
-                return {
-                    let v3 = app::CustomError::into_response(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
-                };
-            }
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
-    async fn post_processing_2(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
         let v1 = app::override_in_blueprint(v0);
@@ -204,7 +186,6 @@ pub mod route_1 {
         let response = handler().await;
         let response = post_processing_0(response).await;
         let response = post_processing_1(response).await;
-        let response = post_processing_2(response).await;
         response
     }
     async fn wrapping_0() -> pavex::response::Response {
@@ -237,23 +218,6 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
-    ) -> pavex::response::Response {
-        let v1 = app::via_blueprint(v0);
-        let v2 = match v1 {
-            Ok(ok) => ok,
-            Err(v2) => {
-                return {
-                    let v3 = app::CustomError::into_response(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
-                };
-            }
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
-    async fn post_processing_2(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
         let v1 = app::override_in_blueprint(v0);

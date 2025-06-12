@@ -36,29 +36,7 @@ digraph "* * - 2" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| crate::route_0::Next2(&'a pavex::router::AllowedMethods) -> crate::route_0::Next2<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next2<'a>) -> pavex::middleware::Next<crate::route_0::Next2<'a>>"]
-    3 [ label = "3| app_04686649::via_blueprint(pavex::middleware::Next<crate::route_0::Next2<'a>>) -> core::result::Result<pavex::response::Response, app_04686649::CustomError>"]
-    4 [ label = "4| `match`"]
-    5 [ label = "5| core::result::Result<pavex::response::Response, app_04686649::CustomError> -> app_04686649::CustomError"]
-    6 [ label = "6| app_04686649::CustomError::into_response(&app_04686649::CustomError) -> pavex::response::Response"]
-    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "8| core::result::Result<pavex::response::Response, app_04686649::CustomError> -> pavex::response::Response"]
-    9 [ label = "9| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    4 -> 8 [ ]
-    4 -> 5 [ ]
-    5 -> 6 [ label = "&"]
-    8 -> 9 [ ]
-    6 -> 7 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-
-digraph "* * - 3" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| crate::route_0::Next3(&'a pavex::router::AllowedMethods) -> crate::route_0::Next3<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next3<'a>) -> pavex::middleware::Next<crate::route_0::Next3<'a>>"]
-    3 [ label = "3| app_04686649::override_in_blueprint(pavex::middleware::Next<crate::route_0::Next3<'a>>) -> core::result::Result<pavex::response::Response, app_04686649::CustomError>"]
+    3 [ label = "3| app_04686649::override_in_blueprint(pavex::middleware::Next<crate::route_0::Next2<'a>>) -> core::result::Result<pavex::response::Response, app_04686649::CustomError>"]
     4 [ label = "4| `match`"]
     5 [ label = "5| core::result::Result<pavex::response::Response, app_04686649::CustomError> -> app_04686649::CustomError"]
     6 [ label = "6| app_04686649::CustomError::into_response_override(&app_04686649::CustomError) -> pavex::response::Response"]
@@ -76,7 +54,7 @@ digraph "* * - 3" {
     0 -> 1 [ ]
 }
 
-digraph "* * - 4" {
+digraph "* * - 3" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -117,27 +95,7 @@ digraph "GET / - 1" {
 digraph "GET / - 2" {
     0 [ label = "0| crate::route_1::Next2() -> crate::route_1::Next2"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next2) -> pavex::middleware::Next<crate::route_1::Next2>"]
-    2 [ label = "2| app_04686649::via_blueprint(pavex::middleware::Next<crate::route_1::Next2>) -> core::result::Result<pavex::response::Response, app_04686649::CustomError>"]
-    3 [ label = "3| `match`"]
-    4 [ label = "4| core::result::Result<pavex::response::Response, app_04686649::CustomError> -> app_04686649::CustomError"]
-    5 [ label = "5| app_04686649::CustomError::into_response(&app_04686649::CustomError) -> pavex::response::Response"]
-    6 [ label = "6| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    7 [ label = "7| core::result::Result<pavex::response::Response, app_04686649::CustomError> -> pavex::response::Response"]
-    8 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 2 [ ]
-    0 -> 1 [ ]
-    3 -> 7 [ ]
-    3 -> 4 [ ]
-    4 -> 5 [ label = "&"]
-    7 -> 8 [ ]
-    5 -> 6 [ ]
-    2 -> 3 [ ]
-}
-
-digraph "GET / - 3" {
-    0 [ label = "0| crate::route_1::Next3() -> crate::route_1::Next3"]
-    1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next3) -> pavex::middleware::Next<crate::route_1::Next3>"]
-    2 [ label = "2| app_04686649::override_in_blueprint(pavex::middleware::Next<crate::route_1::Next3>) -> core::result::Result<pavex::response::Response, app_04686649::CustomError>"]
+    2 [ label = "2| app_04686649::override_in_blueprint(pavex::middleware::Next<crate::route_1::Next2>) -> core::result::Result<pavex::response::Response, app_04686649::CustomError>"]
     3 [ label = "3| `match`"]
     4 [ label = "4| core::result::Result<pavex::response::Response, app_04686649::CustomError> -> app_04686649::CustomError"]
     5 [ label = "5| app_04686649::CustomError::into_response_override(&app_04686649::CustomError) -> pavex::response::Response"]
@@ -154,7 +112,7 @@ digraph "GET / - 3" {
     2 -> 3 [ ]
 }
 
-digraph "GET / - 4" {
+digraph "GET / - 3" {
     0 [ label = "0| app_04686649::handler() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]

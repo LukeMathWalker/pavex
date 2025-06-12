@@ -14,7 +14,6 @@ pub struct InputSchema {
     pub transient: Flag,
     pub clone_if_necessary: Flag,
     pub never_clone: Flag,
-    pub error_handler: Option<String>,
 }
 
 #[derive(darling::FromMeta, Debug, Clone)]
@@ -24,7 +23,6 @@ pub struct InputSchema {
 pub struct ShorthandSchema {
     pub clone_if_necessary: Flag,
     pub never_clone: Flag,
-    pub error_handler: Option<String>,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -37,7 +35,6 @@ impl TryFrom<InputSchema> for Properties {
             transient,
             clone_if_necessary,
             never_clone,
-            error_handler,
         } = input;
 
         let lifecycle = match (
@@ -73,7 +70,6 @@ impl TryFrom<InputSchema> for Properties {
         Ok(Properties {
             lifecycle,
             cloning_strategy,
-            error_handler,
         })
     }
 }
@@ -82,14 +78,12 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub lifecycle: Lifecycle,
     pub cloning_strategy: Option<CloningStrategy>,
-    pub error_handler: Option<String>,
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 /// Everything in [`Properties`], minus `lifecycle`.
 pub struct ShorthandProperties {
     pub cloning_strategy: Option<CloningStrategy>,
-    pub error_handler: Option<String>,
 }
 
 impl TryFrom<ShorthandSchema> for ShorthandProperties {
@@ -99,7 +93,6 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
         let ShorthandSchema {
             clone_if_necessary,
             never_clone,
-            error_handler,
         } = input;
         let Ok(cloning_strategy) = CloningStrategyFlags {
             clone_if_necessary,
@@ -111,10 +104,7 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
             ));
         };
 
-        Ok(Self {
-            cloning_strategy,
-            error_handler,
-        })
+        Ok(Self { cloning_strategy })
     }
 }
 
@@ -197,16 +187,12 @@ fn shorthand(
     schema: ShorthandSchema,
     lifecycle: Lifecycle,
 ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-    let ShorthandProperties {
-        cloning_strategy,
-        error_handler,
-    } = schema
+    let ShorthandProperties { cloning_strategy } = schema
         .try_into()
         .map_err(|e: darling::Error| e.write_errors())?;
     let properties = Properties {
         lifecycle,
         cloning_strategy,
-        error_handler,
     };
     Ok(emit(properties))
 }
@@ -217,7 +203,6 @@ fn emit(properties: Properties) -> AnnotationCodegen {
     let Properties {
         lifecycle,
         cloning_strategy,
-        error_handler,
     } = properties;
     let mut properties = quote! {
         lifecycle = #lifecycle,
@@ -225,11 +210,6 @@ fn emit(properties: Properties) -> AnnotationCodegen {
     if let Some(cloning_strategy) = cloning_strategy {
         properties.extend(quote! {
             cloning_strategy = #cloning_strategy,
-        });
-    }
-    if let Some(error_handler) = error_handler {
-        properties.extend(quote! {
-            error_handler = #error_handler,
         });
     }
 

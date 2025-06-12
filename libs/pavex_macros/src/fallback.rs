@@ -11,22 +11,20 @@ use crate::{
 /// The available options for fallbacks.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
-    pub error_handler: Option<String>,
 }
 
 impl TryFrom<InputSchema> for Properties {
     type Error = darling::Error;
 
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let InputSchema { id, error_handler } = input;
-        Ok(Properties { id, error_handler })
+        let InputSchema { id } = input;
+        Ok(Properties { id })
     }
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct Properties {
     pub id: Option<syn::Ident>,
-    pub error_handler: Option<String>,
 }
 
 pub struct FallbackAnnotation;
@@ -53,7 +51,7 @@ impl CallableAnnotation for FallbackAnnotation {
 /// Decorate the input with a `#[diagnostic::pavex::fallback]` attribute
 /// that matches the provided properties.
 fn emit(name: Ident, properties: Properties) -> AnnotationCodegen {
-    let Properties { id, error_handler } = properties;
+    let Properties { id } = properties;
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
 
@@ -61,15 +59,9 @@ fn emit(name: Ident, properties: Properties) -> AnnotationCodegen {
 
     // If the user didn't specify an identifier, generate one based on the function name.
     let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
-    let mut properties = quote! {
+    let properties = quote! {
         id = #id,
     };
-
-    if let Some(error_handler) = error_handler {
-        properties.extend(quote! {
-            error_handler = #error_handler,
-        });
-    }
 
     let id_docs = {
         format!(

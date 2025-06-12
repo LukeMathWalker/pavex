@@ -12,7 +12,6 @@ use crate::{
 pub struct InputSchema {
     pub method: Option<MethodArgument>,
     pub path: String,
-    pub error_handler: Option<String>,
     pub allow: Option<RouteAllows>,
 }
 
@@ -28,7 +27,6 @@ impl TryFrom<InputSchema> for Properties {
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
         let InputSchema {
             path,
-            error_handler,
             method,
             allow,
         } = input;
@@ -104,7 +102,6 @@ impl TryFrom<InputSchema> for Properties {
 
         Ok(Properties {
             path,
-            error_handler,
             method,
             allow_non_standard_methods,
             allow_any_method,
@@ -116,7 +113,6 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub method: Option<MethodArgument>,
     pub path: String,
-    pub error_handler: Option<String>,
     pub allow_non_standard_methods: bool,
     pub allow_any_method: bool,
 }
@@ -148,7 +144,6 @@ fn emit(properties: Properties) -> AnnotationCodegen {
     let Properties {
         method,
         path,
-        error_handler,
         allow_non_standard_methods,
         allow_any_method,
     } = properties;
@@ -160,11 +155,6 @@ fn emit(properties: Properties) -> AnnotationCodegen {
     if let Some(method) = method {
         properties.extend(quote! {
             method = #method,
-        });
-    }
-    if let Some(error_handler) = error_handler {
-        properties.extend(quote! {
-            error_handler = #error_handler,
         });
     }
     if allow_non_standard_methods {
