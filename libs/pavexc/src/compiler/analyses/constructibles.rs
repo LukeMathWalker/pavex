@@ -290,7 +290,7 @@ impl ConstructibleDb {
                                     )
                                 } else {
                                     tracing::warn!(
-                                        "&mut clonable request-scoped input ({:?}) for component {:?}, but the component is not a user component.",
+                                        "&mut cloneable request-scoped input ({:?}) for component {:?}, but the component is not a user component.",
                                         input,
                                         component_id
                                     );
