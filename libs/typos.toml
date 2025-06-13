@@ -1,6 +1,3 @@
-[files]
-extend-exclude = ["**/diagnostics.dot"]
-
 [default]
 extend-words = { befores = "befores" }
 extend-ignore-words-re = ["\\b[a-zA-Z]{2}\\b"]
