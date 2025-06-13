@@ -434,7 +434,7 @@ fn intern_annotated(
 /// If the annotation is attached to a re-export, it is resolved
 /// as part of the processing.
 ///
-/// If procesing fails, it'll emit a diagnostic directly into the sink.
+/// If processing fails, it'll emit a diagnostic directly into the sink.
 fn annotated_item2type(
     item: &Item,
     krate: &Crate,
