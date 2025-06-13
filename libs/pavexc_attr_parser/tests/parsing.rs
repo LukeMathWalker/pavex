@@ -38,7 +38,6 @@ fn test_cloning_strategy_can_be_omitted() {
         AnnotationProperties::Constructor {
             lifecycle: Lifecycle::Singleton,
             cloning_strategy: None,
-            error_handler: None
         }
     );
 }

@@ -59,8 +59,9 @@ fn emit(name: Ident, properties: Properties) -> AnnotationCodegen {
 
     // If the user didn't specify an identifier, generate one based on the function name.
     let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
+    let id_str = id.to_string();
     let properties = quote! {
-        id = #id,
+        id = #id_str,
     };
 
     let id_docs = format!(

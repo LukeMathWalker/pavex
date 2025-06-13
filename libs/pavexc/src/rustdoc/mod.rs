@@ -5,7 +5,7 @@
 use guppy::PackageId;
 use once_cell::sync::Lazy;
 
-pub(crate) use annotations::{AnnotatedItem, ImplInfo};
+pub(crate) use annotations::{AnnotatedItem, AnnotationCoordinates, ImplInfo};
 pub use compute::CannotGetCrateData;
 pub use queries::{Crate, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt};
 pub use utils::SortableId;

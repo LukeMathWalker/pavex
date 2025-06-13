@@ -1,4 +1,4 @@
-use pavex::blueprint::{Blueprint, from};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 pub struct A;
@@ -30,7 +30,7 @@ pub fn handler(_a: &mut A) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![crate, pavex]);
+    bp.import(from![crate]);
     bp.post_process(FIRST);
     bp.post_process(SECOND);
     bp.post_process(THIRD);

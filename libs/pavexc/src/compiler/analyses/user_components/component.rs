@@ -1,6 +1,9 @@
 use crate::diagnostic::ComponentKind;
 
-use super::{UserComponentSource, blueprint::RawIdentifierId, router_key::RouterKey};
+use super::{
+    UserComponentSource, annotations::AnnotationCoordinatesId, blueprint::RawIdentifierId,
+    router_key::RouterKey,
+};
 
 /// A unique identifier for a [`UserComponent`].
 pub type UserComponentId = la_arena::Idx<UserComponent>;
@@ -37,13 +40,13 @@ pub enum UserComponent {
         key: String,
     },
     WrappingMiddleware {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     PostProcessingMiddleware {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     PreProcessingMiddleware {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     ErrorObserver {
         source: RawIdentifierId,
@@ -63,7 +66,12 @@ pub enum ErrorHandlerTarget {
     ErrorType {
         /// The index of the error reference within the vector of input parameters
         /// for the error handler callable.
-        error_ref_input_index: usize,
+        ///
+        /// It is set to `Some` for components that have been imported.
+        /// It is set to `None` for components that have been registered against
+        /// the blueprint. They'll have to be matched with the original annotation
+        /// to fill in the missing information.
+        error_ref_input_index: Option<usize>,
     },
 }
 
@@ -74,9 +82,6 @@ impl UserComponent {
     pub fn raw_identifiers_id(&self) -> Option<RawIdentifierId> {
         match self {
             UserComponent::Fallback { source }
-            | UserComponent::WrappingMiddleware { source }
-            | UserComponent::PostProcessingMiddleware { source }
-            | UserComponent::PreProcessingMiddleware { source }
             | UserComponent::RequestHandler {
                 source: UserComponentSource::Identifiers(source),
                 ..
@@ -96,6 +101,36 @@ impl UserComponent {
                 ..
             }
             | UserComponent::ErrorObserver { source } => Some(*source),
+            _ => None,
+        }
+    }
+
+    /// Returns the annotation coordinates id for this user component.
+    ///
+    /// It's `None` for components that don't have associated coordinates.
+    pub fn coordinates_id(&self) -> Option<AnnotationCoordinatesId> {
+        match self {
+            UserComponent::WrappingMiddleware { source }
+            | UserComponent::PostProcessingMiddleware { source }
+            | UserComponent::ErrorHandler {
+                source: UserComponentSource::AnnotationCoordinates(source),
+                ..
+            }
+            | UserComponent::RequestHandler {
+                source: UserComponentSource::AnnotationCoordinates(source),
+                ..
+            }
+            | UserComponent::ConfigType {
+                source: UserComponentSource::AnnotationCoordinates(source),
+                ..
+            }
+            | UserComponent::PrebuiltType {
+                source: UserComponentSource::AnnotationCoordinates(source),
+            }
+            | UserComponent::Constructor {
+                source: UserComponentSource::AnnotationCoordinates(source),
+            }
+            | UserComponent::PreProcessingMiddleware { source } => Some(*source),
             _ => None,
         }
     }

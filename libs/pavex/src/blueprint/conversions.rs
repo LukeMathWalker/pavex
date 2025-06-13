@@ -1,11 +1,22 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
-use super::reflection::{CreatedAt, Sources, WithLocation};
+use super::reflection::{AnnotationCoordinates, CreatedAt, Sources, WithLocation};
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location, Type};
 use pavex_reflection::CreatedBy;
+
+#[track_caller]
+pub(super) fn coordinates2coordinates(
+    c: AnnotationCoordinates,
+) -> pavex_reflection::AnnotationCoordinates {
+    pavex_reflection::AnnotationCoordinates {
+        id: c.id.to_owned(),
+        created_at: created_at2created_at(c.created_at),
+        macro_name: c.macro_name.to_owned(),
+    }
+}
 
 #[track_caller]
 pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -> Callable {

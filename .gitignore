@@ -16,6 +16,7 @@
 /.cache/
 /vendor
 .DS_Store
+.claude
 *.snap
 trace-*.json
 /docs/api_reference/

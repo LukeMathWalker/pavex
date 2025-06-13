@@ -1,6 +1,9 @@
 use std::{borrow::Cow, collections::BTreeMap, ops::Deref, sync::Arc};
 
+mod coordinates;
 mod diagnostic;
+
+pub(super) use coordinates::resolve_annotation_coordinates;
 
 use diagnostic::{
     const_generics_are_not_supported, not_a_module, not_a_type_reexport, unknown_module_path,
@@ -31,7 +34,9 @@ use crate::{
         GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
         ResolvedType,
     },
-    rustdoc::{Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt},
+    rustdoc::{
+        AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt,
+    },
 };
 use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
@@ -39,6 +44,9 @@ use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
 /// An id pointing at the coordinates of an annotated component.
 pub type AnnotatedItemId = la_arena::Idx<GlobalItemId>;
+
+/// An id pointing at the coordinates of an annotated component.
+pub type AnnotationCoordinatesId = la_arena::Idx<AnnotationCoordinates>;
 
 /// Process all imported annotated components.
 pub(super) fn register_imported_components(
@@ -224,11 +232,12 @@ fn intern_annotated(
         AnnotationProperties::ErrorHandler {
             error_ref_input_index,
             default: _,
+            id: _,
         } => {
             let error_handler = UserComponent::ErrorHandler {
                 source,
                 target: ErrorHandlerTarget::ErrorType {
-                    error_ref_input_index,
+                    error_ref_input_index: Some(error_ref_input_index),
                 },
             };
             Ok(aux.intern_component(
@@ -389,7 +398,7 @@ fn intern_annotated(
         }
         AnnotationProperties::PreProcessingMiddleware { .. }
         | AnnotationProperties::PostProcessingMiddleware { .. }
-        | AnnotationProperties::ErrorObserver
+        | AnnotationProperties::ErrorObserver { .. }
         | AnnotationProperties::Methods
         | AnnotationProperties::Fallback { .. }
         | AnnotationProperties::WrappingMiddleware { .. } => {

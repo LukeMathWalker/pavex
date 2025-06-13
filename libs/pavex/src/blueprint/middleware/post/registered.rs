@@ -1,6 +1,8 @@
-use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::{conversions::raw_identifiers2callable, reflection::WithLocation};
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, PostProcessingMiddleware};
+use crate::blueprint::conversions::coordinates2coordinates;
+use crate::blueprint::raw::RawErrorHandler;
+use pavex_bp_schema::{
+    Blueprint as BlueprintSchema, Component, ErrorHandler, Location, PostProcessingMiddleware,
+};
 
 /// The type returned by [`Blueprint::post_process`].
 ///
@@ -30,31 +32,37 @@ impl RegisteredPostProcessingMiddleware<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::Blueprint};
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::{error_handler, post_process};
     /// use pavex::response::Response;
     /// # struct SizeError;
     ///
     /// // 👇 a fallible post-processing middleware
-    /// fn max_response_size(response: Response) -> Result<Response, SizeError>
+    /// #[post_process]
+    /// pub fn max_response_size(response: Response) -> Result<Response, SizeError>
     /// {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &SizeError) -> Response {
+    /// #[error_handler]
+    /// pub fn size_error_handler(error: &SizeError) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.post_process(f!(crate::max_response_size))
-    ///     .error_handler(f!(crate::error_to_response));
+    /// bp.post_process(MAX_RESPONSE_SIZE)
+    ///     .error_handler(SIZE_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        let callable = raw_identifiers2callable(error_handler);
-        self.post_processing_middleware().error_handler = Some(callable);
+    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
+        let error_handler = ErrorHandler {
+            coordinates: coordinates2coordinates(error_handler.coordinates),
+            registered_at: Location::caller(),
+        };
+        self.post_processing_middleware().error_handler = Some(error_handler);
         self
     }
 

@@ -1,17 +1,14 @@
-use super::reflection::{RawIdentifiers, WithLocation};
+use super::reflection::AnnotationCoordinates;
 
-pub struct RawPreProcessingMiddleware {
-    pub coordinates: WithLocation<RawIdentifiers>,
+macro_rules! raw {
+    ($name:ident) => {
+        pub struct $name {
+            pub coordinates: AnnotationCoordinates,
+        }
+    };
 }
 
-pub struct RawPostProcessingMiddleware {
-    pub coordinates: WithLocation<RawIdentifiers>,
-}
-
-pub struct RawWrappingMiddleware {
-    pub coordinates: WithLocation<RawIdentifiers>,
-}
-
-pub struct RawErrorHandler {
-    pub coordinates: WithLocation<RawIdentifiers>,
-}
+raw!(RawPreProcessingMiddleware);
+raw!(RawPostProcessingMiddleware);
+raw!(RawWrappingMiddleware);
+raw!(RawErrorHandler);

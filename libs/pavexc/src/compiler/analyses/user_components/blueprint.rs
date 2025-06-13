@@ -1,8 +1,8 @@
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
-    Domain, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix,
-    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route,
-    RoutesImport, WrappingMiddleware,
+    Domain, ErrorHandler, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint,
+    PathPrefix, PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers,
+    Route, RoutesImport, WrappingMiddleware,
 };
 
 use super::auxiliary::AuxiliaryData;
@@ -14,6 +14,7 @@ use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId, UserComponent};
 use crate::compiler::app::PAVEX_VERSION;
 use crate::compiler::component::DefaultStrategy;
+use crate::rustdoc::AnnotationCoordinates;
 
 /// A unique identifier for a `RawCallableIdentifiers`.
 pub type RawIdentifierId = la_arena::Idx<RawIdentifiers>;
@@ -336,7 +337,7 @@ fn process_route(
 
     validate_route_path(aux, request_handler_id, &registered_route.path, diagnostics);
 
-    process_component_specific_error_handler(
+    process_legacy_component_specific_error_handler(
         aux,
         &registered_route.error_handler,
         ROUTE_LIFECYCLE,
@@ -383,7 +384,7 @@ fn process_fallback(
     aux.fallback_id2domain_guard
         .insert(fallback_id, domain_guard);
 
-    process_component_specific_error_handler(
+    process_legacy_component_specific_error_handler(
         aux,
         &fallback.error_handler,
         ROUTE_LIFECYCLE,
@@ -405,17 +406,21 @@ fn process_middleware(
     const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
     let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(middleware.middleware.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: middleware.coordinates.id.clone(),
+        created_at: middleware.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::WrappingMiddleware {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let component_id = aux.intern_component(
         component,
         middleware_scope_id,
         MIDDLEWARE_LIFECYCLE,
-        middleware.middleware.registered_at.clone().into(),
+        middleware.registered_at.clone().into(),
     );
     current_middleware_chain.push(component_id);
 
@@ -441,17 +446,21 @@ fn process_pre_processing_middleware(
     const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
     let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(middleware.middleware.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: middleware.coordinates.id.clone(),
+        created_at: middleware.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::PreProcessingMiddleware {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let component_id = aux.intern_component(
         component,
         middleware_scope_id,
         MIDDLEWARE_LIFECYCLE,
-        middleware.middleware.registered_at.clone().into(),
+        middleware.registered_at.clone().into(),
     );
     current_middleware_chain.push(component_id);
 
@@ -477,17 +486,21 @@ fn process_post_processing_middleware(
     const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
     let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(middleware.middleware.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: middleware.coordinates.id.clone(),
+        created_at: middleware.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::PostProcessingMiddleware {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let component_id = aux.intern_component(
         component,
         middleware_scope_id,
         MIDDLEWARE_LIFECYCLE,
-        middleware.middleware.registered_at.clone().into(),
+        middleware.registered_at.clone().into(),
     );
     current_middleware_chain.push(component_id);
 
@@ -533,7 +546,7 @@ fn process_constructor(
             .insert(constructor_id, constructor.lints.clone());
     }
 
-    process_component_specific_error_handler(
+    process_legacy_component_specific_error_handler(
         aux,
         &constructor.error_handler,
         lifecycle,
@@ -578,20 +591,25 @@ fn process_error_handler(
 ) {
     const LIFECYCLE: Lifecycle = Lifecycle::Transient;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(eh.error_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: eh.coordinates.id.clone(),
+        created_at: eh.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+
     let component = UserComponent::ErrorHandler {
-        source: identifiers_id.into(),
+        source: coordinates_id.into(),
         target: ErrorHandlerTarget::ErrorType {
-            error_ref_input_index: eh.error_ref_input_index,
+            error_ref_input_index: None,
         },
     };
     aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        eh.error_handler.registered_at.clone().into(),
+        eh.registered_at.clone().into(),
     );
 }
 
@@ -659,7 +677,7 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
 
 /// Process the error handler registered against a (supposedly) fallible component, if
 /// any.
-fn process_component_specific_error_handler(
+fn process_legacy_component_specific_error_handler(
     aux: &mut AuxiliaryData,
     error_handler: &Option<Callable>,
     lifecycle: Lifecycle,
@@ -681,6 +699,39 @@ fn process_component_specific_error_handler(
         scope_id,
         lifecycle,
         error_handler.registered_at.clone().into(),
+    );
+    aux.fallible_id2error_handler_id
+        .insert(fallible_id, error_handler_id);
+}
+
+/// Process the error handler registered against a (supposedly) fallible component, if
+/// any.
+fn process_component_specific_error_handler(
+    aux: &mut AuxiliaryData,
+    eh: &Option<ErrorHandler>,
+    lifecycle: Lifecycle,
+    scope_id: ScopeId,
+    fallible_id: UserComponentId,
+) {
+    let Some(eh) = eh else {
+        return;
+    };
+    let annotation_coordinates = AnnotationCoordinates {
+        id: eh.coordinates.id.clone(),
+        created_at: eh.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+    let component = UserComponent::ErrorHandler {
+        source: coordinates_id.into(),
+        target: ErrorHandlerTarget::FallibleComponent { fallible_id },
+    };
+    let error_handler_id = aux.intern_component(
+        component,
+        scope_id,
+        lifecycle,
+        eh.registered_at.clone().into(),
     );
     aux.fallible_id2error_handler_id
         .insert(fallible_id, error_handler_id);

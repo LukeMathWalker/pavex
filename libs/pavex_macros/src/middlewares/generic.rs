@@ -74,8 +74,9 @@ fn emit(kind: MiddlewareKind, name: Ident, properties: Properties) -> Annotation
 
     // If the user didn't specify an identifier, generate one based on the function name.
     let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
+    let id_str = id.to_string();
     let properties = quote! {
-        id = #id,
+        id = #id_str,
     };
 
     let id_docs = {
@@ -114,10 +115,11 @@ bp.{bp_method_name}({id});
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
         pub const #id: #pavex::blueprint::raw::#raw_type_name = #pavex::blueprint::raw::#raw_type_name {
-            coordinates: #pavex::with_location!(#pavex::blueprint::reflection::RawIdentifiers {
-                import_path: concat!(module_path!(), "::", #name),
+            coordinates: #pavex::blueprint::reflection::AnnotationCoordinates {
+                id: #id_str,
+                created_at: #pavex::created_at!(),
                 macro_name: #macro_name,
-            }),
+            }
         };
     };
 

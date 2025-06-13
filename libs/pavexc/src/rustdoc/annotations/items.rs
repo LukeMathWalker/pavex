@@ -12,6 +12,7 @@ use super::super::{Crate, SortableId};
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnnotatedItems {
     item_id2details: BTreeMap<SortableId, AnnotatedItem>,
+    annotation_id2item_id: BTreeMap<String, rustdoc_types::Id>,
 }
 
 impl AnnotatedItems {
@@ -21,13 +22,24 @@ impl AnnotatedItems {
     }
 
     /// Get the annotation for a specific item, if any.
-    pub fn get(&self, id: rustdoc_types::Id) -> Option<&AnnotatedItem> {
+    pub fn get_by_item_id(&self, id: rustdoc_types::Id) -> Option<&AnnotatedItem> {
         self.item_id2details.get(&id.into())
+    }
+
+    /// Get the annotation with a specific id, if any.
+    pub fn get_by_annotation_id(&self, id: &str) -> Option<&AnnotatedItem> {
+        let item_id = self.annotation_id2item_id.get(id)?;
+        self.get_by_item_id(*item_id)
     }
 
     /// Insert an annotated item.
     pub fn insert(&mut self, id: rustdoc_types::Id, item: AnnotatedItem) {
+        let annotation_id = item.properties.id().map(|s| s.to_owned());
         self.item_id2details.insert(id.into(), item);
+        if let Some(annotation_id) = annotation_id {
+            // TODO: error out on conflicts.
+            self.annotation_id2item_id.insert(annotation_id, id);
+        }
     }
 }
 

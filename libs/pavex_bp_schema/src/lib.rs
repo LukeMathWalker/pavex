@@ -2,6 +2,7 @@
 //!
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
+use pavex_reflection::AnnotationCoordinates;
 pub use pavex_reflection::{CreatedAt, CreatedBy, Location, RawIdentifiers};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -160,10 +161,9 @@ pub struct ErrorObserver {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// An error handler registered against a `Blueprint` via `Blueprint::error_handler`.
 pub struct ErrorHandler {
-    /// The callable in charge of processing the error.
-    pub error_handler: Callable,
-    /// The index (as an input parameter) of the reference to the error type being handled.
-    pub error_ref_input_index: usize,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -212,28 +212,31 @@ pub struct Constructor {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::wrap`.
 pub struct WrappingMiddleware {
-    /// The callable that executes the middleware's logic.
-    pub middleware: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::post_process`.
 pub struct PostProcessingMiddleware {
-    /// The callable that executes the middleware's logic.
-    pub middleware: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::pre_process`.
 pub struct PreProcessingMiddleware {
-    /// The callable that executes the middleware's logic.
-    pub middleware: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

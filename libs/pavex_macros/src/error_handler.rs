@@ -136,8 +136,9 @@ fn emit(self_ty: Option<&syn::Type>, name: Ident, properties: Properties) -> Ann
             handler_path.replace("::", "_").to_case(Case::Constant)
         )
     });
+    let id_str = id.to_string();
     let mut properties = quote! {
-        id = #id,
+        id = #id_str,
         error_ref_input_index = #error_ref_input_index,
     };
     if let Some(default) = default {
@@ -165,11 +166,13 @@ bp.error_handler({id});
     };
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
-        pub const #id: #pavex::blueprint::reflection::WithLocation<#pavex::blueprint::reflection::RawIdentifiers> =
-            #pavex::with_location!(#pavex::blueprint::reflection::RawIdentifiers {
-                import_path: concat!(module_path!(), "::", #handler_path),
+        pub const #id: #pavex::blueprint::raw::RawErrorHandler = #pavex::blueprint::raw::RawErrorHandler {
+            coordinates: #pavex::blueprint::reflection::AnnotationCoordinates {
+                id: #id_str,
+                created_at: #pavex::created_at!(),
                 macro_name: "error_handler",
-            });
+            }
+        };
     };
 
     AnnotationCodegen {

@@ -2,7 +2,9 @@ use super::UserComponentId;
 use super::{ScopeGraph, ScopeId};
 use super::{UserComponent, auxiliary::AuxiliaryData};
 use super::{blueprint::process_blueprint, router::Router};
-use crate::compiler::analyses::user_components::annotations::register_imported_components;
+use crate::compiler::analyses::user_components::annotations::{
+    register_imported_components, resolve_annotation_coordinates,
+};
 use crate::compiler::analyses::user_components::imports::resolve_imports;
 use crate::compiler::analyses::user_components::paths::FQPaths;
 use crate::compiler::component::ConfigType;
@@ -125,6 +127,7 @@ impl UserComponentDb {
             krate_collection,
             diagnostics,
         );
+        resolve_annotation_coordinates(&mut aux, computation_db, krate_collection, diagnostics);
         paths.resolve(
             &mut aux,
             computation_db,
@@ -150,6 +153,7 @@ impl UserComponentDb {
             config_id2include_if_unused,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
+            annotation_coordinates_interner: _,
             annotation_interner: _,
             fallible_id2error_handler_id: _,
             imports: _,

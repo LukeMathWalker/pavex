@@ -14,7 +14,7 @@ use pavex_reflection::Location;
 
 use super::config::RegisteredConfigType;
 use super::constructor::{Lifecycle, RegisteredConstructor};
-use super::conversions::{created_at2created_at, sources2sources};
+use super::conversions::{coordinates2coordinates, created_at2created_at, sources2sources};
 use super::error_handler::RegisteredErrorHandler;
 use super::import::RegisteredImport;
 use super::middleware::{
@@ -22,7 +22,9 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
-use super::raw::{RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware};
+use super::raw::{
+    RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
+};
 use super::reflection::{RawIdentifiers, Sources, WithLocation};
 use super::router::{MethodGuard, RegisteredRoute, RegisteredRoutes};
 
@@ -595,7 +597,8 @@ impl Blueprint {
     #[doc(alias = "middleware")]
     pub fn wrap(&mut self, m: RawWrappingMiddleware) -> RegisteredWrappingMiddleware {
         let registered = WrappingMiddleware {
-            middleware: raw_identifiers2callable(m.coordinates),
+            coordinates: coordinates2coordinates(m.coordinates),
+            registered_at: Location::caller(),
             error_handler: None,
         };
         let component_id = self.push_component(registered);
@@ -648,7 +651,8 @@ impl Blueprint {
         m: RawPostProcessingMiddleware,
     ) -> RegisteredPostProcessingMiddleware {
         let registered = PostProcessingMiddleware {
-            middleware: raw_identifiers2callable(m.coordinates),
+            coordinates: coordinates2coordinates(m.coordinates),
+            registered_at: Location::caller(),
             error_handler: None,
         };
         let component_id = self.push_component(registered);
@@ -706,7 +710,8 @@ impl Blueprint {
         m: RawPreProcessingMiddleware,
     ) -> RegisteredPreProcessingMiddleware {
         let registered = PreProcessingMiddleware {
-            middleware: raw_identifiers2callable(m.coordinates),
+            coordinates: coordinates2coordinates(m.coordinates),
+            registered_at: Location::caller(),
             error_handler: None,
         };
         let component_id = self.push_component(registered);
@@ -1074,14 +1079,10 @@ impl Blueprint {
     /// Check out the ["Error handlers"](https://pavex.dev/docs/guide/errors/error_handlers)
     /// section of Pavex's guide for a thorough introduction to error handlers
     /// in Pavex applications.
-    pub fn error_handler(
-        &mut self,
-        callable: WithLocation<RawIdentifiers>,
-        error_ref_index: usize,
-    ) -> RegisteredErrorHandler {
+    pub fn error_handler(&mut self, m: RawErrorHandler) -> RegisteredErrorHandler {
         let registered = pavex_bp_schema::ErrorHandler {
-            error_handler: raw_identifiers2callable(callable),
-            error_ref_input_index: error_ref_index,
+            coordinates: coordinates2coordinates(m.coordinates),
+            registered_at: Location::caller(),
         };
         self.push_component(registered);
         RegisteredErrorHandler {

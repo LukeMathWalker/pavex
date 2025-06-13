@@ -31,6 +31,7 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 use pavex_cli_diagnostic::AnnotatedSource;
+use pavexc_attr_parser::AnnotationProperties;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -1055,6 +1056,28 @@ impl ComponentDb {
                 ErrorHandlerTarget::ErrorType {
                     error_ref_input_index,
                 } => {
+                    let error_ref_input_index = if let Some(index) = error_ref_input_index {
+                        index
+                    } else {
+                        let Some(source_id) =
+                            &computation_db[error_handler_user_component_id].source_coordinates
+                        else {
+                            unreachable!()
+                        };
+                        let Some(annotation) = krate_collection.annotation(source_id) else {
+                            // TODO: convert into diagnostic.
+                            panic!("Can't find the annotation for this error handler");
+                        };
+                        let AnnotationProperties::ErrorHandler {
+                            error_ref_input_index,
+                            id: _,
+                            default: _,
+                        } = annotation.properties
+                        else {
+                            unreachable!()
+                        };
+                        error_ref_input_index
+                    };
                     let scope_id = self.user_db.scope_id(error_handler_user_component_id);
                     match ErrorHandler::new(
                         error_handler_callable.to_owned(),

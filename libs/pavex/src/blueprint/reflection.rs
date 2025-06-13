@@ -25,6 +25,12 @@ pub struct WithLocation<T> {
     pub created_at: CreatedAt,
 }
 
+pub struct AnnotationCoordinates {
+    pub id: &'static str,
+    pub created_at: CreatedAt,
+    pub macro_name: &'static str,
+}
+
 /// Metadata about the module where a Pavex macro was invoked to create a component.
 ///
 /// It is used by Pavex to:
@@ -74,15 +80,24 @@ pub enum Sources {
 #[macro_export]
 #[doc(hidden)]
 /// A convenience macro to create a [`WithLocation`] instance.
+macro_rules! created_at {
+    () => {
+        $crate::blueprint::reflection::CreatedAt {
+            package_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
+            package_version: ::std::env!("CARGO_PKG_VERSION", "Failed to load the CARGO_PKG_VERSION environment variable. Are you using a custom build system?"),
+            module_path: module_path!(),
+        }
+    };
+}
+
+#[macro_export]
+#[doc(hidden)]
+/// A convenience macro to create a [`WithLocation`] instance.
 macro_rules! with_location {
     ($value:expr) => {
         $crate::blueprint::reflection::WithLocation {
             value: $value,
-            created_at: $crate::blueprint::reflection::CreatedAt {
-                package_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
-                package_version: ::std::env!("CARGO_PKG_VERSION", "Failed to load the CARGO_PKG_VERSION environment variable. Are you using a custom build system?"),
-                module_path: module_path!(),
-            },
+            created_at: $crate::created_at!(),
         }
     };
 }

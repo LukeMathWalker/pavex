@@ -7,7 +7,7 @@ use crate::{
         interner::Interner,
     },
     diagnostic::{Registration, TargetSpan},
-    rustdoc::GlobalItemId,
+    rustdoc::{AnnotationCoordinates, GlobalItemId},
 };
 use ahash::HashMap;
 use indexmap::IndexMap;
@@ -29,6 +29,7 @@ pub(super) struct AuxiliaryData {
     /// A list of imports to be resolved.
     pub(super) imports: Vec<UnresolvedImport>,
     pub(super) annotation_interner: Interner<GlobalItemId>,
+    pub(super) annotation_coordinates_interner: Interner<AnnotationCoordinates>,
     pub(super) identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was
     /// registered at.

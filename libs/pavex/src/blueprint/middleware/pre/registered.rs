@@ -1,6 +1,8 @@
-use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::{conversions::raw_identifiers2callable, reflection::WithLocation};
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, PreProcessingMiddleware};
+use crate::blueprint::conversions::coordinates2coordinates;
+use crate::blueprint::raw::RawErrorHandler;
+use pavex_bp_schema::{
+    Blueprint as BlueprintSchema, Component, ErrorHandler, Location, PreProcessingMiddleware,
+};
 
 /// The type returned by [`Blueprint::pre_process`].
 ///
@@ -30,33 +32,42 @@ impl RegisteredPreProcessingMiddleware<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::Blueprint, middleware::Processing};
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::{error_handler, pre_process, middleware::Processing};
     /// use pavex::request::RequestHead;
     /// use pavex::response::Response;
     /// # struct LogLevel;
     /// # struct AuthError;
     ///
     /// // 👇 a fallible middleware
-    /// fn reject_anonymous(request_head: &RequestHead) -> Result<Processing, AuthError>
+    /// #[pre_process]
+    /// pub fn reject_anonymous(request_head: &RequestHead) -> Result<Processing, AuthError>
     /// {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &AuthError, log_level: LogLevel) -> Response {
+    /// #[error_handler]
+    /// pub fn auth_error_handler(
+    ///     #[px(error_ref)] error: &AuthError,
+    ///     log_level: LogLevel
+    /// ) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.wrap(f!(crate::reject_anonymous))
-    ///     .error_handler(f!(crate::error_to_response));
+    /// bp.pre_process(REJECT_ANONYMOUS)
+    ///     .error_handler(AUTH_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        let callable = raw_identifiers2callable(error_handler);
-        self.pre_processing_middleware().error_handler = Some(callable);
+    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
+        let error_handler = ErrorHandler {
+            coordinates: coordinates2coordinates(error_handler.coordinates),
+            registered_at: Location::caller(),
+        };
+        self.pre_processing_middleware().error_handler = Some(error_handler);
         self
     }
 

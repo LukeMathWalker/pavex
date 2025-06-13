@@ -74,6 +74,17 @@ impl CreatedBy {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct AnnotationCoordinates {
+    /// An opaque string that uniquely identifies this component within the package
+    /// where it was defined.
+    pub id: String,
+    /// Metadata required to pinpoint where the annotated component lives.
+    pub created_at: CreatedAt,
+    /// The name of the macro used to annotate the component.
+    pub macro_name: String,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 /// All the information required to identify a component registered against a `Blueprint`.
 ///
 /// It is an implementation detail of the builder.

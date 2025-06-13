@@ -57,19 +57,30 @@ pub enum AnnotationProperties {
         default_if_missing: Option<bool>,
         include_if_unused: Option<bool>,
     },
-    WrappingMiddleware,
-    PreProcessingMiddleware,
-    PostProcessingMiddleware,
-    ErrorObserver,
+    WrappingMiddleware {
+        id: String,
+    },
+    PreProcessingMiddleware {
+        id: String,
+    },
+    PostProcessingMiddleware {
+        id: String,
+    },
+    ErrorObserver {
+        id: String,
+    },
     ErrorHandler {
         error_ref_input_index: usize,
         default: Option<bool>,
+        id: String,
     },
     Route {
         method: MethodGuard,
         path: String,
     },
-    Fallback,
+    Fallback {
+        id: String,
+    },
     Methods,
 }
 
@@ -96,6 +107,21 @@ impl AnnotationProperties {
             Methods => Ok(AnnotationProperties::Methods),
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
+    }
+
+    /// Return the id of this component, if one was set.
+    pub fn id(&self) -> Option<&str> {
+        use AnnotationProperties::*;
+
+        match self {
+            WrappingMiddleware { id }
+            | PreProcessingMiddleware { id }
+            | PostProcessingMiddleware { id }
+            | ErrorObserver { id }
+            | ErrorHandler { id, .. }
+            | Fallback { id } => Some(id.as_str()),
+            Constructor { .. } | Prebuilt { .. } | Config { .. } | Route { .. } | Methods => None,
+        }
     }
 }
 
@@ -185,7 +211,7 @@ impl AnnotationProperties {
             AnnotationProperties::PostProcessingMiddleware { .. } => {
                 AnnotationKind::PostProcessingMiddleware
             }
-            AnnotationProperties::ErrorObserver => AnnotationKind::ErrorObserver,
+            AnnotationProperties::ErrorObserver { .. } => AnnotationKind::ErrorObserver,
             AnnotationProperties::Prebuilt { .. } => AnnotationKind::Prebuilt,
             AnnotationProperties::Route { .. } => AnnotationKind::Route,
             AnnotationProperties::Fallback { .. } => AnnotationKind::Fallback,

@@ -1,4 +1,3 @@
-use darling::util::Ignored;
 use pavex_bp_schema::MethodGuard;
 
 use crate::{AnnotationProperties, atoms::MethodArgument};
@@ -27,12 +26,12 @@ impl From<ConstructorProperties> for AnnotationProperties {
 /// The way we expect error observer properties to be represented in
 /// `pavex::diagnostic::error_observer`.
 pub struct ErrorObserverProperties {
-    pub id: Ignored,
+    pub id: String,
 }
 
 impl From<ErrorObserverProperties> for AnnotationProperties {
-    fn from(_value: ErrorObserverProperties) -> Self {
-        AnnotationProperties::ErrorObserver {}
+    fn from(value: ErrorObserverProperties) -> Self {
+        AnnotationProperties::ErrorObserver { id: value.id }
     }
 }
 
@@ -40,7 +39,7 @@ impl From<ErrorObserverProperties> for AnnotationProperties {
 /// The way we expect error handler properties to be represented in
 /// `pavex::diagnostic::error_handler`.
 pub struct ErrorHandlerProperties {
-    pub id: Ignored,
+    pub id: String,
     pub error_ref_input_index: usize,
     pub default: Option<bool>,
 }
@@ -50,6 +49,7 @@ impl From<ErrorHandlerProperties> for AnnotationProperties {
         AnnotationProperties::ErrorHandler {
             error_ref_input_index: value.error_ref_input_index,
             default: value.default,
+            id: value.id,
         }
     }
 }
@@ -58,12 +58,12 @@ impl From<ErrorHandlerProperties> for AnnotationProperties {
 /// The way we expect wrapping middleware properties to be represented in
 /// `pavex::diagnostic::wrap`.
 pub struct WrappingMiddlewareProperties {
-    pub id: Ignored,
+    pub id: String,
 }
 
 impl From<WrappingMiddlewareProperties> for AnnotationProperties {
-    fn from(_: WrappingMiddlewareProperties) -> Self {
-        AnnotationProperties::WrappingMiddleware
+    fn from(value: WrappingMiddlewareProperties) -> Self {
+        AnnotationProperties::WrappingMiddleware { id: value.id }
     }
 }
 
@@ -71,12 +71,12 @@ impl From<WrappingMiddlewareProperties> for AnnotationProperties {
 /// The way we expect pre-processing middleware properties to be represented in
 /// `pavex::diagnostic::pre_process`.
 pub struct PreProcessingMiddlewareProperties {
-    pub id: Ignored,
+    pub id: String,
 }
 
 impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
-    fn from(_value: PreProcessingMiddlewareProperties) -> Self {
-        AnnotationProperties::PreProcessingMiddleware
+    fn from(value: PreProcessingMiddlewareProperties) -> Self {
+        AnnotationProperties::PreProcessingMiddleware { id: value.id }
     }
 }
 
@@ -84,12 +84,12 @@ impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
 /// The way we expect post-processing middleware properties to be represented in
 /// `pavex::diagnostic::post_process`.
 pub struct PostProcessingMiddlewareProperties {
-    pub id: Ignored,
+    pub id: String,
 }
 
 impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
-    fn from(_value: PostProcessingMiddlewareProperties) -> Self {
-        AnnotationProperties::PostProcessingMiddleware
+    fn from(value: PostProcessingMiddlewareProperties) -> Self {
+        AnnotationProperties::PostProcessingMiddleware { id: value.id }
     }
 }
 
@@ -121,12 +121,12 @@ impl From<ConfigProperties> for AnnotationProperties {
 /// The way we expect fallback properties to be represented in
 /// `pavex::diagnostic::fallback`.
 pub struct FallbackProperties {
-    pub id: Ignored,
+    pub id: String,
 }
 
 impl From<FallbackProperties> for AnnotationProperties {
-    fn from(_value: FallbackProperties) -> Self {
-        AnnotationProperties::Fallback
+    fn from(value: FallbackProperties) -> Self {
+        AnnotationProperties::Fallback { id: value.id }
     }
 }
 

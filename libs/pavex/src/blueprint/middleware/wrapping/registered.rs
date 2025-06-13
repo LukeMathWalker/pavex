@@ -1,6 +1,8 @@
-use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::{conversions::raw_identifiers2callable, reflection::WithLocation};
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, WrappingMiddleware};
+use crate::blueprint::conversions::coordinates2coordinates;
+use crate::blueprint::raw::RawErrorHandler;
+use pavex_bp_schema::{
+    Blueprint as BlueprintSchema, Component, ErrorHandler, Location, WrappingMiddleware,
+};
 
 /// The type returned by [`Blueprint::wrap`].
 ///
@@ -30,7 +32,8 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::Blueprint, middleware::Next};
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::{error_handler, wrap, middleware::Next};
     /// use pavex::response::Response;
     /// use std::future::Future;
     /// # struct LogLevel;
@@ -38,7 +41,8 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     /// # struct TimeoutError;
     ///
     /// // 👇 a fallible middleware
-    /// fn timeout_middleware<C>(next: Next<C>) -> Result<Response, TimeoutError>
+    /// #[wrap]
+    /// pub fn timeout_middleware<C>(next: Next<C>) -> Result<Response, TimeoutError>
     /// where
     ///     C: Future<Output = Response>
     /// {
@@ -46,20 +50,27 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &TimeoutError, log_level: LogLevel) -> Response {
+    /// #[error_handler]
+    /// pub fn timeout_error_handler(
+    ///     #[px(error_ref)] error: &TimeoutError,
+    ///     log_level: LogLevel
+    /// ) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.wrap(f!(crate::timeout_middleware))
-    ///     .error_handler(f!(crate::error_to_response));
+    /// bp.wrap(TIMEOUT_MIDDLEWARE)
+    ///     .error_handler(TIMEOUT_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        let callable = raw_identifiers2callable(error_handler);
-        self.wrapping_middleware().error_handler = Some(callable);
+    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
+        let error_handler = ErrorHandler {
+            coordinates: coordinates2coordinates(error_handler.coordinates),
+            registered_at: Location::caller(),
+        };
+        self.wrapping_middleware().error_handler = Some(error_handler);
         self
     }
 
