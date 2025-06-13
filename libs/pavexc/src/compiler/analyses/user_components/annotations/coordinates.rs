@@ -20,10 +20,15 @@ pub(crate) fn resolve_annotation_coordinates(
     }) {
         let coordinates = &aux.annotation_coordinates_interner[coordinates_id];
         let (krate, annotation) = match krate_collection.annotation_for_coordinates(coordinates) {
-            Ok(Some(v)) => v,
+            Ok(Ok(Some(v))) => v,
             // TODO: diagnostics
-            Ok(None) => panic!("Can't match blueprint registration to its annotation"),
-            Err(e) => panic!("Can't find the package where the annotation was defined: {e:?}"),
+            Ok(Ok(None)) => panic!("Can't match blueprint registration to its annotation"),
+            // TODO: diagnostics
+            Ok(Err(e)) => panic!("Can't find the package where the annotation was defined: {e:?}"),
+            Err(_) => {
+                // A diagnostic has already been emitted.
+                continue;
+            }
         };
 
         let item = krate.get_item_by_local_type_id(&annotation.id);

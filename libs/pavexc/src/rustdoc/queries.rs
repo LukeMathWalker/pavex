@@ -332,20 +332,20 @@ impl CrateCollection {
     pub fn annotation_for_coordinates(
         &self,
         c: &AnnotationCoordinates,
-    ) -> Result<Option<(&Crate, &AnnotatedItem)>, UnknownCrate> {
-        let package_id = krate2package_id(
+    ) -> Result<Result<Option<(&Crate, &AnnotatedItem)>, UnknownCrate>, CannotGetCrateData> {
+        let package_id = match krate2package_id(
             &c.created_at.package_name,
             &c.created_at.package_version,
             &self.package_graph,
-        )?;
-        let Some(krate) = self.get_crate_by_package_id(&package_id) else {
-            eprintln!("Couldn't find the crate for {}", package_id.repr());
-            return Ok(None);
+        ) {
+            Ok(p) => p,
+            Err(e) => return Ok(Err(e)),
         };
-        Ok(krate
+        let krate = self.get_or_compute_crate_by_package_id(&package_id)?;
+        Ok(Ok(krate
             .annotated_items
             .get_by_annotation_id(&c.id)
-            .map(|item| (krate, item)))
+            .map(|item| (krate, item))))
     }
 
     /// Retrieve type information given its [`GlobalItemId`].

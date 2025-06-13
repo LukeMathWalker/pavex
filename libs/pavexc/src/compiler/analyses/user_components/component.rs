@@ -49,7 +49,7 @@ pub enum UserComponent {
         source: AnnotationCoordinatesId,
     },
     ErrorObserver {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
 }
 
@@ -99,8 +99,7 @@ impl UserComponent {
             | UserComponent::ErrorHandler {
                 source: UserComponentSource::Identifiers(source),
                 ..
-            }
-            | UserComponent::ErrorObserver { source } => Some(*source),
+            } => Some(*source),
             _ => None,
         }
     }
@@ -130,7 +129,8 @@ impl UserComponent {
             | UserComponent::Constructor {
                 source: UserComponentSource::AnnotationCoordinates(source),
             }
-            | UserComponent::PreProcessingMiddleware { source } => Some(*source),
+            | UserComponent::PreProcessingMiddleware { source }
+            | UserComponent::ErrorObserver { source } => Some(*source),
             _ => None,
         }
     }

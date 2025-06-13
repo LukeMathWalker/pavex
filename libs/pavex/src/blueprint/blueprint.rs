@@ -22,6 +22,7 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
+use super::raw::RawErrorObserver;
 use super::raw::{
     RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
 };
@@ -1032,40 +1033,26 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::f;
     /// use pavex::blueprint::Blueprint;
+    /// use pavex::error_observer;
     /// use tracing_log_error::log_error;
     ///
+    /// #[error_observer]
     /// pub fn error_logger(e: &pavex::Error) {
     ///     log_error!(e, "An error occurred while handling a request");
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.error_observer(f!(crate::error_logger));
+    /// bp.error_observer(ERROR_LOGGER);
     /// # }
     /// ```
-    pub fn error_observer(
-        &mut self,
-        callable: WithLocation<RawIdentifiers>,
-    ) -> RegisteredErrorObserver {
+    pub fn error_observer(&mut self, error_observer: RawErrorObserver) -> RegisteredErrorObserver {
         let registered = pavex_bp_schema::ErrorObserver {
-            error_observer: raw_identifiers2callable(callable),
+            coordinates: coordinates2coordinates(error_observer.coordinates),
+            registered_at: Location::caller(),
         };
         self.push_component(registered);
-        RegisteredErrorObserver {
-            blueprint: &mut self.schema,
-        }
-    }
-
-    pub(super) fn register_error_observer(
-        &mut self,
-        eo: super::error_observer::ErrorObserver,
-    ) -> RegisteredErrorObserver {
-        let eo = pavex_bp_schema::ErrorObserver {
-            error_observer: eo.callable,
-        };
-        self.push_component(eo);
         RegisteredErrorObserver {
             blueprint: &mut self.schema,
         }

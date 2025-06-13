@@ -122,14 +122,8 @@ pub mod route_0 {
                     let v3 = app::error_handler(&v0, &v2);
                     let v4 = pavex::Error::new(v2);
                     {
-                        {
-                            {
-                                app::error_observer(&v0, &v4);
-                                app::error_observer2(&v4)
-                            };
-                            app::error_observer_ann(v0, &v4)
-                        };
-                        app::error_observer_ann1(&v4)
+                        app::error_observer(&v0, &v4);
+                        app::error_observer2(&v4)
                     };
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v3,

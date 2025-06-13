@@ -120,10 +120,7 @@ pub mod route_0 {
                 return {
                     let v2 = app::error_handler(&v1);
                     let v3 = pavex::Error::new(v1);
-                    {
-                        app::error_observer(&v3);
-                        app::error_observer1(&v3)
-                    };
+                    app::error_observer(&v3);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v2,
                     )

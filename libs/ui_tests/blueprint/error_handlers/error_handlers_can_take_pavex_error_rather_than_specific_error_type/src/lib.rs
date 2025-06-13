@@ -29,6 +29,7 @@ pub fn error_handler(_e: &pavex::Error) -> Response {
     todo!()
 }
 
+#[pavex::error_observer]
 pub fn error_observer(_e: &pavex::Error) {
     todo!()
 }
@@ -49,7 +50,7 @@ pub fn blueprint() -> Blueprint {
 
     bp.nest({
         let mut bp = Blueprint::new();
-        bp.error_observer(f!(crate::error_observer));
+        bp.error_observer(ERROR_OBSERVER);
         bp.route(GET, "/with_observer", f!(crate::handler));
         bp
     });

@@ -5,24 +5,10 @@
   [31m│[0m on `app::A`, which is built with `app::a`, a fallible
   [31m│[0m constructor.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4merror_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs[0m:50:1]
-  [31m│[0m  [2m50[0m │         .error_handler(f!(crate::error_handler));
-  [31m│[0m  [2m51[0m │     bp.error_observer(f!(crate::error_observer));
-  [31m│[0m     · [35;1m                      ────────────┬────────────[0m
-  [31m│[0m     ·                   [35;1mThe error observer was registered here[0m
-  [31m│[0m  [2m52[0m │     bp.error_observer(ERROR_OBSERVER_1);
-  [31m│[0m     ╰────
-[31;1mERROR[0m:
-  [31m×[0m Error observers can't depend on a type with a fallible constructor, either
-  [31m│[0m directly or transitively.
-  [31m│[0m `app::error_observer1` violates this constraints! It depends
-  [31m│[0m on `app::A`, which is built with `app::a`, a fallible
-  [31m│[0m constructor.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4merror_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs[0m:51:1]
-  [31m│[0m  [2m51[0m │     bp.error_observer(f!(crate::error_observer));
-  [31m│[0m  [2m52[0m │     bp.error_observer(ERROR_OBSERVER_1);
-  [31m│[0m     · [35;1m                      ────────┬───────[0m
-  [31m│[0m     ·                               [35;1m╰── The error observer was registered here[0m
-  [31m│[0m  [2m53[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╭─[[36;1;4merror_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs[0m:46:1]
+  [31m│[0m  [2m46[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m  [2m47[0m │     bp.error_observer(ERROR_OBSERVER);
+  [31m│[0m     · [35;1m                      ───────┬──────[0m
+  [31m│[0m     ·                              [35;1m╰── The error observer was registered here[0m
+  [31m│[0m  [2m48[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────

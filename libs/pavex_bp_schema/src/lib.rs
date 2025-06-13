@@ -154,8 +154,9 @@ pub struct Fallback {
 /// An error observer registered against a `Blueprint` via `Blueprint::error_observer` to
 /// intercept unhandled errors.
 pub struct ErrorObserver {
-    /// The callable in charge of processing unhandled errors.
-    pub error_observer: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

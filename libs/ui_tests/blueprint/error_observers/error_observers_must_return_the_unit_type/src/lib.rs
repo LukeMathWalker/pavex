@@ -1,12 +1,12 @@
 use pavex::blueprint::Blueprint;
-use pavex::f;
 
+#[pavex::error_observer]
 pub fn error_observer() -> String {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.error_observer(f!(crate::error_observer));
+    bp.error_observer(ERROR_OBSERVER);
     bp
 }

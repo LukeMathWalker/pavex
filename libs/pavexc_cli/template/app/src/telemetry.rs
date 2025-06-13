@@ -18,7 +18,7 @@ use tracing_log_error::log_error;
 pub(crate) fn register(bp: &mut Blueprint) {
     bp.wrap(LOGGER);
     bp.post_process(f!(self::response_logger));
-    bp.error_observer(f!(self::error_logger));
+    bp.error_observer(ERROR_LOGGER);
 }
 
 /// Construct a new root span for the given request.
@@ -68,6 +68,7 @@ pub async fn response_logger(response: Response, root_span: &RootSpan) -> Respon
 /// It emits an error event and attaches information about the error to the root span.
 /// If multiple errors are observed for the same request, it will emit multiple error events
 /// but only the details of the last error will be attached to the root span.
+#[pavex::error_observer]
 pub async fn error_logger(e: &pavex::Error, root_span: &RootSpan) {
     log_error!(e, "An error occurred during request handling");
     root_span.record(ERROR_MESSAGE, error_message(e));

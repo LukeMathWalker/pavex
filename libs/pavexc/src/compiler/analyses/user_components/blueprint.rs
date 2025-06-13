@@ -566,17 +566,22 @@ fn process_error_observer(
 ) {
     const LIFECYCLE: Lifecycle = Lifecycle::Transient;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(eo.error_observer.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: eo.coordinates.id.clone(),
+        created_at: eo.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+
     let component = UserComponent::ErrorObserver {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let id = aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        eo.error_observer.registered_at.clone().into(),
+        eo.registered_at.clone().into(),
     );
     current_observer_chain.push(id);
 }

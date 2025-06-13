@@ -12,3 +12,4 @@ raw!(RawPreProcessingMiddleware);
 raw!(RawPostProcessingMiddleware);
 raw!(RawWrappingMiddleware);
 raw!(RawErrorHandler);
+raw!(RawErrorObserver);

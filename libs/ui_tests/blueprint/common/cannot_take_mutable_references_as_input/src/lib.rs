@@ -33,6 +33,7 @@ where
     todo!()
 }
 
+#[pavex::error_observer]
 pub fn observer(_e: &pavex::Error, _s: &mut A) {
     todo!()
 }
@@ -46,7 +47,7 @@ pub fn blueprint() -> Blueprint {
     bp.import(from![crate]);
     bp.request_scoped(f!(crate::constructor));
     bp.wrap(WRAPPING);
-    bp.error_observer(f!(crate::observer));
+    bp.error_observer(OBSERVER);
     bp.route(GET, "/home", f!(crate::handler))
         .error_handler(f!(crate::error_handler));
     bp

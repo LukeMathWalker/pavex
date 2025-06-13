@@ -81,11 +81,13 @@ bp.error_observer({id});
     );
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
-        pub const #id: ::pavex::blueprint::reflection::WithLocation<::pavex::blueprint::reflection::RawIdentifiers> =
-            ::pavex::with_location!(::pavex::blueprint::reflection::RawIdentifiers {
-                import_path: concat!(module_path!(), "::", #name),
+        pub const #id: ::pavex::blueprint::raw::RawErrorObserver = ::pavex::blueprint::raw::RawErrorObserver {
+            coordinates: ::pavex::blueprint::reflection::AnnotationCoordinates {
+                id: #id_str,
+                created_at: ::pavex::created_at!(),
                 macro_name: "error_observer",
-            });
+            },
+        };
     };
 
     AnnotationCodegen {
