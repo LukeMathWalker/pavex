@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::{f, t};
 
 pub type MyTupleAlias = (bool, char, u8);
@@ -19,6 +19,7 @@ pub fn mixed_generics<T>(_a: &T) -> MixedGenericsAlias<'_, T> {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler_with_input_tuple<'a>(
     _input: MyTupleAlias,
     _a: &RemoteAlias,
@@ -37,6 +38,6 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(crate::constructor_with_output_tuple));
     bp.singleton(f!(crate::RemoteAlias::new));
     bp.singleton(f!(crate::RemoteGenericAlias::<std::primitive::bool>::new));
-    bp.route(GET, "/home", f!(crate::handler_with_input_tuple));
+    bp.routes(from![crate]);
     bp
 }

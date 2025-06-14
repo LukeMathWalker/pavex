@@ -1,5 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{f, blueprint::{from, Blueprint}};
 use pavex::response::Response;
 
 // The call graph looks like this:
@@ -32,6 +31,7 @@ pub fn c(_a: A) -> Result<C, pavex::Error> {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_b: &C, _c: &B) -> Response {
     todo!()
 }
@@ -41,6 +41,6 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(crate::a)).clone_if_necessary();
     bp.singleton(f!(crate::b));
     bp.singleton(f!(crate::c));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

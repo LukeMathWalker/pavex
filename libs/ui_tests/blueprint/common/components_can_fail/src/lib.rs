@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -61,6 +61,7 @@ pub mod constructor {
     }
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(
     _a: &constructor::raw::A,
     _b: &constructor::annotated::B,
@@ -84,6 +85,6 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from!(crate));
     bp.request_scoped(f!(crate::constructor::raw::a));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
 #[derive(Clone)]
 pub struct B<T>(T);
@@ -42,6 +42,7 @@ pub struct C1<'a, 'b, 'c> {
     pub c: &'c str,
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B<String>, _c: C, _d: D<String, u16, u64>) -> Response {
     todo!()
 }
@@ -53,6 +54,6 @@ pub fn blueprint() -> Blueprint {
     bp.prebuilt(t!(crate::B));
     bp.prebuilt(t!(crate::C));
     bp.prebuilt(t!(crate::D));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

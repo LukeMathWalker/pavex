@@ -265,7 +265,7 @@ pub mod route_1 {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::response::Response {
-        let v1 = app::handler(v0).await;
+        let v1 = app::nested_handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
@@ -416,7 +416,7 @@ pub mod route_2 {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::response::Response {
-        let v1 = app::handler(v0).await;
+        let v1 = app::failing_pre_handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
@@ -554,7 +554,7 @@ pub mod route_3 {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::response::Response {
-        let v1 = app::handler(v0).await;
+        let v1 = app::early_return_handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
@@ -668,7 +668,7 @@ pub mod route_4 {
         app::first_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::response::Response {
-        let v1 = app::handler(v0).await;
+        let v1 = app::after_handler_handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
@@ -780,7 +780,7 @@ pub mod route_5 {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::response::Response {
-        let v1 = app::handler(v0).await;
+        let v1 = app::top_level_handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(

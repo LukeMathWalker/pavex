@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
 
@@ -25,7 +25,7 @@ fn second_bp() -> Blueprint {
 
 fn third_bp() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }
 
@@ -41,6 +41,7 @@ pub fn third(_x: u32) -> String {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_x: String) -> StatusCode {
     todo!()
 }

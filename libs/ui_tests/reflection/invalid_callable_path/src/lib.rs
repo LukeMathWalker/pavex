@@ -1,6 +1,5 @@
 use pavex::blueprint::{
     reflection::{CreatedAt, RawIdentifiers, WithLocation},
-    router::POST,
     Blueprint,
 };
 
@@ -19,6 +18,6 @@ pub fn blueprint() -> Blueprint {
             module_path: "app",
         },
     };
-    bp.route(POST, "/home", callable);
+    bp.request_scoped(callable);
     bp
 }

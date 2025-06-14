@@ -7,7 +7,7 @@ use pavex_bp_schema::{
 
 use super::auxiliary::AuxiliaryData;
 use super::imports::{ImportKind, UnresolvedImport};
-use super::{ErrorHandlerTarget, UserComponentId};
+use super::{ErrorHandlerTarget, UserComponentId, UserComponentSource};
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
@@ -277,45 +277,41 @@ fn _process_blueprint<'a>(
 /// (if present).
 fn process_route(
     aux: &mut AuxiliaryData,
-    registered_route: &Route,
+    route: &Route,
     current_middleware_chain: &[UserComponentId],
     current_observer_chain: &[UserComponentId],
     current_scope_id: ScopeId,
     domain_guard: Option<DomainGuard>,
     path_prefix: Option<&str>,
     scope_graph_builder: &mut ScopeGraphBuilder,
-    diagnostics: &crate::diagnostic::DiagnosticSink,
+    _diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-    let raw_callable_identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(registered_route.request_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: route.coordinates.id.clone(),
+        created_at: route.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let router_key = {
-        let path = match path_prefix {
-            Some(prefix) => format!("{}{}", prefix, registered_route.path),
-            None => registered_route.path.to_owned(),
-        };
-        RouterKey {
-            path,
-            domain_guard,
-            method_guard: registered_route.method_guard.clone(),
-        }
+
+    // For routes registered directly via bp.route(), we create a partial `RouterKey`.
+    let router_key = RouterKey {
+        path: path_prefix.unwrap_or_default().to_owned(), // Will be finalized later, during annotation resolution
+        method_guard: pavex_bp_schema::MethodGuard::Any, // Will be filled in during annotation resolution
+        domain_guard,
     };
     let component = UserComponent::RequestHandler {
         router_key,
-        source: raw_callable_identifiers_id.into(),
+        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
     };
     let request_handler_id = aux.intern_component(
         component,
         route_scope_id,
         ROUTE_LIFECYCLE,
-        registered_route
-            .request_handler
-            .registered_at
-            .clone()
-            .into(),
+        route.registered_at.clone().into(),
     );
 
     aux.handler_id2middleware_ids
@@ -323,11 +319,11 @@ fn process_route(
     aux.handler_id2error_observer_ids
         .insert(request_handler_id, current_observer_chain.to_owned());
 
-    validate_route_path(aux, request_handler_id, &registered_route.path, diagnostics);
+    // Path validation will happen during annotation resolution
 
-    process_legacy_component_specific_error_handler(
+    process_component_specific_error_handler(
         aux,
-        &registered_route.error_handler,
+        &route.error_handler,
         ROUTE_LIFECYCLE,
         current_scope_id,
         request_handler_id,
@@ -639,37 +635,43 @@ fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_sco
 fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id: ScopeId) {
     const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(t.input.type_.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: t.coordinates.id.clone(),
+        created_at: t.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::ConfigType {
-        key: t.key.clone(),
-        source: identifiers_id.into(),
+        key: String::new(), // Will be filled in during annotation resolution
+        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
     };
     let id = aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        t.input.registered_at.clone().into(),
+        t.registered_at.clone().into(),
     );
-    aux.id2cloning_strategy.insert(
-        id,
-        t.cloning_strategy
-            .unwrap_or(CloningStrategy::CloneIfNecessary),
-    );
-    let default_strategy = t
-        .default_if_missing
-        .map(|b| {
-            if b {
-                DefaultStrategy::DefaultIfMissing
-            } else {
-                DefaultStrategy::Required
-            }
-        })
-        .unwrap_or_default();
-    aux.config_id2default_strategy.insert(id, default_strategy);
-    aux.config_id2include_if_unused
-        .insert(id, t.include_if_unused.unwrap_or(false));
+
+    // If the user has specified/overriden the expected behaviour for the config type,
+    // let's take note of it.
+    // If not, we'll fill things in with the right default values later on,
+    // when resolving annotation coordinates.
+    if let Some(cloning_strategy) = t.cloning_strategy {
+        aux.id2cloning_strategy.insert(id, cloning_strategy);
+    }
+    if let Some(default_if_missing) = t.default_if_missing {
+        let default_strategy = if default_if_missing {
+            DefaultStrategy::DefaultIfMissing
+        } else {
+            DefaultStrategy::Required
+        };
+        aux.config_id2default_strategy.insert(id, default_strategy);
+    }
+    if let Some(include_if_unused) = t.include_if_unused {
+        aux.config_id2include_if_unused
+            .insert(id, include_if_unused);
+    }
 }
 
 /// Process the error handler registered against a (supposedly) fallible component, if

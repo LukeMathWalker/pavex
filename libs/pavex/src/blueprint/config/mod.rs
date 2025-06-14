@@ -6,7 +6,5 @@
 /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
 /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
 mod registered;
-mod unregistered;
 
 pub use registered::RegisteredConfigType;
-pub use unregistered::ConfigType;

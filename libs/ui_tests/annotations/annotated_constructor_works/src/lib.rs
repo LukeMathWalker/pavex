@@ -1,5 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::{error_handler, methods};
 
 #[derive(Clone)]
@@ -98,6 +97,7 @@ impl H<E> {
     }
 }
 
+#[pavex::get(path = "/handler")]
 pub fn handler(
     _x: &A,
     _y: &B<A>,
@@ -114,6 +114,6 @@ pub fn handler(
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.route(GET, "/handler", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

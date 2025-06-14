@@ -8,17 +8,15 @@ use std::fmt::Formatter;
 /// If you configure your [`Blueprint`] like this:
 ///
 /// ```rust
-/// use pavex::{f, blueprint::{Blueprint, router::GET}};
-/// # use pavex::{request::RequestHead, response::Response};
-/// # fn get_home(request: RequestHead) -> Response { todo!() }
-/// # fn main() {
-/// # let mut bp = Blueprint::new();
-///
-/// bp.route(GET, "/home/:home_id", f!(crate::get_home));
-/// # }
+/// use pavex::{get, response::Response};
+/// #[get(path = "/home/{home_id}")]
+/// pub fn get_home(/* [...] */) -> Response {
+///     // [...]
+///     # Response::ok()
+/// }
 /// ```
 ///
-/// Then [`MatchedPathPattern`] will be set to `/home/:home_id` for a `GET /home/123` request.
+/// Then [`MatchedPathPattern`] will be set to `/home/{home_id}` for a `GET /home/123` request.
 ///
 /// # Framework primitive
 ///
@@ -27,7 +25,7 @@ use std::fmt::Formatter;
 ///
 /// # Use cases
 ///
-/// The primary use case for [`MatchedPathPattern`] is telemetry—logging, metrics, etc.  
+/// The primary use case for [`MatchedPathPattern`] is telemetry—logging, metrics, etc.
 /// It lets you strip away the dynamic parts of the request path, thus reducing the cardinality of
 /// your metrics and making it easier to aggregate them.
 ///

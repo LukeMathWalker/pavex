@@ -1,5 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 pub struct A;
@@ -9,6 +8,7 @@ pub fn build() -> A {
     A
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: &mut A) -> Response {
     todo!()
 }
@@ -22,6 +22,5 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
     bp.routes(from![crate]);
-    bp.route(GET, "/", f!(self::handler));
     bp
 }

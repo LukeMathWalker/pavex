@@ -1,7 +1,5 @@
-
 use http::response::Parts;
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 use pavex::response::{Response, ResponseHead};
 
@@ -21,11 +19,28 @@ pub fn response_head() -> ResponseHead {
     todo!()
 }
 
+#[pavex::get(path = "/response")]
+pub fn route_response() -> Response {
+    todo!()
+}
+
+#[pavex::get(path = "/status_code")]
+pub fn route_status_code() -> StatusCode {
+    todo!()
+}
+
+#[pavex::get(path = "/parts")]
+pub fn route_parts() -> Parts {
+    todo!()
+}
+
+#[pavex::get(path = "/head")]
+pub fn route_response_head() -> ResponseHead {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/response", f!(crate::response));
-    bp.route(GET, "/status_code", f!(crate::status_code));
-    bp.route(GET, "/parts", f!(crate::parts));
-    bp.route(GET, "/head", f!(crate::response_head));
+    bp.routes(from![crate]);
     bp
 }

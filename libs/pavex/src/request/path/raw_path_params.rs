@@ -15,18 +15,10 @@ use crate::request::path::errors::DecodeError;
 /// # Example
 ///
 /// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{router::GET, Blueprint};
-/// use pavex::request::path::RawPathParams;
+/// use pavex::{get, request::path::RawPathParams};
 ///
-/// fn blueprint() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     // [...]
-///     // Register a route with a few path parameters.
-///     bp.route(GET, "/address/:address_id/home/:home_id", f!(crate::get_home));
-///     bp
-/// }
-///
+/// // Define a route with a few path parameters.
+/// #[get(path = "/address/{address_id}/home/{home_id}")]
 /// pub fn get_home(params: &RawPathParams) -> String {
 ///     let home_id = &params.get("home_id").unwrap();
 ///     let street_id = &params.get("street_id").unwrap();

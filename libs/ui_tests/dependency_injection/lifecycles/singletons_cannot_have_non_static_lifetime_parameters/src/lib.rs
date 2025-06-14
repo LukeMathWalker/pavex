@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
 
@@ -17,6 +17,7 @@ pub fn a() -> A {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_b: B<'_>) -> StatusCode {
     todo!()
 }
@@ -25,6 +26,6 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.singleton(f!(self::a));
     bp.singleton(f!(self::B::new)).clone_if_necessary();
-    bp.route(GET, "/", f!(self::handler));
+    bp.routes(from![crate]);
     bp
 }

@@ -100,6 +100,7 @@ impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
 /// It is a more verbose (but easier to parse) representation than
 /// what is used by `pavex::config`.
 pub struct ConfigProperties {
+    pub id: String,
     pub key: String,
     pub cloning_strategy: Option<CloningStrategy>,
     pub default_if_missing: Option<bool>,
@@ -109,6 +110,7 @@ pub struct ConfigProperties {
 impl From<ConfigProperties> for AnnotationProperties {
     fn from(value: ConfigProperties) -> Self {
         AnnotationProperties::Config {
+            id: value.id,
             key: value.key,
             cloning_strategy: value.cloning_strategy.map(Into::into),
             default_if_missing: value.default_if_missing,
@@ -134,6 +136,7 @@ impl From<FallbackProperties> for AnnotationProperties {
 /// The way we expect route properties to be represented in
 /// `pavex::diagnostic::route`.
 pub struct RouteProperties {
+    pub id: String,
     pub path: String,
     pub method: Option<MethodArgument>,
     pub allow_any_method: Option<bool>,
@@ -166,6 +169,7 @@ impl From<RouteProperties> for AnnotationProperties {
             }
         };
         AnnotationProperties::Route {
+            id: value.id,
             path: value.path,
             method,
         }

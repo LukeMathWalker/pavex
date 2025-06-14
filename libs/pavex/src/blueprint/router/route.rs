@@ -1,14 +1,12 @@
-use crate::blueprint::conversions::raw_identifiers2callable;
-use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::router::MethodGuard;
-use crate::blueprint::{Blueprint, reflection::WithLocation};
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
+use crate::blueprint::conversions::coordinates2coordinates;
+use crate::blueprint::raw::RawErrorHandler;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, ErrorHandler, Location, Route};
 
 /// The type returned by [`Blueprint::route`].
 ///
 /// It allows you to further configure the behaviour of the registered route.
 ///
-/// [`Blueprint::route`]: Blueprint::route
+/// [`Blueprint::route`]: crate::blueprint::Blueprint::route
 pub struct RegisteredRoute<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered route in the blueprint's `components` vector.
@@ -31,91 +29,43 @@ impl RegisteredRoute<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::{get, error_handler};
+    /// use pavex::blueprint::Blueprint;
     /// use pavex::response::Response;
-    /// # struct LogLevel;
-    /// # struct RuntimeError;
-    /// # struct ConfigurationError;
+    /// # struct ConfigError;
     ///
     /// // 👇 a fallible request handler
-    /// fn request_handler() -> Result<Response, RuntimeError> {
+    /// #[get(path = "/home")]
+    /// pub fn get_home() -> Result<Response, ConfigError> {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response {
+    /// #[error_handler(default = false)]
+    /// pub fn config_error_handler(error: &ConfigError) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/home", f!(crate::request_handler))
-    ///     .error_handler(f!(crate::error_to_response));
+    /// bp.route(GET_HOME).error_handler(CONFIG_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        let callable = raw_identifiers2callable(error_handler);
-        self.route().error_handler = Some(callable);
+    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
+        let error_handler = ErrorHandler {
+            coordinates: coordinates2coordinates(error_handler.coordinates),
+            registered_at: Location::caller(),
+        };
+        self.route().error_handler = Some(error_handler);
         self
     }
 
-    fn route(&mut self) -> &mut pavex_bp_schema::Route {
+    fn route(&mut self) -> &mut Route {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::Route(c) = component else {
             unreachable!("The component should be a route")
         };
         c
-    }
-}
-
-/// A route that has been configured but has not yet been registered with a [`Blueprint`].
-///
-/// # Guide
-///
-/// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
-/// for a thorough introduction to routing in Pavex applications.
-#[derive(Clone, Debug)]
-pub struct Route {
-    pub(in crate::blueprint) method_guard: MethodGuard,
-    pub(in crate::blueprint) path: String,
-    pub(in crate::blueprint) callable: Callable,
-    pub(in crate::blueprint) error_handler: Option<Callable>,
-}
-
-impl Route {
-    /// Create a new (unregistered) route.
-    ///
-    /// Check out the documentation of [`Blueprint::route`] for more details
-    /// on routes.
-    #[track_caller]
-    pub fn new(
-        method_guard: MethodGuard,
-        path: &str,
-        callable: WithLocation<RawIdentifiers>,
-    ) -> Self {
-        Self {
-            callable: raw_identifiers2callable(callable),
-            error_handler: None,
-            method_guard,
-            path: path.to_owned(),
-        }
-    }
-
-    /// Register an error handler for this route.
-    ///
-    /// Check out the documentation of [`RegisteredRoute::error_handler`] for more details.
-    #[track_caller]
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        self.error_handler = Some(raw_identifiers2callable(error_handler));
-        self
-    }
-
-    /// Register this route with a [`Blueprint`].
-    ///
-    /// Check out the documentation of [`Blueprint::route`] for more details.
-    pub fn register(self, bp: &mut Blueprint) -> RegisteredRoute {
-        bp.register_route(self)
     }
 }

@@ -1,9 +1,9 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 pub use private::*;
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B) -> Response {
     todo!()
 }
@@ -11,7 +11,7 @@ pub fn handler(_a: A, _b: B) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     register(&mut bp);
-    bp.route(GET, "/", f!(self::handler));
+    bp.routes(from![crate]);
     bp
 }
 

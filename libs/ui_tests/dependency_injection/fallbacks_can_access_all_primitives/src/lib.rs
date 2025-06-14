@@ -1,6 +1,5 @@
 use pavex::blueprint::Blueprint;
 use pavex::connection::ConnectionInfo;
-use pavex::f;
 use pavex::request::{
     body::RawIncomingBody,
     path::{MatchedPathPattern, RawPathParams},

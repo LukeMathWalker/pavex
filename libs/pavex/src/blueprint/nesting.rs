@@ -75,7 +75,7 @@ impl<'a> NestingConditions<'a> {
     ///
     /// ```rust
     /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::{Blueprint, from};
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -88,7 +88,7 @@ impl<'a> NestingConditions<'a> {
     /// /// All property-related routes and constructors.
     /// fn home_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     bp.route(GET, "/home", f!(crate::v1::get_home));
+    ///     bp.routes(from![crate::home]);
     ///     bp
     /// }
     ///
@@ -96,7 +96,7 @@ impl<'a> NestingConditions<'a> {
     /// fn user_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     bp.request_scoped(f!(crate::user::get_session));
-    ///     bp.route(GET, "/user", f!(crate::user::get_user));
+    ///     bp.routes(from![crate::user]);
     ///     bp
     /// }
     /// # pub fn db_connection_pool() {}

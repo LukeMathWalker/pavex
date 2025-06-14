@@ -130,14 +130,11 @@ pub struct Import {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A route registered against a `Blueprint` via `Blueprint::route`.
 pub struct Route {
-    /// The path of the route.
-    pub path: String,
-    /// The HTTP method guard for the route.
-    pub method_guard: MethodGuard,
-    /// The callable in charge of processing incoming requests for this route.
-    pub request_handler: Callable,
-    /// The callable in charge of processing errors returned by the request handler, if any.
-    pub error_handler: Option<Callable>,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
+    /// The callable in charge of processing errors returned by this route, if any.
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -182,10 +179,8 @@ pub struct PrebuiltType {
 /// A type registered against a `Blueprint` via `Blueprint::config` to
 /// become part of the overall configuration for the application.
 pub struct ConfigType {
-    /// The type.
-    pub input: Type,
-    /// The field name.
-    pub key: String,
+    /// The coordinates of the annotated type.
+    pub coordinates: AnnotationCoordinates,
     /// The strategy dictating when the config type can be cloned.
     pub cloning_strategy: Option<CloningStrategy>,
     /// Whether to use `Default::default` to generate default configuration
@@ -194,6 +189,8 @@ pub struct ConfigType {
     /// Whether to include the config type as a field in the generated
     /// configuration struct even if it was never injected.
     pub include_if_unused: Option<bool>,
+    /// The location where this configuration type was registered in the application code.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

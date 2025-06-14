@@ -273,7 +273,11 @@ fn intern_annotated(
 
             Ok(constructor_id)
         }
-        AnnotationProperties::Route { method, path } => {
+        AnnotationProperties::Route {
+            method,
+            path,
+            id: _,
+        } => {
             let ImportKind::Routes {
                 path_prefix,
                 domain_guard,
@@ -316,6 +320,7 @@ fn intern_annotated(
             cloning_strategy,
             default_if_missing,
             include_if_unused,
+            id: _,
         } => {
             let config = UserComponent::ConfigType {
                 key: key.clone(),

@@ -1,14 +1,12 @@
 use crate::blueprint::conversions::{
-    cloning2cloning, lifecycle2lifecycle, method_guard2method_guard, raw_identifiers2callable,
-    raw_identifiers2type,
+    cloning2cloning, lifecycle2lifecycle, raw_identifiers2callable, raw_identifiers2type,
 };
 use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, ConfigType, Constructor, Import, NestedBlueprint,
-    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, Route, RoutesImport,
-    WrappingMiddleware,
+    Blueprint as BlueprintSchema, Constructor, Import, NestedBlueprint, PostProcessingMiddleware,
+    PreProcessingMiddleware, PrebuiltType, RoutesImport, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
@@ -22,12 +20,12 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
+use super::raw::{RawConfig, RawErrorObserver, RawFallback, RawRoute};
 use super::raw::{
     RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
 };
-use super::raw::{RawErrorObserver, RawFallback};
 use super::reflection::{RawIdentifiers, Sources, WithLocation};
-use super::router::{MethodGuard, RegisteredRoute, RegisteredRoutes};
+use super::router::{RegisteredRoute, RegisteredRoutes};
 
 /// The starting point for building an application with Pavex.
 ///
@@ -266,52 +264,33 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{get, blueprint::Blueprint};
     /// use pavex::{request::RequestHead, response::Response};
     ///
-    /// fn my_handler(request_head: &RequestHead) -> Response {
+    /// #[get(path = "/")]
+    /// pub fn get_root(request_head: &RequestHead) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/path", f!(crate::my_handler));
+    /// bp.route(GET_ROOT);
     /// # }
     /// ```
     ///
     /// [`router`]: crate::blueprint::router
     /// [`PathParams`]: struct@crate::request::path::PathParams
-    pub fn route(
-        &mut self,
-        method_guard: MethodGuard,
-        path: &str,
-        callable: WithLocation<RawIdentifiers>,
-    ) -> RegisteredRoute {
-        let registered_route = Route {
-            path: path.to_owned(),
-            method_guard: method_guard2method_guard(method_guard),
-            request_handler: raw_identifiers2callable(callable),
+    pub fn route(&mut self, route: RawRoute) -> RegisteredRoute {
+        let registered = pavex_bp_schema::Route {
+            coordinates: coordinates2coordinates(route.coordinates),
+            registered_at: Location::caller(),
             error_handler: None,
         };
-        let component_id = self.push_component(registered_route);
+        let component_id = self.push_component(registered);
         RegisteredRoute {
             blueprint: &mut self.schema,
             component_id,
-        }
-    }
-
-    pub(super) fn register_route(&mut self, r: super::router::Route) -> RegisteredRoute {
-        let r = Route {
-            path: r.path,
-            method_guard: method_guard2method_guard(r.method_guard),
-            error_handler: r.error_handler,
-            request_handler: r.callable,
-        };
-        let component_id = self.push_component(r);
-        RegisteredRoute {
-            component_id,
-            blueprint: &mut self.schema,
         }
     }
 
@@ -366,40 +345,18 @@ impl Blueprint {
     ///
     /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
     /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
-    pub fn config(
-        &mut self,
-        key: &str,
-        type_: WithLocation<RawIdentifiers>,
-    ) -> RegisteredConfigType {
+    pub fn config(&mut self, config: RawConfig) -> RegisteredConfigType {
         let registered = pavex_bp_schema::ConfigType {
-            input: raw_identifiers2type(type_),
-            key: key.to_owned(),
+            coordinates: coordinates2coordinates(config.coordinates),
             cloning_strategy: None,
             default_if_missing: None,
             include_if_unused: None,
+            registered_at: Location::caller(),
         };
         let component_id = self.push_component(registered);
         RegisteredConfigType {
             blueprint: &mut self.schema,
             component_id,
-        }
-    }
-
-    pub(super) fn register_config_type(
-        &mut self,
-        i: super::config::ConfigType,
-    ) -> RegisteredConfigType {
-        let i = ConfigType {
-            input: i.type_,
-            key: i.key,
-            cloning_strategy: i.cloning_strategy.map(cloning2cloning),
-            default_if_missing: i.default_if_missing,
-            include_if_unused: i.include_if_unused,
-        };
-        let component_id = self.push_component(i);
-        RegisteredConfigType {
-            component_id,
-            blueprint: &mut self.schema,
         }
     }
 
@@ -741,8 +698,9 @@ impl Blueprint {
     /// A common prefix will be prepended to the path of routes nested under this condition.
     ///
     /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::get;
+    /// use pavex::response::Response;
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -751,10 +709,16 @@ impl Blueprint {
     ///     bp
     /// }
     ///
+    /// #[get(path = "/version")]
+    /// pub fn get_api_version() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
     /// fn api_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     // This will match `GET` requests to `/api/path`.
-    ///     bp.route(GET, "/path", f!(crate::handler));
+    ///     // This will match `GET` requests to `/api/version`.
+    ///     bp.route(GET_API_VERSION);
     ///     bp
     /// }
     /// # pub fn handler() {}
@@ -763,8 +727,9 @@ impl Blueprint {
     /// You can also add a (sub)domain constraint, in addition to the common prefix:
     ///
     /// ```rust
-    /// use pavex::blueprint::{Blueprint, router::GET};
-    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::get;
+    /// use pavex::response::Response;
     ///
     /// fn app() -> Blueprint {
     ///    let mut bp = Blueprint::new();
@@ -772,10 +737,16 @@ impl Blueprint {
     ///    bp
     /// }
     ///
+    /// #[get(path = "/about")]
+    /// pub fn get_about() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
     /// fn api_bp() -> Blueprint {
     ///    let mut bp = Blueprint::new();
-    ///   // This will match `GET` requests to `api.mybusiness.com/v1/path`.
-    ///   bp.route(GET, "/path", f!(crate::handler));
+    ///   // This will match `GET` requests to `api.mybusiness.com/v1/about`.
+    ///   bp.route(GET_ABOUT);
     ///   bp
     /// }
     /// ```
@@ -796,8 +767,9 @@ impl Blueprint {
     /// the path of the route registered in the nested blueprint:
     ///
     /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::get;
+    /// use pavex::response::Response;
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -805,10 +777,16 @@ impl Blueprint {
     ///     bp
     /// }
     ///
+    /// #[get(path = "//version")]
+    /// pub fn get_api_version() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
     /// fn api_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     // This will match `GET` requests to `/api//path`.
-    ///     bp.route(GET, "//path", f!(crate::handler));
+    ///     // This will match `GET` requests to `/api//version`.
+    ///     bp.route(GET_API_VERSION);
     ///     bp
     /// }
     /// # pub fn handler() {}
@@ -841,8 +819,9 @@ impl Blueprint {
     /// domain constraint:
     ///
     /// ```rust
-    /// use pavex::blueprint::{Blueprint, router::GET};
-    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    /// use pavex::get;
+    /// use pavex::response::Response;
     ///
     /// fn app() -> Blueprint {
     ///    let mut bp = Blueprint::new();
@@ -850,10 +829,16 @@ impl Blueprint {
     ///    bp
     /// }
     ///
+    /// #[get(path = "/about")]
+    /// pub fn get_about() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
     /// fn api_bp() -> Blueprint {
     ///    let mut bp = Blueprint::new();
-    ///   // This will match `GET` requests to `api.mybusiness.com/v1/path`.
-    ///   bp.route(GET, "/path", f!(crate::handler));
+    ///   // This will match `GET` requests to `api.mybusiness.com/v1/about`.
+    ///   bp.route(GET_ABOUT);
     ///   bp
     /// }
     /// ```
@@ -884,10 +869,11 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{f, fallback, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{get, fallback, blueprint::Blueprint};
     /// use pavex::response::Response;
     ///
-    /// fn handler() -> Response {
+    /// #[get(path = "/path")]
+    /// pub fn get_path() -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
@@ -899,7 +885,7 @@ impl Blueprint {
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/path", f!(crate::handler));
+    /// bp.route(GET_PATH);
     /// // The fallback handler will be invoked for all the requests that don't match `/path`.
     /// // E.g. `GET /home`, `POST /home`, `GET /home/123`, etc.
     /// bp.fallback(FALLBACK_HANDLER);
@@ -932,11 +918,21 @@ impl Blueprint {
     /// their method guards.
     ///
     /// ```rust
-    /// use pavex::{f, fallback, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{get, fallback, blueprint::Blueprint};
     /// use pavex::response::Response;
     ///
-    /// # fn route_handler() -> Response { todo!() }
-    /// # fn home_handler() -> Response { todo!() }
+    /// #[get(path = "/home")]
+    /// pub fn get_home() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// #[get(path = "/room")]
+    /// pub fn get_room() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
     /// #[fallback]
     /// pub fn fallback_handler() -> Response {
     ///     // [...]
@@ -945,21 +941,21 @@ impl Blueprint {
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/home", f!(crate::home_handler));
+    /// bp.route(GET_HOME);
     /// bp.nest({
     ///     let mut bp = Blueprint::new();
-    ///     bp.route(GET, "/route", f!(crate::route_handler));
+    ///     bp.route(GET_ROOM);
     ///     bp.fallback(FALLBACK_HANDLER);
     ///     bp
     /// });
     /// # }
     /// ```
     ///
-    /// In the example above, `crate::fallback_handler` will be invoked for incoming `POST /route`
+    /// In the example above, `fallback_handler` will be invoked for incoming `POST /room`
     /// requests: the path matches the path of a route registered against the nested blueprint
-    /// (`GET /route`), but the method guard doesn't (`POST` vs `GET`).
-    /// If the incoming requests don't have `/route` as their path instead (e.g. `GET /street`
-    /// or `GET /route/123`), they will be handled by the fallback registered against the **parent**
+    /// (`GET /room`), but the method guard doesn't (`POST` vs `GET`).
+    /// If the incoming requests don't have `/room` as their path instead (e.g. `GET /street`
+    /// or `GET /room/123`), they will be handled by the fallback registered against the **parent**
     /// blueprint—the top-level one in this case.
     /// Since no fallback has been explicitly registered against the top-level blueprint, the
     /// [default framework fallback](crate::router::default_fallback) will be used instead.
@@ -971,11 +967,21 @@ impl Blueprint {
     /// but don't match any of the route paths registered against the nested blueprint.
     ///
     /// ```rust
-    /// use pavex::{f, fallback, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{get, fallback, blueprint::Blueprint};
     /// use pavex::response::Response;
     ///
-    /// # fn route_handler() -> Response { todo!() }
-    /// # fn home_handler() -> Response { todo!() }
+    /// #[get(path = "/home")]
+    /// pub fn get_home() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// #[get(path = "/")]
+    /// pub fn list_rooms() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
     /// #[fallback]
     /// pub fn fallback_handler() -> Response {
     ///     // [...]
@@ -984,20 +990,20 @@ impl Blueprint {
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/home", f!(crate::home_handler));
-    /// bp.prefix("/route").nest({
+    /// bp.route(GET_HOME);
+    /// bp.prefix("/room").nest({
     ///     let mut bp = Blueprint::new();
-    ///     bp.route(GET, "/", f!(crate::route_handler));
+    ///     bp.route(LIST_ROOMS);
     ///     bp.fallback(FALLBACK_HANDLER);
     ///     bp
     /// });
     /// # }
     /// ```
     ///
-    /// In the example above, `crate::fallback_handler` will be invoked for both `POST /route`
-    /// **and** `POST /route/123` requests: the path of the latter doesn't match the path of the only
-    /// route registered against the nested blueprint (`GET /route`), but it starts with the
-    /// prefix of the nested blueprint (`/route`).
+    /// In the example above, `fallback_handler` will be invoked for both `POST /room`
+    /// **and** `POST /room/123` requests: the path of the latter doesn't match the path of the only
+    /// route registered against the nested blueprint (`GET /room/`), but it starts with the
+    /// prefix of the nested blueprint (`/room`).
     ///
     /// [`Response`]: crate::response::Response
     pub fn fallback(&mut self, fallback: RawFallback) -> RegisteredFallback {

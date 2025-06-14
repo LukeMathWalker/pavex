@@ -149,18 +149,7 @@ impl AuxiliaryData {
                         component.kind(),
                     );
                 }
-                ConfigType { .. } => {
-                    assert!(
-                        self.id2cloning_strategy.contains_key(&id),
-                        "There is no cloning strategy registered for the user-registered config-type {} #{id:?}",
-                        component.kind(),
-                    );
-                    assert!(
-                        self.config_id2default_strategy.contains_key(&id),
-                        "There is no default strategy registered for the user-registered config-type {} #{id:?}",
-                        component.kind(),
-                    );
-                }
+                ConfigType { .. } => {}
                 RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.contains_key(&id),

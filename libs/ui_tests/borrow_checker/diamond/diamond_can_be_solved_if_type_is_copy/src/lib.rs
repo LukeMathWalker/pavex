@@ -1,6 +1,8 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::response::Response;
+use pavex::{
+    blueprint::{from, Blueprint},
+    f,
+};
 
 // The call graph looks like this:
 //
@@ -44,6 +46,7 @@ pub fn d(_a: &A, _b: B) -> D {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_c: C, _d: D) -> Response {
     todo!()
 }
@@ -54,6 +57,6 @@ pub fn blueprint() -> Blueprint {
     bp.request_scoped(f!(crate::b)).clone_if_necessary();
     bp.request_scoped(f!(crate::c));
     bp.request_scoped(f!(crate::d));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

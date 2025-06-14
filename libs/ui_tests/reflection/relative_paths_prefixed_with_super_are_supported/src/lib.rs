@@ -1,4 +1,5 @@
 use pavex::blueprint::Blueprint;
+
 pub struct A<T>(T);
 
 impl<T> Default for A<T> {
@@ -15,6 +16,7 @@ impl<T> A<T> {
 
 pub struct B;
 
+#[pavex::get(path = "/home")]
 pub fn handler(_a: A<B>) -> pavex::response::Response {
     todo!()
 }
@@ -26,11 +28,11 @@ pub fn blueprint() -> Blueprint {
 }
 
 pub mod my_mod {
-    use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+    use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
     use pavex::f;
 
     pub fn register(bp: &mut Blueprint) {
         bp.constructor(f!(super::A::<super::B>::new), Lifecycle::RequestScoped);
-        bp.route(GET, "/home", f!(super::handler));
+        bp.routes(from![crate]);
     }
 }

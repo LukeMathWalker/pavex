@@ -9,26 +9,19 @@ struct ServerState {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ApplicationConfig {
     pub a: app::A,
-    pub a1: app::A1,
     #[serde(default)]
-    pub b: app::B<alloc::string::String>,
-    #[serde(default)]
-    pub b1: app::B1,
+    pub b: app::B,
     pub c: app::C,
-    pub d: alloc::vec::Vec<alloc::string::String>,
     pub e: app::E,
     pub f: dep_29415e2f::F,
     pub g: dep_29415e2f::Z,
 }
 pub struct ApplicationState {
     pub a: app::A,
-    pub a_1: app::A1,
-    pub b: app::B<alloc::string::String>,
-    pub b_1: app::B1,
+    pub b: app::B,
     pub c: app::C,
     pub e: app::E,
     pub f: dep_29415e2f::F,
-    pub vec: alloc::vec::Vec<alloc::string::String>,
     pub z: dep_29415e2f::Z,
 }
 impl ApplicationState {
@@ -38,13 +31,10 @@ impl ApplicationState {
         Ok(
             Self::_new(
                     app_config.g,
-                    app_config.d,
                     app_config.f,
                     app_config.e,
                     app_config.c,
-                    app_config.b1,
                     app_config.b,
-                    app_config.a1,
                     app_config.a,
                 )
                 .await,
@@ -52,24 +42,18 @@ impl ApplicationState {
     }
     async fn _new(
         v0: dep_29415e2f::Z,
-        v1: alloc::vec::Vec<alloc::string::String>,
-        v2: dep_29415e2f::F,
-        v3: app::E,
-        v4: app::C,
-        v5: app::B1,
-        v6: app::B<alloc::string::String>,
-        v7: app::A1,
-        v8: app::A,
+        v1: dep_29415e2f::F,
+        v2: app::E,
+        v3: app::C,
+        v4: app::B,
+        v5: app::A,
     ) -> crate::ApplicationState {
         crate::ApplicationState {
-            a: v8,
-            a_1: v7,
-            b: v6,
-            b_1: v5,
-            c: v4,
-            e: v3,
-            f: v2,
-            vec: v1,
+            a: v5,
+            b: v4,
+            c: v3,
+            e: v2,
+            f: v1,
             z: v0,
         }
     }
@@ -130,18 +114,15 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_1::entrypoint(&allowed_methods).await;
+            return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(
-                                state.vec.clone(),
+                        route_1::entrypoint(
                                 &state.a,
                                 &state.b,
-                                &state.a_1,
-                                &state.b_1,
                                 &state.c,
                                 &state.e,
                                 &state.f,
@@ -154,7 +135,7 @@ impl Router {
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_1::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
@@ -163,124 +144,6 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h>(
-        s_0: alloc::vec::Vec<alloc::string::String>,
-        s_1: &'a app::A,
-        s_2: &'b app::B<alloc::string::String>,
-        s_3: &'c app::A1,
-        s_4: &'d app::B1,
-        s_5: &'e app::C,
-        s_6: &'f app::E,
-        s_7: &'g dep_29415e2f::F,
-        s_8: &'h dep_29415e2f::Z,
-    ) -> pavex::response::Response {
-        let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5, s_6, s_7, s_8).await;
-        response
-    }
-    async fn stage_1<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h>(
-        s_0: alloc::vec::Vec<alloc::string::String>,
-        s_1: &'a app::A,
-        s_2: &'b app::B<alloc::string::String>,
-        s_3: &'c app::A1,
-        s_4: &'d app::B1,
-        s_5: &'e app::C,
-        s_6: &'f app::E,
-        s_7: &'g dep_29415e2f::F,
-        s_8: &'h dep_29415e2f::Z,
-    ) -> pavex::response::Response {
-        let response = handler(s_0, s_1, s_2, s_3, s_4, s_5, s_6, s_7, s_8).await;
-        response
-    }
-    async fn wrapping_0(
-        v0: alloc::vec::Vec<alloc::string::String>,
-        v1: &app::A,
-        v2: &app::B<alloc::string::String>,
-        v3: &app::A1,
-        v4: &app::B1,
-        v5: &app::C,
-        v6: &app::E,
-        v7: &dep_29415e2f::F,
-        v8: &dep_29415e2f::Z,
-    ) -> pavex::response::Response {
-        let v9 = crate::route_0::Next0 {
-            s_0: v0,
-            s_1: v1,
-            s_2: v2,
-            s_3: v3,
-            s_4: v4,
-            s_5: v5,
-            s_6: v6,
-            s_7: v7,
-            s_8: v8,
-            next: stage_1,
-        };
-        let v10 = pavex::middleware::Next::new(v9);
-        let v11 = pavex::middleware::wrap_noop(v10).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
-    }
-    async fn handler(
-        v0: alloc::vec::Vec<alloc::string::String>,
-        v1: &app::A,
-        v2: &app::B<alloc::string::String>,
-        v3: &app::A1,
-        v4: &app::B1,
-        v5: &app::C,
-        v6: &app::E,
-        v7: &dep_29415e2f::F,
-        v8: &dep_29415e2f::Z,
-    ) -> pavex::response::Response {
-        let v9 = app::handler(v1, v2, v3, v4, v5, v0, v6, v7, v8);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v9)
-    }
-    struct Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: alloc::vec::Vec<alloc::string::String>,
-        s_1: &'a app::A,
-        s_2: &'b app::B<alloc::string::String>,
-        s_3: &'c app::A1,
-        s_4: &'d app::B1,
-        s_5: &'e app::C,
-        s_6: &'f app::E,
-        s_7: &'g dep_29415e2f::F,
-        s_8: &'h dep_29415e2f::Z,
-        next: fn(
-            alloc::vec::Vec<alloc::string::String>,
-            &'a app::A,
-            &'b app::B<alloc::string::String>,
-            &'c app::A1,
-            &'d app::B1,
-            &'e app::C,
-            &'f app::E,
-            &'g dep_29415e2f::F,
-            &'h dep_29415e2f::Z,
-        ) -> T,
-    }
-    impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T> std::future::IntoFuture
-    for Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self
-                .next)(
-                self.s_0,
-                self.s_1,
-                self.s_2,
-                self.s_3,
-                self.s_4,
-                self.s_5,
-                self.s_6,
-                self.s_7,
-                self.s_8,
-            )
-        }
-    }
-}
-pub mod route_1 {
     pub async fn entrypoint<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
@@ -296,7 +159,7 @@ pub mod route_1 {
     async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let v1 = crate::route_1::Next0 {
+        let v1 = crate::route_0::Next0 {
             s_0: v0,
             next: stage_1,
         };
@@ -323,6 +186,92 @@ pub mod route_1 {
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0)
+        }
+    }
+}
+pub mod route_1 {
+    pub async fn entrypoint<'a, 'b, 'c, 'd, 'e, 'f>(
+        s_0: &'a app::A,
+        s_1: &'b app::B,
+        s_2: &'c app::C,
+        s_3: &'d app::E,
+        s_4: &'e dep_29415e2f::F,
+        s_5: &'f dep_29415e2f::Z,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5).await;
+        response
+    }
+    async fn stage_1<'a, 'b, 'c, 'd, 'e, 'f>(
+        s_0: &'a app::A,
+        s_1: &'b app::B,
+        s_2: &'c app::C,
+        s_3: &'d app::E,
+        s_4: &'e dep_29415e2f::F,
+        s_5: &'f dep_29415e2f::Z,
+    ) -> pavex::response::Response {
+        let response = handler(s_0, s_1, s_2, s_3, s_4, s_5).await;
+        response
+    }
+    async fn wrapping_0(
+        v0: &app::A,
+        v1: &app::B,
+        v2: &app::C,
+        v3: &app::E,
+        v4: &dep_29415e2f::F,
+        v5: &dep_29415e2f::Z,
+    ) -> pavex::response::Response {
+        let v6 = crate::route_1::Next0 {
+            s_0: v0,
+            s_1: v1,
+            s_2: v2,
+            s_3: v3,
+            s_4: v4,
+            s_5: v5,
+            next: stage_1,
+        };
+        let v7 = pavex::middleware::Next::new(v6);
+        let v8 = pavex::middleware::wrap_noop(v7).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
+    }
+    async fn handler(
+        v0: &app::A,
+        v1: &app::B,
+        v2: &app::C,
+        v3: &app::E,
+        v4: &dep_29415e2f::F,
+        v5: &dep_29415e2f::Z,
+    ) -> pavex::response::Response {
+        let v6 = app::handler(v0, v1, v2, v3, v4, v5);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+    }
+    struct Next0<'a, 'b, 'c, 'd, 'e, 'f, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a app::A,
+        s_1: &'b app::B,
+        s_2: &'c app::C,
+        s_3: &'d app::E,
+        s_4: &'e dep_29415e2f::F,
+        s_5: &'f dep_29415e2f::Z,
+        next: fn(
+            &'a app::A,
+            &'b app::B,
+            &'c app::C,
+            &'d app::E,
+            &'e dep_29415e2f::F,
+            &'f dep_29415e2f::Z,
+        ) -> T,
+    }
+    impl<'a, 'b, 'c, 'd, 'e, 'f, T> std::future::IntoFuture
+    for Next0<'a, 'b, 'c, 'd, 'e, 'f, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4, self.s_5)
         }
     }
 }

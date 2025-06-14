@@ -1,11 +1,16 @@
 use crate::{
     DiagnosticSink, compiler::analyses::computations::ComputationDb, rustdoc::CrateCollection,
 };
+use pavexc_attr_parser::AnnotationProperties;
 
 use super::{
-    AuxiliaryData, ImplInfo, cannot_resolve_callable_path, rustdoc_free_fn2callable,
-    rustdoc_method2callable,
+    AuxiliaryData, ConfigType, FQPath, FQPathSegment, ImplInfo, annotated_item2type,
+    cannot_resolve_callable_path, invalid_config_type, rustdoc_free_fn2callable,
+    rustdoc_method2callable, validate_route_path,
 };
+use crate::compiler::analyses::user_components::UserComponent;
+use crate::compiler::component::DefaultStrategy;
+use pavex_bp_schema::CloningStrategy;
 
 /// Resolve coordinates to the annotation they point to.
 /// Then process the corresponding item.
@@ -15,9 +20,15 @@ pub(crate) fn resolve_annotation_coordinates(
     krate_collection: &CrateCollection,
     diagnostics: &DiagnosticSink,
 ) {
-    for (component_id, coordinates_id) in aux.iter().filter_map(|(component_id, component)| {
-        component.coordinates_id().map(|id| (component_id, id))
-    }) {
+    // Collect all components with coordinates first to avoid borrow checker issues
+    let components_with_coords: Vec<_> = aux
+        .iter()
+        .filter_map(|(component_id, component)| {
+            component.coordinates_id().map(|id| (component_id, id))
+        })
+        .collect();
+
+    for (component_id, coordinates_id) in components_with_coords {
         let coordinates = &aux.annotation_coordinates_interner[coordinates_id];
         let (krate, annotation) = match krate_collection.annotation_for_coordinates(coordinates) {
             Ok(Ok(Some(v))) => v,
@@ -32,6 +43,94 @@ pub(crate) fn resolve_annotation_coordinates(
         };
 
         let item = krate.get_item_by_local_type_id(&annotation.id);
+
+        // Retrieve routing information for routes that have been registered directly against the blueprint,
+        // rather than via an import.
+        if let AnnotationProperties::Route { method, path, .. } = &annotation.properties {
+            if matches!(
+                aux.component_interner[component_id],
+                UserComponent::RequestHandler { .. }
+            ) {
+                validate_route_path(aux, component_id, path, diagnostics);
+
+                let UserComponent::RequestHandler { router_key, .. } =
+                    &mut aux.component_interner[component_id]
+                else {
+                    unreachable!()
+                };
+                router_key.path = format!("{}{}", router_key.path, path);
+                router_key.method_guard = method.clone();
+            }
+        }
+
+        // Retrieve config properties for config types that have been registered directly against the blueprint
+        if let AnnotationProperties::Config {
+            key,
+            cloning_strategy,
+            default_if_missing,
+            include_if_unused,
+            id: _,
+        } = &annotation.properties
+        {
+            let UserComponent::ConfigType {
+                key: config_key, ..
+            } = &mut aux.component_interner[component_id]
+            else {
+                unreachable!()
+            };
+            *config_key = key.clone();
+            // Use the behaviour specified in the annotation, unless the user has overridden
+            // it when registering the config directly with the blueprint.
+            aux.id2cloning_strategy
+                .entry(component_id)
+                .or_insert_with(|| cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary));
+            aux.config_id2default_strategy
+                .entry(component_id)
+                .or_insert_with(|| {
+                    default_if_missing
+                        .map(|b| {
+                            if b {
+                                DefaultStrategy::DefaultIfMissing
+                            } else {
+                                DefaultStrategy::Required
+                            }
+                        })
+                        .unwrap_or_default()
+                });
+            aux.config_id2include_if_unused
+                .entry(component_id)
+                .or_insert_with(|| include_if_unused.unwrap_or(false));
+
+            let Ok(ty) = annotated_item2type(&item, krate, krate_collection, diagnostics) else {
+                continue;
+            };
+            match ConfigType::new(ty, config_key.to_owned()) {
+                Ok(config) => {
+                    aux.config_id2type.insert(component_id, config);
+                }
+                Err(e) => {
+                    let path = FQPath {
+                        segments: krate.import_index.items[&item.id]
+                            .canonical_path()
+                            .iter()
+                            .cloned()
+                            .map(FQPathSegment::new)
+                            .collect(),
+                        qualified_self: None,
+                        package_id: krate.core.package_id.clone(),
+                    };
+                    invalid_config_type(e, &path, component_id, aux, diagnostics)
+                }
+            };
+        }
+
+        if matches!(
+            annotation.properties,
+            AnnotationProperties::Config { .. } | AnnotationProperties::Prebuilt { .. }
+        ) {
+            continue;
+        }
+
         let outcome = match annotation.impl_ {
             Some(ImplInfo { attached_to, impl_ }) => {
                 rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection)

@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 
 // Using on purpose a generic parameter that is named differently than the generic parameter
@@ -51,6 +51,7 @@ pub struct GenericError<P>(pub P);
 pub struct AType;
 
 // The generic parameters of all inputs types are fully specified!
+#[pavex::get(path = "/home")]
 pub fn handler(
     _json: Json<u8>,
     _json_vec: Json<Vec<u8>>,
@@ -72,6 +73,6 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::generic_error_handler));
     bp.request_scoped(f!(crate::fallible_with_generic_error2))
         .error_handler(f!(crate::doubly_generic_error_handler));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

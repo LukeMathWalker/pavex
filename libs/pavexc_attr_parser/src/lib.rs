@@ -52,6 +52,7 @@ pub enum AnnotationProperties {
         cloning_strategy: Option<CloningStrategy>,
     },
     Config {
+        id: String,
         key: String,
         cloning_strategy: Option<CloningStrategy>,
         default_if_missing: Option<bool>,
@@ -70,11 +71,12 @@ pub enum AnnotationProperties {
         id: String,
     },
     ErrorHandler {
+        id: String,
         error_ref_input_index: usize,
         default: Option<bool>,
-        id: String,
     },
     Route {
+        id: String,
         method: MethodGuard,
         path: String,
     },
@@ -119,8 +121,10 @@ impl AnnotationProperties {
             | PostProcessingMiddleware { id }
             | ErrorObserver { id }
             | ErrorHandler { id, .. }
+            | Route { id, .. }
+            | Config { id, .. }
             | Fallback { id } => Some(id.as_str()),
-            Constructor { .. } | Prebuilt { .. } | Config { .. } | Route { .. } | Methods => None,
+            Constructor { .. } | Prebuilt { .. } | Methods => None,
         }
     }
 }

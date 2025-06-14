@@ -3,12 +3,12 @@
   [31m│[0m `app::once`, one of your constructors, breaks this rule: `T` is
   [31m│[0m only used by its input parameters.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:43:1]
-  [31m│[0m  [2m43[0m │     bp.import(from![crate::annotated]);
-  [31m│[0m  [2m44[0m │     bp.request_scoped(f!(crate::once));
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:44:1]
+  [31m│[0m  [2m44[0m │     bp.import(from![crate::annotated]);
+  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::once));
   [31m│[0m     · [35;1m                      ───────┬───────[0m
   [31m│[0m     ·                              [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::twice));
+  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::twice));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:5:1]
   [31m│[0m  [2m5[0m │
@@ -31,12 +31,12 @@
   [31m│[0m `app::twice`, one of your constructors, breaks this rule: `T` and
   [31m│[0m `S` are only used by its input parameters.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:44:1]
-  [31m│[0m  [2m44[0m │     bp.request_scoped(f!(crate::once));
-  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::twice));
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:45:1]
+  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::once));
+  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::twice));
   [31m│[0m     · [35;1m                      ────────┬───────[0m
   [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::thrice));
+  [31m│[0m  [2m47[0m │     bp.request_scoped(f!(crate::thrice));
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │
@@ -60,12 +60,12 @@
   [31m│[0m `app::thrice`, one of your constructors, breaks this rule: `T`,
   [31m│[0m `S` and `U` are only used by its input parameters.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:45:1]
-  [31m│[0m  [2m45[0m │     bp.request_scoped(f!(crate::twice));
-  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::thrice));
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:46:1]
+  [31m│[0m  [2m46[0m │     bp.request_scoped(f!(crate::twice));
+  [31m│[0m  [2m47[0m │     bp.request_scoped(f!(crate::thrice));
   [31m│[0m     · [35;1m                      ────────┬────────[0m
   [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m47[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m  [2m48[0m │     bp.routes(from![crate]);
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:13:1]
   [31m│[0m  [2m13[0m │

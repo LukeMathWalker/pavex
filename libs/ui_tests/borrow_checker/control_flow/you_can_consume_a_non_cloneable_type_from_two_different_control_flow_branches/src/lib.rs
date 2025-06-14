@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -36,6 +36,7 @@ pub fn b() -> B {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_a: A, _b: B) -> Response {
     todo!()
 }
@@ -45,6 +46,6 @@ pub fn blueprint() -> Blueprint {
     bp.request_scoped(f!(crate::a))
         .error_handler(f!(crate::error_handler));
     bp.request_scoped(f!(crate::b));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

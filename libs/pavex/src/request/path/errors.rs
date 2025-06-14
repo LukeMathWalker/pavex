@@ -38,7 +38,7 @@ pub enum ExtractPathParamsError {
 ///
 /// # Example
 ///
-/// One of our routes is `/address/:address_id`.
+/// One of our routes is `/address/{address_id}`.
 /// We receive a request with `/address/the%20street` as path—`address_id` is set to
 /// `the%20street` and Pavex automatically decodes it into `the street`.
 ///

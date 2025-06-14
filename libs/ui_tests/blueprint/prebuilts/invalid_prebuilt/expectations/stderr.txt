@@ -58,12 +58,12 @@
   [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
   [31m│[0m `app::A` has a named lifetime parameter, `'a`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:51:1]
-  [31m│[0m  [2m51[0m │     bp.import(from![crate]);
-  [31m│[0m  [2m52[0m │     bp.prebuilt(t!(crate::A));
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:52:1]
+  [31m│[0m  [2m52[0m │     bp.import(from![crate]);
+  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::A));
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::B));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
@@ -71,12 +71,12 @@
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::B` has a generic type parameter, `T`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:52:1]
-  [31m│[0m  [2m52[0m │     bp.prebuilt(t!(crate::A));
-  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:53:1]
+  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::A));
+  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::B));
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::C));
+  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::C));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove all generic type parameters from the definition of your
   [31m│[0m         configuration type.
@@ -84,12 +84,12 @@
   [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
   [31m│[0m `app::C` has 3 named lifetime parameters: `'a`, `'b` and `'c`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:53:1]
-  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
-  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::C));
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:54:1]
+  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::C));
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::D));
+  [31m│[0m  [2m56[0m │     bp.prebuilt(t!(crate::D));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
@@ -97,12 +97,12 @@
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::D` has 3 generic type parameters: `T`, `S` and `Z`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:54:1]
-  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::C));
-  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::D));
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:55:1]
+  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::C));
+  [31m│[0m  [2m56[0m │     bp.prebuilt(t!(crate::D));
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m56[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m  [2m57[0m │     bp.routes(from![crate]);
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove all generic type parameters from the definition of your
   [31m│[0m         configuration type.
