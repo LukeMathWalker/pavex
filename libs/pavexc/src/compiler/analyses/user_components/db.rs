@@ -138,7 +138,7 @@ impl UserComponentDb {
         exit_on_errors!(diagnostics);
 
         let scope_graph = scope_graph_builder.build();
-        let router = Router::new(&aux, &scope_graph, diagnostics)?;
+        let router = Router::new(&aux, computation_db, &scope_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
 
         let AuxiliaryData {

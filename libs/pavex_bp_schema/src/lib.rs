@@ -144,10 +144,11 @@ pub struct Route {
 /// A request handler registered against a `Blueprint` via `Blueprint::fallback` to
 /// process requests that don't match any of the registered routes.
 pub struct Fallback {
-    /// The callable in charge of processing incoming requests.
-    pub request_handler: Callable,
-    /// The callable in charge of processing errors returned by the request handler, if any.
-    pub error_handler: Option<Callable>,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
+    /// The callable in charge of processing errors returned by this fallback, if any.
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

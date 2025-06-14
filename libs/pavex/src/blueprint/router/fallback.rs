@@ -1,7 +1,6 @@
-use crate::blueprint::conversions::raw_identifiers2callable;
-use crate::blueprint::reflection::RawIdentifiers;
-use crate::blueprint::{Blueprint, reflection::WithLocation};
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
+use crate::blueprint::conversions::coordinates2coordinates;
+use crate::blueprint::raw::RawErrorHandler;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, ErrorHandler, Fallback, Location};
 
 /// The type returned by [`Blueprint::fallback`].
 ///
@@ -26,27 +25,32 @@ impl RegisteredFallback<'_> {
     /// are constructors registered for those parameter types.
     ///
     /// ```rust
-    /// use pavex::f;
     /// use pavex::blueprint::Blueprint;
+    /// use pavex::{error_handler, fallback};
     /// use pavex::response::Response;
     /// # struct LogLevel;
     /// # struct RuntimeError;
-    /// # struct ConfigurationError;
     ///
-    /// fn fallback() -> Result<Response, RuntimeError> {
+    /// // 👇 a fallible fallback handler
+    /// #[fallback]
+    /// pub fn fallback_handler() -> Result<Response, RuntimeError> {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response {
+    /// #[error_handler]
+    /// pub fn runtime_error_handler(
+    ///     #[px(error_ref)] error: &RuntimeError,
+    ///     log_level: LogLevel
+    /// ) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.fallback(f!(crate::fallback))
-    ///     .error_handler(f!(crate::error_to_response));
+    /// bp.fallback(FALLBACK_HANDLER)
+    ///     .error_handler(RUNTIME_ERROR_HANDLER);
     /// # }
     /// ```
     ///
@@ -58,58 +62,20 @@ impl RegisteredFallback<'_> {
     /// Pavex will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        let callable = raw_identifiers2callable(error_handler);
-        self.fallback().error_handler = Some(callable);
+    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
+        let error_handler = ErrorHandler {
+            coordinates: coordinates2coordinates(error_handler.coordinates),
+            registered_at: Location::caller(),
+        };
+        self.fallback().error_handler = Some(error_handler);
         self
     }
 
-    fn fallback(&mut self) -> &mut pavex_bp_schema::Fallback {
+    fn fallback(&mut self) -> &mut Fallback {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::FallbackRequestHandler(fallback) = component else {
             unreachable!("The component should be a fallback request handler")
         };
         fallback
-    }
-}
-
-/// A fallback that has been configured but has not yet been registered with a [`Blueprint`].
-///
-/// # Guide
-///
-/// Check out [`Blueprint::fallback`] for an introduction to fallback routes in Pavex.
-#[derive(Clone, Debug)]
-pub struct Fallback {
-    pub(in crate::blueprint) callable: Callable,
-    pub(in crate::blueprint) error_handler: Option<Callable>,
-}
-
-impl Fallback {
-    /// Create a new (unregistered) fallback route.
-    ///
-    /// Check out the documentation of [`Blueprint::fallback`] for more details
-    /// on fallback routes.
-    #[track_caller]
-    pub fn new(callable: WithLocation<RawIdentifiers>) -> Self {
-        Self {
-            callable: raw_identifiers2callable(callable),
-            error_handler: None,
-        }
-    }
-
-    /// Register an error handler for this fallback route.
-    ///
-    /// Check out the documentation of [`RegisteredFallback::error_handler`] for more details.
-    #[track_caller]
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        self.error_handler = Some(raw_identifiers2callable(error_handler));
-        self
-    }
-
-    /// Register this fallback route with a [`Blueprint`].
-    ///
-    /// Check out the documentation of [`Blueprint::fallback`] for more details.
-    pub fn register(self, bp: &mut Blueprint) -> RegisteredFallback {
-        bp.register_fallback(self)
     }
 }

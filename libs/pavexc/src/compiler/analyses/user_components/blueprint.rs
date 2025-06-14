@@ -1,6 +1,6 @@
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
-    Domain, ErrorHandler, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint,
+    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, Domain,
+    ErrorHandler, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint,
     PathPrefix, PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers,
     Route, RoutesImport, WrappingMiddleware,
 };
@@ -237,50 +237,38 @@ fn _process_blueprint<'a>(
             }
         }
     }
-    if let Some(fallback) = &fallback {
-        process_fallback(
-            aux,
-            fallback,
-            path_prefix,
-            domain_guard,
-            current_middleware_chain,
-            current_observer_chain,
-            current_scope_id,
-            scope_graph_builder,
-        );
-    } else if is_root {
+
+    let fallback = fallback.cloned().or_else(|| {
         // We need to have a top-level fallback handler.
         // If the user hasn't registered one against the top-level blueprint,
-        // we must provide a framework default.
-        let raw_callable_identifiers = RawIdentifiers::from_raw_parts(
-            "pavex::router::default_fallback".to_owned(),
-            CreatedAt {
-                package_name: "pavex".to_owned(),
-                package_version: PAVEX_VERSION.to_owned(),
-                module_path: "pavex".to_owned(),
+        // we use the framework's default one.
+        is_root.then(|| Fallback {
+            coordinates: pavex_reflection::AnnotationCoordinates {
+                id: "DEFAULT_FALLBACK".into(),
+                created_at: CreatedAt {
+                    package_name: "pavex".to_owned(),
+                    package_version: PAVEX_VERSION.to_owned(),
+                    module_path: "pavex::router".to_owned(),
+                },
+                macro_name: "fallback".into(),
             },
-            CreatedBy::Framework,
-        );
-        let registered_fallback = Fallback {
-            request_handler: Callable {
-                callable: raw_callable_identifiers,
-                // We don't have a location for the default fallback handler.
-                // Nor do we have a way (yet) to identify this component as "framework provided".
-                // Something to fix in the future.
-                registered_at: bp.creation_location.clone(),
-            },
+            // TODO: We should have a better location for framework-provided
+            //   components.
+            registered_at: bp.creation_location.clone(),
             error_handler: None,
-        };
+        })
+    });
+    if let Some(fallback) = fallback {
         process_fallback(
             aux,
-            &registered_fallback,
+            &fallback,
             path_prefix,
             domain_guard,
             current_middleware_chain,
             current_observer_chain,
             current_scope_id,
             scope_graph_builder,
-        )
+        );
     }
 }
 
@@ -361,18 +349,22 @@ fn process_fallback(
 ) {
     const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-    let raw_callable_identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(fallback.request_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: fallback.coordinates.id.clone(),
+        created_at: fallback.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
     let component = UserComponent::Fallback {
-        source: raw_callable_identifiers_id,
+        source: coordinates_id,
     };
     let fallback_id = aux.intern_component(
         component,
         route_scope_id,
         ROUTE_LIFECYCLE,
-        fallback.request_handler.registered_at.clone().into(),
+        fallback.registered_at.clone().into(),
     );
 
     aux.handler_id2middleware_ids
@@ -384,7 +376,7 @@ fn process_fallback(
     aux.fallback_id2domain_guard
         .insert(fallback_id, domain_guard);
 
-    process_legacy_component_specific_error_handler(
+    process_component_specific_error_handler(
         aux,
         &fallback.error_handler,
         ROUTE_LIFECYCLE,

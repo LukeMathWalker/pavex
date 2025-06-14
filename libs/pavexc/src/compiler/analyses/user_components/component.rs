@@ -23,7 +23,7 @@ pub enum UserComponent {
         router_key: RouterKey,
     },
     Fallback {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     ErrorHandler {
         source: UserComponentSource,
@@ -81,8 +81,7 @@ impl UserComponent {
     /// It's `None` for annotated components.
     pub fn raw_identifiers_id(&self) -> Option<RawIdentifierId> {
         match self {
-            UserComponent::Fallback { source }
-            | UserComponent::RequestHandler {
+            UserComponent::RequestHandler {
                 source: UserComponentSource::Identifiers(source),
                 ..
             }
@@ -130,6 +129,7 @@ impl UserComponent {
                 source: UserComponentSource::AnnotationCoordinates(source),
             }
             | UserComponent::PreProcessingMiddleware { source }
+            | UserComponent::Fallback { source }
             | UserComponent::ErrorObserver { source } => Some(*source),
             _ => None,
         }

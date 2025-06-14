@@ -873,6 +873,40 @@ impl FQPath {
             }
         }
     }
+
+    /// A utility method to render the path for usage in error messages.
+    ///
+    /// It doesn't require a "package_id <> name" mapping.
+    pub fn render_for_error(&self, buffer: &mut String) {
+        let mut qself_closing_wedge_index = None;
+        if let Some(qself) = &self.qualified_self {
+            write!(buffer, "<").unwrap();
+            qself.type_.render_for_error(buffer);
+            write!(buffer, " as ",).unwrap();
+            qself_closing_wedge_index = Some(qself.position.saturating_sub(1));
+        }
+        for (index, path_segment) in self.segments.iter().enumerate() {
+            if index != 0 {
+                buffer.push_str("::");
+            }
+            buffer.push_str(&path_segment.ident);
+            let generic_arguments = &path_segment.generic_arguments;
+            if !generic_arguments.is_empty() {
+                write!(buffer, "::<").unwrap();
+                let mut arguments = generic_arguments.iter().peekable();
+                while let Some(argument) = arguments.next() {
+                    argument.render_for_error(buffer);
+                    if arguments.peek().is_some() {
+                        write!(buffer, ", ").unwrap();
+                    }
+                }
+                write!(buffer, ">").unwrap();
+            }
+            if Some(index + 1) == qself_closing_wedge_index {
+                write!(buffer, ">").unwrap();
+            }
+        }
+    }
 }
 
 /// There are two key callables in Rust: functions and methods.
@@ -907,12 +941,30 @@ impl FQPathType {
             FQPathType::Slice(s) => s.render_path(id2name, buffer),
         }
     }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        match self {
+            FQPathType::ResolvedPath(p) => p.render_for_error(buffer),
+            FQPathType::Reference(r) => r.render_for_error(buffer),
+            FQPathType::Tuple(t) => t.render_for_error(buffer),
+            FQPathType::ScalarPrimitive(s) => {
+                write!(buffer, "{s}").unwrap();
+            }
+            FQPathType::Slice(s) => s.render_for_error(buffer),
+        }
+    }
 }
 
 impl FQSlice {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         write!(buffer, "[").unwrap();
         self.element.render_path(id2name, buffer);
+        write!(buffer, "]").unwrap();
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "[").unwrap();
+        self.element.render_for_error(buffer);
         write!(buffer, "]").unwrap();
     }
 }
@@ -935,11 +987,33 @@ impl FQGenericArgument {
             },
         }
     }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        match self {
+            FQGenericArgument::Type(t) => {
+                t.render_for_error(buffer);
+            }
+            FQGenericArgument::Lifetime(l) => match l {
+                ResolvedPathLifetime::Static => {
+                    write!(buffer, "'static").unwrap();
+                }
+                ResolvedPathLifetime::Named(_) => {
+                    // TODO: we should have proper name mapping for lifetimes here, but we know all our current
+                    //   usecases will work with lifetime elision.
+                    write!(buffer, "'_").unwrap();
+                }
+            },
+        }
+    }
 }
 
 impl FQResolvedPathType {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         self.path.render_path(id2name, buffer);
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        self.path.render_for_error(buffer);
     }
 }
 
@@ -955,6 +1029,18 @@ impl FQTuple {
         }
         write!(buffer, ")").unwrap();
     }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "(").unwrap();
+        let mut types = self.elements.iter().peekable();
+        while let Some(ty) = types.next() {
+            ty.render_for_error(buffer);
+            if types.peek().is_some() {
+                write!(buffer, ", ").unwrap();
+            }
+        }
+        write!(buffer, ")").unwrap();
+    }
 }
 
 impl FQReference {
@@ -964,6 +1050,14 @@ impl FQReference {
             write!(buffer, "mut ").unwrap();
         }
         self.inner.render_path(id2name, buffer);
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "&").unwrap();
+        if self.is_mutable {
+            write!(buffer, "mut ").unwrap();
+        }
+        self.inner.render_for_error(buffer);
     }
 }
 

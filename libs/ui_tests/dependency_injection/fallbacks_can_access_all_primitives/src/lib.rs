@@ -8,6 +8,7 @@ use pavex::request::{
 };
 use pavex::router::AllowedMethods;
 
+#[pavex::fallback]
 pub fn handler(
     _info: &ConnectionInfo,
     _head: &RequestHead,
@@ -23,9 +24,9 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.prefix("/nested").nest({
         let mut bp = Blueprint::new();
-        bp.fallback(f!(crate::handler));
+        bp.fallback(HANDLER);
         bp
     });
-    bp.fallback(f!(crate::handler));
+    bp.fallback(HANDLER);
     bp
 }

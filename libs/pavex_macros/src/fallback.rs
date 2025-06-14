@@ -11,20 +11,22 @@ use crate::{
 /// The available options for fallbacks.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
+    pub pavex: Option<syn::Ident>,
 }
 
 impl TryFrom<InputSchema> for Properties {
     type Error = darling::Error;
 
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let InputSchema { id } = input;
-        Ok(Properties { id })
+        let InputSchema { id, pavex } = input;
+        Ok(Properties { id, pavex })
     }
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct Properties {
     pub id: Option<syn::Ident>,
+    pub pavex: Option<syn::Ident>,
 }
 
 pub struct FallbackAnnotation;
@@ -51,7 +53,11 @@ impl CallableAnnotation for FallbackAnnotation {
 /// Decorate the input with a `#[diagnostic::pavex::fallback]` attribute
 /// that matches the provided properties.
 fn emit(name: Ident, properties: Properties) -> AnnotationCodegen {
-    let Properties { id } = properties;
+    let Properties { id, pavex } = properties;
+    let pavex = match pavex {
+        Some(c) => quote! { #c },
+        None => quote! { ::pavex },
+    };
     // Use the span of the function name if no identifier is provided.
     let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
 
@@ -83,11 +89,13 @@ bp.fallback({id});
     };
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
-        pub const #id: ::pavex::blueprint::reflection::WithLocation<::pavex::blueprint::reflection::RawIdentifiers> =
-            ::pavex::with_location!(::pavex::blueprint::reflection::RawIdentifiers {
-                import_path: concat!(module_path!(), "::", #name),
+        pub const #id: #pavex::blueprint::raw::RawFallback = #pavex::blueprint::raw::RawFallback {
+            coordinates: #pavex::blueprint::reflection::AnnotationCoordinates {
+                id: #id_str,
+                created_at: #pavex::created_at!(),
                 macro_name: "fallback",
-            });
+            },
+        };
     };
 
     AnnotationCodegen {

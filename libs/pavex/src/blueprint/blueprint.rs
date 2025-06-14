@@ -6,7 +6,7 @@ use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, ConfigType, Constructor, Fallback, Import, NestedBlueprint,
+    Blueprint as BlueprintSchema, ConfigType, Constructor, Import, NestedBlueprint,
     PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, Route, RoutesImport,
     WrappingMiddleware,
 };
@@ -22,10 +22,10 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
-use super::raw::RawErrorObserver;
 use super::raw::{
     RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
 };
+use super::raw::{RawErrorObserver, RawFallback};
 use super::reflection::{RawIdentifiers, Sources, WithLocation};
 use super::router::{MethodGuard, RegisteredRoute, RegisteredRoutes};
 
@@ -884,14 +884,15 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{f, fallback, blueprint::{Blueprint, router::GET}};
     /// use pavex::response::Response;
     ///
     /// fn handler() -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
-    /// fn fallback_handler() -> Response {
+    /// #[fallback]
+    /// pub fn fallback_handler() -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
@@ -901,7 +902,7 @@ impl Blueprint {
     /// bp.route(GET, "/path", f!(crate::handler));
     /// // The fallback handler will be invoked for all the requests that don't match `/path`.
     /// // E.g. `GET /home`, `POST /home`, `GET /home/123`, etc.
-    /// bp.fallback(f!(crate::fallback_handler));
+    /// bp.fallback(FALLBACK_HANDLER);
     /// # }
     /// ```
     ///
@@ -931,12 +932,13 @@ impl Blueprint {
     /// their method guards.
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{f, fallback, blueprint::{Blueprint, router::GET}};
     /// use pavex::response::Response;
     ///
     /// # fn route_handler() -> Response { todo!() }
     /// # fn home_handler() -> Response { todo!() }
-    /// fn fallback_handler() -> Response {
+    /// #[fallback]
+    /// pub fn fallback_handler() -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
@@ -947,7 +949,7 @@ impl Blueprint {
     /// bp.nest({
     ///     let mut bp = Blueprint::new();
     ///     bp.route(GET, "/route", f!(crate::route_handler));
-    ///     bp.fallback(f!(crate::fallback_handler));
+    ///     bp.fallback(FALLBACK_HANDLER);
     ///     bp
     /// });
     /// # }
@@ -969,12 +971,13 @@ impl Blueprint {
     /// but don't match any of the route paths registered against the nested blueprint.
     ///
     /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::{f, fallback, blueprint::{Blueprint, router::GET}};
     /// use pavex::response::Response;
     ///
     /// # fn route_handler() -> Response { todo!() }
     /// # fn home_handler() -> Response { todo!() }
-    /// fn fallback_handler() -> Response {
+    /// #[fallback]
+    /// pub fn fallback_handler() -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
@@ -985,7 +988,7 @@ impl Blueprint {
     /// bp.prefix("/route").nest({
     ///     let mut bp = Blueprint::new();
     ///     bp.route(GET, "/", f!(crate::route_handler));
-    ///     bp.fallback(f!(crate::fallback_handler));
+    ///     bp.fallback(FALLBACK_HANDLER);
     ///     bp
     /// });
     /// # }
@@ -997,27 +1000,16 @@ impl Blueprint {
     /// prefix of the nested blueprint (`/route`).
     ///
     /// [`Response`]: crate::response::Response
-    pub fn fallback(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredFallback {
-        let registered = Fallback {
-            request_handler: raw_identifiers2callable(callable),
+    pub fn fallback(&mut self, fallback: RawFallback) -> RegisteredFallback {
+        let registered = pavex_bp_schema::Fallback {
+            coordinates: coordinates2coordinates(fallback.coordinates),
+            registered_at: Location::caller(),
             error_handler: None,
         };
         let component_id = self.push_component(registered);
         RegisteredFallback {
             blueprint: &mut self.schema,
             component_id,
-        }
-    }
-
-    pub(super) fn register_fallback(&mut self, f: super::router::Fallback) -> RegisteredFallback {
-        let f = Fallback {
-            request_handler: f.callable,
-            error_handler: f.error_handler,
-        };
-        let component_id = self.push_component(f);
-        RegisteredFallback {
-            component_id,
-            blueprint: &mut self.schema,
         }
     }
 
