@@ -7,7 +7,7 @@ use pavex_bp_schema::{
 
 use super::auxiliary::AuxiliaryData;
 use super::imports::{ImportKind, UnresolvedImport};
-use super::{ErrorHandlerTarget, UserComponentId};
+use super::{ErrorHandlerTarget, UserComponentId, UserComponentSource};
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
@@ -277,45 +277,41 @@ fn _process_blueprint<'a>(
 /// (if present).
 fn process_route(
     aux: &mut AuxiliaryData,
-    registered_route: &Route,
+    route: &Route,
     current_middleware_chain: &[UserComponentId],
     current_observer_chain: &[UserComponentId],
     current_scope_id: ScopeId,
     domain_guard: Option<DomainGuard>,
     path_prefix: Option<&str>,
     scope_graph_builder: &mut ScopeGraphBuilder,
-    diagnostics: &crate::diagnostic::DiagnosticSink,
+    _diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-    let raw_callable_identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(registered_route.request_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: route.coordinates.id.clone(),
+        created_at: route.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let router_key = {
-        let path = match path_prefix {
-            Some(prefix) => format!("{}{}", prefix, registered_route.path),
-            None => registered_route.path.to_owned(),
-        };
-        RouterKey {
-            path,
-            domain_guard,
-            method_guard: registered_route.method_guard.clone(),
-        }
+
+    // For routes registered directly via bp.route(), we create a partial `RouterKey`.
+    let router_key = RouterKey {
+        path: path_prefix.unwrap_or_default().to_owned(), // Will be finalized later, during annotation resolution
+        method_guard: pavex_bp_schema::MethodGuard::Any, // Will be filled in during annotation resolution
+        domain_guard,
     };
     let component = UserComponent::RequestHandler {
         router_key,
-        source: raw_callable_identifiers_id.into(),
+        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
     };
     let request_handler_id = aux.intern_component(
         component,
         route_scope_id,
         ROUTE_LIFECYCLE,
-        registered_route
-            .request_handler
-            .registered_at
-            .clone()
-            .into(),
+        route.registered_at.clone().into(),
     );
 
     aux.handler_id2middleware_ids
@@ -323,11 +319,11 @@ fn process_route(
     aux.handler_id2error_observer_ids
         .insert(request_handler_id, current_observer_chain.to_owned());
 
-    validate_route_path(aux, request_handler_id, &registered_route.path, diagnostics);
+    // Path validation will happen during annotation resolution
 
-    process_legacy_component_specific_error_handler(
+    process_component_specific_error_handler(
         aux,
-        &registered_route.error_handler,
+        &route.error_handler,
         ROUTE_LIFECYCLE,
         current_scope_id,
         request_handler_id,

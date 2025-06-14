@@ -78,7 +78,7 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_3::entrypoint(&allowed_methods).await;
+            return route_0::entrypoint(&allowed_methods).await;
         };
         let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
             .params
@@ -86,29 +86,17 @@ impl Router {
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_0::entrypoint(url_params).await,
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
-                            .into();
-                        route_3::entrypoint(&allowed_methods).await
-                    }
-                }
-            }
-            1u32 => {
-                match &request_head.method {
                     &pavex::http::Method::GET => route_1::entrypoint(url_params).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_3::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
-            2u32 => {
+            1u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => route_2::entrypoint(url_params).await,
                     _ => {
@@ -116,7 +104,19 @@ impl Router {
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_3::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
+                }
+            }
+            2u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_3::entrypoint(url_params).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
+                            .into();
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
@@ -125,20 +125,20 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    async fn stage_1<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = crate::route_0::Next0 {
             s_0: v0,
@@ -148,34 +148,18 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
-    ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
-            Ok(ok) => ok,
-            Err(v2) => {
-                return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
-                };
-            }
-        };
-        let v3 = app::get_home(v2);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    struct Next0<'a, 'b, T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_0: &'a pavex::router::AllowedMethods,
+        next: fn(&'a pavex::router::AllowedMethods) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -227,7 +211,7 @@ pub mod route_1 {
                 };
             }
         };
-        let v3 = app::get_room(v2);
+        let v3 = app::get_home(v2);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     struct Next0<'a, 'b, T>
@@ -289,7 +273,7 @@ pub mod route_2 {
                 };
             }
         };
-        let v3 = app::get_town(v2);
+        let v3 = app::get_room(v2);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     struct Next0<'a, 'b, T>
@@ -311,20 +295,20 @@ pub mod route_2 {
     }
 }
 pub mod route_3 {
-    pub async fn entrypoint<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
+    pub async fn entrypoint<'a, 'b>(
+        s_0: pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
+    async fn stage_1<'a, 'b>(
+        s_0: pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: &pavex::router::AllowedMethods,
+        v0: pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
         let v1 = crate::route_3::Next0 {
             s_0: v0,
@@ -334,18 +318,34 @@ pub mod route_3 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
-        let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    async fn handler(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::response::Response {
+        let v1 = pavex::request::path::PathParams::extract(v0);
+        let v2 = match v1 {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v2,
+                    );
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
+                };
+            }
+        };
+        let v3 = app::get_town(v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    struct Next0<'a, T>
+    struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::router::AllowedMethods,
-        next: fn(&'a pavex::router::AllowedMethods) -> T,
+        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

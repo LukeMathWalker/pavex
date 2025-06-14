@@ -1,6 +1,6 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 
+#[pavex::get(path = "/home")]
 pub fn handler(_a: my_mod::A<my_mod::B>) -> pavex::response::Response {
     todo!()
 }
@@ -8,7 +8,7 @@ pub fn handler(_a: my_mod::A<my_mod::B>) -> pavex::response::Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     my_mod::register(&mut bp);
-    bp.route(GET, "/home", f!(self::handler));
+    bp.routes(from![crate]);
     bp
 }
 

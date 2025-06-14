@@ -134,6 +134,7 @@ impl From<FallbackProperties> for AnnotationProperties {
 /// The way we expect route properties to be represented in
 /// `pavex::diagnostic::route`.
 pub struct RouteProperties {
+    pub id: String,
     pub path: String,
     pub method: Option<MethodArgument>,
     pub allow_any_method: Option<bool>,
@@ -166,6 +167,7 @@ impl From<RouteProperties> for AnnotationProperties {
             }
         };
         AnnotationProperties::Route {
+            id: value.id,
             path: value.path,
             method,
         }

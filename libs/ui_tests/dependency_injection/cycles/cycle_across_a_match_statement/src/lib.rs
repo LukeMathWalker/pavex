@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
 
@@ -34,6 +34,7 @@ pub fn b(_c: &A) -> B {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_b: &B) -> StatusCode {
     todo!()
 }
@@ -47,6 +48,6 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::a), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
     bp.constructor(f!(crate::b), Lifecycle::Transient);
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

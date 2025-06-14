@@ -14,31 +14,31 @@
   [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
   [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_type_cannot_be_moved_twice/src/lib.rs[0m:39:1]
-  [31m│[0m        [2m39[0m │     let mut bp = Blueprint::new();
-  [31m│[0m        [2m40[0m │     bp.request_scoped(f!(crate::a));
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_type_cannot_be_moved_twice/src/lib.rs[0m:40:1]
+  [31m│[0m        [2m40[0m │     let mut bp = Blueprint::new();
+  [31m│[0m        [2m41[0m │     bp.request_scoped(f!(crate::a));
   [31m│[0m           · [35;1m                      ──────┬─────[0m
   [31m│[0m           ·                             [35;1m╰── The constructor was registered here[0m
-  [31m│[0m        [2m41[0m │     bp.request_scoped(f!(crate::b));
+  [31m│[0m        [2m42[0m │     bp.request_scoped(f!(crate::b));
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m Considering changing the signature of the components that consume
   [31m│[0m         `app::A` by value.
   [31m│[0m         Would a shared reference, `&app::A`, be enough?
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_type_cannot_be_moved_twice/src/lib.rs[0m:40:1]
-  [31m│[0m        [2m40[0m │     bp.request_scoped(f!(crate::a));
-  [31m│[0m        [2m41[0m │     bp.request_scoped(f!(crate::b));
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_type_cannot_be_moved_twice/src/lib.rs[0m:41:1]
+  [31m│[0m        [2m41[0m │     bp.request_scoped(f!(crate::a));
+  [31m│[0m        [2m42[0m │     bp.request_scoped(f!(crate::b));
   [31m│[0m           · [35;1m                      ──────┬─────[0m
   [31m│[0m           ·                             [35;1m╰── One of the consuming constructors[0m
-  [31m│[0m        [2m42[0m │     bp.request_scoped(f!(crate::c));
+  [31m│[0m        [2m43[0m │     bp.request_scoped(f!(crate::c));
   [31m│[0m           ╰────
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_type_cannot_be_moved_twice/src/lib.rs[0m:41:1]
-  [31m│[0m        [2m41[0m │     bp.request_scoped(f!(crate::b));
-  [31m│[0m        [2m42[0m │     bp.request_scoped(f!(crate::c));
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_type_cannot_be_moved_twice/src/lib.rs[0m:42:1]
+  [31m│[0m        [2m42[0m │     bp.request_scoped(f!(crate::b));
+  [31m│[0m        [2m43[0m │     bp.request_scoped(f!(crate::c));
   [31m│[0m           · [35;1m                      ──────┬─────[0m
   [31m│[0m           ·                             [35;1m╰── One of the consuming constructors[0m
-  [31m│[0m        [2m43[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m        [2m44[0m │     bp.routes(from![crate]);
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m If `app::A` itself cannot implement `Clone`, consider
   [31m│[0m         wrapping it in an `std::sync::Rc` or `std::sync::Arc`.

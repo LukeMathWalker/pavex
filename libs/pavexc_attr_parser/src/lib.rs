@@ -70,11 +70,12 @@ pub enum AnnotationProperties {
         id: String,
     },
     ErrorHandler {
+        id: String,
         error_ref_input_index: usize,
         default: Option<bool>,
-        id: String,
     },
     Route {
+        id: String,
         method: MethodGuard,
         path: String,
     },
@@ -119,8 +120,9 @@ impl AnnotationProperties {
             | PostProcessingMiddleware { id }
             | ErrorObserver { id }
             | ErrorHandler { id, .. }
+            | Route { id, .. }
             | Fallback { id } => Some(id.as_str()),
-            Constructor { .. } | Prebuilt { .. } | Config { .. } | Route { .. } | Methods => None,
+            Constructor { .. } | Prebuilt { .. } | Config { .. } | Methods => None,
         }
     }
 }

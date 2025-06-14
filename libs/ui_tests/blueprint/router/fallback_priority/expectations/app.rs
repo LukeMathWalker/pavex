@@ -162,7 +162,7 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::response::Response {
-        let v0 = app::handler();
+        let v0 = app::root();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
     struct Next0<T>
@@ -238,7 +238,7 @@ pub mod route_3 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::response::Response {
-        let v0 = app::handler();
+        let v0 = app::id();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
     struct Next0<T>

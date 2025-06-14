@@ -1,7 +1,7 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::{connection::ConnectionInfo, response::Response};
 
+#[pavex::get(path = "/route")]
 pub fn root() -> Response {
     Response::ok()
 }
@@ -14,7 +14,7 @@ pub fn get_connection_info(conn_info: &ConnectionInfo) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/route", f!(crate::root));
+    bp.routes(from![crate]);
     bp.fallback(GET_CONNECTION_INFO);
     bp
 }

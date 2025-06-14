@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 
 pub struct Generic<V>(V);
@@ -34,6 +34,7 @@ pub mod annotated {
     }
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_i: u8, _j: u16, _k: u32, _l: u64, _m: u128, _n: bool) -> pavex::response::Response {
     todo!()
 }
@@ -44,6 +45,6 @@ pub fn blueprint() -> Blueprint {
     bp.request_scoped(f!(crate::once));
     bp.request_scoped(f!(crate::twice));
     bp.request_scoped(f!(crate::thrice));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

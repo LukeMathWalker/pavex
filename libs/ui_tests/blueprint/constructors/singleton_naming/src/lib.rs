@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 
 #[derive(Clone)]
@@ -56,6 +56,7 @@ impl CrossCrateConflict {
     }
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(
     _t: &Type,
     _g1: &Generic<String>,
@@ -74,6 +75,6 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(crate::Generic::new));
     bp.singleton(f!(crate::CrossCrateConflict::new));
     bp.singleton(f!(dep::CrossCrateConflict::new));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -13,6 +13,7 @@ pub fn error_handler() -> Response {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_s: String) -> Response {
     todo!()
 }
@@ -21,6 +22,6 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

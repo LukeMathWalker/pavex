@@ -1,7 +1,8 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: &A, _b: &B, _c: &C) -> Response {
     todo!()
 }
@@ -47,6 +48,6 @@ pub fn blueprint() -> Blueprint {
     // Key conflict *and* type conflict
     bp.config("c", t!(self::B));
 
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

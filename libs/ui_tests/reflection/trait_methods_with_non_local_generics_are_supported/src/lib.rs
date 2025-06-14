@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
 use pavex::f;
 
 pub struct A;
@@ -23,6 +23,11 @@ pub fn handler(_a: A, _b: B) -> pavex::response::Response {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
+pub fn route_handler(_a: A, _b: B) -> pavex::response::Response {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::b_constructor), Lifecycle::RequestScoped);
@@ -30,6 +35,6 @@ pub fn blueprint() -> Blueprint {
         f!(<crate::B as crate::GenericTrait<crate::A>>::a_method_using_the_trait_generic_param),
         Lifecycle::RequestScoped,
     );
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

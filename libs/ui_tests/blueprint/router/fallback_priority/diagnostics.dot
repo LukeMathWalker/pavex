@@ -29,7 +29,7 @@ digraph "GET /users/ - 0" {
 }
 
 digraph "GET /users/ - 1" {
-    0 [ label = "0| app_78452ff2::handler() -> pavex::response::Response"]
+    0 [ label = "0| app_78452ff2::root() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
@@ -61,7 +61,7 @@ digraph "GET /users/id - 0" {
 }
 
 digraph "GET /users/id - 1" {
-    0 [ label = "0| app_78452ff2::handler() -> pavex::response::Response"]
+    0 [ label = "0| app_78452ff2::id() -> pavex::response::Response"]
     1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }

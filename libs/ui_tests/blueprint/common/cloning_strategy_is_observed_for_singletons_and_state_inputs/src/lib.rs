@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -19,6 +19,7 @@ pub fn singleton2(_b: B) -> C {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B, _c: C) -> Response {
     todo!()
 }
@@ -42,6 +43,7 @@ pub mod annotated {
         todo!()
     }
 
+    #[pavex::get(path = "/annotated")]
     pub fn handler(_a: A, _b: B) -> Response {
         todo!()
     }
@@ -53,7 +55,6 @@ pub fn blueprint() -> Blueprint {
     bp.prebuilt(t!(crate::B));
     bp.singleton(f!(crate::singleton));
     bp.singleton(f!(crate::singleton2));
-    bp.route(GET, "/", f!(crate::handler));
-    bp.route(GET, "/annotated", f!(crate::annotated::handler));
+    bp.routes(from![crate]);
     bp
 }

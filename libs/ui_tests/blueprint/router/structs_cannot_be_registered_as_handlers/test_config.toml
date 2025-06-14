@@ -1,6 +1,0 @@
-description = "A struct type can't be used directly as a constructor"
-
-[expectations]
-codegen = "fail"
-
-

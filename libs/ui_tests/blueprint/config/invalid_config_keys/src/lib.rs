@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
 #[derive(Clone)]
 pub struct A;
@@ -23,6 +23,7 @@ pub struct B1;
 #[pavex::config(key = "with-a-dash")]
 pub struct C1;
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B, _c: C) -> Response {
     todo!()
 }
@@ -33,6 +34,6 @@ pub fn blueprint() -> Blueprint {
     bp.config("12a", t!(crate::A));
     bp.config("", t!(crate::B));
     bp.config("my-key", t!(crate::C));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

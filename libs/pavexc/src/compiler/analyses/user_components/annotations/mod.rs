@@ -273,7 +273,11 @@ fn intern_annotated(
 
             Ok(constructor_id)
         }
-        AnnotationProperties::Route { method, path } => {
+        AnnotationProperties::Route {
+            method,
+            path,
+            id: _,
+        } => {
             let ImportKind::Routes {
                 path_prefix,
                 domain_guard,

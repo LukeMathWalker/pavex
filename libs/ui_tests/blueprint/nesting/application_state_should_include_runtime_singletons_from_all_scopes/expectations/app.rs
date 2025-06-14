@@ -225,7 +225,7 @@ pub mod route_2 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     async fn handler(v0: u32) -> pavex::response::Response {
-        let v1 = app::nested_handler(v0);
+        let v1 = app::child_handler(v0);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }
     struct Next0<T>

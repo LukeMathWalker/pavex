@@ -14,3 +14,4 @@ raw!(RawWrappingMiddleware);
 raw!(RawErrorHandler);
 raw!(RawErrorObserver);
 raw!(RawFallback);
+raw!(RawRoute);

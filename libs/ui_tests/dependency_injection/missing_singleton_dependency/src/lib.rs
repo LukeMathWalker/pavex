@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -12,6 +12,7 @@ pub fn b(_a: &A) -> B {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_b: &B) -> Response {
     todo!()
 }
@@ -19,6 +20,6 @@ pub fn handler(_b: &B) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.singleton(f!(crate::b));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

@@ -1,6 +1,6 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::{f, t};
+use pavex::blueprint::Blueprint;
 use pavex::response::Response;
+use pavex::t;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -27,10 +27,36 @@ impl Spy {
     }
 }
 
-pub async fn handler(spy: &Spy) -> Response {
+#[pavex::get(path = "/top_level")]
+pub async fn top_level_handler(spy: &Spy) -> Response {
     spy.push("handler".to_string()).await;
     Response::ok()
 }
+
+#[pavex::get(path = "/after_handler")]
+pub async fn after_handler_handler(spy: &Spy) -> Response {
+    spy.push("handler".to_string()).await;
+    Response::ok()
+}
+
+#[pavex::get(path = "/early_return")]
+pub async fn early_return_handler(spy: &Spy) -> Response {
+    spy.push("handler".to_string()).await;
+    Response::ok()
+}
+
+#[pavex::get(path = "/failing_pre")]
+pub async fn failing_pre_handler(spy: &Spy) -> Response {
+    spy.push("handler".to_string()).await;
+    Response::ok()
+}
+
+#[pavex::get(path = "/nested")]
+pub async fn nested_handler(spy: &Spy) -> Response {
+    spy.push("handler".to_string()).await;
+    Response::ok()
+}
+
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
@@ -51,7 +77,7 @@ pub fn top_level() -> Blueprint {
     bp.post_process(SECOND_POST);
     bp.pre_process(FIRST_PRE);
     bp.pre_process(SECOND_PRE);
-    bp.route(GET, "/top_level", f!(crate::handler));
+    bp.route(TOP_LEVEL_HANDLER);
     bp
 }
 
@@ -60,7 +86,7 @@ pub fn after_handler() -> Blueprint {
     bp.wrap(FIRST);
     bp.post_process(FIRST_POST);
     bp.pre_process(FIRST_PRE);
-    bp.route(GET, "/after_handler", f!(crate::handler));
+    bp.route(AFTER_HANDLER_HANDLER);
     bp.wrap(SECOND);
     bp.pre_process(SECOND_PRE);
     bp.post_process(SECOND_POST);
@@ -75,7 +101,7 @@ pub fn early_return() -> Blueprint {
     bp.wrap(SECOND);
     bp.pre_process(SECOND_PRE);
     bp.post_process(SECOND_POST);
-    bp.route(GET, "/early_return", f!(crate::handler));
+    bp.route(EARLY_RETURN_HANDLER);
     bp
 }
 
@@ -87,7 +113,7 @@ pub fn failing_pre() -> Blueprint {
     bp.wrap(SECOND);
     bp.pre_process(SECOND_PRE);
     bp.post_process(SECOND_POST);
-    bp.route(GET, "/failing_pre", f!(crate::handler));
+    bp.route(FAILING_PRE_HANDLER);
     bp
 }
 
@@ -101,7 +127,7 @@ pub fn nested() -> Blueprint {
         bp.wrap(SECOND);
         bp.post_process(SECOND_POST);
         bp.pre_process(SECOND_PRE);
-        bp.route(GET, "/nested", f!(crate::handler));
+        bp.route(NESTED_HANDLER);
         bp
     });
     bp.wrap(THIRD);

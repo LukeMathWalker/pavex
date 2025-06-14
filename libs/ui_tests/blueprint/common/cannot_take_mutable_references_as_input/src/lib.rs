@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::methods;
 use pavex::middleware::Next;
@@ -21,7 +21,8 @@ impl A {
     }
 }
 
-pub fn error_handler(_e: &pavex::Error, _s: &mut B) -> Response {
+#[pavex::error_handler]
+pub fn error_handler(#[px(error_ref)] _e: &pavex::Error, _s: &mut B) -> Response {
     todo!()
 }
 
@@ -38,6 +39,7 @@ pub fn observer(_e: &pavex::Error, _s: &mut A) {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_s: &A) -> Result<Response, pavex::Error> {
     todo!()
 }
@@ -48,7 +50,6 @@ pub fn blueprint() -> Blueprint {
     bp.request_scoped(f!(crate::constructor));
     bp.wrap(WRAPPING);
     bp.error_observer(OBSERVER);
-    bp.route(GET, "/home", f!(crate::handler))
-        .error_handler(f!(crate::error_handler));
+    bp.routes(from![crate]);
     bp
 }

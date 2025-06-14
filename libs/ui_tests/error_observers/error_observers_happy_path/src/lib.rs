@@ -1,6 +1,6 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::response::Response;
+use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
 use pavex::f;
+use pavex::response::Response;
 
 pub struct A;
 
@@ -25,6 +25,7 @@ pub fn b(_a: &A) -> Result<B, ErrorB> {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_b: &B) -> Response {
     todo!()
 }
@@ -50,6 +51,6 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::error_handler));
     bp.error_observer(ERROR_OBSERVER);
     bp.error_observer(ERROR_OBSERVER_2);
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

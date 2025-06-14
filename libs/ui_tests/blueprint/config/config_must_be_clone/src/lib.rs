@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
 // Not cloneable.
 pub struct A;
@@ -17,6 +17,7 @@ pub struct A1;
 #[pavex::config(key = "b1", never_clone)]
 pub struct B1;
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B1) -> Response {
     todo!()
 }
@@ -27,6 +28,6 @@ pub fn blueprint() -> Blueprint {
     bp.config("a", t!(crate::A));
     // It must generate an error even if the config is marked as never clone.
     bp.config("b", t!(crate::B)).never_clone();
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

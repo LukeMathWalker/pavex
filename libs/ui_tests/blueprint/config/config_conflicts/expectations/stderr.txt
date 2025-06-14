@@ -3,19 +3,19 @@
   [31m│[0m `a` has been used as key for 2 different types: `app::C` and
   [31m│[0m `app::B`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:39:1]
-  [31m│[0m  [2m39[0m │     // Same key, different types.
-  [31m│[0m  [2m40[0m │     bp.config("a", t!(self::C));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:40:1]
+  [31m│[0m  [2m40[0m │     // Same key, different types.
+  [31m│[0m  [2m41[0m │     bp.config("a", t!(self::C));
   [31m│[0m     · [35;1m              ─┬─[0m
   [31m│[0m     ·                [35;1m╰── First used here...[0m
-  [31m│[0m  [2m41[0m │     bp.config("a", t!(self::B));
+  [31m│[0m  [2m42[0m │     bp.config("a", t!(self::B));
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:40:1]
-  [31m│[0m  [2m40[0m │     bp.config("a", t!(self::C));
-  [31m│[0m  [2m41[0m │     bp.config("a", t!(self::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:41:1]
+  [31m│[0m  [2m41[0m │     bp.config("a", t!(self::C));
+  [31m│[0m  [2m42[0m │     bp.config("a", t!(self::B));
   [31m│[0m     · [35;1m              ─┬─[0m
   [31m│[0m     ·                [35;1m╰── ...then here[0m
-  [31m│[0m  [2m42[0m │
+  [31m│[0m  [2m43[0m │
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Choose a unique key for each configuration type.
 [31;1mERROR[0m:
@@ -23,19 +23,19 @@
   [31m│[0m `a1` has been used as key for 2 different types: `app::A1` and
   [31m│[0m `app::B1`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:18:1]
-  [31m│[0m  [2m18[0m │ #[derive(Clone, serde::Serialize, serde::Deserialize)]
-  [31m│[0m  [2m19[0m │ #[pavex::config(key = "a1")]
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:19:1]
+  [31m│[0m  [2m19[0m │ #[derive(Clone, serde::Serialize, serde::Deserialize)]
+  [31m│[0m  [2m20[0m │ #[pavex::config(key = "a1")]
   [31m│[0m     · [35;1m                      ──┬─[0m
   [31m│[0m     ·                         [35;1m╰── First used here...[0m
-  [31m│[0m  [2m20[0m │ pub struct A1;
+  [31m│[0m  [2m21[0m │ pub struct A1;
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ // you can have with annotation-only config types.
-  [31m│[0m  [2m25[0m │ #[pavex::config(key = "a1")]
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:25:1]
+  [31m│[0m  [2m25[0m │ // you can have with annotation-only config types.
+  [31m│[0m  [2m26[0m │ #[pavex::config(key = "a1")]
   [31m│[0m     · [35;1m                      ──┬─[0m
   [31m│[0m     ·                         [35;1m╰── ...then here[0m
-  [31m│[0m  [2m26[0m │ pub struct B1;
+  [31m│[0m  [2m27[0m │ pub struct B1;
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Choose a unique key for each configuration type.
 [31;1mERROR[0m:
@@ -43,26 +43,26 @@
   [31m│[0m `c` has been used as key for 3 different types: `app::A`,
   [31m│[0m `app::B` and `app::C1`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:44:1]
-  [31m│[0m  [2m44[0m │     bp.config("b", t!(self::A));
-  [31m│[0m  [2m45[0m │     bp.config("c", t!(self::A));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:45:1]
+  [31m│[0m  [2m45[0m │     bp.config("b", t!(self::A));
+  [31m│[0m  [2m46[0m │     bp.config("c", t!(self::A));
   [31m│[0m     · [35;1m              ─┬─[0m
   [31m│[0m     ·                [35;1m╰── First used here...[0m
-  [31m│[0m  [2m46[0m │
+  [31m│[0m  [2m47[0m │
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:47:1]
-  [31m│[0m  [2m47[0m │     // Key conflict *and* type conflict
-  [31m│[0m  [2m48[0m │     bp.config("c", t!(self::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:48:1]
+  [31m│[0m  [2m48[0m │     // Key conflict *and* type conflict
+  [31m│[0m  [2m49[0m │     bp.config("c", t!(self::B));
   [31m│[0m     · [35;1m              ─┬─[0m
   [31m│[0m     ·                [35;1m╰── ...then here[0m
-  [31m│[0m  [2m49[0m │
+  [31m│[0m  [2m50[0m │
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:30:1]
-  [31m│[0m  [2m30[0m │ // config type.
-  [31m│[0m  [2m31[0m │ #[pavex::config(key = "c")]
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:31:1]
+  [31m│[0m  [2m31[0m │ // config type.
+  [31m│[0m  [2m32[0m │ #[pavex::config(key = "c")]
   [31m│[0m     · [35;1m                      ─┬─[0m
   [31m│[0m     ·                        [35;1m╰── ...and here[0m
-  [31m│[0m  [2m32[0m │ pub struct C1;
+  [31m│[0m  [2m33[0m │ pub struct C1;
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Choose a unique key for each configuration type.
 [31;1mERROR[0m:
@@ -70,19 +70,19 @@
   [31m│[0m `app::B` has been registered against 2 different keys: `a` and
   [31m│[0m `c`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:40:1]
-  [31m│[0m  [2m40[0m │     bp.config("a", t!(self::C));
-  [31m│[0m  [2m41[0m │     bp.config("a", t!(self::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:41:1]
+  [31m│[0m  [2m41[0m │     bp.config("a", t!(self::C));
+  [31m│[0m  [2m42[0m │     bp.config("a", t!(self::B));
   [31m│[0m     · [35;1m                   ─────┬─────[0m
   [31m│[0m     ·                         [35;1m╰── First used here...[0m
-  [31m│[0m  [2m42[0m │
+  [31m│[0m  [2m43[0m │
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:47:1]
-  [31m│[0m  [2m47[0m │     // Key conflict *and* type conflict
-  [31m│[0m  [2m48[0m │     bp.config("c", t!(self::B));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:48:1]
+  [31m│[0m  [2m48[0m │     // Key conflict *and* type conflict
+  [31m│[0m  [2m49[0m │     bp.config("c", t!(self::B));
   [31m│[0m     · [35;1m                   ─────┬─────[0m
   [31m│[0m     ·                         [35;1m╰── ...then here[0m
-  [31m│[0m  [2m49[0m │
+  [31m│[0m  [2m50[0m │
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register the type as configuration once, with a single key.
 [31;1mERROR[0m:
@@ -90,18 +90,18 @@
   [31m│[0m `app::A` has been registered against 2 different keys: `b` and
   [31m│[0m `c`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:43:1]
-  [31m│[0m  [2m43[0m │     // Different key, same type.
-  [31m│[0m  [2m44[0m │     bp.config("b", t!(self::A));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:44:1]
+  [31m│[0m  [2m44[0m │     // Different key, same type.
+  [31m│[0m  [2m45[0m │     bp.config("b", t!(self::A));
   [31m│[0m     · [35;1m                   ─────┬─────[0m
   [31m│[0m     ·                         [35;1m╰── First used here...[0m
-  [31m│[0m  [2m45[0m │     bp.config("c", t!(self::A));
+  [31m│[0m  [2m46[0m │     bp.config("c", t!(self::A));
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:44:1]
-  [31m│[0m  [2m44[0m │     bp.config("b", t!(self::A));
-  [31m│[0m  [2m45[0m │     bp.config("c", t!(self::A));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_conflicts/src/lib.rs[0m:45:1]
+  [31m│[0m  [2m45[0m │     bp.config("b", t!(self::A));
+  [31m│[0m  [2m46[0m │     bp.config("c", t!(self::A));
   [31m│[0m     · [35;1m                   ─────┬─────[0m
   [31m│[0m     ·                         [35;1m╰── ...then here[0m
-  [31m│[0m  [2m46[0m │
+  [31m│[0m  [2m47[0m │
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register the type as configuration once, with a single key.

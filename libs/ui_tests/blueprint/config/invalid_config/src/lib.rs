@@ -1,6 +1,6 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
 #[derive(Clone)]
 pub struct A<'a> {
@@ -31,6 +31,7 @@ pub struct E<'a>(std::borrow::Cow<'a, str>);
 #[allow(dead_code)]
 pub struct F<'a, 'b>(std::borrow::Cow<'a, str>, &'b str);
 
+#[pavex::get(path = "/")]
 pub fn handler(
     _a: A,
     _b: B<String>,
@@ -53,6 +54,6 @@ pub fn blueprint() -> Blueprint {
     bp.config("e", t!(crate::E<'static>));
     // Some static, some elided.
     bp.config("f", t!(crate::F<'static, '_>));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

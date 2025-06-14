@@ -3,12 +3,12 @@
   [31m│[0m `app::A` is a configuration type, but it doesn't implement the
   [31m│[0m `Clone` trait.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_must_be_clone/src/lib.rs[0m:26:1]
-  [31m│[0m  [2m26[0m │     bp.import(from![crate]);
-  [31m│[0m  [2m27[0m │     bp.config("a", t!(crate::A));
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_must_be_clone/src/lib.rs[0m:27:1]
+  [31m│[0m  [2m27[0m │     bp.import(from![crate]);
+  [31m│[0m  [2m28[0m │     bp.config("a", t!(crate::A));
   [31m│[0m     · [35;1m                   ──────┬─────[0m
   [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
-  [31m│[0m  [2m28[0m │     // It must generate an error even if the config is marked as never clone.
+  [31m│[0m  [2m29[0m │     // It must generate an error even if the config is marked as never clone.
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement (or derive) the `Clone` trait for `app::A`.
 [31;1mERROR[0m:
@@ -16,12 +16,12 @@
   [31m│[0m `app::B` is a configuration type, but it doesn't implement the
   [31m│[0m `Clone` trait.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_must_be_clone/src/lib.rs[0m:28:1]
-  [31m│[0m  [2m28[0m │     // It must generate an error even if the config is marked as never clone.
-  [31m│[0m  [2m29[0m │     bp.config("b", t!(crate::B)).never_clone();
+  [31m│[0m     ╭─[[36;1;4mblueprint/config/config_must_be_clone/src/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │     // It must generate an error even if the config is marked as never clone.
+  [31m│[0m  [2m30[0m │     bp.config("b", t!(crate::B)).never_clone();
   [31m│[0m     · [35;1m                   ──────┬─────[0m
   [31m│[0m     ·                          [35;1m╰── The config type was registered here[0m
-  [31m│[0m  [2m30[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m  [2m31[0m │     bp.routes(from![crate]);
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement (or derive) the `Clone` trait for `app::B`.
 [31;1mERROR[0m:

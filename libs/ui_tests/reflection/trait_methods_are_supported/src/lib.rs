@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 
 pub struct A;
@@ -56,6 +56,11 @@ pub fn handler(_a: A, _c: C, _d: D, _e: E, _f: F) -> pavex::response::Response {
     todo!()
 }
 
+#[pavex::get(path = "/")]
+pub fn route_handler(_a: A, _c: C, _d: D, _e: E, _f: F) -> pavex::response::Response {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     // A foreign trait, from `std`.
@@ -71,6 +76,6 @@ pub fn blueprint() -> Blueprint {
     bp.request_scoped(f!(
         <crate::C as crate::GenericTrait<std::string::String>>::a_method
     ));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

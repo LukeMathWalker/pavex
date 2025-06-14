@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 // Won't be included in the generated `ApplicationConfig`.
@@ -20,6 +20,7 @@ pub struct B;
 #[pavex::config(key = "b1", include_if_unused)]
 pub struct B1;
 
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -29,6 +30,6 @@ pub fn blueprint() -> Blueprint {
     bp.import(from![crate]);
     bp.config("a", t!(crate::A));
     bp.config("b", t!(crate::B)).include_if_unused();
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

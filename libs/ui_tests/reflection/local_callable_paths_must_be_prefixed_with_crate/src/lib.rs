@@ -1,12 +1,12 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::Blueprint;
 use pavex::f;
 
-pub fn handler() -> pavex::response::Response {
+pub fn my_f() -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/home", f!(handler));
+    bp.singleton(f![my_f]);
     bp
 }

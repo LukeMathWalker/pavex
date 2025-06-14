@@ -2,12 +2,12 @@
   [31m×[0m `app::A` doesn't implement the `Clone` trait, but its
   [31m│[0m constructor, `app::singleton`, is marked as `CloneIfNecessary`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_if_necessary_requires_clone/src/lib.rs[0m:38:1]
-  [31m│[0m  [2m38[0m │     bp.prebuilt(t!(crate::C)).clone_if_necessary();
-  [31m│[0m  [2m39[0m │     bp.singleton(f!(crate::singleton)).clone_if_necessary();
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_if_necessary_requires_clone/src/lib.rs[0m:39:1]
+  [31m│[0m  [2m39[0m │     bp.prebuilt(t!(crate::C)).clone_if_necessary();
+  [31m│[0m  [2m40[0m │     bp.singleton(f!(crate::singleton)).clone_if_necessary();
   [31m│[0m     · [35;1m                 ──────────┬─────────[0m
   [31m│[0m     ·                            [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m40[0m │     bp.request_scoped(f!(crate::request_scoped))
+  [31m│[0m  [2m41[0m │     bp.request_scoped(f!(crate::request_scoped))
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement (or derive) the `Clone` trait for `app::A`.
   [31m│[0m   [36mhelp:[0m Alternatively, mark it as `NeverClone`.
@@ -16,12 +16,12 @@
   [31m│[0m its constructor, `app::request_scoped`, is marked as
   [31m│[0m `CloneIfNecessary`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_if_necessary_requires_clone/src/lib.rs[0m:39:1]
-  [31m│[0m  [2m39[0m │     bp.singleton(f!(crate::singleton)).clone_if_necessary();
-  [31m│[0m  [2m40[0m │     bp.request_scoped(f!(crate::request_scoped))
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_if_necessary_requires_clone/src/lib.rs[0m:40:1]
+  [31m│[0m  [2m40[0m │     bp.singleton(f!(crate::singleton)).clone_if_necessary();
+  [31m│[0m  [2m41[0m │     bp.request_scoped(f!(crate::request_scoped))
   [31m│[0m     · [35;1m                      ────────────┬────────────[0m
   [31m│[0m     ·                                   [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m41[0m │         .clone_if_necessary();
+  [31m│[0m  [2m42[0m │         .clone_if_necessary();
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement (or derive) the `Clone` trait for `app::B`.
   [31m│[0m   [36mhelp:[0m Alternatively, mark it as `NeverClone`.
@@ -55,12 +55,12 @@
   [31m×[0m `app::C` doesn't implement the `Clone` trait, but it's marked as
   [31m│[0m `CloneIfNecessary`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_if_necessary_requires_clone/src/lib.rs[0m:37:1]
-  [31m│[0m  [2m37[0m │     bp.import(from![crate]);
-  [31m│[0m  [2m38[0m │     bp.prebuilt(t!(crate::C)).clone_if_necessary();
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_if_necessary_requires_clone/src/lib.rs[0m:38:1]
+  [31m│[0m  [2m38[0m │     bp.import(from![crate]);
+  [31m│[0m  [2m39[0m │     bp.prebuilt(t!(crate::C)).clone_if_necessary();
   [31m│[0m     · [35;1m                ──────┬─────[0m
   [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m39[0m │     bp.singleton(f!(crate::singleton)).clone_if_necessary();
+  [31m│[0m  [2m40[0m │     bp.singleton(f!(crate::singleton)).clone_if_necessary();
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement (or derive) the `Clone` trait for `app::C`.
   [31m│[0m   [36mhelp:[0m Alternatively, mark it as `NeverClone`.

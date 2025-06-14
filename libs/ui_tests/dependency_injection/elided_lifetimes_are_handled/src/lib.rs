@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
 
@@ -24,7 +24,8 @@ impl<'a> Generic<'a> {
     }
 }
 
-pub fn handler<T>(_generic: T) -> StatusCode {
+#[pavex::get(path = "/")]
+pub fn handler(_generic: Generic<'_>) -> StatusCode {
     todo!()
 }
 
@@ -32,6 +33,6 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.singleton(f!(self::A::new));
     bp.transient(f!(self::Generic::new));
-    bp.route(GET, "/", f!(self::handler::<self::Generic>));
+    bp.routes(from![crate]);
     bp
 }

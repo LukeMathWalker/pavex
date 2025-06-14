@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 
 #[derive(Clone)]
@@ -28,6 +28,7 @@ pub fn transient() -> Transient {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn stream_file(
     _s: &Singleton,
     _r: &RequestScoped,
@@ -41,6 +42,6 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(crate::Singleton::new));
     bp.request_scoped(f!(crate::request_scoped));
     bp.transient(f!(crate::transient));
-    bp.route(GET, "/home", f!(crate::stream_file));
+    bp.routes(from![crate]);
     bp
 }

@@ -1,6 +1,8 @@
+use convert_case::{Case, Casing};
 use darling::util::Flag;
 use pavexc_attr_parser::atoms::MethodArgument;
-use quote::quote;
+use quote::{format_ident, quote, quote_spanned};
+use syn::Ident;
 
 use crate::{
     fn_like::{Callable, CallableAnnotation, ImplContext},
@@ -12,6 +14,7 @@ use crate::{
 pub struct InputSchema {
     pub method: Option<MethodArgument>,
     pub path: String,
+    pub id: Option<Ident>,
     pub allow: Option<RouteAllows>,
 }
 
@@ -29,6 +32,7 @@ impl TryFrom<InputSchema> for Properties {
             path,
             method,
             allow,
+            id,
         } = input;
 
         let allow_non_standard_methods = allow
@@ -103,6 +107,7 @@ impl TryFrom<InputSchema> for Properties {
         Ok(Properties {
             path,
             method,
+            id,
             allow_non_standard_methods,
             allow_any_method,
         })
@@ -113,6 +118,7 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub method: Option<MethodArgument>,
     pub path: String,
+    pub id: Option<syn::Ident>,
     pub allow_non_standard_methods: bool,
     pub allow_any_method: bool,
 }
@@ -129,26 +135,35 @@ impl CallableAnnotation for RouteAnnotation {
     fn codegen(
         _impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
-        _item: Callable,
+        item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
         let properties = metadata
             .try_into()
             .map_err(|e: darling::Error| e.write_errors())?;
-        Ok(emit(properties))
+        Ok(emit(item.sig.ident, properties))
     }
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::route]` attribute
 /// that matches the provided properties.
-fn emit(properties: Properties) -> AnnotationCodegen {
+fn emit(name: Ident, properties: Properties) -> AnnotationCodegen {
     let Properties {
         method,
         path,
         allow_non_standard_methods,
         allow_any_method,
+        id,
     } = properties;
 
+    // Use the span of the function name if no identifier is provided.
+    let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
+    // If the user didn't specify an identifier, generate one based on the function name.
+    let name = name.to_string();
+    let id = id.unwrap_or_else(|| format_ident!("{}", name.to_case(Case::Constant)));
+    let id_str = id.to_string();
+
     let mut properties = quote! {
+        id = #id_str,
         path = #path,
     };
 
@@ -168,8 +183,38 @@ fn emit(properties: Properties) -> AnnotationCodegen {
         });
     }
 
+    let id_docs = {
+        format!(
+            r#"A strongly-typed id to add [`{name}`] as a route to your Pavex application.
+
+# Example
+
+```rust,ignore
+use pavex::blueprint::Blueprint;
+// [...]
+// ^ Import `{id_str}` here
+
+let mut bp = Blueprint::new();
+// Add `{name}` as a route to your application.
+bp.route({id_str});
+```"#
+        )
+    };
+    let pavex = quote! { ::pavex };
+    let id_def = quote_spanned! { id_span =>
+        #[doc = #id_docs]
+        #[allow(unused)]
+        pub const #id: #pavex::blueprint::raw::RawRoute = #pavex::blueprint::raw::RawRoute {
+            coordinates: #pavex::blueprint::reflection::AnnotationCoordinates {
+                id: #id_str,
+                created_at: #pavex::created_at!(),
+                macro_name: "route",
+            }
+        };
+    };
+
     AnnotationCodegen {
-        id_def: None,
+        id_def: Some(id_def),
         new_attributes: vec![syn::parse_quote! {
             #[diagnostic::pavex::route(#properties)]
         }],

@@ -4,12 +4,12 @@
   [33m│[0m injected as an input parameter. Pavex won't include it in the generated
   [33m│[0m `ApplicationConfig`.
   [33m│[0m
-  [33m│[0m     ╭─[[36;1;4mblueprint/config/unused_config/src/lib.rs[0m:29:1]
-  [33m│[0m  [2m29[0m │     bp.import(from![crate]);
-  [33m│[0m  [2m30[0m │     bp.config("a", t!(crate::A));
+  [33m│[0m     ╭─[[36;1;4mblueprint/config/unused_config/src/lib.rs[0m:30:1]
+  [33m│[0m  [2m30[0m │     bp.import(from![crate]);
+  [33m│[0m  [2m31[0m │     bp.config("a", t!(crate::A));
   [33m│[0m     · [35;1m                   ──────┬─────[0m
   [33m│[0m     ·                          [35;1m╰── Registered here[0m
-  [33m│[0m  [2m31[0m │     bp.config("b", t!(crate::B)).include_if_unused();
+  [33m│[0m  [2m32[0m │     bp.config("b", t!(crate::B)).include_if_unused();
   [33m│[0m     ╰────
   [33m│[0m   [36mhelp:[0m Use `include_if_unused` if you want to force Pavex to include a
   [33m│[0m         `app::A` field in `ApplicationConfig`, even if it's not used.

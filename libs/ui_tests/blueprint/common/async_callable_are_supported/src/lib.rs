@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::{f, t};
 
 pub struct Logger;
@@ -13,6 +13,7 @@ pub async fn logger() -> Logger {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub async fn stream_file(
     _inner: PathBuf,
     _logger: Logger,
@@ -37,6 +38,6 @@ pub fn blueprint() -> Blueprint {
     bp.request_scoped(f!(crate::extract_path));
     bp.transient(f!(crate::logger));
     bp.prebuilt(t!(crate::Config));
-    bp.route(GET, "/home", f!(crate::stream_file));
+    bp.routes(from![crate]);
     bp
 }

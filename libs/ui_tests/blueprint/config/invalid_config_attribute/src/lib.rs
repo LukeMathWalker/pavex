@@ -1,5 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 #[derive(Clone)]
@@ -73,6 +72,7 @@ mod private {
     pub mod not_a_type {}
 }
 
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -80,6 +80,6 @@ pub fn handler() -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

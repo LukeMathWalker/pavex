@@ -6,7 +6,7 @@ use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, ErrorHandler, Fal
 ///
 /// It allows you to further configure the behaviour of the registered handler.
 ///
-/// [`Blueprint::fallback`]: Blueprint::fallback
+/// [`Blueprint::fallback`]: crate::blueprint::Blueprint::fallback
 pub struct RegisteredFallback<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered fallback in the blueprint's `components` vector.

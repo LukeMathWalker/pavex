@@ -152,7 +152,7 @@ pub mod route_0 {
                 };
             }
         };
-        let v4 = app::handler(v1, v3);
+        let v4 = app::without_observer(v1, v3);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<T>
@@ -264,7 +264,7 @@ pub mod route_2 {
                 };
             }
         };
-        let v4 = app::handler(v1, v3);
+        let v4 = app::with_observer(v1, v3);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<T>

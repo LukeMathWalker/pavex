@@ -3,7 +3,6 @@ use super::reflection::{AnnotationCoordinates, CreatedAt, Sources, WithLocation}
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawIdentifiers;
-use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location, Type};
 use pavex_reflection::CreatedBy;
 
@@ -86,16 +85,6 @@ pub(super) fn cloning2cloning(cloning: CloningStrategy) -> pavex_bp_schema::Clon
     }
 }
 
-pub(super) fn method_guard2method_guard(
-    method_guard: crate::blueprint::router::MethodGuard,
-) -> pavex_bp_schema::MethodGuard {
-    match method_guard.allowed_methods() {
-        AllowedMethods::Some(m) => pavex_bp_schema::MethodGuard::Some(
-            m.into_iter().map(|m| m.as_str().to_owned()).collect(),
-        ),
-        AllowedMethods::All => pavex_bp_schema::MethodGuard::Any,
-    }
-}
 
 pub(super) fn lint2lint(lint: Lint) -> pavex_bp_schema::Lint {
     match lint {

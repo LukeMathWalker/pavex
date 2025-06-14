@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -28,6 +28,7 @@ pub fn b1() -> B1 {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -39,6 +40,6 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(crate::singleton)).clone_if_necessary();
     bp.request_scoped(f!(crate::request_scoped))
         .clone_if_necessary();
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::t;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct A;
@@ -39,6 +39,7 @@ mod sub {
     pub struct D;
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(
     _a: &A,
     _b: &B<String>,
@@ -60,6 +61,6 @@ pub fn blueprint() -> Blueprint {
     bp.config("b", t!(crate::B<std::string::String>))
         .default_if_missing();
     bp.config("d", t!(std::vec::Vec<std::string::String>));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

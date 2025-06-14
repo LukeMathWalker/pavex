@@ -1,4 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
+use pavex::blueprint::{from, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -43,6 +43,7 @@ pub fn triply_generic_error_handler<T, S, U>(
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_i: u8, _j: u16, _k: u32) -> Response {
     todo!()
 }
@@ -56,6 +57,6 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::doubly_generic_error_handler));
     bp.transient(f!(crate::constructor3))
         .error_handler(f!(crate::triply_generic_error_handler));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }
