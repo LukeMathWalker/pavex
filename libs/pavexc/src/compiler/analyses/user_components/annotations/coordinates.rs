@@ -1,3 +1,5 @@
+use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
+use crate::compiler::analyses::user_components::paths::invalid_prebuilt_type;
 use crate::{
     DiagnosticSink, compiler::analyses::computations::ComputationDb, rustdoc::CrateCollection,
 };
@@ -9,7 +11,7 @@ use super::{
     rustdoc_method2callable, validate_route_path,
 };
 use crate::compiler::analyses::user_components::UserComponent;
-use crate::compiler::component::DefaultStrategy;
+use crate::compiler::component::{DefaultStrategy, PrebuiltType};
 use pavex_bp_schema::CloningStrategy;
 
 /// Resolve coordinates to the annotation they point to.
@@ -17,6 +19,7 @@ use pavex_bp_schema::CloningStrategy;
 pub(crate) fn resolve_annotation_coordinates(
     aux: &mut AuxiliaryData,
     computation_db: &mut ComputationDb,
+    prebuilt_type_db: &mut PrebuiltTypeDb,
     krate_collection: &CrateCollection,
     diagnostics: &DiagnosticSink,
 ) {
@@ -120,6 +123,45 @@ pub(crate) fn resolve_annotation_coordinates(
                         package_id: krate.core.package_id.clone(),
                     };
                     invalid_config_type(e, &path, component_id, aux, diagnostics)
+                }
+            };
+        }
+
+        // Retrieve prebuilt properties for prebuilt types that have been registered directly against the blueprint
+        if let AnnotationProperties::Prebuilt {
+            cloning_strategy, ..
+        } = &annotation.properties
+        {
+            assert!(matches!(
+                aux.component_interner[component_id],
+                UserComponent::PrebuiltType { .. }
+            ));
+
+            // Use the behaviour specified in the annotation, unless the user has overridden
+            // it when registering the prebuilt directly with the blueprint.
+            aux.id2cloning_strategy
+                .entry(component_id)
+                .or_insert_with(|| cloning_strategy.unwrap_or(CloningStrategy::NeverClone));
+
+            let Ok(ty) = annotated_item2type(&item, krate, krate_collection, diagnostics) else {
+                continue;
+            };
+            match PrebuiltType::new(ty) {
+                Ok(prebuilt) => {
+                    prebuilt_type_db.get_or_intern(prebuilt, component_id);
+                }
+                Err(e) => {
+                    let path = FQPath {
+                        segments: krate.import_index.items[&item.id]
+                            .canonical_path()
+                            .iter()
+                            .cloned()
+                            .map(FQPathSegment::new)
+                            .collect(),
+                        qualified_self: None,
+                        package_id: krate.core.package_id.clone(),
+                    };
+                    invalid_prebuilt_type(e, &path, component_id, aux, diagnostics)
                 }
             };
         }

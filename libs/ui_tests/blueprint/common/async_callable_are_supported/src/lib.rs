@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use pavex::blueprint::{from, Blueprint};
-use pavex::{f, t};
+use pavex::f;
 
 pub struct Logger;
 
@@ -23,6 +23,7 @@ pub async fn stream_file(
 }
 
 #[derive(Clone)]
+#[pavex::prebuilt]
 pub struct Config;
 
 #[derive(Clone)]
@@ -34,10 +35,10 @@ pub async fn http_client(_config: Config) -> HttpClient {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.import(from![crate]);
     bp.singleton(f!(crate::http_client));
     bp.request_scoped(f!(crate::extract_path));
     bp.transient(f!(crate::logger));
-    bp.prebuilt(t!(crate::Config));
     bp.routes(from![crate]);
     bp
 }

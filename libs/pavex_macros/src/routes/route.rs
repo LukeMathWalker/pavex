@@ -5,8 +5,8 @@ use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
 use crate::{
-    fn_like::{Callable, CallableAnnotation, ImplContext},
     utils::AnnotationCodegen,
+    utils::fn_like::{Callable, CallableAnnotation, ImplContext},
 };
 
 #[derive(darling::FromMeta, Debug, Clone)]

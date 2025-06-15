@@ -49,6 +49,7 @@ pub enum AnnotationProperties {
         cloning_strategy: Option<CloningStrategy>,
     },
     Prebuilt {
+        id: String,
         cloning_strategy: Option<CloningStrategy>,
     },
     Config {
@@ -123,8 +124,9 @@ impl AnnotationProperties {
             | ErrorHandler { id, .. }
             | Route { id, .. }
             | Config { id, .. }
+            | Prebuilt { id, .. }
             | Fallback { id } => Some(id.as_str()),
-            Constructor { .. } | Prebuilt { .. } | Methods => None,
+            Constructor { .. } | Methods => None,
         }
     }
 }

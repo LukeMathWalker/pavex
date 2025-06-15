@@ -1,5 +1,5 @@
-use crate::fn_like::{Callable, CallableAnnotation, ImplContext};
 use crate::utils::AnnotationCodegen;
+use crate::utils::fn_like::{Callable, CallableAnnotation, ImplContext};
 use convert_case::{Case, Casing};
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;

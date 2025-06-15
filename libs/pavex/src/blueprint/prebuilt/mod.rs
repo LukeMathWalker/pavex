@@ -6,7 +6,5 @@
 //! section of Pavex's guide for a thorough introduction to dependency injection
 //! in Pavex applications.
 mod registered;
-mod unregistered;
 
 pub use registered::RegisteredPrebuiltType;
-pub use unregistered::PrebuiltType;

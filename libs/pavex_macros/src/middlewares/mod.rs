@@ -1,8 +1,8 @@
 use generic::MiddlewareKind;
 
 use crate::{
-    fn_like::{Callable, CallableAnnotation, ImplContext},
     utils::AnnotationCodegen,
+    utils::fn_like::{Callable, CallableAnnotation, ImplContext},
 };
 
 mod generic;

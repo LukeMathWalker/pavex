@@ -15,27 +15,25 @@ pub struct ApplicationState {
 impl ApplicationState {
     pub async fn new(
         _app_config: crate::ApplicationConfig,
-        v0: app::A1,
-        v1: app::A,
+        v0: app::A,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        Ok(Self::_new(v0, v1).await)
+        Ok(Self::_new(v0).await)
     }
-    async fn _new(v0: app::A1, v1: app::A) -> crate::ApplicationState {
-        let v2 = <app::A as core::clone::Clone>::clone(&v1);
-        let v3 = app::b(v1, v0);
+    async fn _new(v0: app::A) -> crate::ApplicationState {
+        let v1 = <app::A as core::clone::Clone>::clone(&v0);
+        let v2 = app::b(v0);
         crate::ApplicationState {
-            a: v2,
-            b: v3,
+            a: v1,
+            b: v2,
         }
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]
 pub async fn build_application_state(
     _app_config: crate::ApplicationConfig,
-    v0: app::A1,
-    v1: app::A,
+    v0: app::A,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config, v0, v1).await
+    crate::ApplicationState::new(_app_config, v0).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}

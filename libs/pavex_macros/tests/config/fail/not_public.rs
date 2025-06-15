@@ -1,12 +1,12 @@
 use pavex_macros::config;
 
-#[config(key = "a")]
+#[config(key = "a", id = "A_")]
 struct A;
 
 #[config(key = "a1")]
 enum A1 {}
 
-#[config(key = "b")]
+#[config(key = "b", id = "B_")]
 pub(crate) struct B;
 
 #[config(key = "b1")]

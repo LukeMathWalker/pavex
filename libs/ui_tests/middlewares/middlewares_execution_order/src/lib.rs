@@ -1,10 +1,10 @@
-use pavex::blueprint::Blueprint;
+use pavex::blueprint::{Blueprint, from};
 use pavex::response::Response;
-use pavex::t;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone, Debug)]
+#[pavex::prebuilt]
 pub struct Spy(Arc<Mutex<Vec<String>>>);
 
 impl Default for Spy {
@@ -60,7 +60,7 @@ pub async fn nested_handler(spy: &Spy) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.prebuilt(t!(self::Spy));
+    bp.import(from![crate]);
     bp.nest(top_level());
     bp.nest(after_handler());
     bp.nest(early_return());

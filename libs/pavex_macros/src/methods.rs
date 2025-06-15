@@ -9,12 +9,12 @@ use crate::{
     error_handler::ErrorHandlerAnnotation,
     error_observer::ErrorObserverAnnotation,
     fallback::FallbackAnnotation,
-    fn_like::{ImplContext, method_entrypoint},
     middlewares::{PostProcessAnnotation, PreProcessAnnotation, WrapAnnotation},
     routes::{
         DeleteAnnotation, GetAnnotation, HeadAnnotation, OptionsAnnotation, PatchAnnotation,
         PostAnnotation, PutAnnotation, RouteAnnotation,
     },
+    utils::fn_like::{ImplContext, method_entrypoint},
     utils::{AnnotationCodegen, PxStripper},
 };
 

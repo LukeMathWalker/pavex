@@ -2,7 +2,7 @@ use convert_case::{Case, Casing};
 use quote::{format_ident, quote, quote_spanned};
 use syn::Ident;
 
-use crate::{fn_like::Callable, utils::AnnotationCodegen};
+use crate::{utils::AnnotationCodegen, utils::fn_like::Callable};
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for middleware macros.

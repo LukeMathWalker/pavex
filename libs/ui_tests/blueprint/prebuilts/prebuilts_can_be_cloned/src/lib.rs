@@ -1,19 +1,18 @@
 use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::t;
 
 #[derive(Clone)]
+#[pavex::prebuilt(clone_if_necessary, id = "A_")]
 pub struct A;
-
-#[derive(Clone)]
-#[pavex::prebuilt(clone_if_necessary)]
-pub struct A1;
 
 #[derive(Clone)]
 pub struct B;
 
 #[pavex::singleton]
-pub fn b(_a: A, _a1: A1) -> B {
+// Consumes `A` by value`, but `A` is also needed
+// as an input parameter to the request handler,
+// thus the need to clone.
+pub fn b(_a: A) -> B {
     todo!()
 }
 
@@ -25,7 +24,6 @@ pub fn handler(_a: A, _b: &B) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.prebuilt(t![crate::A]).clone_if_necessary();
     bp.routes(from![crate]);
     bp
 }

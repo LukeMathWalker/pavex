@@ -1,5 +1,5 @@
 use crate::blueprint::conversions::{
-    cloning2cloning, lifecycle2lifecycle, raw_identifiers2callable, raw_identifiers2type,
+    cloning2cloning, lifecycle2lifecycle, raw_identifiers2callable,
 };
 use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
@@ -20,7 +20,7 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
-use super::raw::{RawConfig, RawErrorObserver, RawFallback, RawRoute};
+use super::raw::{RawConfig, RawErrorObserver, RawFallback, RawPrebuilt, RawRoute};
 use super::raw::{
     RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
 };
@@ -303,30 +303,16 @@ impl Blueprint {
     /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
     /// section of Pavex's guide for a thorough introduction to dependency injection
     /// in Pavex applications.
-    pub fn prebuilt(&mut self, type_: WithLocation<RawIdentifiers>) -> RegisteredPrebuiltType {
+    pub fn prebuilt(&mut self, prebuilt: RawPrebuilt) -> RegisteredPrebuiltType {
         let registered = PrebuiltType {
-            input: raw_identifiers2type(type_),
+            coordinates: coordinates2coordinates(prebuilt.coordinates),
             cloning_strategy: None,
+            registered_at: Location::caller(),
         };
         let component_id = self.push_component(registered);
         RegisteredPrebuiltType {
             blueprint: &mut self.schema,
             component_id,
-        }
-    }
-
-    pub(super) fn register_prebuilt_type(
-        &mut self,
-        i: super::prebuilt::PrebuiltType,
-    ) -> RegisteredPrebuiltType {
-        let i = PrebuiltType {
-            input: i.type_,
-            cloning_strategy: None,
-        };
-        let component_id = self.push_component(i);
-        RegisteredPrebuiltType {
-            component_id,
-            blueprint: &mut self.schema,
         }
     }
 

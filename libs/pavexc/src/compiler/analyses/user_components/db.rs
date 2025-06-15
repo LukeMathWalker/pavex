@@ -127,7 +127,13 @@ impl UserComponentDb {
             krate_collection,
             diagnostics,
         );
-        resolve_annotation_coordinates(&mut aux, computation_db, krate_collection, diagnostics);
+        resolve_annotation_coordinates(
+            &mut aux,
+            computation_db,
+            prebuilt_type_db,
+            krate_collection,
+            diagnostics,
+        );
         paths.resolve(
             &mut aux,
             computation_db,

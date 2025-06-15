@@ -612,22 +612,30 @@ fn process_error_handler(
 fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_scope_id: ScopeId) {
     const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(si.input.type_.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: si.coordinates.id.clone(),
+        created_at: si.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::PrebuiltType {
-        source: identifiers_id.into(),
+        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
     };
     let id = aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        si.input.registered_at.clone().into(),
+        si.registered_at.clone().into(),
     );
-    aux.id2cloning_strategy.insert(
-        id,
-        si.cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
-    );
+    
+    // If the user has specified/overridden the expected behaviour for the prebuilt type,
+    // let's take note of it.
+    // If not, we'll fill things in with the right default values later on,
+    // when resolving annotation coordinates.
+    if let Some(cloning_strategy) = si.cloning_strategy {
+        aux.id2cloning_strategy.insert(id, cloning_strategy);
+    }
 }
 
 /// Register a config type.

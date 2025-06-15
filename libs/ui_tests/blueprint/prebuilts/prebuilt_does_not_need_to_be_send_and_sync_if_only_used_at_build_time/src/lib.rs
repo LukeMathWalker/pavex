@@ -1,19 +1,16 @@
 use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::t;
 use std::rc::Rc;
 
-pub struct A(pub Rc<String>);
-
-#[pavex::prebuilt]
+#[pavex::prebuilt(id = "A_")]
 #[derive(Clone)]
-pub struct A1(pub Rc<String>);
+pub struct A(pub Rc<String>);
 
 #[derive(Clone)]
 pub struct B;
 
 #[pavex::singleton]
-pub fn b(_a: A, _a1: A1) -> B {
+pub fn b(_a: A) -> B {
     todo!()
 }
 
@@ -25,7 +22,6 @@ pub fn handler(_b: &B) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.prebuilt(t!(crate::A));
     bp.routes(from![crate]);
     bp
 }

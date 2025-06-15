@@ -15,3 +15,7 @@ workspace = true
 
 [dependencies.pavex_cli_client]
 workspace = true
+
+[dependencies.dep]
+path = "ephemeral_deps/dep"
+package = "dep_29415e1g"

@@ -1,9 +1,12 @@
 use pavex::blueprint::{from, Blueprint};
+use pavex::f;
 use pavex::response::Response;
-use pavex::{f, t};
 
 pub struct A;
+
 pub struct B;
+
+#[pavex::prebuilt(clone_if_necessary, id = "C_")]
 pub struct C;
 
 pub fn singleton() -> A {
@@ -36,7 +39,6 @@ pub fn handler() -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.prebuilt(t!(crate::C)).clone_if_necessary();
     bp.singleton(f!(crate::singleton)).clone_if_necessary();
     bp.request_scoped(f!(crate::request_scoped))
         .clone_if_necessary();

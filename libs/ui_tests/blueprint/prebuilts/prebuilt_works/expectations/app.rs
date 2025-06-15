@@ -10,45 +10,45 @@ struct ServerState {
 pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub a: app::A,
-    pub a_1: app::A1,
-    pub b: app::B<alloc::string::String>,
-    pub c: app::C<'static>,
-    pub vec: alloc::vec::Vec<alloc::string::String>,
+    pub c: app::C,
+    pub e: app::E,
+    pub f: dep_29415e1g::F,
+    pub z: dep_29415e1g::Z,
 }
 impl ApplicationState {
     pub async fn new(
         _app_config: crate::ApplicationConfig,
-        v0: alloc::vec::Vec<alloc::string::String>,
-        v1: app::C<'static>,
-        v2: app::B<alloc::string::String>,
-        v3: app::A1,
+        v0: dep_29415e1g::Z,
+        v1: dep_29415e1g::F,
+        v2: app::E,
+        v3: app::C,
         v4: app::A,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
         Ok(Self::_new(v0, v1, v2, v3, v4).await)
     }
     async fn _new(
-        v0: alloc::vec::Vec<alloc::string::String>,
-        v1: app::C<'static>,
-        v2: app::B<alloc::string::String>,
-        v3: app::A1,
+        v0: dep_29415e1g::Z,
+        v1: dep_29415e1g::F,
+        v2: app::E,
+        v3: app::C,
         v4: app::A,
     ) -> crate::ApplicationState {
         crate::ApplicationState {
             a: v4,
-            a_1: v3,
-            b: v2,
-            c: v1,
-            vec: v0,
+            c: v3,
+            e: v2,
+            f: v1,
+            z: v0,
         }
     }
 }
 #[deprecated(note = "Use `ApplicationState::new` instead.")]
 pub async fn build_application_state(
     _app_config: crate::ApplicationConfig,
-    v0: alloc::vec::Vec<alloc::string::String>,
-    v1: app::C<'static>,
-    v2: app::B<alloc::string::String>,
-    v3: app::A1,
+    v0: dep_29415e1g::Z,
+    v1: dep_29415e1g::F,
+    v2: app::E,
+    v3: app::C,
     v4: app::A,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
     crate::ApplicationState::new(_app_config, v0, v1, v2, v3, v4).await
@@ -110,11 +110,11 @@ impl Router {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
                         route_1::entrypoint(
-                                state.c.clone(),
-                                state.vec.clone(),
                                 &state.a,
-                                &state.b,
-                                &state.a_1,
+                                &state.c,
+                                &state.e,
+                                &state.f,
+                                &state.z,
                             )
                             .await
                     }
@@ -178,36 +178,36 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn entrypoint<'a, 'b, 'c>(
-        s_0: app::C<'static>,
-        s_1: alloc::vec::Vec<alloc::string::String>,
-        s_2: &'a app::A,
-        s_3: &'b app::B<alloc::string::String>,
-        s_4: &'c app::A1,
+    pub async fn entrypoint<'a, 'b, 'c, 'd, 'e>(
+        s_0: &'a app::A,
+        s_1: &'b app::C,
+        s_2: &'c app::E,
+        s_3: &'d dep_29415e1g::F,
+        s_4: &'e dep_29415e1g::Z,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4).await;
         response
     }
-    async fn stage_1<'a, 'b, 'c>(
-        s_0: alloc::vec::Vec<alloc::string::String>,
-        s_1: app::C<'static>,
-        s_2: &'a app::A,
-        s_3: &'b app::B<alloc::string::String>,
-        s_4: &'c app::A1,
+    async fn stage_1<'a, 'b, 'c, 'd, 'e>(
+        s_0: &'a app::A,
+        s_1: &'b app::C,
+        s_2: &'c app::E,
+        s_3: &'d dep_29415e1g::F,
+        s_4: &'e dep_29415e1g::Z,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1, s_2, s_3, s_4).await;
         response
     }
     async fn wrapping_0(
-        v0: app::C<'static>,
-        v1: alloc::vec::Vec<alloc::string::String>,
-        v2: &app::A,
-        v3: &app::B<alloc::string::String>,
-        v4: &app::A1,
+        v0: &app::A,
+        v1: &app::C,
+        v2: &app::E,
+        v3: &dep_29415e1g::F,
+        v4: &dep_29415e1g::Z,
     ) -> pavex::response::Response {
         let v5 = crate::route_1::Next0 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v0,
+            s_1: v1,
             s_2: v2,
             s_3: v3,
             s_4: v4,
@@ -218,33 +218,33 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v7)
     }
     async fn handler(
-        v0: alloc::vec::Vec<alloc::string::String>,
-        v1: app::C<'static>,
-        v2: &app::A,
-        v3: &app::B<alloc::string::String>,
-        v4: &app::A1,
+        v0: &app::A,
+        v1: &app::C,
+        v2: &app::E,
+        v3: &dep_29415e1g::F,
+        v4: &dep_29415e1g::Z,
     ) -> pavex::response::Response {
-        let v5 = app::handler(v2, v3, v1, v0, v4);
+        let v5 = app::handler(v0, v1, v2, v3, v4);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
-    struct Next0<'a, 'b, 'c, T>
+    struct Next0<'a, 'b, 'c, 'd, 'e, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: alloc::vec::Vec<alloc::string::String>,
-        s_1: app::C<'static>,
-        s_2: &'a app::A,
-        s_3: &'b app::B<alloc::string::String>,
-        s_4: &'c app::A1,
+        s_0: &'a app::A,
+        s_1: &'b app::C,
+        s_2: &'c app::E,
+        s_3: &'d dep_29415e1g::F,
+        s_4: &'e dep_29415e1g::Z,
         next: fn(
-            alloc::vec::Vec<alloc::string::String>,
-            app::C<'static>,
             &'a app::A,
-            &'b app::B<alloc::string::String>,
-            &'c app::A1,
+            &'b app::C,
+            &'c app::E,
+            &'d dep_29415e1g::F,
+            &'e dep_29415e1g::Z,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+    impl<'a, 'b, 'c, 'd, 'e, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, 'e, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

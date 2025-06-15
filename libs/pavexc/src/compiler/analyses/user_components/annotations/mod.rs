@@ -364,22 +364,19 @@ fn intern_annotated(
 
             Ok(config_id)
         }
-        AnnotationProperties::Prebuilt { cloning_strategy } => {
+        AnnotationProperties::Prebuilt {
+            cloning_strategy,
+            id: _,
+        } => {
             let prebuilt = UserComponent::PrebuiltType { source };
             let prebuilt_id =
                 aux.intern_component(prebuilt, scope_id, Lifecycle::Singleton, registration);
             aux.id2cloning_strategy.insert(
                 prebuilt_id,
-                cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary),
+                cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
             );
 
-            let ty = match rustdoc_item_def2type(item, krate) {
-                Ok(t) => t,
-                Err(e) => {
-                    const_generics_are_not_supported(e, item, diagnostics);
-                    return Err(());
-                }
-            };
+            let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;
             match PrebuiltType::new(ty) {
                 Ok(prebuilt) => {
                     prebuilt_type_db.get_or_intern(prebuilt, prebuilt_id);

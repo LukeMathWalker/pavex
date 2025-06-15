@@ -1,11 +1,12 @@
 use pavex::blueprint::{from, Blueprint};
+use pavex::f;
 use pavex::response::Response;
-use pavex::{f, t};
 
 #[derive(Clone)]
 pub struct A;
 
 #[derive(Clone)]
+#[pavex::prebuilt(id = "B_")]
 pub struct B;
 
 #[derive(Clone)]
@@ -25,21 +26,14 @@ pub fn handler(_a: A, _b: B, _c: C) -> Response {
 }
 
 pub mod annotated {
+    use super::B;
     use pavex::response::Response;
 
     #[derive(Clone)]
     pub struct A;
 
-    #[derive(Clone)]
-    pub struct B;
-
     #[pavex::singleton]
     pub fn a() -> A {
-        todo!()
-    }
-
-    #[pavex::singleton]
-    pub fn b(_b: A) -> B {
         todo!()
     }
 
@@ -51,8 +45,7 @@ pub mod annotated {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from!(crate::annotated));
-    bp.prebuilt(t!(crate::B));
+    bp.import(from!(crate));
     bp.singleton(f!(crate::singleton));
     bp.singleton(f!(crate::singleton2));
     bp.routes(from![crate]);

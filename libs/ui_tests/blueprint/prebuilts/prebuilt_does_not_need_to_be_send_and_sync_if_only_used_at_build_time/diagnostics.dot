@@ -39,11 +39,9 @@ digraph "GET / - 1" {
 }
 
 digraph app_state {
-    0 [ label = "0| app_776ff188::A1"]
-    1 [ label = "1| app_776ff188::A"]
-    2 [ label = "2| app_776ff188::b(app_776ff188::A, app_776ff188::A1) -> app_776ff188::B"]
-    3 [ label = "3| crate::ApplicationState(app_776ff188::B) -> crate::ApplicationState"]
-    2 -> 3 [ ]
-    0 -> 2 [ ]
+    0 [ label = "0| app_776ff188::A"]
+    1 [ label = "1| app_776ff188::b(app_776ff188::A) -> app_776ff188::B"]
+    2 [ label = "2| crate::ApplicationState(app_776ff188::B) -> crate::ApplicationState"]
     1 -> 2 [ ]
+    0 -> 1 [ ]
 }

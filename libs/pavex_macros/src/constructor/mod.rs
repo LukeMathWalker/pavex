@@ -1,4 +1,4 @@
-use crate::fn_like::{Callable, CallableAnnotation, ImplContext};
+use crate::utils::fn_like::{Callable, CallableAnnotation, ImplContext};
 use crate::utils::{AnnotationCodegen, CloningStrategy, CloningStrategyFlags};
 use darling::util::Flag;
 use lifecycle::Lifecycle;

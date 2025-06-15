@@ -169,10 +169,12 @@ pub struct ErrorHandler {
 /// A type registered against a `Blueprint` via `Blueprint::prebuilt` to
 /// be added as an input parameter to `ApplicationState::new`.
 pub struct PrebuiltType {
-    /// The type.
-    pub input: Type,
+    /// The coordinates of the annotated type.
+    pub coordinates: AnnotationCoordinates,
     /// The strategy dictating when the prebuilt type can be cloned.
     pub cloning_strategy: Option<CloningStrategy>,
+    /// The location where this prebuilt type was registered in the application code.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -245,15 +247,6 @@ pub struct Callable {
     /// Metadata that uniquely identifies the callable.
     pub callable: RawIdentifiers,
     /// The location where the callable was registered against the `Blueprint`.
-    pub registered_at: Location,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
-/// A type (enum or struct) registered against a `Blueprint`.
-pub struct Type {
-    /// Metadata that uniquely identifies the type.
-    pub type_: RawIdentifiers,
-    /// The location where the type was registered against the `Blueprint`.
     pub registered_at: Location,
 }
 

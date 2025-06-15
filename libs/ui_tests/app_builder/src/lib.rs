@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::f;
 
 pub struct Logger;
 
@@ -28,6 +28,7 @@ pub fn stream_file(_inner: PathBuf, _logger: Logger, _http_client: HttpClient) -
 }
 
 #[derive(Clone)]
+#[pavex::prebuilt(clone_if_necessary)]
 pub struct Config;
 
 #[derive(Clone)]
@@ -39,7 +40,7 @@ pub fn http_client(_config: Config) -> HttpClient {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.prebuilt(t!(crate::Config)).clone_if_necessary();
+    bp.import(from![crate]);
     bp.singleton(f!(crate::http_client)).clone_if_necessary();
     bp.request_scoped(f!(crate::extract_path))
         .error_handler(f!(crate::handle_extract_path_error));

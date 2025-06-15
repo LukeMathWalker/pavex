@@ -16,3 +16,4 @@ raw!(RawErrorObserver);
 raw!(RawFallback);
 raw!(RawRoute);
 raw!(RawConfig);
+raw!(RawPrebuilt);

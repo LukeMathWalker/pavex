@@ -180,12 +180,14 @@ impl From<RouteProperties> for AnnotationProperties {
 /// The way we expect prebuilt properties to be represented in
 /// `pavex::diagnostic::prebuilt`.
 pub struct PrebuiltProperties {
+    pub id: String,
     pub cloning_strategy: Option<CloningStrategy>,
 }
 
 impl From<PrebuiltProperties> for AnnotationProperties {
     fn from(value: PrebuiltProperties) -> Self {
         AnnotationProperties::Prebuilt {
+            id: value.id,
             cloning_strategy: value.cloning_strategy.map(Into::into),
         }
     }
