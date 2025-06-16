@@ -1,72 +1,39 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::response::Response;
 
-pub mod constructor {
-    /// To be registered against the blueprint directly
-    pub mod raw {
-        pub struct A;
+pub struct B;
 
-        pub fn a() -> Result<A, GenericError<String>> {
-            todo!()
-        }
+#[pavex::request_scoped(id = "B_")]
+pub fn b() -> Result<B, ErrorB> {
+    todo!()
+}
 
-        #[derive(Debug)]
-        pub struct GenericError<T>(T);
+#[derive(Debug)]
+pub struct ErrorB;
 
-        #[pavex::methods]
-        impl GenericError<String> {
-            #[pavex::error_handler]
-            pub fn handle(
-                #[px(error_ref)] &self,
-                _b: &super::annotated::B,
-            ) -> pavex::response::Response {
-                todo!()
-            }
-        }
-    }
-
-    /// To be imported implicitly.
-    pub mod annotated {
-        pub struct B;
-
-        #[pavex::request_scoped]
-        pub fn b() -> Result<B, ErrorB> {
-            todo!()
-        }
-
-        #[derive(Debug)]
-        pub struct ErrorB;
-
-        #[pavex::methods]
-        impl ErrorB {
-            #[pavex::error_handler]
-            pub fn into_response(&self) -> pavex::response::Response {
-                todo!()
-            }
-        }
-
-        pub struct Singleton;
-
-        // No need to specify an error handler for singleton constructors.
-        // The error is bubbled up by `ApplicationState::new`.
-        #[pavex::singleton]
-        pub fn singleton() -> Result<Singleton, SingletonError> {
-            todo!()
-        }
-
-        #[derive(Debug, thiserror::Error)]
-        #[error("The error message")]
-        pub struct SingletonError;
+#[pavex::methods]
+impl ErrorB {
+    #[pavex::error_handler]
+    pub fn into_response(&self) -> pavex::response::Response {
+        todo!()
     }
 }
 
+pub struct Singleton;
+
+// No need to specify an error handler for singleton constructors.
+// The error is bubbled up by `ApplicationState::new`.
+#[pavex::singleton]
+pub fn singleton() -> Result<Singleton, SingletonError> {
+    todo!()
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("The error message")]
+pub struct SingletonError;
+
 #[pavex::get(path = "/")]
-pub fn handler(
-    _a: &constructor::raw::A,
-    _b: &constructor::annotated::B,
-    _singleton: &constructor::annotated::Singleton,
-) -> Result<Response, CustomError> {
+pub fn handler(_b: &B, _singleton: &Singleton) -> Result<Response, CustomError> {
     todo!()
 }
 
@@ -84,7 +51,6 @@ impl CustomError {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from!(crate));
-    bp.request_scoped(f!(crate::constructor::raw::a));
     bp.routes(from![crate]);
     bp
 }

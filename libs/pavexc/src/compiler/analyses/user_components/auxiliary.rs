@@ -94,17 +94,18 @@ pub(super) struct AuxiliaryData {
 
 impl AuxiliaryData {
     /// A helper function to intern a component without forgetting to do the necessary
-    /// bookkeeping for the metadata (location and lifecycle) that are common to all
-    /// components.
+    /// bookkeeping for the metadata that are common to all components.
     pub(super) fn intern_component(
         &mut self,
         component: UserComponent,
         scope_id: ScopeId,
-        lifecycle: Lifecycle,
+        lifecycle: impl Into<Option<Lifecycle>>,
         registration: Registration,
     ) -> UserComponentId {
         let component_id = self.component_interner.alloc(component);
-        self.id2lifecycle.insert(component_id, lifecycle);
+        if let Some(lifecycle) = lifecycle.into() {
+            self.id2lifecycle.insert(component_id, lifecycle);
+        }
         self.id2registration.insert(component_id, registration);
         self.id2scope_id.insert(component_id, scope_id);
         component_id
@@ -149,7 +150,23 @@ impl AuxiliaryData {
                         component.kind(),
                     );
                 }
-                ConfigType { .. } => {}
+                ConfigType { .. } => {
+                    assert!(
+                        self.config_id2type.contains_key(&id),
+                        "The type is missing for the user-registered config #{:?}",
+                        id
+                    );
+                    assert!(
+                        self.config_id2default_strategy.contains_key(&id),
+                        "The default strategy is missing for the user-registered config #{:?}",
+                        id
+                    );
+                    assert!(
+                        self.config_id2include_if_unused.contains_key(&id),
+                        "The include policy is missing for the user-registered config #{:?}",
+                        id
+                    );
+                }
                 RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.contains_key(&id),

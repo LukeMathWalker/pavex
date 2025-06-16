@@ -3,30 +3,7 @@ use pavex::blueprint::Blueprint;
 use pavex::response::Response;
 
 #[pavex::singleton]
-pub fn annotated_constructor() {
-    todo!()
-}
-
-#[pavex::request_scoped]
-pub fn fallible_annotated_unit_constructor() -> Result<(), Error> {
-    todo!()
-}
-
-#[pavex::request_scoped]
-pub fn fallible_annotated_constructor() -> Result<u64, Error> {
-    todo!()
-}
-
-#[pavex::singleton]
 pub fn constructor() {
-    todo!()
-}
-
-#[derive(Debug)]
-pub struct Error;
-
-#[pavex::error_handler]
-pub fn error_handler(_e: &Error) {
     todo!()
 }
 
@@ -36,9 +13,12 @@ pub fn fallible_unit_constructor() -> Result<(), Error> {
 }
 
 #[pavex::request_scoped]
-pub fn fallible_constructor() -> Result<String, Error> {
+pub fn fallible_constructor() -> Result<u64, Error> {
     todo!()
 }
+
+#[derive(Debug)]
+pub struct Error;
 
 #[pavex::get(path = "/home")]
 pub fn handler() -> Response {
@@ -87,7 +67,7 @@ pub fn fallible_unit_handler() -> Result<(), Error> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![crate, pavex]);
+    bp.import(from![crate]);
 
     bp.pre_process(UNIT_PRE);
     bp.pre_process(FALLIBLE_UNIT_PRE);

@@ -1,15 +1,15 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
-use pavex::f;
+use pavex::blueprint::Blueprint;
 use pavex::http::StatusCode;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
+    bp.constructor(SINGLETON);
     bp.route(PARENT_HANDLER);
     bp.nest(sub_blueprint());
     bp
 }
 
+#[pavex::singleton]
 pub fn singleton() -> u64 {
     todo!()
 }
@@ -26,7 +26,7 @@ pub fn child_handler(_x: u64) -> StatusCode {
 
 fn sub_blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
+    bp.constructor(SINGLETON);
     bp.route(CHILD_HANDLER);
     bp
 }

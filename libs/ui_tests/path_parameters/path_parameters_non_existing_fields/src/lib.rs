@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::{http::StatusCode, request::path::PathParams};
 
 #[PathParams]
@@ -38,10 +37,7 @@ pub fn no_path_params(_params: PathParams<NoPathParams>) -> StatusCode {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(pavex::request::path::PathParams::extract))
-        .error_handler(f!(
-            pavex::request::path::errors::ExtractPathParamsError::into_response
-        ));
+    bp.import(from![pavex]);
     bp.routes(from![crate]);
     bp
 }

@@ -15,7 +15,7 @@
   [31m│[0m        ☞
   [31m│[0m           ╭─[[36;1;4mborrow_checker/across_middlewares/type_is_not_cloned_if_consumed_by_wrap_but_needed_by_post/src/lib.rs[0m:7:1]
   [31m│[0m        [2m 7[0m │
-  [31m│[0m        [2m 8[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::request_scoped(never_clone)]
+  [31m│[0m        [2m 8[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::request_scoped(never_clone, id = "A_")]
   [31m│[0m        [2m 9[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn a() -> A {
   [31m│[0m           · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
   [31m│[0m        [2m10[0m │         todo!()

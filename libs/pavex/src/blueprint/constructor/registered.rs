@@ -1,9 +1,13 @@
 use crate::blueprint::constructor::CloningStrategy;
-use crate::blueprint::conversions::{cloning2cloning, lint2lint, raw_identifiers2callable};
+use crate::blueprint::conversions::{
+    cloning2cloning, coordinates2coordinates, lifecycle2lifecycle, lint2lint,
+};
 use crate::blueprint::linter::Lint;
-use crate::blueprint::reflection::{RawIdentifiers, WithLocation};
-use pavex_bp_schema::{Blueprint as BlueprintSchema, LintSetting};
+use crate::blueprint::raw::RawErrorHandler;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, ErrorHandler, LintSetting, Location};
 use pavex_bp_schema::{Component, Constructor};
+
+use super::Lifecycle;
 
 /// The type returned by [`Blueprint::constructor`].
 ///
@@ -32,33 +36,50 @@ impl RegisteredConstructor<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
+    /// use pavex::blueprint::Blueprint;
     /// use pavex::response::Response;
+    /// use pavex::{methods, transient};
     /// # struct LogLevel;
     /// # struct Logger;
     /// # struct ConfigurationError;
     ///
     /// // 👇 a fallible constructor
-    /// fn logger() -> Result<Logger, ConfigurationError> {
+    /// #[transient]
+    /// pub fn logger() -> Result<Logger, ConfigurationError> {
     ///     // [...]
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response {
-    ///     // [...]
-    ///     # todo!()
+    /// #[methods]
+    /// impl ConfigurationError {
+    ///     #[error_handler]
+    ///     fn to_response(
+    ///         #[px(error_ref)] &self,
+    ///         log_level: LogLevel,
+    ///     ) -> Response {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.constructor(f!(crate::logger), Lifecycle::Transient)
-    ///     .error_handler(f!(crate::error_to_response));
+    /// bp.constructor(LOGGER)
+    ///     .error_handler(CONFIGURATION_ERROR_TO_RESPONSE);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: WithLocation<RawIdentifiers>) -> Self {
-        let callable = raw_identifiers2callable(error_handler);
-        self.constructor().error_handler = Some(callable);
+    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
+        let error_handler = ErrorHandler {
+            coordinates: coordinates2coordinates(error_handler.coordinates),
+            registered_at: Location::caller(),
+        };
+        self.constructor().error_handler = Some(error_handler);
+        self
+    }
+
+    /// Change the constructor lifecycle.
+    pub fn lifecycle(mut self, lifecycle: Lifecycle) -> Self {
+        self.constructor().lifecycle = Some(lifecycle2lifecycle(lifecycle));
         self
     }
 

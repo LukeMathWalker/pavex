@@ -1,8 +1,8 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 
 pub struct Tied<T, V>(T, V);
 
+#[pavex::request_scoped]
 pub fn tied<T>() -> Tied<T, T> {
     todo!()
 }
@@ -17,7 +17,7 @@ pub fn handler(
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::tied), Lifecycle::RequestScoped);
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

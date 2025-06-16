@@ -1,12 +1,13 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 
 #[derive(Clone)]
 /// When lowercased, `type` is a keyword in Rust.
 /// Pavex needs to escape it.
 pub struct Type;
 
+#[pavex::methods]
 impl Type {
+    #[singleton]
     pub fn new() -> Self {
         todo!()
     }
@@ -17,7 +18,9 @@ impl Type {
 /// used as `T`, if more than one instance if around.
 pub struct Generic<T>(T);
 
+#[pavex::methods]
 impl<T> Generic<T> {
+    #[singleton]
     pub fn new() -> Self {
         todo!()
     }
@@ -26,7 +29,9 @@ impl<T> Generic<T> {
 #[derive(Clone)]
 pub struct Singleton;
 
+#[pavex::methods]
 impl Singleton {
+    #[singleton]
     pub fn new() -> Self {
         todo!()
     }
@@ -38,7 +43,9 @@ pub mod a {
     /// have to include enough path segments to disambiguate.
     pub struct Singleton;
 
+    #[pavex::methods]
     impl Singleton {
+        #[singleton]
         pub fn new() -> Self {
             todo!()
         }
@@ -50,7 +57,9 @@ pub mod a {
 /// so Pavex will have to include the crate name to disambiguate.
 pub struct CrossCrateConflict;
 
+#[pavex::methods]
 impl CrossCrateConflict {
+    #[singleton]
     pub fn new() -> Self {
         todo!()
     }
@@ -69,12 +78,7 @@ pub fn handler(
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(crate::Type::new));
-    bp.singleton(f!(crate::Singleton::new));
-    bp.singleton(f!(crate::a::Singleton::new));
-    bp.singleton(f!(crate::Generic::new));
-    bp.singleton(f!(crate::CrossCrateConflict::new));
-    bp.singleton(f!(dep::CrossCrateConflict::new));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

@@ -12,7 +12,7 @@ use super::{
 };
 use crate::compiler::analyses::user_components::UserComponent;
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
-use pavex_bp_schema::CloningStrategy;
+use pavex_bp_schema::{CloningStrategy, Lint, LintSetting};
 
 /// Resolve coordinates to the annotation they point to.
 /// Then process the corresponding item.
@@ -49,21 +49,20 @@ pub(crate) fn resolve_annotation_coordinates(
 
         // Retrieve routing information for routes that have been registered directly against the blueprint,
         // rather than via an import.
-        if let AnnotationProperties::Route { method, path, .. } = &annotation.properties {
-            if matches!(
-                aux.component_interner[component_id],
-                UserComponent::RequestHandler { .. }
-            ) {
-                validate_route_path(aux, component_id, path, diagnostics);
-
-                let UserComponent::RequestHandler { router_key, .. } =
-                    &mut aux.component_interner[component_id]
-                else {
-                    unreachable!()
-                };
-                router_key.path = format!("{}{}", router_key.path, path);
-                router_key.method_guard = method.clone();
-            }
+        if let AnnotationProperties::Route {
+            method,
+            path,
+            id: _,
+        } = &annotation.properties
+        {
+            validate_route_path(aux, component_id, path, diagnostics);
+            let UserComponent::RequestHandler { router_key, .. } =
+                &mut aux.component_interner[component_id]
+            else {
+                unreachable!()
+            };
+            router_key.path = format!("{}{}", router_key.path, path);
+            router_key.method_guard = method.clone();
         }
 
         // Retrieve config properties for config types that have been registered directly against the blueprint
@@ -164,6 +163,43 @@ pub(crate) fn resolve_annotation_coordinates(
                     invalid_prebuilt_type(e, &path, component_id, aux, diagnostics)
                 }
             };
+        }
+
+        // Retrieve constructor properties for constructors that have been registered directly against the blueprint
+        if let AnnotationProperties::Constructor {
+            lifecycle,
+            cloning_strategy,
+            allow_unused,
+            id: _,
+        } = &annotation.properties
+        {
+            assert!(matches!(
+                aux.component_interner[component_id],
+                UserComponent::Constructor { .. }
+            ));
+
+            // Use the lifecycle specified via the annotation, unless the user has explicitly
+            // overridden it when registering the constructor directly with the blueprint.
+            if !aux.id2lifecycle.contains_idx(component_id) {
+                aux.id2lifecycle.insert(component_id, *lifecycle);
+                if let Some(error_handler_id) = aux.fallible_id2error_handler_id.get(&component_id)
+                {
+                    aux.id2lifecycle.insert(*error_handler_id, *lifecycle);
+                }
+            }
+
+            if let Some(true) = allow_unused {
+                let lints = aux.id2lints.entry(component_id).or_default();
+                if !lints.contains_key(&Lint::Unused) {
+                    lints.insert(Lint::Unused, LintSetting::Ignore);
+                }
+            }
+
+            // Use the behaviour specified in the annotation, unless the user has overridden
+            // it when registering the constructor directly with the blueprint.
+            aux.id2cloning_strategy
+                .entry(component_id)
+                .or_insert_with(|| cloning_strategy.unwrap_or(CloningStrategy::NeverClone));
         }
 
         if matches!(

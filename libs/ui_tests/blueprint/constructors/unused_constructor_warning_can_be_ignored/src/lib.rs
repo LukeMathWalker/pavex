@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, linter::Lint, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 
 pub struct Unused;
 
@@ -9,7 +8,9 @@ impl Default for Unused {
     }
 }
 
+#[pavex::methods]
 impl Unused {
+    #[request_scoped(allow(unused))]
     pub fn new() -> Self {
         Self
     }
@@ -17,7 +18,6 @@ impl Unused {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::Unused::new), Lifecycle::RequestScoped)
-        .ignore(Lint::Unused);
+    bp.import(from![crate]);
     bp
 }

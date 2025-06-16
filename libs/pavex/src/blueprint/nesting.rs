@@ -74,12 +74,11 @@ impl<'a> NestingConditions<'a> {
     /// ## Visibility
     ///
     /// ```rust
-    /// use pavex::f;
     /// use pavex::blueprint::{Blueprint, from};
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     bp.singleton(f!(crate::db_connection_pool));
+    ///     bp.constructor(DB_CONNECTION_POOL);
     ///     bp.nest(home_bp());
     ///     bp.nest(user_bp());
     ///     bp
@@ -88,6 +87,7 @@ impl<'a> NestingConditions<'a> {
     /// /// All property-related routes and constructors.
     /// fn home_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
+    ///     bp.import(from![crate::home]);
     ///     bp.routes(from![crate::home]);
     ///     bp
     /// }
@@ -95,31 +95,42 @@ impl<'a> NestingConditions<'a> {
     /// /// All user-related routes and constructors.
     /// fn user_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     bp.request_scoped(f!(crate::user::get_session));
+    ///     bp.import(from![crate::user]);
     ///     bp.routes(from![crate::user]);
     ///     bp
     /// }
-    /// # pub fn db_connection_pool() {}
-    /// # mod home { pub fn get_home() {} }
-    /// # mod user {
-    /// #     pub fn get_user() {}
-    /// #     pub fn get_session() {}
-    /// # }
+    ///
+    /// # struct ConnectionPool;
+    /// #[pavex::singleton]
+    /// pub fn db_connection_pool() -> ConnectionPool {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// pub mod home {
+    ///     // [...]
+    /// }
+    ///
+    /// pub mod user {
+    ///     # struct Session;
+    ///     pub fn get_session() -> Session {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
+    ///     // [...]
+    /// }
     /// ```
     ///
-    /// This example registers two routes:
-    /// - `GET /home`
-    /// - `GET /user`
-    ///
-    /// It also registers two constructors:
+    /// In this example, we import two constructors:
     /// - `crate::user::get_session`, for `Session`;
     /// - `crate::db_connection_pool`, for `ConnectionPool`.
     ///
-    /// Since we are **nesting** the `user_bp` blueprint, the `get_session` constructor will only
-    /// be available to the routes declared in the `user_bp` blueprint.
+    /// The constructors defined in the `crate::user` module are only imported by the `user_bp` blueprint.
+    /// Since we are **nesting** the `user_bp` blueprint, those constructors will only be available
+    /// to the routes declared in the `user_bp` blueprint.
     /// If a route declared in `home_bp` tries to inject a `Session`, Pavex will report an error
     /// at compile-time, complaining that there is no registered constructor for `Session`.
-    /// In other words, all constructors declared against the `user_bp` blueprint are **private**
+    /// In other words, all constructors imported in the `user_bp` blueprint are **private**
     /// and **isolated** from the rest of the application.
     ///
     /// The `db_connection_pool` constructor, instead, is declared against the parent blueprint
@@ -132,14 +143,13 @@ impl<'a> NestingConditions<'a> {
     /// declared against the nested blueprint takes precedence.
     ///
     /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::{from, Blueprint};
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     // This constructor is registered against the root blueprint and it's visible
+    ///     // These constructors are registered against the root blueprint and they're visible
     ///     // to all nested blueprints.
-    ///     bp.request_scoped(f!(crate::global::get_session));
+    ///     bp.import(from![crate::global]);
     ///     bp.nest(user_bp());
     ///     // [..]
     ///     bp
@@ -147,23 +157,34 @@ impl<'a> NestingConditions<'a> {
     ///
     /// fn user_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     // It can be overridden by a constructor for the same type registered
+    ///     // They can be overridden by a constructor for the same type registered
     ///     // against a nested blueprint.
     ///     // All routes in `user_bp` will use `user::get_session` instead of `global::get_session`.
-    ///     bp.request_scoped(f!(crate::user::get_session));
+    ///     bp.import(from![crate::user]);
     ///     // [...]
     ///     bp
     /// }
-    /// # mod global { pub fn get_session() {} }
-    /// # mod user {
-    /// #     pub fn get_user() {}
-    /// #     pub fn get_session() {}
-    /// # }
+    ///
+    /// pub mod global {
+    ///     # struct Session;
+    ///     pub fn get_session() -> Session {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
+    /// }
+    ///
+    /// pub mod user {
+    ///     # struct Session;
+    ///     pub fn get_session() -> Session {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
+    /// }
     /// ```
     ///
     /// ## Singletons
     ///
-    /// There is one exception to the precedence rule: [singletons](`Blueprint::singleton`).
+    /// There is one exception to the precedence rule: [singletons][Lifecycle::Singleton].
     /// Pavex guarantees that there will be only one instance of a singleton type for the entire
     /// lifecycle of the application. What should happen if two different constructors are registered for
     /// the same `Singleton` type by two nested blueprints that share the same parent?
@@ -178,6 +199,8 @@ impl<'a> NestingConditions<'a> {
     /// must be registered **exactly once** for each type.
     /// If multiple nested blueprints need access to the singleton, the constructor must be
     /// registered against a common parent blueprint—the root blueprint, if necessary.
+    ///
+    /// [Lifecycle::Singleton]: crate::blueprint::constructor::Lifecycle::Singleton
     pub fn nest(self, bp: Blueprint) {
         self.blueprint.components.push(
             NestedBlueprint {

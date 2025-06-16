@@ -1,56 +1,19 @@
 [31;1mERROR[0m:
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
-  [31m│[0m `app::annotated::handler` consumes `app::B` by
-  [31m│[0m value, but `app::B` is a singleton and can't be moved out of
-  [31m│[0m `ApplicationState`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:7:1]
-  [31m│[0m  [2m 7[0m │
-  [31m│[0m  [2m 8[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
-  [31m│[0m  [2m 9[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "B_")]
-  [31m│[0m  [2m10[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct B;
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
-  [31m│[0m  [2m11[0m │
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::B` by marking it
-  [31m│[0m         `clone_if_necessary`.
-  [31m│[0m   [36mhelp:[0m Can `app::annotated::handler` take a reference to
-  [31m│[0m         `app::B`, rather than consuming it by value?
-[31;1mERROR[0m:
-  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
-  [31m│[0m instructions in your blueprint.
-  [31m│[0m `app::annotated::handler` consumes `app::annotated::A`
-  [31m│[0m by value, but `app::annotated::A` is a singleton and can't be
-  [31m│[0m moved out of `ApplicationState`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:34:1]
-  [31m│[0m  [2m34[0m │
-  [31m│[0m  [2m35[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::singleton]
-  [31m│[0m  [2m36[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn a() -> A {
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
-  [31m│[0m  [2m37[0m │             todo!()
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::annotated::A` by marking it
-  [31m│[0m         `clone_if_necessary`.
-  [31m│[0m   [36mhelp:[0m Can `app::annotated::handler` take a reference to
-  [31m│[0m         `app::annotated::A`, rather than consuming it by value?
-[31;1mERROR[0m:
-  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
-  [31m│[0m instructions in your blueprint.
   [31m│[0m `app::handler` consumes `app::C` by value,
   [31m│[0m but `app::C` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:49:1]
-  [31m│[0m  [2m49[0m │     bp.singleton(f!(crate::singleton));
-  [31m│[0m  [2m50[0m │     bp.singleton(f!(crate::singleton2));
-  [31m│[0m     · [35;1m                 ──────────┬──────────[0m
-  [31m│[0m     ·                            [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m51[0m │     bp.routes(from![crate]);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:18:1]
+  [31m│[0m  [2m18[0m │
+  [31m│[0m  [2m19[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::singleton(id = "C_")]
+  [31m│[0m  [2m20[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn c(_b: B) -> C {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
+  [31m│[0m  [2m21[0m │         todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::C` by marking it
-  [31m│[0m         `CloneIfNecessary`.
+  [31m│[0m         `clone_if_necessary`.
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::C`,
   [31m│[0m         rather than consuming it by value?
 [31;1mERROR[0m:
@@ -60,13 +23,13 @@
   [31m│[0m but `app::B` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:7:1]
-  [31m│[0m  [2m 7[0m │
-  [31m│[0m  [2m 8[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
-  [31m│[0m  [2m 9[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "B_")]
-  [31m│[0m  [2m10[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct B;
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:6:1]
+  [31m│[0m  [2m 6[0m │
+  [31m│[0m  [2m 7[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
+  [31m│[0m  [2m 8[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "B_")]
+  [31m│[0m  [2m 9[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct B;
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
-  [31m│[0m  [2m11[0m │
+  [31m│[0m  [2m10[0m │
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::B` by marking it
   [31m│[0m         `clone_if_necessary`.
@@ -79,14 +42,14 @@
   [31m│[0m but `app::A` is a singleton and can't be moved out of
   [31m│[0m `ApplicationState`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:48:1]
-  [31m│[0m  [2m48[0m │     bp.import(from!(crate));
-  [31m│[0m  [2m49[0m │     bp.singleton(f!(crate::singleton));
-  [31m│[0m     · [35;1m                 ──────────┬─────────[0m
-  [31m│[0m     ·                            [35;1m╰── It was registered here[0m
-  [31m│[0m  [2m50[0m │     bp.singleton(f!(crate::singleton2));
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/src/lib.rs[0m:13:1]
+  [31m│[0m  [2m13[0m │
+  [31m│[0m  [2m14[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::singleton(id = "A_")]
+  [31m│[0m  [2m15[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn a() -> A {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mIt was registered here[0m
+  [31m│[0m  [2m16[0m │         todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Allow Pavex to clone `app::A` by marking it
-  [31m│[0m         `CloneIfNecessary`.
+  [31m│[0m         `clone_if_necessary`.
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::A`,
   [31m│[0m         rather than consuming it by value?

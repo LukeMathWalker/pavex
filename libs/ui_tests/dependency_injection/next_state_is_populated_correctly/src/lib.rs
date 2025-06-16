@@ -44,7 +44,7 @@ pub fn handler(_r: &RequestScoped) -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![crate, pavex]);
+    bp.import(from![crate]);
     bp.wrap(WRAP);
     bp.post_process(POST);
     bp.routes(from![crate]);

@@ -1,9 +1,6 @@
+use pavex::blueprint::{from, Blueprint};
 use pavex::request::RequestHead;
 use pavex::response::Response;
-use pavex::{
-    blueprint::{from, Blueprint},
-    f,
-};
 
 // The call graph looks like this:
 //
@@ -19,6 +16,7 @@ use pavex::{
 
 pub struct B;
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_r: RequestHead) -> B {
     todo!()
 }
@@ -30,7 +28,7 @@ pub fn handler(_r: &RequestHead, _b: B) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::b));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

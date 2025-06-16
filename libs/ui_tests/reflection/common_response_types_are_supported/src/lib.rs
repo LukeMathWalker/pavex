@@ -3,22 +3,6 @@ use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 use pavex::response::{Response, ResponseHead};
 
-pub fn response() -> Response {
-    todo!()
-}
-
-pub fn status_code() -> StatusCode {
-    todo!()
-}
-
-pub fn parts() -> Parts {
-    todo!()
-}
-
-pub fn response_head() -> ResponseHead {
-    todo!()
-}
-
 #[pavex::get(path = "/response")]
 pub fn route_response() -> Response {
     todo!()

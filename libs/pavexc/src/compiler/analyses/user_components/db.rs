@@ -147,6 +147,9 @@ impl UserComponentDb {
         let router = Router::new(&aux, computation_db, &scope_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
 
+        #[cfg(debug_assertions)]
+        aux.check_invariants();
+
         let AuxiliaryData {
             component_interner,
             id2scope_id,

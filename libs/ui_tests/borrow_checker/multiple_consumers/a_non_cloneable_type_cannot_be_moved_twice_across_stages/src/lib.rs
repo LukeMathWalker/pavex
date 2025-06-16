@@ -4,7 +4,7 @@ use pavex::response::Response;
 
 pub struct A;
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> A {
     todo!()
 }
@@ -24,7 +24,7 @@ where
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![pavex, crate]);
+    bp.import(from![crate]);
 
     bp.wrap(MW);
     bp.routes(from![crate]);

@@ -1,8 +1,5 @@
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
-use pavex::{
-    blueprint::{from, Blueprint},
-    f,
-};
 
 // The call graph looks like this:
 //
@@ -30,18 +27,22 @@ pub struct C;
 
 pub struct D;
 
+#[pavex::request_scoped(id = "A_", clone_if_necessary)]
 pub fn a() -> A {
     todo!()
 }
 
+#[pavex::request_scoped(id = "B_", clone_if_necessary)]
 pub fn b() -> B {
     todo!()
 }
 
+#[pavex::request_scoped(id = "C_")]
 pub fn c(_a: A, _b: &B) -> C {
     todo!()
 }
 
+#[pavex::request_scoped(id = "D_")]
 pub fn d(_a: &A, _b: B) -> D {
     todo!()
 }
@@ -53,10 +54,7 @@ pub fn handler(_c: C, _d: D) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::a)).clone_if_necessary();
-    bp.request_scoped(f!(crate::b)).clone_if_necessary();
-    bp.request_scoped(f!(crate::c));
-    bp.request_scoped(f!(crate::d));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

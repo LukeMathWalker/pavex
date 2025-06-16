@@ -29,7 +29,7 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "0| dep_55dca802::new_logger() -> dep_55dca802::Logger"]
+    0 [ label = "0| app_55dca802::alternative_logger() -> dep_55dca802::Logger"]
     1 [ label = "1| app_55dca802::Streamer::stream_file(dep_55dca802::Logger) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]

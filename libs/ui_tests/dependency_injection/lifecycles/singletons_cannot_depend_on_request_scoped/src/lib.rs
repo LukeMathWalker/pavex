@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 
 #[derive(Clone)]
@@ -9,14 +8,17 @@ pub struct B;
 
 pub struct C;
 
+#[pavex::singleton(id = "A_")]
 pub fn a(_b: B, _c: C) -> A {
     todo!()
 }
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b() -> B {
     todo!()
 }
 
+#[pavex::transient(id = "C_")]
 pub fn c() -> C {
     todo!()
 }
@@ -28,9 +30,7 @@ pub fn handler(_a: &A) -> StatusCode {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::a), Lifecycle::Singleton);
-    bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::c), Lifecycle::Transient);
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

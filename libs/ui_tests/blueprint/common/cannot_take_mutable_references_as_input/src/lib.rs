@@ -1,15 +1,8 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::methods;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
 use pavex::response::Response;
-
-pub struct B;
-
-pub fn constructor(_r: &mut RequestHead) -> B {
-    todo!()
-}
 
 pub struct A;
 
@@ -22,12 +15,12 @@ impl A {
 }
 
 #[pavex::error_handler]
-pub fn error_handler(#[px(error_ref)] _e: &pavex::Error, _s: &mut B) -> Response {
+pub fn error_handler(#[px(error_ref)] _e: &pavex::Error, _s: &mut A) -> Response {
     todo!()
 }
 
 #[pavex::wrap]
-pub fn wrapping<C>(_next: Next<C>, _s: &mut B) -> Response
+pub fn wrapping<C>(_next: Next<C>, _s: &mut A) -> Response
 where
     C: std::future::IntoFuture<Output = Response>,
 {
@@ -47,7 +40,6 @@ pub fn handler(_s: &A) -> Result<Response, pavex::Error> {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.request_scoped(f!(crate::constructor));
     bp.wrap(WRAPPING);
     bp.error_observer(OBSERVER);
     bp.routes(from![crate]);

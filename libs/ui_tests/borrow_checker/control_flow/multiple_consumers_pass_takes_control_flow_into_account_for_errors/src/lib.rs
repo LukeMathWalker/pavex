@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::response::Response;
 
 // The call graph looks like this:
@@ -33,18 +32,22 @@ pub struct B;
 
 pub struct C;
 
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> Result<A, Error> {
     todo!()
 }
 
-pub fn error_handler(_e: &Error, _b: B) -> Response {
+#[pavex::error_handler]
+pub fn error_handler(#[px(error_ref)] _e: &Error, _b: B) -> Response {
     todo!()
 }
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b() -> B {
     todo!()
 }
 
+#[pavex::request_scoped(id = "C_")]
 pub fn c(_a: A, _b: B) -> C {
     todo!()
 }
@@ -56,10 +59,7 @@ pub fn handler(_b: B, _c: C) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::a))
-        .error_handler(f!(crate::error_handler));
-    bp.request_scoped(f!(crate::b));
-    bp.request_scoped(f!(crate::c));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

@@ -1,10 +1,7 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
-use super::reflection::{AnnotationCoordinates, CreatedAt, Sources, WithLocation};
+use super::reflection::{AnnotationCoordinates, CreatedAt, Sources};
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::linter::Lint;
-use crate::blueprint::reflection::RawIdentifiers;
-use pavex_bp_schema::{Callable, Location};
-use pavex_reflection::CreatedBy;
 
 #[track_caller]
 pub(super) fn coordinates2coordinates(
@@ -14,28 +11,6 @@ pub(super) fn coordinates2coordinates(
         id: c.id.to_owned(),
         created_at: created_at2created_at(c.created_at),
         macro_name: c.macro_name.to_owned(),
-    }
-}
-
-#[track_caller]
-pub(super) fn raw_identifiers2callable(callable: WithLocation<RawIdentifiers>) -> Callable {
-    let WithLocation {
-        value: callable,
-        created_at,
-    } = callable;
-    if callable.macro_name == "t" {
-        panic!(
-            "You need to use the `f!` macro to register function-like components (e.g. a constructor).\n\
-            Here you used the `t!` macro, which is reserved type-like components, like state inputs."
-        )
-    }
-    Callable {
-        callable: pavex_bp_schema::RawIdentifiers {
-            created_at: created_at2created_at(created_at),
-            created_by: CreatedBy::macro_name(callable.macro_name),
-            import_path: callable.import_path.to_owned(),
-        },
-        registered_at: Location::caller(),
     }
 }
 

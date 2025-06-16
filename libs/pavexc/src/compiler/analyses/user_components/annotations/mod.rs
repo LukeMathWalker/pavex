@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::BTreeMap, ops::Deref, sync::Arc};
+use std::{borrow::Cow, ops::Deref, sync::Arc};
 
 mod coordinates;
 mod diagnostic;
@@ -250,6 +250,8 @@ fn intern_annotated(
         AnnotationProperties::Constructor {
             lifecycle,
             cloning_strategy,
+            allow_unused,
+            id: _,
         } => {
             let constructor = UserComponent::Constructor { source };
             let constructor_id =
@@ -259,16 +261,18 @@ fn intern_annotated(
                 cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
             );
 
-            // Ignore unused constructors imported from crates defined outside the current workspace
-            if !krate_collection
+            let lints = aux.id2lints.entry(constructor_id).or_default();
+
+            if let Some(true) = allow_unused {
+                lints.insert(Lint::Unused, LintSetting::Ignore);
+            } else if !krate_collection
                 .package_graph()
                 .metadata(&krate.core.package_id)
                 .unwrap()
                 .in_workspace()
             {
-                let mut lints = BTreeMap::new();
+                // Ignore unused constructors imported from crates defined outside the current workspace
                 lints.insert(Lint::Unused, LintSetting::Ignore);
-                aux.id2lints.insert(constructor_id, lints);
             }
 
             Ok(constructor_id)

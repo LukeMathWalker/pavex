@@ -1,9 +1,0 @@
-description = "pavex cannot resolve relative callable paths (yet)"
-
-[expectations]
-codegen = "fail"
-
-[ephemeral_dependencies]
-dep = { path = "dep.rs" }
-
-

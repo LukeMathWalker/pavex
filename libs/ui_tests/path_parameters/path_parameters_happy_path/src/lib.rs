@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::{request::path::PathParams, response::Response};
 
 #[PathParams]
@@ -36,10 +35,7 @@ pub fn get_town(params: PathParams<TownPathParams<'_>>) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(pavex::request::path::PathParams::extract))
-        .error_handler(f!(
-            pavex::request::path::errors::ExtractPathParamsError::into_response
-        ));
+    bp.import(from![pavex]);
     bp.routes(from![crate]);
     bp
 }

@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 
 #[pavex::prebuilt]
 pub use std::string::String;
@@ -10,6 +9,7 @@ pub type RemoteAlias = dep::IntermediateAlias;
 pub type RemoteGenericAlias<T> = dep::IntermediateGenericAlias<T, T>;
 pub type RemoteLifetimeAlias<'a> = dep::DoubleLifetimeType<'a, 'a>;
 
+#[pavex::singleton]
 pub fn constructor_with_output_tuple() -> (bool, char, u8) {
     todo!()
 }
@@ -18,6 +18,7 @@ pub struct MixedGenerics<'a, T> {
     _a: &'a T,
 }
 
+#[pavex::request_scoped]
 pub fn mixed_generics<T>(_a: &T) -> MixedGenericsAlias<'_, T> {
     todo!()
 }
@@ -35,12 +36,7 @@ pub fn handler_with_input_tuple<'a>(
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![crate]);
-    bp.request_scoped(f!(crate::RemoteLifetimeAlias::new));
-    bp.request_scoped(f!(crate::mixed_generics));
-    bp.singleton(f!(crate::constructor_with_output_tuple));
-    bp.singleton(f!(crate::RemoteAlias::new));
-    bp.singleton(f!(crate::RemoteGenericAlias::<std::primitive::bool>::new));
+    bp.import(from![crate, dep]);
     bp.routes(from![crate]);
     bp
 }

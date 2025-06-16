@@ -29,7 +29,7 @@ pub use components::{INJECT_RESPONSE_COOKIES, extract_request_cookies, inject_re
 mod response_cookies;
 pub use response_cookies::ResponseCookies;
 
-#[crate::singleton]
+#[crate::singleton(pavex = crate)]
 #[doc(hidden)]
 // TODO: Remove once we have Pavex's annotations directly in `biscotti`,
 // behind a `pavex` feature flag.

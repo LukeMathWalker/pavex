@@ -6,7 +6,7 @@ use pavex::response::Response;
 
 pub struct A;
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> A {
     A
 }

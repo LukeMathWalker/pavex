@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 
 // The dependency graph for the request handler looks like this:
@@ -27,14 +26,17 @@ pub struct A;
 pub struct B;
 pub struct C;
 
+#[pavex::request_scoped(id = "A_")]
 pub fn a(_b: &B) -> A {
     todo!()
 }
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_c: &C) -> B {
     todo!()
 }
 
+#[pavex::request_scoped(id = "C_")]
 pub fn c(_a: &A) -> C {
     todo!()
 }
@@ -46,9 +48,7 @@ pub fn handler(_b: &B) -> StatusCode {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

@@ -159,7 +159,7 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::response::Response {
-        let v0 = dep_55dca802::new_logger();
+        let v0 = app::alternative_logger();
         let v1 = app::Streamer::stream_file(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }

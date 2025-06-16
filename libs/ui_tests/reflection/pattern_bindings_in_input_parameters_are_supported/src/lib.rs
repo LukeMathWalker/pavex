@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 
 #[derive(Clone)]
 pub struct Streamer {
@@ -7,11 +6,8 @@ pub struct Streamer {
     pub b: isize,
 }
 
+#[pavex::singleton]
 pub fn streamer() -> Streamer {
-    todo!()
-}
-
-pub fn stream_file(Streamer { a: _a, b: _b }: &Streamer) -> pavex::response::Response {
     todo!()
 }
 
@@ -22,7 +18,7 @@ pub fn route_handler(Streamer { a: _a, b: _b }: &Streamer) -> pavex::response::R
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(crate::streamer));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

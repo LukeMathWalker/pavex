@@ -167,14 +167,8 @@ pub mod route_1 {
         let v3 = <app::B as app::AnotherTrait>::a_method_that_consumes_self(
             v2,
         );
-        let v4 = <app::C as app::GenericTrait<
-            std::string::String,
-        >>::a_method(&v3);
-        let v5 = <app::A as app::MyTrait>::a_method_with_a_generic::<
-            std::string::String,
-        >(&v1);
-        let v6 = app::route_handler(v1, v3, v5, v4, v0);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        let v4 = app::handler(v1, v3, v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<T>
     where

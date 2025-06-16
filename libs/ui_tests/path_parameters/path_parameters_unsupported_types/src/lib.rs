@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 use pavex::request::path::PathParams;
 
@@ -59,13 +58,7 @@ pub fn tuple_struct(_params: PathParams<TupleStruct>) -> StatusCode {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(
-        f!(pavex::request::path::PathParams::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::path::errors::ExtractPathParamsError::into_response
-    ));
+    bp.import(from![pavex]);
     bp.routes(from![crate]);
     bp
 }

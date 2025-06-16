@@ -1,10 +1,11 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 
+#[pavex::request_scoped]
 pub fn header1() -> http_01::header::HeaderName {
     todo!()
 }
 
+#[pavex::request_scoped]
 pub fn header2() -> http_02::header::HeaderName {
     todo!()
 }
@@ -19,8 +20,7 @@ pub fn handler(
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f![crate::header1]);
-    bp.request_scoped(f![crate::header2]);
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

@@ -55,7 +55,7 @@ impl ServerRequestId {
     ///
     /// It generates a new request id using a [UUID v7](https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format-04#name-uuid-version-7),
     /// with a random number and the current (UNIX) timestamp.
-    #[request_scoped]
+    #[request_scoped(pavex = crate, clone_if_necessary)]
     pub fn generate() -> Self {
         Self(TypeSafeId::from_uuid(Uuid::now_v7()))
     }

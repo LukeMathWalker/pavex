@@ -8,9 +8,7 @@
 pub use cloning_strategy::CloningStrategy;
 pub use lifecycle::Lifecycle;
 pub use registered::RegisteredConstructor;
-pub use unregistered::Constructor;
 
 mod cloning_strategy;
 mod lifecycle;
 mod registered;
-mod unregistered;

@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 
 pub fn blueprint() -> Blueprint {
@@ -9,14 +8,17 @@ pub fn blueprint() -> Blueprint {
     bp
 }
 
+#[pavex::singleton]
 pub fn singleton() -> u64 {
     todo!()
 }
 
+#[pavex::request_scoped]
 pub fn scoped() -> u32 {
     todo!()
 }
 
+#[pavex::transient]
 pub fn transient() -> u16 {
     todo!()
 }
@@ -33,9 +35,7 @@ pub fn child(_x: u64, _y: u32, _z: u16) -> StatusCode {
 
 fn sub_blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
-    bp.constructor(f!(crate::scoped), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::transient), Lifecycle::Transient);
+    bp.import(from![crate]);
     bp.route(CHILD);
     bp
 }

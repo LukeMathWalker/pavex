@@ -198,16 +198,18 @@ pub struct ConfigType {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A constructor registered against a `Blueprint` via `Blueprint::constructor`.
 pub struct Constructor {
-    /// The callable in charge of constructing the desired type.
-    pub constructor: Callable,
+    /// The coordinates of the annotated constructor.
+    pub coordinates: AnnotationCoordinates,
     /// The lifecycle of the constructed type.
-    pub lifecycle: Lifecycle,
+    pub lifecycle: Option<Lifecycle>,
     /// The strategy dictating when the constructed type can be cloned.
     pub cloning_strategy: Option<CloningStrategy>,
     /// The callable in charge of processing errors returned by this constructor, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
     /// Lint settings for this constructor.
     pub lints: BTreeMap<Lint, LintSetting>,
+    /// The location where this constructor was registered in the application code.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -238,16 +240,6 @@ pub struct PreProcessingMiddleware {
     pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
     pub error_handler: Option<ErrorHandler>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
-/// A "callable" registered against a `Blueprint`—either a free function or a method,
-/// used as a request handler, error handler or constructor.
-pub struct Callable {
-    /// Metadata that uniquely identifies the callable.
-    pub callable: RawIdentifiers,
-    /// The location where the callable was registered against the `Blueprint`.
-    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

@@ -1,5 +1,4 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::request::RequestHead;
 use pavex::response::Response;
 
@@ -19,10 +18,12 @@ pub struct B;
 
 pub struct C;
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_p: RequestHead) -> B {
     todo!()
 }
 
+#[pavex::request_scoped(id = "C_")]
 pub fn c(_p: RequestHead) -> C {
     todo!()
 }
@@ -34,8 +35,7 @@ pub fn handler(_b: B, _c: C) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::b));
-    bp.request_scoped(f!(crate::c));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

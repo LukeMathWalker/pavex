@@ -17,3 +17,4 @@ raw!(RawFallback);
 raw!(RawRoute);
 raw!(RawConfig);
 raw!(RawPrebuilt);
+raw!(RawConstructor);

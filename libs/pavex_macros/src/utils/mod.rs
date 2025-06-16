@@ -2,6 +2,7 @@ mod cloning_strategy;
 mod px_stripper;
 
 pub mod fn_like;
+pub mod id;
 pub mod type_like;
 pub mod validation;
 pub use cloning_strategy::*;

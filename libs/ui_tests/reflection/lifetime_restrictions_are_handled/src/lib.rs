@@ -18,7 +18,7 @@ pub fn handler(_s: &RawPathParams) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![pavex, crate]);
+    bp.import(from![crate]);
     bp.wrap(MW);
     bp.routes(from![crate]);
     bp

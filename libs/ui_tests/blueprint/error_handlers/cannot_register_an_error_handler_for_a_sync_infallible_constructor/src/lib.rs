@@ -1,8 +1,7 @@
+use pavex::blueprint::{from, Blueprint};
 use std::path::PathBuf;
 
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
-
+#[pavex::request_scoped]
 pub fn infallible_constructor() -> PathBuf {
     todo!()
 }
@@ -10,6 +9,7 @@ pub fn infallible_constructor() -> PathBuf {
 #[derive(Debug)]
 pub struct ExtractPathError;
 
+#[pavex::error_handler]
 pub fn error_handler(_e: &ExtractPathError) -> pavex::response::Response {
     todo!()
 }
@@ -21,8 +21,8 @@ pub fn request_handler(_inner: PathBuf) -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::infallible_constructor), Lifecycle::RequestScoped)
-        .error_handler(f!(crate::error_handler));
+    bp.constructor(INFALLIBLE_CONSTRUCTOR)
+        .error_handler(ERROR_HANDLER);
     bp.routes(from![crate]);
     bp
 }

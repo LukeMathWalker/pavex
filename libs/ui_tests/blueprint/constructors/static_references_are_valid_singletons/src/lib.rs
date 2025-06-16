@@ -1,6 +1,6 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 
+#[pavex::singleton]
 pub fn static_str() -> &'static str {
     todo!()
 }
@@ -18,7 +18,6 @@ pub fn handler(_x: &'static str, _y: &'static u8) -> pavex::response::Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.singleton(f!(crate::static_str));
     bp.routes(from![crate]);
     bp
 }

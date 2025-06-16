@@ -22,10 +22,7 @@ impl ApplicationState {
         Ok(Self::_new(v0).await)
     }
     async fn _new(v0: alloc::string::String) -> crate::ApplicationState {
-        let v1 = dep_f8f62968::GenericType::<
-            std::primitive::bool,
-            std::primitive::bool,
-        >::new();
+        let v1 = dep_f8f62968::GenericType::new();
         let v2 = app::constructor_with_output_tuple();
         let v3 = dep_f8f62968::ActualType::new();
         crate::ApplicationState {
@@ -209,7 +206,7 @@ pub mod route_1 {
         v3: &dep_f8f62968::GenericType<bool, bool>,
     ) -> pavex::response::Response {
         let v4 = app::mixed_generics(v0);
-        let v5 = dep_f8f62968::DoubleLifetimeType::<'_, '_>::new(v1, v0);
+        let v5 = dep_f8f62968::DoubleLifetimeType::new(v1, v0);
         let v6 = app::handler_with_input_tuple(v2, v1, v3, &v5, v4);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }

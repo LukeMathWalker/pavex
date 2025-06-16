@@ -498,7 +498,7 @@ impl CodegenedRequestHandlerPipeline {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct CodegenedFn {
     pub(crate) fn_: ItemFn,
     /// We use an `IndexSet` rather than a `Vec` because we know that, due to Pavex's constraints,
@@ -507,16 +507,47 @@ pub(crate) struct CodegenedFn {
     pub(crate) input_parameters: IndexSet<ResolvedType>,
 }
 
+impl std::fmt::Debug for CodegenedFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let fn_ = &self.fn_;
+        f.debug_struct("CodegenedFn")
+            .field("fn_", &quote! { #fn_ }.to_string())
+            .field(
+                "input_parameters",
+                &self
+                    .input_parameters
+                    .iter()
+                    .map(|i| i.display_for_error())
+                    .join(", "),
+            )
+            .finish()
+    }
+}
+
 impl ToTokens for CodegenedFn {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.fn_.to_tokens(tokens)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct CodegenedNextState {
     pub(crate) state: syn::ItemStruct,
     pub(crate) into_future_impl: syn::ItemImpl,
+}
+
+impl std::fmt::Debug for CodegenedNextState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let state = &self.state;
+        let into_future_impl = &self.into_future_impl;
+        f.debug_struct("CodegenedNextState")
+            .field("state", &quote! { #state }.to_string())
+            .field(
+                "into_future_impl",
+                &quote! { #into_future_impl }.to_string(),
+            )
+            .finish()
+    }
 }
 
 impl ToTokens for CodegenedNextState {

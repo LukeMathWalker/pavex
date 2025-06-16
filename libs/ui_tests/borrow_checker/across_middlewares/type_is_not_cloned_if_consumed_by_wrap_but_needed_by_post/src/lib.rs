@@ -5,7 +5,7 @@ use pavex::response::Response;
 #[derive(Clone)]
 pub struct A;
 
-#[pavex::request_scoped(never_clone)]
+#[pavex::request_scoped(never_clone, id = "A_")]
 pub fn a() -> A {
     todo!()
 }

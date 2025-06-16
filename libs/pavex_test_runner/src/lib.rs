@@ -243,6 +243,9 @@ fn compile_generated_apps(
         .map(|data| data.generated_crate_name())
         .collect::<BTreeSet<_>>();
     let timer = std::time::Instant::now();
+    if generated_crate_names.is_empty() {
+        return Ok((Vec::new(), BTreeMap::new()));
+    }
     println!("Compiling {} generated crates", generated_crate_names.len());
     let mut cmd = Command::new("cargo");
     cmd.arg("check").arg("--message-format").arg("json");

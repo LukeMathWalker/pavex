@@ -1,4 +1,4 @@
-use pavex::{f, blueprint::{from, Blueprint}};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 // The call graph looks like this:
@@ -19,14 +19,17 @@ pub struct B;
 
 pub struct C;
 
+#[pavex::singleton(id = "A_", clone_if_necessary)]
 pub fn a() -> Result<A, pavex::Error> {
     todo!()
 }
 
+#[pavex::singleton(id = "B_")]
 pub fn b(_a: A) -> B {
     todo!()
 }
 
+#[pavex::singleton(id = "C_")]
 pub fn c(_a: A) -> Result<C, pavex::Error> {
     todo!()
 }
@@ -38,9 +41,7 @@ pub fn handler(_b: &C, _c: &B) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(crate::a)).clone_if_necessary();
-    bp.singleton(f!(crate::b));
-    bp.singleton(f!(crate::c));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

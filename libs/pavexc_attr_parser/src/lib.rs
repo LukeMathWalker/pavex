@@ -45,8 +45,10 @@ pub fn parse(
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum AnnotationProperties {
     Constructor {
+        id: String,
         lifecycle: Lifecycle,
         cloning_strategy: Option<CloningStrategy>,
+        allow_unused: Option<bool>,
     },
     Prebuilt {
         id: String,
@@ -125,8 +127,9 @@ impl AnnotationProperties {
             | Route { id, .. }
             | Config { id, .. }
             | Prebuilt { id, .. }
+            | Constructor { id, .. }
             | Fallback { id } => Some(id.as_str()),
-            Constructor { .. } | Methods => None,
+            Methods => None,
         }
     }
 }

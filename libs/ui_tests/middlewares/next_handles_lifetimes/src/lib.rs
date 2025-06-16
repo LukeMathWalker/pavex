@@ -8,17 +8,17 @@ pub struct C;
 
 pub struct B<'a>(pub &'a A);
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> A {
     todo!()
 }
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "C_")]
 pub fn c() -> C {
     todo!()
 }
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "B_")]
 pub fn b<'a>(_a: &'a A, _c: &'a C) -> B<'a> {
     todo!()
 }

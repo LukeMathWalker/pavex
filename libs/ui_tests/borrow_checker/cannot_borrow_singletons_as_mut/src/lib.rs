@@ -1,9 +1,10 @@
-use pavex::{f, blueprint::{from, Blueprint}};
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 #[derive(Clone)]
 pub struct A;
 
+#[pavex::singleton]
 pub fn build() -> A {
     A
 }
@@ -15,7 +16,7 @@ pub fn handler(_a: &mut A) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(self::build));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

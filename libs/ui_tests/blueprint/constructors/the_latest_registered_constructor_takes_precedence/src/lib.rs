@@ -1,7 +1,11 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 
 pub struct Streamer;
+
+#[pavex::request_scoped]
+pub fn alternative_logger() -> dep_55dca802::Logger {
+    todo!()
+}
 
 #[pavex::methods]
 impl Streamer {
@@ -13,8 +17,8 @@ impl Streamer {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(dep_55dca802::new_logger), Lifecycle::Singleton);
-    bp.constructor(f!(::dep_55dca802::new_logger), Lifecycle::RequestScoped);
+    bp.constructor(dep_55dca802::NEW_LOGGER);
+    bp.constructor(ALTERNATIVE_LOGGER);
     bp.routes(from![crate]);
     bp
 }

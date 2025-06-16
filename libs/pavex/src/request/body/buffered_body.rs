@@ -58,7 +58,7 @@ impl BufferedBody {
     /// Default constructor for [`BufferedBody`].
     ///
     /// If extraction fails, an [`ExtractBufferedBodyError`] is returned.
-    #[request_scoped]
+    #[request_scoped(pavex = crate)]
     pub async fn extract(
         request_head: &RequestHead,
         body: RawIncomingBody,

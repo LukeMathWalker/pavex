@@ -9,7 +9,7 @@ struct ServerState {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ApplicationConfig {}
 pub struct ApplicationState {
-    pub singleton: app::constructor::annotated::Singleton,
+    pub singleton: app::Singleton,
 }
 impl ApplicationState {
     pub async fn new(
@@ -18,7 +18,7 @@ impl ApplicationState {
         Self::_new().await
     }
     async fn _new() -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        let v0 = app::constructor::annotated::singleton();
+        let v0 = app::singleton();
         let v1 = match v0 {
             Ok(ok) => ok,
             Err(v1) => {
@@ -43,7 +43,7 @@ pub async fn build_application_state(
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
     #[error(transparent)]
-    Singleton(app::constructor::annotated::SingletonError),
+    Singleton(app::SingletonError),
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -162,20 +162,16 @@ pub mod route_0 {
 }
 pub mod route_1 {
     pub async fn entrypoint<'a>(
-        s_0: &'a app::constructor::annotated::Singleton,
+        s_0: &'a app::Singleton,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a>(
-        s_0: &'a app::constructor::annotated::Singleton,
-    ) -> pavex::response::Response {
+    async fn stage_1<'a>(s_0: &'a app::Singleton) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
-    async fn wrapping_0(
-        v0: &app::constructor::annotated::Singleton,
-    ) -> pavex::response::Response {
+    async fn wrapping_0(v0: &app::Singleton) -> pavex::response::Response {
         let v1 = crate::route_1::Next0 {
             s_0: v0,
             next: stage_1,
@@ -184,72 +180,39 @@ pub mod route_1 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(
-        v0: &app::constructor::annotated::Singleton,
-    ) -> pavex::response::Response {
-        let v1 = app::constructor::raw::a();
+    async fn handler(v0: &app::Singleton) -> pavex::response::Response {
+        let v1 = app::b();
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = app::constructor::annotated::b();
-                    let v4 = match v3 {
-                        Ok(ok) => ok,
-                        Err(v4) => {
-                            return {
-                                let v5 = app::constructor::annotated::ErrorB::into_response(
-                                    &v4,
-                                );
-                                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                    v5,
-                                )
-                            };
-                        }
-                    };
-                    let v5 = app::constructor::raw::GenericError::handle(
-                        &v2,
-                        &v4,
-                    );
+                    let v3 = app::ErrorB::into_response(&v2);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
+                        v3,
                     )
                 };
             }
         };
-        let v3 = app::constructor::annotated::b();
+        let v3 = app::handler(&v2, v0);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = app::constructor::annotated::ErrorB::into_response(
-                        &v4,
-                    );
+                    let v5 = app::CustomError::into_response(&v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v5,
                     )
                 };
             }
         };
-        let v5 = app::handler(&v2, &v4, v0);
-        let v6 = match v5 {
-            Ok(ok) => ok,
-            Err(v6) => {
-                return {
-                    let v7 = app::CustomError::into_response(&v6);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v7,
-                    )
-                };
-            }
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::constructor::annotated::Singleton,
-        next: fn(&'a app::constructor::annotated::Singleton) -> T,
+        s_0: &'a app::Singleton,
+        next: fn(&'a app::Singleton) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where

@@ -28,17 +28,17 @@ pub fn wrapper<F: IntoFuture<Output = Response>>(_next: Next<F>, _c: C) -> Respo
     todo!()
 }
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> A {
     todo!()
 }
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "C_")]
 pub fn c(_a: &A) -> C {
     todo!()
 }
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_a: &A) -> B {
     todo!()
 }
@@ -50,7 +50,7 @@ pub fn handler(_b: B, _a: &mut A) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![pavex, crate]);
+    bp.import(from![crate]);
     bp.wrap(WRAPPER);
     bp.routes(from![crate]);
     bp

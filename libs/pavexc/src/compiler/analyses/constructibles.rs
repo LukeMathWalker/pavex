@@ -152,6 +152,13 @@ impl ConstructibleDb {
         // add them to set of components to check and iterate until we no longer have any new
         // components to check.
         while let Some(component_id) = queue.pop() {
+            for derived_id in component_db.derived_component_ids(component_id) {
+                queue.enqueue(derived_id);
+            }
+            if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
+                queue.enqueue(*error_handler_id);
+            }
+
             let scope_id = component_db.scope_id(component_id);
             let resolved_component = component_db.hydrated_component(component_id, computation_db);
             let input_types = {
@@ -240,11 +247,7 @@ impl ConstructibleDb {
                     continue;
                 };
 
-                if queue.enqueue(input_component_id) {
-                    for derived_id in component_db.derived_component_ids(input_component_id) {
-                        queue.enqueue(derived_id);
-                    }
-                }
+                queue.enqueue(input_component_id);
 
                 if ConsumptionMode::ExclusiveBorrow == mode {
                     let lifecycle = component_db.lifecycle(input_component_id);

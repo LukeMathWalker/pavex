@@ -1,6 +1,3 @@
-use crate::blueprint::conversions::{
-    cloning2cloning, lifecycle2lifecycle, raw_identifiers2callable,
-};
 use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
@@ -11,7 +8,7 @@ use pavex_bp_schema::{
 use pavex_reflection::Location;
 
 use super::config::RegisteredConfigType;
-use super::constructor::{Lifecycle, RegisteredConstructor};
+use super::constructor::RegisteredConstructor;
 use super::conversions::{coordinates2coordinates, created_at2created_at, sources2sources};
 use super::error_handler::RegisteredErrorHandler;
 use super::import::RegisteredImport;
@@ -20,11 +17,11 @@ use super::middleware::{
     RegisteredWrappingMiddleware,
 };
 use super::nesting::NestingConditions;
-use super::raw::{RawConfig, RawErrorObserver, RawFallback, RawPrebuilt, RawRoute};
+use super::raw::{RawConfig, RawConstructor, RawErrorObserver, RawFallback, RawPrebuilt, RawRoute};
 use super::raw::{
     RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
 };
-use super::reflection::{RawIdentifiers, Sources, WithLocation};
+use super::reflection::{Sources, WithLocation};
 use super::router::{RegisteredRoute, RegisteredRoutes};
 
 /// The starting point for building an application with Pavex.
@@ -319,9 +316,7 @@ impl Blueprint {
     #[track_caller]
     /// Add a new type to the application's configuration.
     ///
-    /// It adds a new field to the generate `ApplicationConfig` struct.
-    /// Its name matches the key you provided.
-    /// Its type matches the one you specified via the [`t!`](crate::t) macro.
+    /// It adds a new field to the generated `ApplicationConfig` struct.
     ///
     /// # Required traits
     ///
@@ -360,145 +355,35 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-    /// # struct LogLevel;
-    /// # struct Logger;
+    /// use pavex::blueprint::Blueprint;
     ///
-    /// fn logger(log_level: LogLevel) -> Logger {
-    ///     // [...]
-    ///     # todo!()
+    /// # struct LogLevel;
+    /// pub struct Logger(/* .. */);
+    ///
+    /// #[pavex::methods]
+    /// impl Logger {
+    ///     #[transient]
+    ///     pub fn new(log_level: LogLevel) -> Self {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
     /// }
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.constructor(f!(crate::logger), Lifecycle::Transient);
+    /// bp.constructor(LOGGER_NEW);
     /// # }
     /// ```
-    pub fn constructor(
-        &mut self,
-        callable: WithLocation<RawIdentifiers>,
-        lifecycle: Lifecycle,
-    ) -> RegisteredConstructor {
+    pub fn constructor(&mut self, constructor: RawConstructor) -> RegisteredConstructor {
         let registered_constructor = Constructor {
-            constructor: raw_identifiers2callable(callable),
-            lifecycle: lifecycle2lifecycle(lifecycle),
+            coordinates: coordinates2coordinates(constructor.coordinates),
+            lifecycle: None,
             cloning_strategy: None,
             error_handler: None,
             lints: Default::default(),
+            registered_at: Location::caller(),
         };
         let component_id = self.push_component(registered_constructor);
-        RegisteredConstructor {
-            component_id,
-            blueprint: &mut self.schema,
-        }
-    }
-
-    #[track_caller]
-    /// Register a constructor with a [singleton lifecycle][Lifecycle::Singleton].
-    ///
-    /// It's a shorthand for [`Blueprint::constructor`]—refer to its documentation for
-    /// more information on dependency injection in Pavex.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::Blueprint;
-    /// # struct LogLevel;
-    /// # struct Logger;
-    ///
-    /// fn logger(log_level: LogLevel) -> Logger {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    ///
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.singleton(f!(crate::logger));
-    /// // ^ is equivalent to:
-    /// // bp.constructor(f!(crate::logger), Lifecycle::Singleton));
-    /// # }
-    /// ```
-    pub fn singleton(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredConstructor {
-        self.constructor(callable, Lifecycle::Singleton)
-    }
-
-    #[track_caller]
-    /// Register a constructor with a [request-scoped lifecycle][Lifecycle::RequestScoped].
-    ///
-    /// It's a shorthand for [`Blueprint::constructor`]—refer to its documentation for
-    /// more information on dependency injection in Pavex.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::Blueprint;
-    /// # struct LogLevel;
-    /// # struct Logger;
-    ///
-    /// fn logger(log_level: LogLevel) -> Logger {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    ///
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.request_scoped(f!(crate::logger));
-    /// // ^ is equivalent to:
-    /// // bp.constructor(f!(crate::logger), Lifecycle::RequestScoped));
-    /// # }
-    /// ```
-    pub fn request_scoped(
-        &mut self,
-        callable: WithLocation<RawIdentifiers>,
-    ) -> RegisteredConstructor {
-        self.constructor(callable, Lifecycle::RequestScoped)
-    }
-
-    #[track_caller]
-    /// Register a constructor with a [transient lifecycle][Lifecycle::Transient].
-    ///
-    /// It's a shorthand for [`Blueprint::constructor`]—refer to its documentation for
-    /// more information on dependency injection in Pavex.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::Blueprint;
-    /// # struct LogLevel;
-    /// # struct Logger;
-    ///
-    /// fn logger(log_level: LogLevel) -> Logger {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    ///
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.transient(f!(crate::logger));
-    /// // ^ is equivalent to:
-    /// // bp.constructor(f!(crate::logger), Lifecycle::Transient));
-    /// # }
-    /// ```
-    pub fn transient(&mut self, callable: WithLocation<RawIdentifiers>) -> RegisteredConstructor {
-        self.constructor(callable, Lifecycle::Transient)
-    }
-
-    pub(super) fn register_constructor(
-        &mut self,
-        constructor: super::constructor::Constructor,
-    ) -> RegisteredConstructor {
-        let constructor = Constructor {
-            constructor: constructor.callable,
-            lifecycle: lifecycle2lifecycle(constructor.lifecycle),
-            cloning_strategy: constructor.cloning_strategy.map(cloning2cloning),
-            error_handler: constructor.error_handler,
-            lints: constructor.lints,
-        };
-        let component_id = self.push_component(constructor);
         RegisteredConstructor {
             component_id,
             blueprint: &mut self.schema,

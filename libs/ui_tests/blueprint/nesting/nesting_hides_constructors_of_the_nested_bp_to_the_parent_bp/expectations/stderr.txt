@@ -3,19 +3,19 @@
   [31m│[0m I need an instance of `u64` to invoke your request handler,
   [31m│[0m `app::parent`.
   [31m│[0m
-  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:7:1]
-  [31m│[0m  [2m7[0m │     bp.nest(sub_blueprint());
-  [31m│[0m  [2m8[0m │     bp.route(PARENT);
+  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │     bp.nest(sub_blueprint());
+  [31m│[0m  [2m7[0m │     bp.route(PARENT);
   [31m│[0m    · [35;1m             ───┬──[0m
   [31m│[0m    ·                 [35;1m╰── The request handler was registered here[0m
-  [31m│[0m  [2m9[0m │     bp
+  [31m│[0m  [2m8[0m │     bp
   [31m│[0m    ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ #[pavex::get(path = "/parent")]
-  [31m│[0m  [2m25[0m │ pub fn parent(_x: u64, _y: u32, _z: u16) -> StatusCode {
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:26:1]
+  [31m│[0m  [2m26[0m │ #[pavex::get(path = "/parent")]
+  [31m│[0m  [2m27[0m │ pub fn parent(_x: u64, _y: u32, _z: u16) -> StatusCode {
   [31m│[0m     · [35;1m              ───┬───[0m
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
-  [31m│[0m  [2m26[0m │     todo!()
+  [31m│[0m  [2m28[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `u64`.
   [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input parameter
@@ -25,19 +25,19 @@
   [31m│[0m I need an instance of `u32` to invoke your request handler,
   [31m│[0m `app::parent`.
   [31m│[0m
-  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:7:1]
-  [31m│[0m  [2m7[0m │     bp.nest(sub_blueprint());
-  [31m│[0m  [2m8[0m │     bp.route(PARENT);
+  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │     bp.nest(sub_blueprint());
+  [31m│[0m  [2m7[0m │     bp.route(PARENT);
   [31m│[0m    · [35;1m             ───┬──[0m
   [31m│[0m    ·                 [35;1m╰── The request handler was registered here[0m
-  [31m│[0m  [2m9[0m │     bp
+  [31m│[0m  [2m8[0m │     bp
   [31m│[0m    ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ #[pavex::get(path = "/parent")]
-  [31m│[0m  [2m25[0m │ pub fn parent(_x: u64, _y: u32, _z: u16) -> StatusCode {
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:26:1]
+  [31m│[0m  [2m26[0m │ #[pavex::get(path = "/parent")]
+  [31m│[0m  [2m27[0m │ pub fn parent(_x: u64, _y: u32, _z: u16) -> StatusCode {
   [31m│[0m     · [35;1m                       ───┬───[0m
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
-  [31m│[0m  [2m26[0m │     todo!()
+  [31m│[0m  [2m28[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `u32`.
   [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input parameter
@@ -47,19 +47,19 @@
   [31m│[0m I need an instance of `u16` to invoke your request handler,
   [31m│[0m `app::parent`.
   [31m│[0m
-  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:7:1]
-  [31m│[0m  [2m7[0m │     bp.nest(sub_blueprint());
-  [31m│[0m  [2m8[0m │     bp.route(PARENT);
+  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │     bp.nest(sub_blueprint());
+  [31m│[0m  [2m7[0m │     bp.route(PARENT);
   [31m│[0m    · [35;1m             ───┬──[0m
   [31m│[0m    ·                 [35;1m╰── The request handler was registered here[0m
-  [31m│[0m  [2m9[0m │     bp
+  [31m│[0m  [2m8[0m │     bp
   [31m│[0m    ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:24:1]
-  [31m│[0m  [2m24[0m │ #[pavex::get(path = "/parent")]
-  [31m│[0m  [2m25[0m │ pub fn parent(_x: u64, _y: u32, _z: u16) -> StatusCode {
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs[0m:26:1]
+  [31m│[0m  [2m26[0m │ #[pavex::get(path = "/parent")]
+  [31m│[0m  [2m27[0m │ pub fn parent(_x: u64, _y: u32, _z: u16) -> StatusCode {
   [31m│[0m     · [35;1m                                ───┬───[0m
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
-  [31m│[0m  [2m26[0m │     todo!()
+  [31m│[0m  [2m28[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `u16`.
   [31m│[0m   [36mhelp:[0m Alternatively, use `Blueprint::prebuilt` to add a new input parameter

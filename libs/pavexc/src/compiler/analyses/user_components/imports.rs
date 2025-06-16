@@ -117,16 +117,28 @@ pub(super) fn resolve_imports(
                         }
                     };
                     path.make_absolute(&raw_import.created_at);
-                    let package_name = path.0.first().expect("Module path can't be empty");
-                    let package_id =
-                        match dependency_name2package_id(package_name, &imported_in, package_graph)
-                        {
-                            Ok(package_id) => package_id,
-                            Err(e) => {
-                                crate_resolution_error(e, raw_import, diagnostics);
-                                continue;
-                            }
-                        };
+                    // The name of the package, as it appears from the perspective of the code that imported it.
+                    let imported_package_name = path.0.first().expect("Module path can't be empty");
+                    let package_id = match dependency_name2package_id(
+                        imported_package_name,
+                        &imported_in,
+                        package_graph,
+                    ) {
+                        Ok(package_id) => package_id,
+                        Err(e) => {
+                            crate_resolution_error(e, raw_import, diagnostics);
+                            continue;
+                        }
+                    };
+
+                    // The package may have been renamed in the `Cargo.toml` manifest of the current crate.
+                    // We want to retrieve its "source" name.
+                    path.0[0] = {
+                        let package_metadata = package_graph
+                            .metadata(&package_id)
+                            .expect("Failed to retrieve metadata for a package");
+                        package_metadata.name().to_owned()
+                    };
                     resolved_imports.push((
                         ResolvedImport {
                             path: path.0,

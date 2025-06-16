@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
 
 pub struct A;
@@ -17,10 +16,12 @@ impl std::fmt::Display for ErrorB {
 
 impl std::error::Error for ErrorB {}
 
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> A {
     todo!()
 }
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_a: &A) -> Result<B, ErrorB> {
     todo!()
 }
@@ -30,7 +31,8 @@ pub fn handler(_b: &B) -> Response {
     todo!()
 }
 
-pub fn error_handler(_a: &A, _e: &ErrorB) -> Response {
+#[pavex::error_handler]
+pub fn error_handler(_a: &A, #[px(error_ref)] _e: &ErrorB) -> Response {
     todo!()
 }
 
@@ -46,9 +48,7 @@ pub fn error_observer2(_err: &pavex::Error) {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::b), Lifecycle::RequestScoped)
-        .error_handler(f!(crate::error_handler));
+    bp.import(from![crate]);
     bp.error_observer(ERROR_OBSERVER);
     bp.error_observer(ERROR_OBSERVER_2);
     bp.routes(from![crate]);

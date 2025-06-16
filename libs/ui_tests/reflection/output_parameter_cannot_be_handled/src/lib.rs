@@ -1,12 +1,12 @@
-use pavex::blueprint::Blueprint;
-use pavex::f;
+use pavex::blueprint::{from, Blueprint};
 
-pub fn c() -> Box<dyn std::error::Error> {
+#[pavex::singleton]
+pub fn singleton() -> Box<dyn std::error::Error> {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f![crate::c]);
+    bp.import(from![crate]);
     bp
 }

@@ -20,7 +20,7 @@ use pavex::response::Response;
 #[derive(Clone)]
 pub struct A;
 
-#[pavex::request_scoped(clone_if_necessary)]
+#[pavex::request_scoped(clone_if_necessary, id = "A_")]
 pub fn a() -> A {
     todo!()
 }
@@ -37,7 +37,7 @@ pub fn handler(_a: &A) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.import(from![crate, pavex]);
+    bp.import(from![crate]);
     bp.wrap(MW);
     bp.routes(from![crate]);
     bp

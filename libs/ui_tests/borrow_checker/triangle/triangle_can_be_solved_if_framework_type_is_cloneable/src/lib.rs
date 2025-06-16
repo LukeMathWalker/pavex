@@ -1,4 +1,4 @@
-use pavex::{f, blueprint::{from, Blueprint}};
+use pavex::blueprint::{from, Blueprint};
 use pavex::request::path::RawPathParams;
 use pavex::response::Response;
 
@@ -17,6 +17,7 @@ use pavex::response::Response;
 
 pub struct B;
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_p: RawPathParams) -> B {
     todo!()
 }
@@ -28,7 +29,7 @@ pub fn handler(_p: &RawPathParams, _b: B) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::b));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

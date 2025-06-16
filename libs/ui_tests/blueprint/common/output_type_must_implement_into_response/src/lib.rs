@@ -5,12 +5,12 @@ use pavex::response::Response;
 pub struct A;
 pub struct B;
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> Result<A, ErrorType> {
     todo!()
 }
 
-#[pavex::transient]
+#[pavex::transient(id = "B_")]
 pub fn b() -> Result<B, ErrorType> {
     todo!()
 }

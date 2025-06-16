@@ -13,12 +13,12 @@
   [31m│[0m         You can do so by invoking `.clone_if_necessary()` after having
   [31m│[0m         registered your constructor.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/transitive_borrows/src/lib.rs[0m:46:1]
-  [31m│[0m        [2m46[0m │     let mut bp = Blueprint::new();
-  [31m│[0m        [2m47[0m │     bp.request_scoped(f!(crate::a));
-  [31m│[0m           · [35;1m                      ──────┬─────[0m
-  [31m│[0m           ·                             [35;1m╰── The constructor was registered here[0m
-  [31m│[0m        [2m48[0m │     bp.request_scoped(f!(crate::b));
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/transitive_borrows/src/lib.rs[0m:26:1]
+  [31m│[0m        [2m26[0m │
+  [31m│[0m        [2m27[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::request_scoped(id = "A_")]
+  [31m│[0m        [2m28[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn a() -> A {
+  [31m│[0m           · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [31m│[0m        [2m29[0m │         todo!()
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m Consider changing the signature of `app::b`.
   [31m│[0m         It takes `app::A` by value. Would a shared reference,

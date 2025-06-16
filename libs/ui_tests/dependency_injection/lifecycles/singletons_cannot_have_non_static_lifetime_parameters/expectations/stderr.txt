@@ -4,12 +4,12 @@
   [31m│[0m Singletons must be available for as long as the application is running,
   [31m│[0m therefore their lifetime must be `'static`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mdependency_injection/lifecycles/singletons_cannot_have_non_static_lifetime_parameters/src/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │     bp.singleton(f!(self::a));
-  [31m│[0m  [2m28[0m │     bp.singleton(f!(self::B::new)).clone_if_necessary();
-  [31m│[0m     · [35;1m                 ────────┬───────[0m
-  [31m│[0m     ·                          [35;1m╰── The singleton was registered here[0m
-  [31m│[0m  [2m29[0m │     bp.routes(from![crate]);
+  [31m│[0m     ╭─[[36;1;4mdependency_injection/lifecycles/singletons_cannot_have_non_static_lifetime_parameters/src/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │     impl<'a> B<'a> {
+  [31m│[0m  [2m11[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[singleton(clone_if_necessary)]
+  [31m│[0m  [2m12[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn new(a: &'a A) -> Self {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe singleton was registered here[0m
+  [31m│[0m  [2m13[0m │             B(a)
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m If your type holds a reference to data that's owned by another
   [31m│[0m         singleton component, register its constructor as transient rather

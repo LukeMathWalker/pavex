@@ -9,15 +9,19 @@ use crate::{AnnotationProperties, atoms::MethodArgument};
 /// It is a more verbose (but easier to parse) representation than
 /// what is used by `pavex::constructor`.
 pub struct ConstructorProperties {
+    pub id: String,
     pub lifecycle: Lifecycle,
     pub cloning_strategy: Option<CloningStrategy>,
+    pub allow_unused: Option<bool>,
 }
 
 impl From<ConstructorProperties> for AnnotationProperties {
     fn from(value: ConstructorProperties) -> Self {
         AnnotationProperties::Constructor {
+            id: value.id,
             lifecycle: value.lifecycle.into(),
             cloning_strategy: value.cloning_strategy.map(Into::into),
+            allow_unused: value.allow_unused,
         }
     }
 }

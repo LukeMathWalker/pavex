@@ -18,7 +18,7 @@ digraph "* * - 1" {
     0 -> 1 [ ]
 }
 
-digraph "GET /home - 0" {
+digraph "GET / - 0" {
     0 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
     1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
     2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
@@ -28,14 +28,14 @@ digraph "GET /home - 0" {
     2 -> 3 [ ]
 }
 
-digraph "GET /home - 1" {
+digraph "GET / - 1" {
     0 [ label = "0| app_d89d2d61::A::new() -> core::result::Result<app_d89d2d61::A, anyhow::Error>"]
     1 [ label = "1| `match`"]
     2 [ label = "2| core::result::Result<app_d89d2d61::A, anyhow::Error> -> anyhow::Error"]
     3 [ label = "3| app_d89d2d61::error_handler(&anyhow::Error) -> pavex::response::Response"]
     4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 [ label = "5| core::result::Result<app_d89d2d61::A, anyhow::Error> -> app_d89d2d61::A"]
-    6 [ label = "6| app_d89d2d61::route_handler(app_d89d2d61::A) -> pavex::response::Response"]
+    6 [ label = "6| app_d89d2d61::handler(app_d89d2d61::A) -> pavex::response::Response"]
     7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 -> 6 [ ]
     1 -> 2 [ ]

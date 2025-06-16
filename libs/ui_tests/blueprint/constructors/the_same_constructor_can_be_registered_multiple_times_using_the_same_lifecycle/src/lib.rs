@@ -1,8 +1,8 @@
 use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
 
 pub struct Logger;
 
+#[pavex::singleton]
 pub fn new_logger() -> Logger {
     todo!()
 }
@@ -19,8 +19,10 @@ impl Streamer {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::new_logger), Lifecycle::Singleton);
-    bp.constructor(f!(crate::new_logger), Lifecycle::RequestScoped);
+    bp.constructor(NEW_LOGGER);
+    // Register *again*, but with a different lifecycle
+    bp.constructor(NEW_LOGGER)
+        .lifecycle(Lifecycle::RequestScoped);
     bp.routes(from![crate]);
     bp
 }

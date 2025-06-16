@@ -4,7 +4,7 @@ use pavex::{error_handler, methods};
 #[derive(Clone)]
 pub struct A;
 
-#[pavex::singleton(clone_if_necessary)]
+#[pavex::singleton(clone_if_necessary, id = "A_")]
 /// As simple as it gets.
 pub fn a() -> A {
     A
@@ -12,7 +12,7 @@ pub fn a() -> A {
 
 pub struct B<T>(T);
 
-#[pavex::request_scoped]
+#[pavex::request_scoped(id = "B_")]
 /// Generic, but all generic parameters are used in the output type.
 pub fn b<T>(_i: T) -> B<T> {
     todo!()
@@ -20,7 +20,7 @@ pub fn b<T>(_i: T) -> B<T> {
 
 pub struct C;
 
-#[pavex::transient]
+#[pavex::transient(id = "C_")]
 /// Fallible.
 pub fn c(_b: &B<A>) -> Result<C, pavex::Error> {
     todo!()
@@ -31,7 +31,7 @@ pub struct D<'a> {
     _a: &'a A,
 }
 
-#[pavex::constructor(transient)]
+#[pavex::constructor(transient, id = "D_")]
 /// With a lifetime parameter.
 pub fn d<'a>(_c: &'a C, _a: &'a A) -> D<'a> {
     todo!()

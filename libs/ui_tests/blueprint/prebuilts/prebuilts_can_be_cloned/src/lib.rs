@@ -8,7 +8,7 @@ pub struct A;
 #[derive(Clone)]
 pub struct B;
 
-#[pavex::singleton]
+#[pavex::singleton(id = "B_")]
 // Consumes `A` by value`, but `A` is also needed
 // as an input parameter to the request handler,
 // thus the need to clone.

@@ -63,7 +63,7 @@ impl Router {
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
-        router.insert("/home", 0u32).unwrap();
+        router.insert("/", 0u32).unwrap();
         router
     }
     pub async fn route(
@@ -166,7 +166,7 @@ pub mod route_1 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     async fn handler(v0: (usize, isize)) -> pavex::response::Response {
-        let v1 = app::handler_with_input_tuple(v0);
+        let v1 = app::handler(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     struct Next0<T>

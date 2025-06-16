@@ -1,4 +1,0 @@
-description = "Pavex doesn't accept `crate::function()` as callable path, but it suggests a useful fix"
-
-[expectations]
-codegen = "fail"

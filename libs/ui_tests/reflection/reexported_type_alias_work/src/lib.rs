@@ -1,9 +1,9 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::response::Response;
 
 pub type RemoteAlias = dep::Surreal<dep::engine::Any>;
 
+#[pavex::singleton]
 pub fn constructor() -> RemoteAlias {
     todo!()
 }
@@ -15,7 +15,7 @@ pub fn handler(_a: &RemoteAlias) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(crate::constructor));
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

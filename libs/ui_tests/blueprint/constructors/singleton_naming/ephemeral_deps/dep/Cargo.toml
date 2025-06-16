@@ -12,3 +12,6 @@ level = "allow"
 
 [dependencies]
 workspace_hack = { version = "0.1", path = "../../../../../workspace_hack" }
+
+[dependencies.pavex]
+workspace = true

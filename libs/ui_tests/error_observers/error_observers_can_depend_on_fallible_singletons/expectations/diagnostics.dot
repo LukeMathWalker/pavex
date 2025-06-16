@@ -16,7 +16,7 @@ digraph "* * - 1" {
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
-digraph "GET /home - 0" {
+digraph "GET / - 0" {
     0 [ label = "0| &app::A"]
     1 [ label = "1| crate::route_1::Next0(&'a app::A) -> crate::route_1::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
@@ -27,7 +27,7 @@ digraph "GET /home - 0" {
     3 -> 4 [ ]
     0 -> 1 [ ]
 }
-digraph "GET /home - 1" {
+digraph "GET / - 1" {
     0 [ label = "0| &app::A"]
     1 [ label = "1| app::b(&app::A) -> core::result::Result<app::B, app::AnError>"]
     2 [ label = "2| `match`"]

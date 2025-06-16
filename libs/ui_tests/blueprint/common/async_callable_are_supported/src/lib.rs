@@ -1,14 +1,15 @@
 use std::path::PathBuf;
 
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 
 pub struct Logger;
 
+#[pavex::request_scoped]
 pub async fn extract_path(_inner: pavex::request::RequestHead) -> PathBuf {
     todo!()
 }
 
+#[pavex::transient]
 pub async fn logger() -> Logger {
     todo!()
 }
@@ -29,6 +30,7 @@ pub struct Config;
 #[derive(Clone)]
 pub struct HttpClient;
 
+#[pavex::singleton]
 pub async fn http_client(_config: Config) -> HttpClient {
     todo!()
 }
@@ -36,9 +38,6 @@ pub async fn http_client(_config: Config) -> HttpClient {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.singleton(f!(crate::http_client));
-    bp.request_scoped(f!(crate::extract_path));
-    bp.transient(f!(crate::logger));
     bp.routes(from![crate]);
     bp
 }

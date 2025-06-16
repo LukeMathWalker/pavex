@@ -17,7 +17,7 @@ use std::collections::HashMap;
 pub use id::SessionId;
 pub use incoming::IncomingSession;
 pub use middleware::{FINALIZE_SESSION, finalize_session};
-use pavex::transient;
+use pavex::methods;
 pub use session_::Session;
 pub use store_::SessionStore;
 
@@ -54,6 +54,7 @@ pub struct SessionConfig {
     pub state: crate::config::SessionStateConfig,
 }
 
+#[methods]
 impl SessionConfig {
     /// Create a new session configuration with the default settings.
     pub fn new() -> Self {

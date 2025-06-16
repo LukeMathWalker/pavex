@@ -1,8 +1,7 @@
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, Domain,
-    ErrorHandler, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint,
-    PathPrefix, PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers,
-    Route, RoutesImport, WrappingMiddleware,
+    Blueprint, Component, ConfigType, Constructor, CreatedAt, Domain, ErrorHandler, ErrorObserver,
+    Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix, PostProcessingMiddleware,
+    PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route, RoutesImport, WrappingMiddleware,
 };
 
 use super::auxiliary::AuxiliaryData;
@@ -101,9 +100,6 @@ pub(super) fn process_blueprint(
             diagnostics,
         );
     }
-
-    #[cfg(debug_assertions)]
-    aux.check_invariants();
 
     scope_graph_builder
 }
@@ -510,34 +506,40 @@ fn process_constructor(
     constructor: &Constructor,
     current_scope_id: ScopeId,
 ) {
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(constructor.constructor.callable.clone());
-    let component = UserComponent::Constructor {
-        source: identifiers_id.into(),
+    let annotation_coordinates = AnnotationCoordinates {
+        id: constructor.coordinates.id.clone(),
+        created_at: constructor.coordinates.created_at.clone(),
     };
-    let lifecycle = constructor.lifecycle;
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+    let component = UserComponent::Constructor {
+        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
+    };
     let constructor_id = aux.intern_component(
         component,
         current_scope_id,
-        lifecycle,
-        constructor.constructor.registered_at.clone().into(),
+        constructor.lifecycle,
+        constructor.registered_at.clone().into(),
     );
-    aux.id2cloning_strategy.insert(
-        constructor_id,
-        constructor
-            .cloning_strategy
-            .unwrap_or(CloningStrategy::NeverClone),
-    );
+
+    // If the user has specified/overridden the expected behaviour for the constructor,
+    // let's take note of it.
+    // If not, we'll fill things in with the right default values later on,
+    // when resolving annotation coordinates.
+    if let Some(cloning_strategy) = constructor.cloning_strategy {
+        aux.id2cloning_strategy
+            .insert(constructor_id, cloning_strategy);
+    }
     if !constructor.lints.is_empty() {
         aux.id2lints
             .insert(constructor_id, constructor.lints.clone());
     }
 
-    process_legacy_component_specific_error_handler(
+    process_component_specific_error_handler(
         aux,
         &constructor.error_handler,
-        lifecycle,
+        None,
         current_scope_id,
         constructor_id,
     );
@@ -628,7 +630,7 @@ fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_sco
         LIFECYCLE,
         si.registered_at.clone().into(),
     );
-    
+
     // If the user has specified/overridden the expected behaviour for the prebuilt type,
     // let's take note of it.
     // If not, we'll fill things in with the right default values later on,
@@ -684,39 +686,10 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
 
 /// Process the error handler registered against a (supposedly) fallible component, if
 /// any.
-fn process_legacy_component_specific_error_handler(
-    aux: &mut AuxiliaryData,
-    error_handler: &Option<Callable>,
-    lifecycle: Lifecycle,
-    scope_id: ScopeId,
-    fallible_id: UserComponentId,
-) {
-    let Some(error_handler) = error_handler else {
-        return;
-    };
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(error_handler.callable.clone());
-    let component = UserComponent::ErrorHandler {
-        source: identifiers_id.into(),
-        target: ErrorHandlerTarget::FallibleComponent { fallible_id },
-    };
-    let error_handler_id = aux.intern_component(
-        component,
-        scope_id,
-        lifecycle,
-        error_handler.registered_at.clone().into(),
-    );
-    aux.fallible_id2error_handler_id
-        .insert(fallible_id, error_handler_id);
-}
-
-/// Process the error handler registered against a (supposedly) fallible component, if
-/// any.
 fn process_component_specific_error_handler(
     aux: &mut AuxiliaryData,
     eh: &Option<ErrorHandler>,
-    lifecycle: Lifecycle,
+    lifecycle: impl Into<Option<Lifecycle>>,
     scope_id: ScopeId,
     fallible_id: UserComponentId,
 ) {

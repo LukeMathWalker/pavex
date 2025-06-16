@@ -1,10 +1,10 @@
 use pavex::blueprint::{from, Blueprint};
-use pavex::f;
 use pavex::response::Response;
 
 #[derive(Clone)]
 pub struct A;
 
+#[pavex::request_scoped(clone_if_necessary)]
 pub fn build() -> A {
     A
 }
@@ -16,7 +16,7 @@ pub fn handler(_a: &mut A) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(self::build)).clone_if_necessary();
+    bp.import(from![crate]);
     bp.routes(from![crate]);
     bp
 }

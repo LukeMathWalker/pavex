@@ -1,15 +1,7 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
-use pavex::f;
-
-pub fn handler(_logger: dep_1::Logger, _logger_2: dep_2::Logger) -> pavex::response::Response {
-    todo!()
-}
+use pavex::blueprint::{from, Blueprint};
 
 #[pavex::get(path = "/home")]
-pub fn route_handler(
-    _logger: dep_1::Logger,
-    _logger_2: dep_2::Logger,
-) -> pavex::response::Response {
+pub fn handler(_logger: dep_1::Logger, _logger_2: dep_2::Logger) -> pavex::response::Response {
     todo!()
 }
 

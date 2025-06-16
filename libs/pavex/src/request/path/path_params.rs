@@ -50,7 +50,7 @@ impl<T> PathParams<T> {
     /// The default constructor for [`PathParams`].
     ///
     /// If the extraction fails, an [`ExtractPathParamsError`] is returned.
-    #[request_scoped]
+    #[request_scoped(pavex = crate, id = "PATH_PARAMS_EXTRACT")]
     pub fn extract<'server, 'request>(
         params: RawPathParams<'server, 'request>,
     ) -> Result<Self, ExtractPathParamsError>
