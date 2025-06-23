@@ -17,3 +17,4 @@ We contributors to Pavex:
 - Ben Wishovich (@benwis)
 - Donmai (@donmai-me)
 - Leon Qadirie (@leonqadirie)
+- Oliver Barnes (@oliverbarnes)
