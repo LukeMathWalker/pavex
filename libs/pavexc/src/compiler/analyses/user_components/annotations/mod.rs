@@ -346,6 +346,18 @@ fn intern_annotated(
             aux.config_id2include_if_unused
                 .insert(config_id, include_if_unused.unwrap_or(false));
 
+            let lints = aux.id2lints.entry(config_id).or_default();
+
+            if !krate_collection
+                .package_graph()
+                .metadata(&krate.core.package_id)
+                .unwrap()
+                .in_workspace()
+            {
+                // Ignore unused configuration types imported from crates defined outside the current workspace
+                lints.insert(Lint::Unused, LintSetting::Ignore);
+            }
+
             let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;
             match ConfigType::new(ty, key) {
                 Ok(config) => {
