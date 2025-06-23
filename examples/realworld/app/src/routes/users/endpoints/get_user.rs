@@ -1,4 +1,4 @@
-use pavex::http::StatusCode;
+use pavex::{get, http::StatusCode};
 
 use crate::schemas::User;
 
@@ -8,6 +8,7 @@ pub struct GetUserResponse {
     user: User,
 }
 
+#[get(path = "/user")]
 pub fn get_user() -> StatusCode {
     StatusCode::OK
 }

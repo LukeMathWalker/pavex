@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::query::QueryParams};
+use pavex::{get, http::StatusCode, request::query::QueryParams};
 
 use crate::schemas::Article;
 
@@ -26,6 +26,7 @@ pub struct GetFeedResponse {
     pub articles_count: u64,
 }
 
+#[get(path = "/feed")]
 pub fn get_feed(_params: QueryParams<GetFeed>) -> StatusCode {
     StatusCode::OK
 }

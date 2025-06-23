@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::path::PathParams};
+use pavex::{http::StatusCode, post, request::path::PathParams};
 
 use crate::schemas::Profile;
 
@@ -14,6 +14,7 @@ pub struct FollowProfileResponse {
     pub profile: Profile,
 }
 
+#[post(path = "/{username}/follow")]
 pub fn follow_profile(_params: PathParams<FollowProfile>) -> StatusCode {
     StatusCode::OK
 }

@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::path::PathParams};
+use pavex::{delete, http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Article;
 
@@ -14,6 +14,7 @@ pub struct UnfavoriteArticleResponse {
     pub article: Article,
 }
 
+#[delete(path = "/{slug}/favorite")]
 pub fn unfavorite_article(_params: PathParams<UnfavoriteArticle>) -> StatusCode {
     StatusCode::OK
 }
