@@ -11,6 +11,7 @@ version.workspace = true
 [features]
 default = []
 postgres = ["sqlx/postgres", "jiff-sqlx/postgres"]
+sqlite = ["sqlx/sqlite", "sqlx/runtime-tokio-rustls"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -31,5 +32,8 @@ sqlx = { workspace = true, default-features = true, features = ["uuid"] }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
-pavex_session_sqlx = { path = ".", features = ["postgres"] }
+pavex_session_sqlx = { path = ".", features = ["postgres", "sqlite"] }
 pavex_tracing = { path = "../pavex_tracing" }
+tokio = { workspace = true, features = ["rt-multi-thread", "time"] }
+tempfile = "3.8"
+uuid = { workspace = true, features = ["v4"] }
