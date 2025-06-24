@@ -1,0 +1,51 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "sqlite"
+    source_path: "src/blueprint.rs"
+    ranges: ["0..10", "14.."]
+  - name: "server_insert"
+    source_path: "src/ops/insert.rs"
+    ranges: ["0..6", "8.."]
+    hl_lines: [6]
+  - name: "server_insert_struct"
+    source_path: "src/ops/insert_struct.rs"
+    ranges: ["0..16", "18.."]
+    hl_lines: [5, 16]
+  - name: "server_get"
+    source_path: "src/ops/get.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "server_get_struct"
+    source_path: "src/ops/get_struct.rs"
+    ranges: ["0..12", "13.."]
+    hl_lines: [5, 12]
+  - name: "server_remove"
+    source_path: "src/ops/remove.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "server_remove_raw"
+    source_path: "src/ops/remove_raw.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "server_delete"
+    source_path: "src/ops/delete.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "server_clear"
+    source_path: "src/ops/clear.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "invalidate"
+    source_path: "src/ops/invalidate.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "cycle_id"
+    source_path: "src/ops/cycle_id.rs"
+    ranges: ["0..6", "7.."]
+    hl_lines: [6]
+  - name: "client_ops"
+    source_path: "src/ops/client.rs"
+    ranges: ["0..18", "20.."]
