@@ -45,8 +45,8 @@ impl RedisSessionStore {
     }
 }
 
-fn redis_key(id: &SessionId) -> &[u8] {
-    id.as_bytes()
+fn redis_key(id: &SessionId) -> String {
+    id.inner().to_string()
 }
 
 fn err_unknown(id: &SessionId) -> UnknownIdError {
@@ -166,9 +166,9 @@ impl SessionStorageBackend for RedisSessionStore {
         let k = redis_key(session_id);
         let (ttl_reply, get_reply): (Value, Value) = redis::pipe()
             .cmd("TTL")
-            .arg(k)
+            .arg(&k)
             .cmd("GET")
-            .arg(k)
+            .arg(&k)
             .query_async(&mut conn)
             .await
             .map_err(|e| LoadError::Other(e.into()))?;
