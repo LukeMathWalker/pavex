@@ -67,6 +67,26 @@ fn err_duplicate(id: &SessionId) -> DuplicateIdError {
     DuplicateIdError { id: id.to_owned() }
 }
 
+fn redis_value_type_name(value: Value) -> &'static str {
+    match value {
+        Value::Nil => "Nil",
+        Value::Okay => "Okay",
+        Value::Int(_) => "Int",
+        Value::BulkString(_) => "BulkString",
+        Value::Array(_) => "Array",
+        Value::SimpleString(_) => "SimpleString",
+        Value::Map(_) => "Map",
+        Value::Set(_) => "Set",
+        Value::Attribute { .. } => "Attribute",
+        Value::Double(_) => "Double",
+        Value::Boolean(_) => "Boolean",
+        Value::VerbatimString { .. } => "VerbatimString",
+        Value::BigNumber(_) => "BigNumber",
+        Value::Push { .. } => "Push",
+        Value::ServerError(_) => "ServerError",
+    }
+}
+
 #[async_trait::async_trait]
 impl SessionStorageBackend for RedisSessionStore {
     /// Creates a new session record in the store using the provided ID.
@@ -194,8 +214,8 @@ impl SessionStorageBackend for RedisSessionStore {
             Value::Int(-2) => return Ok(None),
             _ => {
                 return Err(LoadError::Other(anyhow::anyhow!(
-                    "Redis TTL returned {:?}. Expected integer >= -2",
-                    ttl_reply
+                    "Redis TTL returned {}. Expected integer >= -2",
+                    redis_value_type_name(ttl_reply)
                 )));
             }
         };
@@ -206,8 +226,8 @@ impl SessionStorageBackend for RedisSessionStore {
                 .map_err(LoadError::DeserializationError)?,
             _ => {
                 return Err(LoadError::Other(anyhow::anyhow!(
-                    "Redis GET replied {:?}. Expected bulk string.",
-                    get_reply
+                    "Redis GET replied {}. Expected BulkString.",
+                    redis_value_type_name(get_reply)
                 )));
             }
         };
