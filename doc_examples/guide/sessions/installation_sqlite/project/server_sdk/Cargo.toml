@@ -1,8 +1,0 @@
-[package]
-name = "session_installation_sqlite_server_sdk"
-version = "0.1.0"
-edition = "2021"
-
-[package.metadata.px.generate]
-generator_type = "cargo_workspace_binary"
-generator_name = "session_installation_sqlite"
