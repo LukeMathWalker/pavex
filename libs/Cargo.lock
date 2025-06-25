@@ -2804,6 +2804,7 @@ dependencies = [
  "pavex",
  "pavex_session",
  "redis",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",
