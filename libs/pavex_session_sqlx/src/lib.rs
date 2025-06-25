@@ -29,9 +29,4 @@ pub mod sqlite;
 #[cfg(feature = "sqlite")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sqlite")))]
 #[doc(inline)]
-pub use sqlite::SqliteSessionKit;
-
-#[cfg(feature = "sqlite")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sqlite")))]
-#[doc(inline)]
 pub use sqlite::SqliteSessionStore;
