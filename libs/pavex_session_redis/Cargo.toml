@@ -11,6 +11,11 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 pavex = { version = "0.1.80", path = "../pavex" }
 pavex_session = { version = "0.1.80", path = "../pavex_session" }
-redis = { version = "0.31.0", features = ["tokio-comp", "aio", "connection-manager"] }
+redis = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
 serde_json = { workspace = true }
+
+# [features]
+# tokio-native-tls-comp = ["redis/tokio-native-tls-comp"]
+# tokio-rustls-comp = ["redis/tokio-rustls-comp"]

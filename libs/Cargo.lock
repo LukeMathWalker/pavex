@@ -2749,6 +2749,7 @@ dependencies = [
  "redis",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
