@@ -16,20 +16,28 @@ use pavex_session::{
 };
 use redis::{AsyncCommands, ExistenceCheck, SetExpiry, SetOptions, Value, aio::ConnectionManager};
 use std::num::NonZeroUsize;
+use serde;
 
-// TODO: should we allow the user to store a generate-key function
-// on this which we use to make namespacing etc in redis configurable
+#[derive(Clone, Debug, Default, serde::Deserialize)]
+pub struct RedisSessionStoreConfig {
+    #[serde(default)]
+    pub namespace: Option<String>,
+}
+
 #[derive(Clone)]
 /// A server-side session store using Redis as its backend.
 ///
 /// # Implementation details
-///
-pub struct RedisSessionStore(ConnectionManager);
+pub struct RedisSessionStore {
+    conn: ConnectionManager,
+    cfg: RedisSessionStoreConfig,
+}
 
 impl std::fmt::Debug for RedisSessionStore {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RedisSessionStore")
-            .field("connection", &"<ConnectionManager>")
+            .field("conn", &"<ConnectionManager>")
+            .field("cfg", &format_args!("{:?}", self.cfg))
             .finish()
     }
 }
@@ -38,15 +46,17 @@ impl RedisSessionStore {
     /// Creates a new Redis session store instance.
     ///
     /// It requires a redis::ConnectionManager instance to interact with redis.
-    ///
-    pub fn new(conn_manager: ConnectionManager) -> Self {
-    // TODO: should this take a redis connection string instead?
-        Self(conn_manager)
+    pub fn new(conn: ConnectionManager, cfg: RedisSessionStoreConfig) -> Self {
+        Self { conn, cfg }
     }
-}
 
-fn redis_key(id: &SessionId) -> String {
-    id.inner().to_string()
+    fn redis_key(&self, id: &SessionId) -> String {
+        if let Some(namespace) = &self.cfg.namespace {
+            format!("{}:{}", namespace, id.inner().to_string())
+        } else {
+            id.inner().to_string()
+        }
+    }
 }
 
 fn err_unknown(id: &SessionId) -> UnknownIdError {
@@ -67,10 +77,10 @@ impl SessionStorageBackend for RedisSessionStore {
         record: SessionRecordRef<'_>,
     ) -> Result<(), CreateError> {
         match self
-            .0
+            .conn
             .clone()
             .set_options(
-                redis_key(id),
+                self.redis_key(id),
                 serde_json::to_vec(&record.state)?,
                 SetOptions::default()
                     .conditional_set(ExistenceCheck::NX)
@@ -98,10 +108,10 @@ impl SessionStorageBackend for RedisSessionStore {
         record: SessionRecordRef<'_>,
     ) -> Result<(), UpdateError> {
         match self
-            .0
+            .conn
             .clone()
             .set_options(
-                redis_key(id),
+                self.redis_key(id),
                 serde_json::to_vec(&record.state)?,
                 SetOptions::default()
                     .conditional_set(ExistenceCheck::XX)
@@ -128,12 +138,13 @@ impl SessionStorageBackend for RedisSessionStore {
         id: &SessionId,
         ttl: std::time::Duration,
     ) -> Result<(), UpdateTtlError> {
-        let mut conn = self.0.clone();
+        let k = self.redis_key(id);
+        let mut conn = self.conn.clone();
         match redis::pipe()
             .cmd("EXISTS")
-            .arg(redis_key(id))
+            .arg(&k)
             .cmd("EXPIRE")
-            .arg(redis_key(id))
+            .arg(&k)
             .arg(ttl.as_secs())
             .query_async(&mut conn)
             .await
@@ -162,8 +173,8 @@ impl SessionStorageBackend for RedisSessionStore {
     /// returned.
     #[tracing::instrument(name = "Load server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn load(&self, session_id: &SessionId) -> Result<Option<SessionRecord>, LoadError> {
-        let mut conn = self.0.clone();
-        let k = redis_key(session_id);
+        let mut conn = self.conn.clone();
+        let k = self.redis_key(session_id);
         let (ttl_reply, get_reply): (Value, Value) = redis::pipe()
             .cmd("TTL")
             .arg(&k)
@@ -208,9 +219,9 @@ impl SessionStorageBackend for RedisSessionStore {
     #[tracing::instrument(name = "Delete server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn delete(&self, id: &SessionId) -> Result<(), DeleteError> {
         let ndeleted: u64 = self
-            .0
+            .conn
             .clone()
-            .del(redis_key(id))
+            .del(self.redis_key(id))
             .await
             .map_err(|e| DeleteError::Other(e.into()))?;
 
@@ -232,9 +243,9 @@ impl SessionStorageBackend for RedisSessionStore {
     #[tracing::instrument(name = "Change id for server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn change_id(&self, old_id: &SessionId, new_id: &SessionId) -> Result<(), ChangeIdError> {
         let nchanged: u64 = self
-            .0
+            .conn
             .clone()
-            .rename_nx(redis_key(old_id), redis_key(new_id))
+            .rename_nx(self.redis_key(old_id), self.redis_key(new_id))
             .await
             .map_err(|e| ChangeIdError::Other(e.into()))?;
 
