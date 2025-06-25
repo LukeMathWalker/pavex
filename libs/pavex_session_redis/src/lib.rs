@@ -358,3 +358,401 @@ impl RedisSessionKit {
 #[non_exhaustive]
 /// The type returned by [`RedisSessionKit::register`].
 pub struct RegisteredRedisSessionKit {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pavex_session::store::{SessionRecordRef, SessionStorageBackend};
+    use std::borrow::Cow;
+    use std::collections::HashMap;
+    use std::time::Duration;
+
+    async fn create_test_store() -> RedisSessionStore {
+        let client = redis::Client::open("redis://localhost:6379").unwrap();
+        let conn = tokio::time::timeout(
+            Duration::from_secs(2),
+            redis::aio::ConnectionManager::new(client),
+        )
+        .await
+        .expect("Failed to connect to Redis within 2 seconds - is Redis running on localhost:6379?")
+        .unwrap();
+
+        // Use random namespace to avoid test collisions
+        let config = RedisSessionStoreConfig {
+            namespace: Some(format!("test_{}", uuid::Uuid::new_v4())),
+        };
+
+        RedisSessionStore::new(conn, config)
+    }
+
+    fn create_test_record(
+        _ttl_secs: u64,
+    ) -> (SessionId, HashMap<Cow<'static, str>, serde_json::Value>) {
+        let session_id = SessionId::random();
+        let mut state = HashMap::new();
+        state.insert(
+            Cow::Borrowed("user_id"),
+            serde_json::Value::String("test-user-123".to_string()),
+        );
+        state.insert(
+            Cow::Borrowed("login_time"),
+            serde_json::Value::String("2024-01-01T00:00:00Z".to_string()),
+        );
+        state.insert(
+            Cow::Borrowed("permissions"),
+            serde_json::json!(["read", "write"]),
+        );
+        state.insert(
+            Cow::Borrowed("metadata"),
+            serde_json::json!({
+                "ip": "192.168.1.1",
+                "user_agent": "test-agent",
+                "session_start": 1640995200
+            }),
+        );
+        (session_id, state)
+    }
+
+    #[tokio::test]
+    async fn test_create_and_load_roundtrip() {
+        let store = create_test_store().await;
+        let (session_id, state) = create_test_record(3600);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Create session
+        store.create(&session_id, record).await.unwrap();
+
+        // Load session
+        let loaded = store.load(&session_id).await.unwrap();
+        assert!(loaded.is_some());
+
+        let loaded_record = loaded.unwrap();
+
+        // Verify all data is preserved correctly
+        assert_eq!(
+            loaded_record.state.get("user_id").unwrap(),
+            &serde_json::Value::String("test-user-123".to_string())
+        );
+        assert_eq!(
+            loaded_record.state.get("login_time").unwrap(),
+            &serde_json::Value::String("2024-01-01T00:00:00Z".to_string())
+        );
+        assert_eq!(
+            loaded_record.state.get("permissions").unwrap(),
+            &serde_json::json!(["read", "write"])
+        );
+
+        // Verify nested JSONB structure
+        let metadata = loaded_record.state.get("metadata").unwrap();
+        assert_eq!(metadata.get("ip").unwrap(), "192.168.1.1");
+        assert_eq!(metadata.get("user_agent").unwrap(), "test-agent");
+        assert_eq!(metadata.get("session_start").unwrap(), 1640995200);
+
+        // Verify TTL is reasonable (should be close to 3600 seconds)
+        assert!(loaded_record.ttl.as_secs() > 3550);
+        assert!(loaded_record.ttl.as_secs() <= 3600);
+    }
+
+    #[tokio::test]
+    async fn test_update_roundtrip() {
+        let store = create_test_store().await;
+        let (session_id, mut state) = create_test_record(3600);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Create initial session
+        store.create(&session_id, record).await.unwrap();
+
+        // Update the state
+        state.insert(
+            Cow::Borrowed("updated_field"),
+            serde_json::Value::String("new_value".to_string()),
+        );
+        state.insert(
+            Cow::Borrowed("user_id"),
+            serde_json::Value::String("updated-user-456".to_string()),
+        );
+        state.insert(
+            Cow::Borrowed("new_metadata"),
+            serde_json::json!({
+                "last_action": "update_session",
+                "timestamp": 1640995260,
+                "complex_data": {
+                    "nested": {
+                        "deeply": ["nested", "array", 123, true]
+                    }
+                }
+            }),
+        );
+
+        let updated_record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(7200),
+        };
+
+        // Update session
+        store.update(&session_id, updated_record).await.unwrap();
+
+        // Load and verify updates
+        let loaded = store.load(&session_id).await.unwrap().unwrap();
+
+        assert_eq!(
+            loaded.state.get("updated_field").unwrap(),
+            &serde_json::Value::String("new_value".to_string())
+        );
+        assert_eq!(
+            loaded.state.get("user_id").unwrap(),
+            &serde_json::Value::String("updated-user-456".to_string())
+        );
+
+        // Verify complex nested structure is preserved
+        let new_metadata = loaded.state.get("new_metadata").unwrap();
+        assert_eq!(new_metadata.get("last_action").unwrap(), "update_session");
+        assert_eq!(new_metadata.get("timestamp").unwrap(), 1640995260);
+
+        let deeply_nested = &new_metadata["complex_data"]["nested"]["deeply"];
+        assert_eq!(deeply_nested.as_array().unwrap().len(), 4);
+        assert_eq!(deeply_nested[0], "nested");
+        assert_eq!(deeply_nested[1], "array");
+        assert_eq!(deeply_nested[2], 123);
+        assert_eq!(deeply_nested[3], true);
+
+        // Verify TTL was updated
+        assert!(loaded.ttl.as_secs() > 7150);
+        assert!(loaded.ttl.as_secs() <= 7200);
+    }
+
+    #[tokio::test]
+    async fn test_ttl_expiry() {
+        let store = create_test_store().await;
+        let (session_id, state) = create_test_record(1);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(1), // Very short TTL
+        };
+
+        // Create session with short TTL
+        store.create(&session_id, record).await.unwrap();
+
+        // Session should exist immediately
+        let loaded = store.load(&session_id).await.unwrap();
+        assert!(loaded.is_some());
+
+        // Wait for expiration
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        // Session should be expired and not loadable
+        let expired = store.load(&session_id).await.unwrap();
+        assert!(expired.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_update_ttl_roundtrip() {
+        let store = create_test_store().await;
+        let (session_id, state) = create_test_record(3600);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Create session
+        store.create(&session_id, record).await.unwrap();
+
+        // Update TTL only
+        store
+            .update_ttl(&session_id, Duration::from_secs(7200))
+            .await
+            .unwrap();
+
+        // Verify TTL was updated but data preserved
+        let loaded = store.load(&session_id).await.unwrap().unwrap();
+        assert_eq!(
+            loaded.state.get("user_id").unwrap(),
+            &serde_json::Value::String("test-user-123".to_string())
+        );
+        assert!(loaded.ttl.as_secs() > 7150);
+        assert!(loaded.ttl.as_secs() <= 7200);
+    }
+
+    #[tokio::test]
+    async fn test_delete_roundtrip() {
+        let store = create_test_store().await;
+        let (session_id, state) = create_test_record(3600);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Create session
+        store.create(&session_id, record).await.unwrap();
+
+        // Verify it exists
+        let loaded = store.load(&session_id).await.unwrap();
+        assert!(loaded.is_some());
+
+        // Delete session
+        store.delete(&session_id).await.unwrap();
+
+        // Verify it's gone
+        let deleted = store.load(&session_id).await.unwrap();
+        assert!(deleted.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_change_id_roundtrip() {
+        let store = create_test_store().await;
+        let (old_session_id, state) = create_test_record(3600);
+        let new_session_id = SessionId::random();
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Create session with old ID
+        store.create(&old_session_id, record).await.unwrap();
+
+        // Change ID
+        store
+            .change_id(&old_session_id, &new_session_id)
+            .await
+            .unwrap();
+
+        // Old ID should not exist
+        let old_session = store.load(&old_session_id).await.unwrap();
+        assert!(old_session.is_none());
+
+        // New ID should have the data
+        let new_session = store.load(&new_session_id).await.unwrap();
+        assert!(new_session.is_some());
+
+        let new_record = new_session.unwrap();
+        assert_eq!(
+            new_record.state.get("user_id").unwrap(),
+            &serde_json::Value::String("test-user-123".to_string())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_operations() {
+        let store = create_test_store().await;
+        let mut handles = vec![];
+
+        // Create multiple concurrent sessions
+        for i in 0..10 {
+            let store_clone = store.clone();
+            let handle = tokio::spawn(async move {
+                let (session_id, state) = create_test_record(3600);
+                let mut modified_state = state;
+                modified_state.insert(
+                    Cow::Borrowed("thread_id"),
+                    serde_json::Value::Number(i.into()),
+                );
+
+                let record = SessionRecordRef {
+                    state: Cow::Borrowed(&modified_state),
+                    ttl: Duration::from_secs(3600),
+                };
+
+                store_clone.create(&session_id, record).await.unwrap();
+
+                // Verify we can load it back
+                let loaded = store_clone.load(&session_id).await.unwrap().unwrap();
+                assert_eq!(
+                    loaded.state.get("thread_id").unwrap(),
+                    &serde_json::Value::Number(i.into())
+                );
+
+                session_id
+            });
+            handles.push(handle);
+        }
+
+        // Wait for all operations to complete
+        let mut session_ids = Vec::new();
+        for handle in handles {
+            session_ids.push(handle.await.unwrap());
+        }
+
+        // Verify all sessions exist
+        for session_id in session_ids {
+            let loaded = store.load(&session_id).await.unwrap();
+            assert!(loaded.is_some());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_namespace_isolation() {
+        // Connect to redis
+        let client = redis::Client::open("redis://localhost:6379").unwrap();
+        let conn = tokio::time::timeout(
+            Duration::from_secs(2),
+            redis::aio::ConnectionManager::new(client),
+        )
+        .await
+        .expect("Failed to connect to Redis within 2 seconds - is Redis running on localhost:6379?")
+        .unwrap();
+
+        // Create stores with different namespaces
+        let store_a = RedisSessionStore {
+            conn: conn.clone(),
+            cfg: RedisSessionStoreConfig {
+                namespace: Some("a".to_string()),
+            },
+        };
+        let store_b = RedisSessionStore {
+            conn: conn.clone(),
+            cfg: RedisSessionStoreConfig {
+                namespace: Some("b".to_string()),
+            },
+        };
+        let store_c = RedisSessionStore {
+            conn: conn.clone(),
+            cfg: RedisSessionStoreConfig { namespace: None },
+        };
+
+        // Generate and store some session data in each store
+        let (session_a, state_a) = create_test_record(3600);
+        let record_a = SessionRecordRef {
+            state: Cow::Borrowed(&state_a),
+            ttl: Duration::from_secs(3600),
+        };
+        let (session_b, state_b) = create_test_record(3600);
+        let record_b = SessionRecordRef {
+            state: Cow::Borrowed(&state_b),
+            ttl: Duration::from_secs(3600),
+        };
+        let (session_c, state_c) = create_test_record(3600);
+        let record_c = SessionRecordRef {
+            state: Cow::Borrowed(&state_c),
+            ttl: Duration::from_secs(3600),
+        };
+
+        store_a.create(&session_a, record_a).await.unwrap();
+        store_b.create(&session_b, record_b).await.unwrap();
+        store_c.create(&session_c, record_c).await.unwrap();
+
+        // Each store should only see its own data
+        assert!(matches!(store_a.load(&session_a).await.unwrap(), Some(_)));
+        assert!(matches!(store_a.load(&session_b).await.unwrap(), None));
+        assert!(matches!(store_a.load(&session_c).await.unwrap(), None));
+
+        assert!(matches!(store_b.load(&session_a).await.unwrap(), None));
+        assert!(matches!(store_b.load(&session_b).await.unwrap(), Some(_)));
+        assert!(matches!(store_b.load(&session_c).await.unwrap(), None));
+
+        assert!(matches!(store_c.load(&session_a).await.unwrap(), None));
+        assert!(matches!(store_c.load(&session_b).await.unwrap(), None));
+        assert!(matches!(store_c.load(&session_c).await.unwrap(), Some(_)));
+    }
+}
