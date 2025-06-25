@@ -15,8 +15,8 @@ use pavex_session::{
     },
 };
 use redis::{AsyncCommands, ExistenceCheck, SetExpiry, SetOptions, Value, aio::ConnectionManager};
-use std::num::NonZeroUsize;
 use serde;
+use std::num::NonZeroUsize;
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
 pub struct RedisSessionStoreConfig {
@@ -187,7 +187,9 @@ impl SessionStorageBackend for RedisSessionStore {
         let ttl = match ttl_reply {
             Value::Int(s) if s >= 0 => std::time::Duration::from_secs(s as u64),
             Value::Int(-1) => {
-                panic!("Fatal session management error: no TTL set for this session.")
+                return Err(LoadError::Other(anyhow::anyhow!(
+                    "Fatal session management error: no TTL set for this session."
+                )));
             }
             Value::Int(-2) => return Ok(None),
             _ => {
