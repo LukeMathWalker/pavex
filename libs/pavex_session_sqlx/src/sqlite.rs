@@ -368,7 +368,6 @@ mod tests {
     use std::borrow::Cow;
     use std::collections::HashMap;
     use std::time::Duration;
-    use tempfile::tempdir;
 
     async fn create_test_store() -> SqliteSessionStore {
         let database_url = "sqlite::memory:";
@@ -408,10 +407,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_migration_idempotency() {
-        let temp_dir = tempdir().unwrap();
-        let db_path = temp_dir.path().join("test.db");
-        let database_url = format!("sqlite:{}?mode=rwc", db_path.to_string_lossy());
-
+        let database_url = "sqlite::memory:";
         let pool = sqlx::SqlitePool::connect(&database_url).await.unwrap();
         let store = SqliteSessionStore::new(pool);
 
