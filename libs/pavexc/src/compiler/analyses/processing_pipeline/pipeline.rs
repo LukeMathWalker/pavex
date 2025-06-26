@@ -462,7 +462,7 @@ impl RequestHandlerPipeline {
                 .chain(stage.post_processing_ids.iter())
                 .collect();
 
-            #[derive(Debug)]
+            #[derive(Debug, Default)]
             struct CloningInfo {
                 /// The indexes of the middlewares that take the type as input by value.
                 consumed_by: Vec<ConsumerInfo>,
@@ -511,10 +511,7 @@ impl RequestHandlerPipeline {
                         }
                         ResolvedType::ResolvedPath(_) |
                         ResolvedType::Tuple(_) => {
-                            let info = type2info.entry(ty.clone()).or_insert(
-                                CloningInfo { consumed_by: Vec::new(), ref_by: Vec::new() }
-                            );
-                            info.consumed_by.push(ConsumerInfo { middleware_index: index, component_id });
+                            type2info.entry(ty.clone()).or_default().consumed_by.push(ConsumerInfo { middleware_index: index, component_id });
                         }
                         // Scalars are trivially `Copy`, this analysis doesn't concern them.
                         ResolvedType::ScalarPrimitive(_) => {
@@ -530,27 +527,31 @@ impl RequestHandlerPipeline {
 
             let mut type2cloning_indexes = IndexMap::with_capacity(type2info.len());
             for (ty_, cloning_info) in type2info.into_iter() {
-                let mut indexes = cloning_info.consumed_by;
+                let mut consumers = cloning_info.consumed_by;
 
-                // The type is never borrowed after the last move,
-                // thus we don't need a `.clone()` on the invocation
-                // for the last consumer
-                match cloning_info.ref_by.last() {
+                let last_consumer = match cloning_info.ref_by.last() {
                     Some(&last_ref_index) => {
-                        if last_ref_index < indexes.last().unwrap().middleware_index {
-                            indexes.pop();
+                        if last_ref_index < consumers.last().unwrap().middleware_index {
+                            // The type is never borrowed after the last move,
+                            // thus we don't need a `.clone()` on the invocation
+                            // for the last consumer
+                            consumers.pop()
+                        } else {
+                            None
                         }
                     }
                     None => {
-                        indexes.pop();
+                        // The type is always consumed, never borrowed.
+                        // We can spare the .clone() on the invocation for the last consumer.
+                        consumers.pop()
                     }
-                }
+                };
 
-                if indexes.is_empty() {
+                if consumers.is_empty() {
                     continue;
                 }
 
-                let issue = indexes.iter().find_position(|info| {
+                let issue = consumers.iter().find_position(|info| {
                     component_db.cloning_strategy(info.component_id) == CloningStrategy::NeverClone
                 });
                 if let Some((issue_index, info)) = issue {
@@ -558,8 +559,9 @@ impl RequestHandlerPipeline {
                         .ref_by
                         .iter()
                         .find(|&ix| *ix > info.middleware_index);
-                    let next_move = indexes
+                    let next_move = consumers
                         .get(issue_index + 1)
+                        .or(last_consumer.as_ref())
                         .map(|info| &info.middleware_index);
                     let next_index = match (next_ref, next_move) {
                         (None, None) => unreachable!(),
@@ -584,7 +586,7 @@ impl RequestHandlerPipeline {
                 }
 
                 let indexes: BTreeSet<_> =
-                    indexes.into_iter().map(|v| v.middleware_index).collect();
+                    consumers.into_iter().map(|v| v.middleware_index).collect();
                 type2cloning_indexes.insert(ty_, indexes);
             }
             stage.type2cloning_indexes = type2cloning_indexes;
