@@ -35,5 +35,5 @@ px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 pavex_session_sqlx = { path = ".", features = ["postgres", "sqlite"] }
 pavex_tracing = { path = "../pavex_tracing" }
 tokio = { workspace = true, features = ["rt-multi-thread", "time"] }
-tempfile = "3.8"
+tempfile = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
