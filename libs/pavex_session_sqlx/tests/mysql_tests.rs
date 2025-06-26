@@ -2,6 +2,7 @@ use pavex_session::SessionId;
 use pavex_session::store::{SessionRecordRef, SessionStorageBackend};
 use pavex_session_sqlx::MySqlSessionStore;
 use serde_json;
+use serial_test::serial;
 use sqlx::MySqlPool;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -54,6 +55,7 @@ fn create_test_record(
 }
 
 #[tokio::test]
+#[serial]
 async fn test_migration_idempotency() {
     let store = create_test_store().await;
 
@@ -64,6 +66,7 @@ async fn test_migration_idempotency() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_and_load_roundtrip() {
     let store = create_test_store().await;
     let (session_id, state) = create_test_record(3600);
@@ -89,6 +92,7 @@ async fn test_create_and_load_roundtrip() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_roundtrip() {
     let store = create_test_store().await;
     let (session_id, initial_state) = create_test_record(3600);
@@ -130,6 +134,7 @@ async fn test_update_roundtrip() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_ttl_expiry() {
     let store = create_test_store().await;
     let session_id = SessionId::random();
@@ -157,6 +162,7 @@ async fn test_ttl_expiry() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_ttl_roundtrip() {
     let store = create_test_store().await;
     let (session_id, state) = create_test_record(3600);
@@ -180,6 +186,7 @@ async fn test_update_ttl_roundtrip() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_roundtrip() {
     let store = create_test_store().await;
     let (session_id, state) = create_test_record(3600);
@@ -203,6 +210,7 @@ async fn test_delete_roundtrip() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_change_id_roundtrip() {
     let store = create_test_store().await;
     let (old_id, state) = create_test_record(3600);
@@ -228,12 +236,15 @@ async fn test_change_id_roundtrip() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_expired() {
     let store = create_test_store().await;
 
     // Create expired sessions by directly inserting with past deadlines
     use pavex::time::Timestamp;
-    let past_deadline = Timestamp::now().as_second() - 3600; // 1 hour ago
+    let current_time = Timestamp::now().as_second();
+    let past_deadline = current_time - 3600; // 1 hour ago
+
     let mut expired_session_ids = Vec::new();
     for i in 0..5 {
         let session_id = SessionId::random();
@@ -279,12 +290,15 @@ async fn test_delete_expired() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_expired_with_batch_size() {
     let store = create_test_store().await;
 
     // Create expired sessions by directly inserting with past deadlines
     use pavex::time::Timestamp;
-    let past_deadline = Timestamp::now().as_second() - 3600; // 1 hour ago
+    let current_time = Timestamp::now().as_second();
+    let past_deadline = current_time - 3600; // 1 hour ago
+
     let mut expired_session_ids = Vec::new();
     for i in 0..10 {
         let session_id = SessionId::random();
@@ -328,6 +342,7 @@ async fn test_delete_expired_with_batch_size() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_large_json_data() {
     let store = create_test_store().await;
     let session_id = SessionId::random();
@@ -379,6 +394,7 @@ async fn test_large_json_data() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_unicode_and_special_characters() {
     let store = create_test_store().await;
     let session_id = SessionId::random();
@@ -419,6 +435,7 @@ async fn test_unicode_and_special_characters() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_concurrent_operations() {
     let store = create_test_store().await;
     let (session_id, state) = create_test_record(3600);
