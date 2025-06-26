@@ -6,41 +6,16 @@ use sqlx::MySqlPool;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::thread;
+
 use std::time::Duration;
 
 async fn create_test_store() -> MySqlSessionStore {
-    // Generate a unique database name using multiple sources of uniqueness
-    let thread_id = format!("{:?}", thread::current().id());
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let random_component = std::ptr::addr_of!(thread_id) as usize;
-    let test_db_name = format!(
-        "test_sessions_{}_{}_{}",
-        thread_id.replace("ThreadId(", "").replace(")", ""),
-        timestamp,
-        random_component
-    );
+    let database_url = std::env::var("TEST_MYSQL_URL")
+        .unwrap_or_else(|_| "mysql://root:password@localhost:3306/test_sessions".to_string());
 
-    let base_url = std::env::var("TEST_MYSQL_URL")
-        .unwrap_or_else(|_| "mysql://root:password@localhost:3306/mysql".to_string());
-
-    // Connect to the mysql database first to create our test database
-    let root_pool = MySqlPool::connect(&base_url)
+    let pool = MySqlPool::connect(&database_url)
         .await
         .expect("MySQL test database not available. Set TEST_MYSQL_URL environment variable.");
-
-    // Create unique test database (use IF NOT EXISTS to avoid conflicts)
-    sqlx::query(&format!("CREATE DATABASE IF NOT EXISTS {}", test_db_name))
-        .execute(&root_pool)
-        .await
-        .unwrap();
-
-    // Connect to our unique test database
-    let test_url = base_url.replace("/mysql", &format!("/{}", test_db_name));
-    let pool = MySqlPool::connect(&test_url).await.unwrap();
 
     let store = MySqlSessionStore::new(pool);
     store.migrate().await.unwrap();
