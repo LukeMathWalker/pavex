@@ -1,7 +1,7 @@
 use http::response::Parts;
-use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 use pavex::response::{Response, ResponseHead};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/response")]
 pub fn route_response() -> Response {

@@ -1,4 +1,4 @@
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 
 #[pavex::get(path = "/")]
 pub fn domain_agnostic() -> String {

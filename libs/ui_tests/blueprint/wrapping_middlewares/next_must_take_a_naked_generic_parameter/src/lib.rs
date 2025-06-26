@@ -1,7 +1,7 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::middleware::Next;
 use pavex::response::Response;
 use pavex::wrap;
+use pavex::{blueprint::from, Blueprint};
 use std::future::Ready;
 
 pub struct Custom<T>(T);

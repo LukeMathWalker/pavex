@@ -1,15 +1,32 @@
+use crate::blueprint::ErrorHandler;
 use crate::blueprint::conversions::coordinates2coordinates;
-use crate::blueprint::raw::RawErrorHandler;
-use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Component, ErrorHandler, Location, PostProcessingMiddleware,
-};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Location};
+
+use super::reflection::AnnotationCoordinates;
+
+/// The input type for [`Blueprint::post_process`].
+///
+/// Check out [`Blueprint::post_process`] for more information on post-processing middlewares
+/// in Pavex.
+///
+/// # Stability guarantees
+///
+/// Use the [`post_process`](macro@crate::post_process) attribute macro to create instances of `PostProcessingMiddleware`.\
+/// `PostProcessingMiddleware`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
+/// newer versions of Pavex may add, remove or modify its fields.
+///
+/// [`Blueprint::post_process`]: crate::Blueprint::post_process
+pub struct PostProcessingMiddleware {
+    #[doc(hidden)]
+    pub coordinates: AnnotationCoordinates,
+}
 
 /// The type returned by [`Blueprint::post_process`].
 ///
 /// It allows you to further configure the behaviour of post-processing middleware
 /// you just registered.
 ///
-/// [`Blueprint::post_process`]: crate::blueprint::Blueprint::post_process
+/// [`Blueprint::post_process`]: crate::Blueprint::post_process
 pub struct RegisteredPostProcessingMiddleware<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered middleware in the blueprint's `components` vector.
@@ -32,7 +49,7 @@ impl RegisteredPostProcessingMiddleware<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::{error_handler, post_process};
     /// use pavex::response::Response;
     /// # struct SizeError;
@@ -57,8 +74,8 @@ impl RegisteredPostProcessingMiddleware<'_> {
     ///     .error_handler(SIZE_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
-        let error_handler = ErrorHandler {
+    pub fn error_handler(mut self, error_handler: ErrorHandler) -> Self {
+        let error_handler = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(error_handler.coordinates),
             registered_at: Location::caller(),
         };
@@ -66,7 +83,7 @@ impl RegisteredPostProcessingMiddleware<'_> {
         self
     }
 
-    fn post_processing_middleware(&mut self) -> &mut PostProcessingMiddleware {
+    fn post_processing_middleware(&mut self) -> &mut pavex_bp_schema::PostProcessingMiddleware {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::PostProcessingMiddleware(c) = component else {
             unreachable!("The component should be a post-processing middleware")

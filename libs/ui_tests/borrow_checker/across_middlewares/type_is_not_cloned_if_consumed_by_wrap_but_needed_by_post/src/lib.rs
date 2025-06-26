@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 use pavex::middleware::Next;
 use pavex::response::Response;
 

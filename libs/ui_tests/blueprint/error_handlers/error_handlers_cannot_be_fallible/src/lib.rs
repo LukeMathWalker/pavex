@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::error_handler]
 pub fn error_handler(_e: &pavex::Error) -> Result<Response, String> {

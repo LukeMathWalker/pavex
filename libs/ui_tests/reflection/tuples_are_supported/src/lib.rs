@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::singleton]
 pub fn constructor_with_output_tuple() -> (usize, isize) {

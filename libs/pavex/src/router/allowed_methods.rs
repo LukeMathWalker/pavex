@@ -70,8 +70,8 @@ use crate::http::Method;
 /// to set the `Allow` header to the correct value when returning a `405 Method Not Allowed`
 /// response after a routing failure.
 ///
-/// [`Blueprint`]: crate::blueprint::Blueprint
-/// [fallback handlers]: crate::blueprint::Blueprint::fallback
+/// [`Blueprint`]: crate::Blueprint
+/// [fallback handlers]: crate::Blueprint::fallback
 #[derive(Debug, Clone)]
 pub enum AllowedMethods {
     /// Only a finite set of HTTP methods are allowed for a given path.

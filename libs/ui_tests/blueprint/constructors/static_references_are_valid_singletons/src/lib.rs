@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::singleton]
 pub fn static_str() -> &'static str {

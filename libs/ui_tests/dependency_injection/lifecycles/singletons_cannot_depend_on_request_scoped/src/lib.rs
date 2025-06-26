@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
 pub struct A;

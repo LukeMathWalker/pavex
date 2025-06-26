@@ -1,4 +1,4 @@
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 
 #[pavex::error_observer]
 pub fn error_observer() -> String {

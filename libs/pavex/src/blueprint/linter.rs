@@ -1,6 +1,6 @@
 //! Tools to lint a [`Blueprint`] for common mistakes and antipatterns.
 //!
-//! [`Blueprint`]: crate::blueprint::Blueprint
+//! [`Blueprint`]: crate::Blueprint
 
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, PartialEq, Hash)]
 #[non_exhaustive]
@@ -10,7 +10,7 @@
 /// These issues aren't considered fatal: Pavex will still
 /// generate the server SDK code.
 ///
-/// [`Blueprint`]: crate::blueprint::Blueprint
+/// [`Blueprint`]: crate::Blueprint
 pub enum Lint {
     /// You registered a component that's never used in the generated
     /// server SDK code.

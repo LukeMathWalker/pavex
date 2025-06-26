@@ -1,12 +1,33 @@
+use crate::blueprint::ErrorHandler;
 use crate::blueprint::conversions::coordinates2coordinates;
-use crate::blueprint::raw::RawErrorHandler;
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, ErrorHandler, Location, Route};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Location};
+
+use super::reflection::AnnotationCoordinates;
+
+/// The input type for [`Blueprint::route`].
+///
+/// Check out [`Blueprint::route`] for more information on request routing
+/// in Pavex.
+///
+/// # Stability guarantees
+///
+/// Use one of Pavex's route attributes (
+/// [`route`](macro@crate::route) or a method-specific one, like [`get`](macro@crate::get) or [`post`](macro@crate::post))
+/// to create instances of `Route`.\
+/// `Route`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
+/// newer versions of Pavex may add, remove or modify its fields.
+///
+/// [`Blueprint::route`]: crate::Blueprint::route
+pub struct Route {
+    #[doc(hidden)]
+    pub coordinates: AnnotationCoordinates,
+}
 
 /// The type returned by [`Blueprint::route`].
 ///
 /// It allows you to further configure the behaviour of the registered route.
 ///
-/// [`Blueprint::route`]: crate::blueprint::Blueprint::route
+/// [`Blueprint::route`]: crate::Blueprint::route
 pub struct RegisteredRoute<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered route in the blueprint's `components` vector.
@@ -30,7 +51,7 @@ impl RegisteredRoute<'_> {
     ///
     /// ```rust
     /// use pavex::{get, error_handler};
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::response::Response;
     /// # struct ConfigError;
     ///
@@ -52,8 +73,8 @@ impl RegisteredRoute<'_> {
     /// bp.route(GET_HOME).error_handler(CONFIG_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
-        let error_handler = ErrorHandler {
+    pub fn error_handler(mut self, error_handler: ErrorHandler) -> Self {
+        let error_handler = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(error_handler.coordinates),
             registered_at: Location::caller(),
         };
@@ -61,7 +82,7 @@ impl RegisteredRoute<'_> {
         self
     }
 
-    fn route(&mut self) -> &mut Route {
+    fn route(&mut self) -> &mut pavex_bp_schema::Route {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::Route(c) = component else {
             unreachable!("The component should be a route")

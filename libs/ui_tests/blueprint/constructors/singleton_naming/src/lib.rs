@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
 /// When lowercased, `type` is a keyword in Rust.

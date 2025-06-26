@@ -29,7 +29,7 @@ use std::fmt::Formatter;
 /// It lets you strip away the dynamic parts of the request path, thus reducing the cardinality of
 /// your metrics and making it easier to aggregate them.
 ///
-/// [`Blueprint`]: crate::blueprint::Blueprint
+/// [`Blueprint`]: crate::Blueprint
 #[doc(alias("MatchedPath"))]
 #[doc(alias("MatchedPathTemplate"))]
 #[doc(alias("PathPattern"))]

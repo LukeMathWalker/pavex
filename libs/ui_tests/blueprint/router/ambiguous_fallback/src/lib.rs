@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/id")]
 pub fn handler() -> pavex::response::Response {

@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/")]
 pub fn handler(_a: &A, _b: &B, _c: &C, _d: &D) -> Response {

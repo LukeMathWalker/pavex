@@ -2,9 +2,13 @@ use pavex_bp_schema::Blueprint as BlueprintSchema;
 
 /// The type returned by [`Blueprint::routes`].
 ///
-/// It allows you to further configure the behaviour of the registered routes.
+/// # Future-proofing
 ///
-/// [`Blueprint::routes`]: crate::blueprint::Blueprint::routes
+/// As of today, [`RegisteredRoutes`] doesn't provide any additional functionality.\
+/// It is included to allow introducing new configuration for route groups without having
+/// to change the signature of [`Blueprint::routes`].
+///
+/// [`Blueprint::routes`]: crate::Blueprint::routes
 pub struct RegisteredRoutes<'a> {
     #[allow(unused)]
     pub(crate) blueprint: &'a mut BlueprintSchema,

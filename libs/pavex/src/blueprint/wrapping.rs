@@ -1,22 +1,38 @@
+use super::reflection::AnnotationCoordinates;
+use crate::blueprint::ErrorHandler;
 use crate::blueprint::conversions::coordinates2coordinates;
-use crate::blueprint::raw::RawErrorHandler;
-use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Component, ErrorHandler, Location, WrappingMiddleware,
-};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Location};
+
+/// The input type for [`Blueprint::wrap`].
+///
+/// Check out [`Blueprint::wrap`] for more information on wrapping middlewares
+/// in Pavex.
+///
+/// # Stability guarantees
+///
+/// Use the [`wrap`](macro@crate::wrap) attribute macro to create instances of `WrappingMiddleware`.\
+/// `WrappingMiddleware`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
+/// newer versions of Pavex may add, remove or modify its fields.
+///
+/// [`Blueprint::wrap`]: crate::Blueprint::wrap
+pub struct WrappingMiddleware {
+    #[doc(hidden)]
+    pub coordinates: AnnotationCoordinates,
+}
 
 /// The type returned by [`Blueprint::wrap`].
 ///
 /// It allows you to further configure the behaviour of the registered wrapping
 /// middleware.
 ///
-/// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
+/// [`Blueprint::wrap`]: crate::Blueprint::wrap
 pub struct RegisteredWrappingMiddleware<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered middleware in the blueprint's `components` vector.
     pub(crate) component_id: usize,
 }
 
-impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
+impl RegisteredWrappingMiddleware<'_> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -32,7 +48,7 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::{error_handler, wrap, middleware::Next};
     /// use pavex::response::Response;
     /// use std::future::Future;
@@ -65,8 +81,8 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     ///     .error_handler(TIMEOUT_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
-        let error_handler = ErrorHandler {
+    pub fn error_handler(mut self, error_handler: ErrorHandler) -> Self {
+        let error_handler = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(error_handler.coordinates),
             registered_at: Location::caller(),
         };
@@ -74,7 +90,7 @@ impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
         self
     }
 
-    fn wrapping_middleware(&mut self) -> &mut WrappingMiddleware {
+    fn wrapping_middleware(&mut self) -> &mut pavex_bp_schema::WrappingMiddleware {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::WrappingMiddleware(c) = component else {
             unreachable!("The component should be a wrapping middleware")

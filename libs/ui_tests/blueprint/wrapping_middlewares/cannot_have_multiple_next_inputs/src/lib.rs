@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::middleware::Next;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::wrap]
 pub fn mw<T>(_next: Next<T>, _second_next: Next<T>) -> Response

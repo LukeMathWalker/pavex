@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 // Not cloneable.
 #[pavex::config(key = "a", id = "CONFIG_A")]

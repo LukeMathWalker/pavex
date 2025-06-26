@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
 use pavex::request::path::PathParams;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/b/{x}/{y}")]
 pub fn tuple(_params: PathParams<(u32, u32)>) -> StatusCode {

@@ -5,7 +5,7 @@ pub mod configuration;
 pub mod routes;
 pub mod telemetry;
 
-use pavex::blueprint::{Blueprint, from};
+use pavex::{Blueprint, blueprint::from};
 
 /// The main blueprint, defining all the components (routes, middlewares, constructors, error handlers, etc.)
 /// used in our API.

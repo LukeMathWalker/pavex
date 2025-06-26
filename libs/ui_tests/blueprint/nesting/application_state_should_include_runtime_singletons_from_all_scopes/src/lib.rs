@@ -1,5 +1,5 @@
-use pavex::blueprint::Blueprint;
 use pavex::http::StatusCode;
+use pavex::Blueprint;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

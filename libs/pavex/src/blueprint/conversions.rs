@@ -1,7 +1,7 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
 use super::reflection::{AnnotationCoordinates, CreatedAt, Sources};
-use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::linter::Lint;
+use crate::blueprint::{CloningStrategy, Lifecycle};
 
 #[track_caller]
 pub(super) fn coordinates2coordinates(

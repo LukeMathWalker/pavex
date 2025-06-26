@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::delete(path = "/delete")]
 pub fn delete() -> pavex::response::Response {

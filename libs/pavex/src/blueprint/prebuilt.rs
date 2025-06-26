@@ -1,13 +1,32 @@
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, PrebuiltType};
 
-use crate::blueprint::{constructor::CloningStrategy, conversions::cloning2cloning};
+use crate::blueprint::{CloningStrategy, conversions::cloning2cloning};
+
+use super::reflection::AnnotationCoordinates;
+
+/// The input type for [`Blueprint::prebuilt`].
+///
+/// Check out [`Blueprint::prebuilt`] for more information on prebuilt types
+/// in Pavex.
+///
+/// # Stability guarantees
+///
+/// Use the [`prebuilt`](macro@crate::prebuilt) attribute macro to create instances of `Prebuilt`.\
+/// `Prebuilt`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
+/// newer versions of Pavex may add, remove or modify its fields.
+///
+/// [`Blueprint::prebuilt`]: crate::Blueprint::prebuilt
+pub struct Prebuilt {
+    #[doc(hidden)]
+    pub coordinates: AnnotationCoordinates,
+}
 
 /// The type returned by [`Blueprint::prebuilt`].
 ///
 /// It allows you to further configure the behaviour of the registered prebuilt type.
 ///
-/// [`Blueprint::prebuilt`]: crate::blueprint::Blueprint::prebuilt
-pub struct RegisteredPrebuiltType<'a> {
+/// [`Blueprint::prebuilt`]: crate::Blueprint::prebuilt
+pub struct RegisteredPrebuilt<'a> {
     #[allow(unused)]
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered prebuilt type in the blueprint's `components` vector.
@@ -15,7 +34,7 @@ pub struct RegisteredPrebuiltType<'a> {
     pub(crate) component_id: usize,
 }
 
-impl RegisteredPrebuiltType<'_> {
+impl RegisteredPrebuilt<'_> {
     /// Set the cloning strategy for the output type returned by this constructor.
     ///
     /// By default,

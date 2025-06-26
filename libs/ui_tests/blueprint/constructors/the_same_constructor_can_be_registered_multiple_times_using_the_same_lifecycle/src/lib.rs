@@ -1,4 +1,7 @@
-use pavex::blueprint::{constructor::Lifecycle, from, Blueprint};
+use pavex::{
+    blueprint::{from, Lifecycle},
+    Blueprint,
+};
 
 pub struct Logger;
 

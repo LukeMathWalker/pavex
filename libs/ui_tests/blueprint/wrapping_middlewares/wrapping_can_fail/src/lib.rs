@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::middleware::Next;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::wrap(id = "EHANDLER_VIA_DEFAULT")]
 /// The default error handler is invoked.

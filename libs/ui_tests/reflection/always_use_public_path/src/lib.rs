@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 pub use private::*;
 
@@ -16,7 +16,7 @@ pub fn blueprint() -> Blueprint {
 }
 
 mod private {
-    use pavex::blueprint::{from, Blueprint};
+    use pavex::{blueprint::from, Blueprint};
 
     pub struct A;
 

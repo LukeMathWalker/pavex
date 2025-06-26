@@ -1,4 +1,3 @@
-use pavex::blueprint::Blueprint;
 use pavex::connection::ConnectionInfo;
 use pavex::request::{
     body::RawIncomingBody,
@@ -6,6 +5,7 @@ use pavex::request::{
     RequestHead,
 };
 use pavex::router::AllowedMethods;
+use pavex::Blueprint;
 
 #[pavex::fallback]
 pub fn handler(

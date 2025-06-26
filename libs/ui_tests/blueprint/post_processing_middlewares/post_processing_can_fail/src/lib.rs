@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::post_process(id = "EHANDLER_VIA_DEFAULT")]
 /// The default error handler is invoked.

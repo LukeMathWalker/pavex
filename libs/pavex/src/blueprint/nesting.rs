@@ -4,14 +4,16 @@ use pavex_bp_schema::{
     Blueprint as BlueprintSchema, Domain, Location, NestedBlueprint, PathPrefix,
 };
 
-use super::Blueprint;
+use crate::Blueprint;
+
+use super::Import;
 
 /// The type returned by [`Blueprint::prefix`] and [`Blueprint::domain`].
 ///
 /// It allows you to customize how nested routes should behave.
 ///
-/// [`Blueprint::prefix`]: crate::blueprint::Blueprint::prefix
-/// [`Blueprint::domain`]: crate::blueprint::Blueprint::domain
+/// [`Blueprint::prefix`]: crate::Blueprint::prefix
+/// [`Blueprint::domain`]: crate::Blueprint::domain
 #[must_use = "`prefix` and `domain` do nothing unless you invoke `nest` to register some routes under them"]
 pub struct NestingConditions<'a> {
     pub(super) blueprint: &'a mut BlueprintSchema,
@@ -30,7 +32,7 @@ impl<'a> NestingConditions<'a> {
 
     /// Only requests to the specified domain will be forwarded to routes nested under this condition.
     ///
-    /// Check out [`Blueprint::domain`](crate::blueprint::Blueprint::domain) for more details.
+    /// Check out [`Blueprint::domain`](crate::Blueprint::domain) for more details.
     #[track_caller]
     pub fn domain(mut self, domain: &str) -> Self {
         let location = Location::caller();
@@ -45,7 +47,7 @@ impl<'a> NestingConditions<'a> {
     ///
     /// If a prefix has already been set, it will be overridden.
     ///
-    /// Check out [`Blueprint::prefix`](crate::blueprint::Blueprint::prefix) for more details.
+    /// Check out [`Blueprint::prefix`](crate::Blueprint::prefix) for more details.
     #[track_caller]
     pub fn prefix(mut self, prefix: &str) -> Self {
         let location = Location::caller();
@@ -74,7 +76,7 @@ impl<'a> NestingConditions<'a> {
     /// ## Visibility
     ///
     /// ```rust
-    /// use pavex::blueprint::{Blueprint, from};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -143,7 +145,7 @@ impl<'a> NestingConditions<'a> {
     /// declared against the nested blueprint takes precedence.
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -200,7 +202,7 @@ impl<'a> NestingConditions<'a> {
     /// If multiple nested blueprints need access to the singleton, the constructor must be
     /// registered against a common parent blueprint—the root blueprint, if necessary.
     ///
-    /// [Lifecycle::Singleton]: crate::blueprint::constructor::Lifecycle::Singleton
+    /// [Lifecycle::Singleton]: crate::blueprint::Lifecycle::Singleton
     pub fn nest(self, bp: Blueprint) {
         self.blueprint.components.push(
             NestedBlueprint {
@@ -211,5 +213,25 @@ impl<'a> NestingConditions<'a> {
             }
             .into(),
         );
+    }
+
+    #[track_caller]
+    /// Register a group of routes.
+    ///
+    /// Their path will be prepended with a common prefix if one was provided via [`.prefix()`][`Self::prefix`].
+    /// They will be restricted to a specific domain if one was specified via [`.domain()`][`Self::domain`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use pavex::{Blueprint, blueprint::from};
+    ///
+    /// let mut bp = Blueprint::new();
+    /// bp.prefix("/api").routes(from![crate::api]);
+    /// ```
+    pub fn routes(self, import: Import) {
+        let mut bp = Blueprint::new();
+        bp.routes(import);
+        self.nest(bp);
     }
 }

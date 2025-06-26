@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 // Using on purpose a generic parameter that is named differently than the generic parameter
 // that appears in the constructor, the `json` function (`T` vs `V`).

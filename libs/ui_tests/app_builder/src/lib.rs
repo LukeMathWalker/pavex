@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 use pavex::response::Response;
 
 pub struct Logger;

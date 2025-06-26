@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 use pavex::response::Response;
 
 #[pavex::get(path = "/{how}{many}{params}{can}{i}{chain}")]

@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "api")]
 pub fn missing_leading_slash() -> String {

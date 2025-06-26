@@ -192,7 +192,7 @@ pub fn callable_id_def(
 # Example
 
 ```rust,ignore
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 // [...]
 // ^ Import `{id}` here
 
@@ -206,12 +206,12 @@ bp.{registration_method}({id});
         None => quote! { ::pavex },
     };
     let allow_unused = allow_unused.then(|| quote! { #[allow(unused)] });
-    let component_name = format_ident!("Raw{}", component_name);
+    let component_name = format_ident!("{component_name}");
     let id_str = id.to_string();
     quote_spanned! { id.span() =>
         #[doc = #id_docs]
         #allow_unused
-        pub const #id: #pavex::blueprint::raw::#component_name = #pavex::blueprint::raw::#component_name {
+        pub const #id: #pavex::blueprint::#component_name = #pavex::blueprint::#component_name {
             coordinates: #pavex::blueprint::reflection::AnnotationCoordinates {
                 id: #id_str,
                 created_at: #pavex::created_at!(),

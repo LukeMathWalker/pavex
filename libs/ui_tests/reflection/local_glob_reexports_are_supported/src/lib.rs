@@ -1,5 +1,5 @@
-use pavex::blueprint::Blueprint;
 use pavex::blueprint::from;
+use pavex::Blueprint;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
@@ -10,7 +10,7 @@ pub fn blueprint() -> Blueprint {
 pub mod nested {
     pub mod module {
         use pavex::http::StatusCode;
-        
+
         #[pavex::get(path = "/home")]
         pub fn function() -> StatusCode {
             StatusCode::OK

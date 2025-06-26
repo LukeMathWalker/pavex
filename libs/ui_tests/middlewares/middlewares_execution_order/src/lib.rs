@@ -1,4 +1,4 @@
-use pavex::blueprint::{Blueprint, from};
+use pavex::{blueprint::from, Blueprint};
 use pavex::response::Response;
 use std::sync::Arc;
 use tokio::sync::Mutex;

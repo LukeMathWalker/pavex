@@ -1,5 +1,5 @@
 use dep_1::Custom;
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

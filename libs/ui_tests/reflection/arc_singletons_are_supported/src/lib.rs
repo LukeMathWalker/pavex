@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::http::StatusCode;
+use pavex::{blueprint::from, Blueprint};
 use std::sync::{Arc, Mutex, RwLock};
 
 pub struct Custom;

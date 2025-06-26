@@ -102,7 +102,7 @@ fn emit(item: TypeItem, properties: Properties) -> Result<AnnotationCodegen, dar
 # Example
 
 ```rust,ignore
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 // [...]
 // ^ Import `{id}` here
 
@@ -115,7 +115,7 @@ bp.config({id});
     let id_def = quote_spanned! { id_span =>
         #[doc = #id_docs]
         #[allow(unused)]
-        pub const #id: #pavex::blueprint::raw::RawPrebuilt = #pavex::blueprint::raw::RawPrebuilt {
+        pub const #id: #pavex::blueprint::Prebuilt = #pavex::blueprint::Prebuilt {
             coordinates: #pavex::blueprint::reflection::AnnotationCoordinates {
                 id: #id_str,
                 created_at: #pavex::created_at!(),

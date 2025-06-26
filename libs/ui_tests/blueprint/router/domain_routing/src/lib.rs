@@ -1,6 +1,6 @@
-use pavex::blueprint::Blueprint;
 use pavex::request::RequestHead;
 use pavex::response::Response;
+use pavex::Blueprint;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

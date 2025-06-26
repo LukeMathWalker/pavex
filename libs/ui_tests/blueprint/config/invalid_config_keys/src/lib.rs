@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
 #[pavex::config(key = "2numbersfirst", id = "A_")]

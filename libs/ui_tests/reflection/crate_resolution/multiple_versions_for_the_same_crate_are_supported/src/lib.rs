@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::request_scoped]
 pub fn header1() -> http_01::header::HeaderName {

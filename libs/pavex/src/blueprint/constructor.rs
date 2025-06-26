@@ -1,19 +1,95 @@
-use crate::blueprint::constructor::CloningStrategy;
+use crate::blueprint::CloningStrategy;
+use crate::blueprint::ErrorHandler;
 use crate::blueprint::conversions::{
     cloning2cloning, coordinates2coordinates, lifecycle2lifecycle, lint2lint,
 };
 use crate::blueprint::linter::Lint;
-use crate::blueprint::raw::RawErrorHandler;
-use pavex_bp_schema::{Blueprint as BlueprintSchema, ErrorHandler, LintSetting, Location};
-use pavex_bp_schema::{Component, Constructor};
+use pavex_bp_schema::Component;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, LintSetting, Location};
 
 use super::Lifecycle;
+use super::reflection::AnnotationCoordinates;
 
-/// The type returned by [`Blueprint::constructor`].
+/// The input type for [`Blueprint::constructor`].
 ///
-/// It allows you to further configure the behaviour of the registered constructor.
+/// Check out [`Blueprint::constructor`] for more information on dependency injection
+/// in Pavex.
 ///
-/// [`Blueprint::constructor`]: crate::blueprint::Blueprint::constructor
+/// # Stability guarantees
+///
+/// Use one of Pavex's constructor attributes (
+/// [`singleton`](macro@crate::singleton), [`request_scoped`](macro@crate::request_scoped), [`transient`](macro@crate::transient),
+/// or [`constructor`](macro@crate::constructor)) to create instances of `Constructor`.\
+/// `Constructor`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
+/// newer versions of Pavex may add, remove or modify its fields.
+///
+/// [`Blueprint::constructor`]: crate::Blueprint::constructor
+pub struct Constructor {
+    #[doc(hidden)]
+    pub coordinates: AnnotationCoordinates,
+}
+
+/// A constructor registered via [`Blueprint::constructor`].
+///
+/// # Example
+///
+/// You can use the methods exposed by [`RegisteredConstructor`] to tune the behaviour
+/// of the registered constructor type.
+/// For example, instruct Pavex to clone the constructed type if it's necessary to satisfy
+/// the borrow checker:
+///
+/// ```rust
+/// use pavex::{methods, Blueprint};
+///
+/// # pub struct PoolConfig;
+/// pub struct Pool {
+///     // [...]
+/// }
+///
+/// #[methods]
+/// impl Pool {
+///     #[singleton]
+///     pub fn new(config: &PoolConfig) -> Self {
+///         # todo!()
+///         // [...]
+///     }
+/// }
+///
+/// let mut bp = Blueprint::new();
+/// // This is equivalent to `#[singleton(clone_if_necessary)]`
+/// bp.constructor(POOL_NEW).clone_if_necessary();
+/// ```
+///
+/// # Example: override the annotation
+///
+/// You can also override the behaviour specified via the [`singleton`](macro@crate::singleton) attribute.
+///
+/// ```rust
+/// use pavex::{methods, Blueprint};
+///
+/// # pub struct PoolConfig;
+/// pub struct Pool {
+///     // [...]
+/// }
+///
+/// #[methods]
+/// impl Pool {
+///     #[singleton(clone_if_necessary)]
+///     pub fn new(config: &PoolConfig) -> Self {
+///         # todo!()
+///         // [...]
+///     }
+/// }
+///
+/// let mut bp = Blueprint::new();
+/// // Using `never_clone` here, we are overriding the `clone_if_necessary`
+/// // flag specified via the `singleton` attribute.
+/// // This is equivalent to `#[singleton]`, thus restoring
+/// // the default behaviour.
+/// bp.constructor(POOL_NEW).never_clone();
+/// ```
+///
+/// [`Blueprint::constructor`]: crate::Blueprint::constructor
 pub struct RegisteredConstructor<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered constructor in the blueprint's `components` vector.
@@ -36,7 +112,7 @@ impl RegisteredConstructor<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::response::Response;
     /// use pavex::{methods, transient};
     /// # struct LogLevel;
@@ -68,8 +144,8 @@ impl RegisteredConstructor<'_> {
     ///     .error_handler(CONFIGURATION_ERROR_TO_RESPONSE);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
-        let error_handler = ErrorHandler {
+    pub fn error_handler(mut self, error_handler: ErrorHandler) -> Self {
+        let error_handler = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(error_handler.coordinates),
             registered_at: Location::caller(),
         };
@@ -125,7 +201,7 @@ impl RegisteredConstructor<'_> {
         self
     }
 
-    fn constructor(&mut self) -> &mut Constructor {
+    fn constructor(&mut self) -> &mut pavex_bp_schema::Constructor {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::Constructor(c) = component else {
             unreachable!("The component should be a constructor")

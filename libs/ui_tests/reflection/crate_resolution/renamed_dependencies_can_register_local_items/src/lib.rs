@@ -1,4 +1,4 @@
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/home")]
 pub fn handler(_logger: dep_1::Logger, _logger_2: dep_2::Logger) -> pavex::response::Response {

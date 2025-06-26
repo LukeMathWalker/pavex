@@ -1,5 +1,5 @@
 use dep::Logger;
-use pavex::blueprint::{from, Blueprint};
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/home")]
 pub fn handler(_logger: Logger) -> pavex::response::Response {

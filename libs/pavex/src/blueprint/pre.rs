@@ -1,15 +1,31 @@
+use super::reflection::AnnotationCoordinates;
+use crate::blueprint::ErrorHandler;
 use crate::blueprint::conversions::coordinates2coordinates;
-use crate::blueprint::raw::RawErrorHandler;
-use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Component, ErrorHandler, Location, PreProcessingMiddleware,
-};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Location};
+
+/// The input type for [`Blueprint::pre_process`].
+///
+/// Check out [`Blueprint::pre_process`] for more information on pre-processing middlewares
+/// in Pavex.
+///
+/// # Stability guarantees
+///
+/// Use the [`pre_process`](macro@crate::pre_process) attribute macro to create instances of `PreProcessingMiddleware`.\
+/// `PreProcessingMiddleware`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
+/// newer versions of Pavex may add, remove or modify its fields.
+///
+/// [`Blueprint::pre_process`]: crate::Blueprint::pre_process
+pub struct PreProcessingMiddleware {
+    #[doc(hidden)]
+    pub coordinates: AnnotationCoordinates,
+}
 
 /// The type returned by [`Blueprint::pre_process`].
 ///
 /// It allows you to further configure the behaviour of the registered pre-processing
 /// middleware.
 ///
-/// [`Blueprint::pre_process`]: crate::blueprint::Blueprint::pre_process
+/// [`Blueprint::pre_process`]: crate::Blueprint::pre_process
 pub struct RegisteredPreProcessingMiddleware<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered middleware in the blueprint's `components` vector.
@@ -32,7 +48,7 @@ impl RegisteredPreProcessingMiddleware<'_> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::{error_handler, pre_process, middleware::Processing};
     /// use pavex::request::RequestHead;
     /// use pavex::response::Response;
@@ -62,8 +78,8 @@ impl RegisteredPreProcessingMiddleware<'_> {
     ///     .error_handler(AUTH_ERROR_HANDLER);
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawErrorHandler) -> Self {
-        let error_handler = ErrorHandler {
+    pub fn error_handler(mut self, error_handler: ErrorHandler) -> Self {
+        let error_handler = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(error_handler.coordinates),
             registered_at: Location::caller(),
         };
@@ -71,7 +87,7 @@ impl RegisteredPreProcessingMiddleware<'_> {
         self
     }
 
-    fn pre_processing_middleware(&mut self) -> &mut PreProcessingMiddleware {
+    fn pre_processing_middleware(&mut self) -> &mut pavex_bp_schema::PreProcessingMiddleware {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::PreProcessingMiddleware(c) = component else {
             unreachable!("The component should be a pre-processing middleware")

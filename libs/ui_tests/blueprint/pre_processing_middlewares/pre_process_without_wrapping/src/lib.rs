@@ -1,6 +1,6 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::middleware::Processing;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::pre_process]
 pub fn pre() -> Processing {

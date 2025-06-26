@@ -1,30 +1,29 @@
-use crate::blueprint::error_observer::RegisteredErrorObserver;
-use crate::blueprint::prebuilt::RegisteredPrebuiltType;
-use crate::blueprint::router::RegisteredFallback;
-use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Constructor, Import, NestedBlueprint, PostProcessingMiddleware,
-    PreProcessingMiddleware, PrebuiltType, RoutesImport, WrappingMiddleware,
-};
-use pavex_reflection::Location;
-
-use super::config::RegisteredConfigType;
-use super::constructor::RegisteredConstructor;
+use super::Constructor;
+use super::ErrorHandler;
+use super::ErrorObserver;
+use super::Fallback;
+use super::Import;
+use super::PostProcessingMiddleware;
+use super::PreProcessingMiddleware;
+use super::Prebuilt;
+use super::RegisteredConstructor;
+use super::RegisteredErrorHandler;
+use super::RegisteredImport;
+use super::Route;
+use super::WrappingMiddleware;
 use super::conversions::{coordinates2coordinates, created_at2created_at, sources2sources};
-use super::error_handler::RegisteredErrorHandler;
-use super::import::RegisteredImport;
-use super::middleware::{
-    RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
+use super::nesting::NestingConditions;
+use super::{
+    Config, RegisteredConfig, RegisteredFallback, RegisteredPostProcessingMiddleware,
+    RegisteredPreProcessingMiddleware, RegisteredRoute, RegisteredRoutes,
     RegisteredWrappingMiddleware,
 };
-use super::nesting::NestingConditions;
-use super::raw::{RawConfig, RawConstructor, RawErrorObserver, RawFallback, RawPrebuilt, RawRoute};
-use super::raw::{
-    RawErrorHandler, RawPostProcessingMiddleware, RawPreProcessingMiddleware, RawWrappingMiddleware,
-};
-use super::reflection::{Sources, WithLocation};
-use super::router::{RegisteredRoute, RegisteredRoutes};
+use crate::blueprint::RegisteredErrorObserver;
+use crate::blueprint::RegisteredPrebuilt;
+use pavex_bp_schema::Blueprint as BlueprintSchema;
+use pavex_reflection::Location;
 
-/// The starting point for building an application with Pavex.
+/// The structure of your Pavex application.
 ///
 /// # Guide
 ///
@@ -33,19 +32,57 @@ use super::router::{RegisteredRoute, RegisteredRoutes};
 ///
 /// # Overview
 ///
-/// A blueprint defines the runtime behaviour of your application.
-/// It keeps track of:
+/// A blueprint keeps track of:
 ///
-/// - route handlers, registered via [`Blueprint::route`]
-/// - constructors, registered via [`Blueprint::constructor`]
-/// - wrapping middlewares, registered via [`Blueprint::wrap`]
-/// - fallback handlers, registered via [`Blueprint::fallback`]
+/// - [Routes](https://pavex.dev/docs/guide/routing/), registered via [`.routes()`][`Blueprint::route`] and [`.route()`][`Blueprint::route`]
+/// - [Middlewares](https://pavex.dev/docs/guide/middleware/), registered via [`.pre_process()`][`Blueprint::pre_process`], [`.wrap()`][`Blueprint::wrap`] and
+///   [`.post_process()`][`Blueprint::post_process`]
+/// - [Error observers](https://pavex.dev/docs/guide/errors/error_observers/), registered via [`.error_observer()`][`Blueprint::error_observer`]
+/// - [Constructors](https://pavex.dev/docs/guide/dependency_injection/), imported via [`.import()`][`Blueprint::import`] or registered via [`.constructor()`][`Blueprint::constructor`]
+/// - [Configuration types](https://pavex.dev/docs/guide/configuration/), imported via [`.import()`][`Blueprint::import`] or registered via [`.config()`][`Blueprint::config`]
+/// - [Prebuilt types](https://pavex.dev/docs/guide/dependency_injection/prebuilt_types/), imported via [`.import()`][`Blueprint::import`] or registered via [`.prebuilt()`][`Blueprint::prebuilt`]
+/// - [Error handlers](https://pavex.dev/docs/guide/errors/error_handlers/), imported via [`.import()`][`Blueprint::import`] or registered via [`.error_handler()`][`Blueprint::error_handler`]
+/// - Fallback routes, registered via [`.fallback()`][`Blueprint::fallback`]
 ///
-/// You can also choose to decompose your overall application into smaller sub-components,
-/// taking advantage of [`Blueprint::nest`], [`Blueprint::prefix`] and [`Blueprint::domain`].
+/// You can also decompose your application into smaller sub-components
+/// using [`.nest()`][`Blueprint::nest`], [`.prefix()`][`Blueprint::prefix`] and [`.domain()`][`Blueprint::domain`].
 ///
-/// The information encoded in a blueprint can be serialized via [`Blueprint::persist`] and passed
-/// as input to Pavex's CLI to generate the application's server SDK.
+/// A blueprint can be serialized via [`.persist()`][`Blueprint::persist`] and forwarded to Pavex's CLI
+/// to (re)generate the [server SDK crate](https://pavex.dev/docs/guide/project_structure/server_sdk/).
+///
+/// # Example
+///
+/// ```rust
+/// use pavex::{Blueprint, blueprint::from};
+///
+/// # pub fn _blueprint(
+/// # LOGGER: pavex::blueprint::WrappingMiddleware,
+/// # ERROR_LOGGER: pavex::blueprint::ErrorObserver,
+/// # RESPONSE_LOGGER: pavex::blueprint::PostProcessingMiddleware) {
+/// let mut bp = Blueprint::new();
+/// // Bring into scope constructors, error handlers and configuration
+/// // types defined in the crates listed via `from!`.
+/// bp.import(from![
+///     // Local components, defined in this crate
+///     crate,
+///     // Components defined in the `pavex` crate,
+///     // by the framework itself.
+///     pavex,
+/// ]);
+///
+/// // Attach a `tracing` span to every incoming request.
+/// bp.wrap(LOGGER);
+/// // Log the status code of every response.
+/// bp.post_process(RESPONSE_LOGGER);
+/// // Capture the error message and source chain
+/// // of every unhandled error.
+/// bp.error_observer(ERROR_LOGGER);
+///
+/// // Register all routes defined in this crate,
+/// // prepending `/api` to their paths.
+/// bp.prefix("/api").routes(from![crate]);
+/// # }
+/// ```
 pub struct Blueprint {
     pub(super) schema: BlueprintSchema,
 }
@@ -86,7 +123,7 @@ impl Blueprint {
     /// You can import all components defined in the current crate and its direct dependencies using the wildcard source, `*`:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -99,7 +136,7 @@ impl Blueprint {
     /// Use `crate` as source to import all components defined in the current crate:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -112,7 +149,7 @@ impl Blueprint {
     /// You can restrict the import to modules:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -127,7 +164,7 @@ impl Blueprint {
     /// You can import components from a dependency using the same mechanism:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -138,36 +175,39 @@ impl Blueprint {
     /// ```
     ///
     /// The specified crates must be direct dependencies of the current crate.
-    pub fn import(&mut self, sources: WithLocation<Sources>) -> RegisteredImport {
-        let WithLocation {
-            value: sources,
-            created_at,
-        } = sources;
-        self.register_import(Import {
-            sources: sources2sources(sources),
-            created_at: created_at2created_at(created_at),
+    pub fn import(&mut self, import: Import) -> RegisteredImport {
+        let import = pavex_bp_schema::Import {
+            sources: sources2sources(import.sources),
+            created_at: created_at2created_at(import.created_at),
             registered_at: Location::caller(),
-        })
+        };
+        let component_id = self.push_component(import);
+        RegisteredImport {
+            blueprint: &mut self.schema,
+            component_id,
+        }
     }
 
     #[track_caller]
-    /// Register all the request handlers defined in the target modules.
+    /// Register all the routes defined in the target modules.
     ///
     /// Components that have been annotated with Pavex's macros (e.g. `#[pavex::get]`) aren't automatically
-    /// added to the router of your application.\
-    /// They need to be explicitly imported using one or more invocations of this method.
+    /// added to your application.\
+    /// They need to be explicitly imported using this method or [`.route()`](Blueprint::route).
     ///
     /// # Guide
     ///
     /// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
     /// for a thorough introduction to routing in Pavex applications.
     ///
-    /// # All local request handlers
+    /// Check out [`.route()`](Blueprint::route)'s documentation to learn how routes are defined.
     ///
-    /// Use `crate` as source to register all the request handlers defined in the current crate:
+    /// # All local routes
+    ///
+    /// Use `crate` as source to register all the routes defined in the current crate:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -180,7 +220,7 @@ impl Blueprint {
     /// You can restrict the scope to specific modules:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -195,10 +235,10 @@ impl Blueprint {
     ///
     /// # Dependencies
     ///
-    /// You can register request handlers defined in one of your dependencies using the same mechanism:
+    /// You can register routes defined in one of your dependencies using the same mechanism:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -211,10 +251,10 @@ impl Blueprint {
     ///
     /// # Wildcard import
     ///
-    /// You can import all request handlers defined in the current crate and its direct dependencies using the wildcard source, `*`:
+    /// You can import all routes defined in the current crate and its direct dependencies using the wildcard source, `*`:
     ///
     /// ```rust
-    /// use pavex::blueprint::{from, Blueprint};
+    /// use pavex::{blueprint::from, Blueprint};
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
@@ -223,14 +263,10 @@ impl Blueprint {
     /// ```
     ///
     /// This is generally discouraged.
-    pub fn routes(&mut self, sources: WithLocation<Sources>) -> RegisteredRoutes {
-        let WithLocation {
-            value: sources,
-            created_at,
-        } = sources;
-        let import = RoutesImport {
-            sources: sources2sources(sources),
-            created_at: created_at2created_at(created_at),
+    pub fn routes(&mut self, import: Import) -> RegisteredRoutes {
+        let import = pavex_bp_schema::RoutesImport {
+            sources: sources2sources(import.sources),
+            created_at: created_at2created_at(import.created_at),
             registered_at: Location::caller(),
         };
         let component_id = self.push_component(import);
@@ -240,28 +276,24 @@ impl Blueprint {
         }
     }
 
-    pub(crate) fn register_import(&mut self, import: pavex_bp_schema::Import) -> RegisteredImport {
-        let component_id = self.push_component(import);
-        RegisteredImport {
-            blueprint: &mut self.schema,
-            component_id,
-        }
-    }
-
     #[track_caller]
-    /// Register a request handler to be invoked when an incoming request matches the specified route.
+    /// Register a route to handle incoming requests.
     ///
-    /// If a request handler has already been registered for the same route, it will be overwritten.
+    /// You can register at most one route for any given [path](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Path) and
+    /// [method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods) pair.
     ///
     /// # Guide
     ///
     /// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
     /// for a thorough introduction to routing in Pavex applications.
     ///
-    /// # Example
+    /// # Example: function route
+    ///
+    /// Add the [`get`](macro@crate::get) attribute to a function to create a route matching `GET` requests
+    /// to the given path:
     ///
     /// ```rust
-    /// use pavex::{get, blueprint::Blueprint};
+    /// use pavex::get;
     /// use pavex::{request::RequestHead, response::Response};
     ///
     /// #[get(path = "/")]
@@ -269,16 +301,83 @@ impl Blueprint {
     ///     // [...]
     ///     # todo!()
     /// }
+    /// ```
     ///
-    /// # fn main() {
+    /// The [`get`](macro@crate::get) attribute will define a new constant,
+    /// named `GET_ROOT`.\
+    /// Pass the constant to [`Blueprint::route`] to add the newly-defined route to your application:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(GET_ROOT: pavex::blueprint::Route) {
     /// let mut bp = Blueprint::new();
     /// bp.route(GET_ROOT);
     /// # }
     /// ```
     ///
-    /// [`router`]: crate::blueprint::router
-    /// [`PathParams`]: struct@crate::request::path::PathParams
-    pub fn route(&mut self, route: RawRoute) -> RegisteredRoute {
+    /// ## Method-specific attributes
+    ///
+    /// Pavex provides attributes for the most common HTTP methods: [`get`](macro@crate::get), [`post`](macro@crate::post), [`put`](macro@crate::put),
+    /// [`patch`](macro@crate::patch), [`delete`](macro@crate::delete), [`head`](macro@crate::head), and [`options`](macro@crate::options).
+    /// Use the [`route`](macro@crate::route) attribute, instead, to define routes that match multiple methods,
+    /// non-standard methods or arbitrary methods.
+    ///
+    /// # Example: method route
+    ///
+    /// You're not limited to free functions. Methods can be used as routes too:
+    ///
+    /// ```rust
+    /// use pavex::methods;
+    /// use pavex::request::RequestHead;
+    ///
+    /// pub struct LoginController(/* .. */);
+    ///
+    /// #[methods]
+    /// impl LoginController {
+    ///     #[get(path = "/login")]
+    ///     pub fn get(head: &RequestHead) -> Self {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
+    ///
+    ///     #[post(path = "/login")]
+    ///     pub fn post(head: &RequestHead) -> Self {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// For methods, you must add a `#[methods]` annotation on the `impl` block it belongs to,
+    /// in addition to the verb annotation on the method itself.\
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(LOGIN_CONTROLLER_GET: pavex::blueprint::Route, LOGIN_CONTROLLER_POST: pavex::blueprint::Route) {
+    /// let mut bp = Blueprint::new();
+    /// bp.route(LOGIN_CONTROLLER_GET);
+    /// bp.route(LOGIN_CONTROLLER_POST);
+    /// # }
+    /// ```
+    ///
+    /// # Imports
+    ///
+    /// If you have defined multiple routes, you can invoke [`.routes()`][`Blueprint::routes`]
+    /// to register them in bulk:
+    ///
+    /// ```rust
+    /// use pavex::{Blueprint, blueprint::from};
+    ///
+    /// let mut bp = Blueprint::new();
+    /// // Import all the routes defined in the current crate.
+    /// // It's equivalent to invoking `bp.route` for every
+    /// // single route defined in the current crate.
+    /// bp.routes(from![crate]);
+    /// ```
+    ///
+    /// Check out the documentation for [`.routes()`][`Blueprint::routes`] for more information.
+    pub fn route(&mut self, route: Route) -> RegisteredRoute {
         let registered = pavex_bp_schema::Route {
             coordinates: coordinates2coordinates(route.coordinates),
             registered_at: Location::caller(),
@@ -292,31 +391,7 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Register a type to be used as input parameter to the (generated) `ApplicationState::new`
-    /// method.
-    ///
-    /// # Guide
-    ///
-    /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
-    /// section of Pavex's guide for a thorough introduction to dependency injection
-    /// in Pavex applications.
-    pub fn prebuilt(&mut self, prebuilt: RawPrebuilt) -> RegisteredPrebuiltType {
-        let registered = PrebuiltType {
-            coordinates: coordinates2coordinates(prebuilt.coordinates),
-            cloning_strategy: None,
-            registered_at: Location::caller(),
-        };
-        let component_id = self.push_component(registered);
-        RegisteredPrebuiltType {
-            blueprint: &mut self.schema,
-            component_id,
-        }
-    }
-
-    #[track_caller]
     /// Add a new type to the application's configuration.
-    ///
-    /// It adds a new field to the generated `ApplicationConfig` struct.
     ///
     /// # Required traits
     ///
@@ -326,7 +401,54 @@ impl Blueprint {
     ///
     /// Check out the ["Configuration"](https://pavex.dev/docs/guide/configuration)
     /// section of Pavex's guide for a thorough introduction to Pavex's configuration system.
-    pub fn config(&mut self, config: RawConfig) -> RegisteredConfigType {
+    ///
+    /// # Example
+    ///
+    /// Add the [`config`](macro@crate::config) attribute to the type you want to include in
+    /// the configuration for your application:
+    ///
+    /// ```rust
+    /// use pavex::config;
+    ///
+    /// #[config(key = "pool")]
+    /// #[derive(serde::Deserialize, Debug, Clone)]
+    /// pub struct PoolConfig {
+    ///     pub max_n_connections: u32,
+    ///     pub min_n_connections: u32,
+    /// }
+    /// ```
+    ///
+    /// The [`config`](macro@crate::config) attribute will define a new constant, named `POOL_CONFIG`.\
+    /// Pass the constant to [`Blueprint::config`] to add the new configuration type to your application:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(POOL_CONFIG: pavex::blueprint::Config) {
+    /// let mut bp = Blueprint::new();
+    /// bp.config(POOL_CONFIG);
+    /// # }
+    /// ```
+    ///
+    /// A new field, named `pool` with type `PoolConfig`, will be added to the generated `ApplicationConfig` struct.
+    ///
+    /// # Imports
+    ///
+    /// If you have defined multiple configuration types, you can use an [import](`Blueprint::import`)
+    /// to register them in bulk:
+    ///
+    /// ```rust
+    /// use pavex::{Blueprint, blueprint::from};
+    ///
+    /// let mut bp = Blueprint::new();
+    /// // Import all the types from the current crate that
+    /// // have been annotated with `#[config]`.
+    /// // It's equivalent to calling `bp.config` for
+    /// // every single configuration type defined in the current crate.
+    /// bp.import(from![crate]);
+    /// ```
+    ///
+    /// Check out the documentation for [`Blueprint::import`] for more information.
+    pub fn config(&mut self, config: Config) -> RegisteredConfig {
         let registered = pavex_bp_schema::ConfigType {
             coordinates: coordinates2coordinates(config.coordinates),
             cloning_strategy: None,
@@ -335,7 +457,7 @@ impl Blueprint {
             registered_at: Location::caller(),
         };
         let component_id = self.push_component(registered);
-        RegisteredConfigType {
+        RegisteredConfig {
             blueprint: &mut self.schema,
             component_id,
         }
@@ -352,30 +474,99 @@ impl Blueprint {
     /// section of Pavex's guide for a thorough introduction to dependency injection
     /// in Pavex applications.
     ///
-    /// # Example
+    /// # Example: function constructor
+    ///
+    /// Add the [`request_scoped`](macro@crate::request_scoped) attribute to a function to mark it as a
+    /// [request-scoped](crate::blueprint::Lifecycle) constructor:
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::request_scoped;
+    /// use pavex::request::RequestHead;
     ///
     /// # struct LogLevel;
-    /// pub struct Logger(/* .. */);
+    /// pub struct AuthorizationHeader(/* .. */);
     ///
-    /// #[pavex::methods]
-    /// impl Logger {
-    ///     #[transient]
-    ///     pub fn new(log_level: LogLevel) -> Self {
+    /// #[request_scoped]
+    /// pub fn extract_authorization(head: &RequestHead) -> AuthorizationHeader {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    /// ```
+    ///
+    /// The [`request_scoped`](macro@crate::request_scoped) attribute will define a new constant,
+    /// named `EXTRACT_AUTHORIZATION`.\
+    /// Pass the constant to [`Blueprint::constructor`] to allow other components to inject an instance
+    /// of the `AuthorizationHeader` type as an input parameter.
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(EXTRACT_AUTHORIZATION: pavex::blueprint::Constructor) {
+    /// let mut bp = Blueprint::new();
+    /// bp.constructor(EXTRACT_AUTHORIZATION);
+    /// # }
+    /// ```
+    ///
+    /// ## Lifecycles
+    ///
+    /// You can also register constructors with [singleton](crate::blueprint::Lifecycle::Singleton) and
+    /// [transient](crate::blueprint::Lifecycle::Transient) lifecycles. Check out the respective
+    /// macros ([`singleton`](macro@crate::singleton) and [`transient`](macro@crate::transient)) for more
+    /// details.
+    ///
+    /// # Example: method constructor
+    ///
+    /// You're not limited to free functions. Methods can be used as constructors too:
+    ///
+    /// ```rust
+    /// use pavex::methods;
+    /// use pavex::request::RequestHead;
+    ///
+    /// # struct LogLevel;
+    /// pub struct AuthorizationHeader(/* .. */);
+    ///
+    /// #[methods]
+    /// impl AuthorizationHeader {
+    ///     #[request_scoped]
+    ///     pub fn new(head: &RequestHead) -> Self {
     ///         // [...]
     ///         # todo!()
     ///     }
     /// }
+    /// ```
     ///
-    /// # fn main() {
+    /// For methods, you must add a `#[methods]` annotation on the `impl` block it belongs to,
+    /// in addition to the `#[request_scoped]` annotation on the method itself.\
+    ///
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(AUTHORIZATION_HEADER_NEW: pavex::blueprint::Constructor) {
     /// let mut bp = Blueprint::new();
-    /// bp.constructor(LOGGER_NEW);
+    /// bp.constructor(AUTHORIZATION_HEADER_NEW);
     /// # }
     /// ```
-    pub fn constructor(&mut self, constructor: RawConstructor) -> RegisteredConstructor {
-        let registered_constructor = Constructor {
+    ///
+    /// # Imports
+    ///
+    /// If you have defined multiple constructors, you can use an [import](`Blueprint::import`)
+    /// to register them in bulk:
+    ///
+    /// ```rust
+    /// use pavex::{Blueprint, blueprint::from};
+    ///
+    /// let mut bp = Blueprint::new();
+    /// // Import all the types from the current crate that
+    /// // have been annotated with either `#[singleton]`,
+    /// // `#[request_scoped]`, `#[transient]` or `#[constructor]`.
+    /// // It's equivalent to invoking `bp.constructor` for every
+    /// // single constructor defined in the current crate.
+    /// bp.import(from![crate]);
+    /// ```
+    ///
+    /// Check out the documentation for [`Blueprint::import`] for more information.
+    pub fn constructor(&mut self, constructor: Constructor) -> RegisteredConstructor {
+        let registered_constructor = pavex_bp_schema::Constructor {
             coordinates: coordinates2coordinates(constructor.coordinates),
             lifecycle: None,
             cloning_strategy: None,
@@ -399,33 +590,77 @@ impl Blueprint {
     /// section of Pavex's guide for a thorough introduction to middlewares
     /// in Pavex applications.
     ///
-    /// # Example: a timeout wrapper
+    /// # Example: function wrapper
+    ///
+    /// Add the [`wrap`](macro@crate::wrap) attribute to a function to mark it as a
+    /// a wrapping middleware:
     ///
     /// ```rust
-    /// use pavex::{blueprint::Blueprint, middleware::Next, response::Response};
-    /// use std::future::{IntoFuture, Future};
+    /// use pavex::{middleware::Next, response::Response, wrap};
     /// use std::time::Duration;
     /// use tokio::time::{timeout, error::Elapsed};
     ///
-    /// #[pavex::wrap]
+    /// #[wrap]
     /// pub async fn timeout_wrapper<C>(next: Next<C>) -> Result<Response, Elapsed>
     /// where
-    ///     C: Future<Output = Response>
+    ///     C: IntoFuture<Output = Response>
     /// {
     ///     timeout(Duration::from_secs(2), next.into_future()).await
     /// }
+    /// ```
     ///
-    /// pub fn api() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     // Register the wrapping middleware against the blueprint.
-    ///     bp.wrap(TIMEOUT_WRAPPER);
-    ///     // [...]
-    ///     bp
+    /// The [`wrap`](macro@crate::wrap) attribute will define a new constant,
+    /// named `TIMEOUT_WRAPPER`.\
+    /// Pass the constant to [`Blueprint::wrap`] to add the newly-defined middleware to
+    /// your application:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(TIMEOUT_WRAPPER: pavex::blueprint::WrappingMiddleware) {
+    /// let mut bp = Blueprint::new();
+    /// bp.wrap(TIMEOUT_WRAPPER);
+    /// # }
+    /// ```
+    ///
+    /// # Example: method middleware
+    ///
+    /// You're not limited to free functions. Methods can be used as middlewares too:
+    ///
+    /// ```rust
+    /// use pavex::{middleware::Next, response::Response, methods};
+    /// use std::time::Duration;
+    /// use tokio::time::{timeout, error::Elapsed};
+    ///
+    /// pub struct TimeoutMiddleware {
+    ///     timeout: Duration,
+    /// }
+    ///
+    /// #[methods]
+    /// impl TimeoutMiddleware {
+    ///     #[wrap]
+    ///     pub async fn execute<C>(&self, next: Next<C>) -> Result<Response, Elapsed>
+    ///     where
+    ///         C: IntoFuture<Output = Response>
+    ///     {
+    ///         timeout(self.timeout, next.into_future()).await
+    ///     }
     /// }
     /// ```
+    ///
+    /// For methods, you must add a `#[methods]` annotation on the `impl` block it belongs to,
+    /// in addition to the `#[wrap]` annotation on the method itself.\
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(TIMEOUT_MIDDLEWARE_EXECUTE: pavex::blueprint::WrappingMiddleware) {
+    /// let mut bp = Blueprint::new();
+    /// bp.wrap(TIMEOUT_MIDDLEWARE_EXECUTE);
+    /// # }
+    /// ```
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, m: RawWrappingMiddleware) -> RegisteredWrappingMiddleware {
-        let registered = WrappingMiddleware {
+    pub fn wrap(&mut self, m: WrappingMiddleware) -> RegisteredWrappingMiddleware {
+        let registered = pavex_bp_schema::WrappingMiddleware {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
             error_handler: None,
@@ -446,16 +681,19 @@ impl Blueprint {
     /// section of Pavex's guide for a thorough introduction to middlewares
     /// in Pavex applications.
     ///
-    /// # Example: a logging middleware
+    /// # Example: function middleware
+    ///
+    /// Add the [`post_process`](macro@crate::post_process) attribute to a function to mark it as a
+    /// a post-processing middleware:
     ///
     /// ```rust
-    /// use pavex::{blueprint::Blueprint, response::Response};
+    /// use pavex::{post_process, response::Response};
     /// use pavex_tracing::{
     ///     RootSpan,
     ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
     /// };
     ///
-    /// #[pavex::post_process]
+    /// #[post_process]
     /// pub fn response_logger(response: Response, root_span: &RootSpan) -> Response
     /// {
     ///     root_span.record(
@@ -464,22 +702,71 @@ impl Blueprint {
     ///     );
     ///     response
     /// }
+    /// ```
     ///
-    /// pub fn api() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     // Register the post-processing middleware against the blueprint.
-    ///     bp.post_process(RESPONSE_LOGGER);
-    ///     // [...]
-    ///     bp
+    /// The [`post_process`](macro@crate::post_process) attribute will define a new constant,
+    /// named `RESPONSE_LOGGER`.\
+    /// Pass the constant to [`Blueprint::post_process`] to add the newly-defined middleware to
+    /// your application:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(RESPONSE_LOGGER: pavex::blueprint::PostProcessingMiddleware) {
+    /// let mut bp = Blueprint::new();
+    /// bp.post_process(RESPONSE_LOGGER);
+    /// # }
+    /// ```
+    ///
+    /// # Example: method middleware
+    ///
+    /// You're not limited to free functions. Methods can be used as middlewares too:
+    ///
+    /// ```rust
+    /// use pavex::{methods, response::Response};
+    /// use pavex_tracing::{
+    ///     RootSpan,
+    ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
+    /// };
+    ///
+    /// pub struct ResponseLogger {
+    ///     log_body_size: bool,
     /// }
+    ///
+    /// #[methods]
+    /// impl ResponseLogger {
+    ///     #[post_process]
+    ///     pub fn log(&self, response: Response, root_span: &RootSpan) -> Response
+    ///     {
+    ///         if self.log_body_size {
+    ///             // [...]
+    ///         }
+    ///         root_span.record(
+    ///             HTTP_RESPONSE_STATUS_CODE,
+    ///             http_response_status_code(&response),
+    ///         );
+    ///         response
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// For methods, you must add a [`#[methods]`][macro@crate::methods] annotation on the `impl` block it belongs to,
+    /// in addition to the [`#[post_process]`][macro@crate::post_process] annotation on the method itself.\
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(RESPONSE_LOGGER_LOG: pavex::blueprint::PostProcessingMiddleware) {
+    /// let mut bp = Blueprint::new();
+    /// bp.post_process(RESPONSE_LOGGER_LOG);
+    /// # }
     /// ```
     #[doc(alias = "middleware")]
     #[doc(alias = "postprocess")]
     pub fn post_process(
         &mut self,
-        m: RawPostProcessingMiddleware,
+        m: PostProcessingMiddleware,
     ) -> RegisteredPostProcessingMiddleware {
-        let registered = PostProcessingMiddleware {
+        let registered = pavex_bp_schema::PostProcessingMiddleware {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
             error_handler: None,
@@ -500,17 +787,20 @@ impl Blueprint {
     /// section of Pavex's guide for a thorough introduction to middlewares
     /// in Pavex applications.
     ///
-    /// # Example: path normalization
+    /// # Example: function middleware
+    ///
+    /// Add the [`pre_process`](macro@crate::pre_process) attribute to a function to mark it as a
+    /// a pre-processing middleware:
     ///
     /// ```rust
-    /// use pavex::{blueprint::Blueprint, response::Response};
+    /// use pavex::{Blueprint, pre_process, response::Response};
     /// use pavex::middleware::Processing;
     /// use pavex::http::{HeaderValue, header::LOCATION};
     /// use pavex::request::RequestHead;
     ///
     /// /// If the request path ends with a `/`,
     /// /// redirect to the same path without the trailing `/`.
-    /// #[pavex::pre_process]
+    /// #[pre_process]
     /// pub fn redirect_to_normalized(request_head: &RequestHead) -> Processing
     /// {
     ///     let Some(normalized_path) = request_head.target.path().strip_suffix('/') else {
@@ -523,22 +813,61 @@ impl Blueprint {
     ///     // to the client without invoking downstream middlewares and the request handler.
     ///     Processing::EarlyReturn(redirect)
     /// }
+    /// ```
     ///
-    /// pub fn api() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     // Register the pre-processing middleware against the blueprint.
-    ///     bp.pre_process(REDIRECT_TO_NORMALIZED);
+    /// The [`pre_process`](macro@crate::pre_process) attribute will define a new constant,
+    /// named `REDIRECT_TO_NORMALIZED`.\
+    /// Pass the constant to [`Blueprint::pre_process`] to add the newly-defined middleware to
+    /// your application:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(REDIRECT_TO_NORMALIZED: pavex::blueprint::PreProcessingMiddleware) {
+    /// let mut bp = Blueprint::new();
+    /// bp.pre_process(REDIRECT_TO_NORMALIZED);
+    /// # }
+    /// ```
+    ///
+    /// # Example: method middleware
+    ///
+    /// You're not limited to free functions. Methods can be used as middlewares too:
+    ///
+    /// ```rust
+    /// use pavex::{methods, response::Response};
+    /// use pavex::middleware::Processing;
+    /// use pavex::http::{HeaderValue, header::LOCATION};
+    /// use pavex::request::RequestHead;
+    ///
+    /// pub struct PathNormalizer {
     ///     // [...]
-    ///     bp
     /// }
+    ///
+    /// #[methods]
+    /// impl PathNormalizer {
+    ///     #[pre_process]
+    ///     pub fn redirect(request_head: &RequestHead) -> Processing
+    ///     {
+    ///         // [...]
+    ///         # todo!()
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// For methods, you must add a [`#[methods]`][macro@crate::methods] annotation on the `impl` block it belongs to,
+    /// in addition to the [`#[pre_process]`][macro@crate::pre_process] annotation on the method itself.\
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(PATH_NORMALIZER_REDIRECT: pavex::blueprint::PreProcessingMiddleware) {
+    /// let mut bp = Blueprint::new();
+    /// bp.pre_process(PATH_NORMALIZER_REDIRECT);
+    /// # }
     /// ```
     #[doc(alias = "middleware")]
     #[doc(alias = "preprocess")]
-    pub fn pre_process(
-        &mut self,
-        m: RawPreProcessingMiddleware,
-    ) -> RegisteredPreProcessingMiddleware {
-        let registered = PreProcessingMiddleware {
+    pub fn pre_process(&mut self, m: PreProcessingMiddleware) -> RegisteredPreProcessingMiddleware {
+        let registered = pavex_bp_schema::PreProcessingMiddleware {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
             error_handler: None,
@@ -557,7 +886,7 @@ impl Blueprint {
     #[track_caller]
     #[doc(alias("scope"))]
     pub fn nest(&mut self, blueprint: Blueprint) {
-        self.push_component(NestedBlueprint {
+        self.push_component(pavex_bp_schema::NestedBlueprint {
             blueprint: blueprint.schema,
             path_prefix: None,
             domain: None,
@@ -569,7 +898,7 @@ impl Blueprint {
     /// A common prefix will be prepended to the path of routes nested under this condition.
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::get;
     /// use pavex::response::Response;
     ///
@@ -598,7 +927,7 @@ impl Blueprint {
     /// You can also add a (sub)domain constraint, in addition to the common prefix:
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::get;
     /// use pavex::response::Response;
     ///
@@ -638,7 +967,7 @@ impl Blueprint {
     /// the path of the route registered in the nested blueprint:
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::get;
     /// use pavex::response::Response;
     ///
@@ -672,7 +1001,7 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// # fn api_routes() -> Blueprint { Blueprint::new() }
     /// # fn console_routes() -> Blueprint { Blueprint::new() }
     ///
@@ -690,7 +1019,7 @@ impl Blueprint {
     /// domain constraint:
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
+    /// use pavex::Blueprint;
     /// use pavex::get;
     /// use pavex::response::Response;
     ///
@@ -740,7 +1069,7 @@ impl Blueprint {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{get, fallback, blueprint::Blueprint};
+    /// use pavex::{get, fallback, Blueprint};
     /// use pavex::response::Response;
     ///
     /// #[get(path = "/path")]
@@ -789,7 +1118,7 @@ impl Blueprint {
     /// their method guards.
     ///
     /// ```rust
-    /// use pavex::{get, fallback, blueprint::Blueprint};
+    /// use pavex::{get, fallback, Blueprint};
     /// use pavex::response::Response;
     ///
     /// #[get(path = "/home")]
@@ -838,7 +1167,7 @@ impl Blueprint {
     /// but don't match any of the route paths registered against the nested blueprint.
     ///
     /// ```rust
-    /// use pavex::{get, fallback, blueprint::Blueprint};
+    /// use pavex::{get, fallback, Blueprint};
     /// use pavex::response::Response;
     ///
     /// #[get(path = "/home")]
@@ -877,7 +1206,7 @@ impl Blueprint {
     /// prefix of the nested blueprint (`/room`).
     ///
     /// [`Response`]: crate::response::Response
-    pub fn fallback(&mut self, fallback: RawFallback) -> RegisteredFallback {
+    pub fn fallback(&mut self, fallback: Fallback) -> RegisteredFallback {
         let registered = pavex_bp_schema::Fallback {
             coordinates: coordinates2coordinates(fallback.coordinates),
             registered_at: Location::caller(),
@@ -899,10 +1228,9 @@ impl Blueprint {
     /// section of Pavex's guide for a thorough introduction to error observers
     /// in Pavex applications.
     ///
-    /// # Example
+    /// # Example: function observer
     ///
     /// ```rust
-    /// use pavex::blueprint::Blueprint;
     /// use pavex::error_observer;
     /// use tracing_log_error::log_error;
     ///
@@ -910,13 +1238,52 @@ impl Blueprint {
     /// pub fn error_logger(e: &pavex::Error) {
     ///     log_error!(e, "An error occurred while handling a request");
     /// }
+    /// ```
     ///
-    /// # fn main() {
+    /// The [`error_observer`](macro@crate::error_observer) attribute will define a new constant,
+    /// named `ERROR_LOGGER`.\
+    /// Pass the constant to [`.error_observer()`][`Blueprint::error_observer`] to register
+    /// the newly defined error observer:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(ERROR_LOGGER: pavex::blueprint::ErrorObserver) {
     /// let mut bp = Blueprint::new();
     /// bp.error_observer(ERROR_LOGGER);
     /// # }
     /// ```
-    pub fn error_observer(&mut self, error_observer: RawErrorObserver) -> RegisteredErrorObserver {
+    ///
+    /// # Example: method observer
+    ///
+    /// You're not limited to free functions. Methods can be used as error observers too:
+    ///
+    /// ```rust
+    /// use pavex::methods;
+    /// use tracing_log_error::log_error;
+    ///
+    /// pub struct ErrorLogger;
+    ///
+    /// #[methods]
+    /// impl ErrorLogger {
+    ///     #[error_observer]
+    ///     pub fn log(e: &pavex::Error) {
+    ///         log_error!(e, "An error occurred while handling a request");
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// For methods, you must add a [`#[methods]`](macro@crate::methods) annotation on the `impl` block it belongs to,
+    /// in addition to the [`#[error_observer]`](macro@crate::error_observer) annotation on the method itself.\
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(ERROR_LOGGER_LOG: pavex::blueprint::ErrorObserver) {
+    /// let mut bp = Blueprint::new();
+    /// bp.error_observer(ERROR_LOGGER_LOG);
+    /// # }
+    /// ```
+    pub fn error_observer(&mut self, error_observer: ErrorObserver) -> RegisteredErrorObserver {
         let registered = pavex_bp_schema::ErrorObserver {
             coordinates: coordinates2coordinates(error_observer.coordinates),
             registered_at: Location::caller(),
@@ -935,7 +1302,80 @@ impl Blueprint {
     /// Check out the ["Error handlers"](https://pavex.dev/docs/guide/errors/error_handlers)
     /// section of Pavex's guide for a thorough introduction to error handlers
     /// in Pavex applications.
-    pub fn error_handler(&mut self, m: RawErrorHandler) -> RegisteredErrorHandler {
+    ///
+    /// # Example: function handler
+    ///
+    /// Add the [`error_handler`](macro@crate::error_handler) attribute to a function to mark it as
+    /// an error handler:
+    ///
+    /// ```rust
+    /// use pavex::error_handler;
+    /// use pavex::response::Response;
+    ///
+    /// pub enum LoginError {
+    ///     InvalidCredentials,
+    ///     DatabaseError,
+    /// }
+    ///
+    /// #[error_handler]
+    /// pub fn login_error_handler(e: &LoginError) -> Response {
+    ///     match e {
+    ///         LoginError::InvalidCredentials => Response::unauthorized(),
+    ///         LoginError::DatabaseError => Response::internal_server_error(),
+    ///     }
+    /// }
+    ///```
+    ///
+    /// The [`error_handler`](macro@crate::error_handler) attribute will define a new constant,
+    /// named `LOGIN_ERROR_HANDLER`.\
+    /// Pass the constant to [`.error_handler()`][`Blueprint::error_handler`] to register
+    /// the newly defined error handler:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(LOGIN_ERROR_HANDLER: pavex::blueprint::ErrorHandler) {
+    /// let mut bp = Blueprint::new();
+    /// bp.error_handler(LOGIN_ERROR_HANDLER);
+    /// # }
+    /// ```
+    ///
+    /// # Example: method handler
+    ///
+    /// You're not limited to free functions. Methods can be used as error handlers too:
+    ///
+    /// ```rust
+    /// use pavex::methods;
+    /// use pavex::response::Response;
+    ///
+    /// pub enum LoginError {
+    ///     InvalidCredentials,
+    ///     DatabaseError,
+    /// }
+    ///
+    /// #[methods]
+    /// impl LoginError {
+    ///     #[error_handler]
+    ///     pub fn to_response(&self) -> Response {
+    ///         match self {
+    ///             LoginError::InvalidCredentials => Response::unauthorized(),
+    ///             LoginError::DatabaseError => Response::internal_server_error(),
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// For methods, you must add a [`#[methods]`](macro@crate::methods) annotation on the `impl` block it belongs to,
+    /// in addition to the [`#[error_handler]`](macro@crate::error_handler) annotation on the method itself.\
+    /// The generated constant is named `<type_name>_<method_name>`, in constant case:
+    ///
+    /// ```rust
+    /// # use pavex::Blueprint;
+    /// # fn blueprint(LOGIN_ERROR_TO_RESPONSE: pavex::blueprint::ErrorHandler) {
+    /// let mut bp = Blueprint::new();
+    /// bp.error_handler(LOGIN_ERROR_TO_RESPONSE);
+    /// # }
+    /// ```
+    pub fn error_handler(&mut self, m: ErrorHandler) -> RegisteredErrorHandler {
         let registered = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
@@ -946,8 +1386,30 @@ impl Blueprint {
         }
     }
 
+    #[track_caller]
+    /// Register a type to be used as input parameter to the (generated) `ApplicationState::new`
+    /// method.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
+    /// section of Pavex's guide for a thorough introduction to dependency injection
+    /// in Pavex applications.
+    pub fn prebuilt(&mut self, prebuilt: Prebuilt) -> RegisteredPrebuilt {
+        let registered = pavex_bp_schema::PrebuiltType {
+            coordinates: coordinates2coordinates(prebuilt.coordinates),
+            cloning_strategy: None,
+            registered_at: Location::caller(),
+        };
+        let component_id = self.push_component(registered);
+        RegisteredPrebuilt {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
     /// Register a component and return its id (i.e. its index in the `components` vector).
-    pub fn push_component(&mut self, component: impl Into<pavex_bp_schema::Component>) -> usize {
+    fn push_component(&mut self, component: impl Into<pavex_bp_schema::Component>) -> usize {
         let id = self.schema.components.len();
         self.schema.components.push(component.into());
         id

@@ -1,7 +1,7 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::middleware::Next;
 use pavex::request::path::RawPathParams;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::wrap]
 pub fn mw<T>(_next: Next<T>) -> Response

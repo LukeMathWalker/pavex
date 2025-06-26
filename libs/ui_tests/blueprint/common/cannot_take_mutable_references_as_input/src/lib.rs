@@ -1,8 +1,8 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::methods;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct A;
 

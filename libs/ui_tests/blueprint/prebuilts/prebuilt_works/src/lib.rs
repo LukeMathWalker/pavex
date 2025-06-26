@@ -1,5 +1,5 @@
-use pavex::blueprint::{from, Blueprint};
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
 #[pavex::prebuilt(clone_if_necessary, id = "A_")]

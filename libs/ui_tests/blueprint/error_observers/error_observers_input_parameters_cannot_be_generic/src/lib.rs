@@ -1,4 +1,4 @@
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 use pavex::Error;
 
 pub struct GenericType<V>(V);
