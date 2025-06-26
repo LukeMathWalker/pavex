@@ -2,29 +2,56 @@ use pavex_session::SessionId;
 use pavex_session::store::{SessionRecordRef, SessionStorageBackend};
 use pavex_session_sqlx::MySqlSessionStore;
 use serde_json;
-use sqlx::{Error as SqlxError, MySqlPool};
+use sqlx::MySqlPool;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
+use std::thread;
 use std::time::Duration;
 
 async fn create_test_store() -> MySqlSessionStore {
-    // For testing, you would typically use testcontainers or a test database
-    // This is a placeholder - in real tests you'd set up a MySQL container
-    let connection_string = std::env::var("TEST_MYSQL_URL")
-        .unwrap_or_else(|_| "mysql://root:password@localhost:3306/test_sessions".to_string());
+    // Generate a unique database name using multiple sources of uniqueness
+    let thread_id = format!("{:?}", thread::current().id());
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let random_component = std::ptr::addr_of!(thread_id) as usize;
+    let test_db_name = format!(
+        "test_sessions_{}_{}_{}",
+        thread_id.replace("ThreadId(", "").replace(")", ""),
+        timestamp,
+        random_component
+    );
 
-    match MySqlPool::connect(&connection_string).await {
-        Ok(pool) => {
-            let store = MySqlSessionStore::new(pool);
-            store.migrate().await.unwrap();
-            store
-        }
-        Err(_) => {
-            // Skip tests if no MySQL available
-            panic!("MySQL test database not available. Set TEST_MYSQL_URL environment variable.");
-        }
-    }
+    let base_url = std::env::var("TEST_MYSQL_URL")
+        .unwrap_or_else(|_| "mysql://root:password@localhost:3306/mysql".to_string());
+
+    // Connect to the mysql database first to create our test database
+    let root_pool = MySqlPool::connect(&base_url)
+        .await
+        .expect("MySQL test database not available. Set TEST_MYSQL_URL environment variable.");
+
+    // Create unique test database (use IF NOT EXISTS to avoid conflicts)
+    sqlx::query(&format!("CREATE DATABASE IF NOT EXISTS {}", test_db_name))
+        .execute(&root_pool)
+        .await
+        .unwrap();
+
+    // Connect to our unique test database
+    let test_url = base_url.replace("/mysql", &format!("/{}", test_db_name));
+    let pool = MySqlPool::connect(&test_url).await.unwrap();
+
+    let store = MySqlSessionStore::new(pool);
+    store.migrate().await.unwrap();
+
+    // Clear any existing data to ensure clean test state
+    sqlx::query("DELETE FROM sessions")
+        .execute(&store.0)
+        .await
+        .unwrap();
+
+    store
 }
 
 fn create_test_record(
@@ -229,9 +256,6 @@ async fn test_change_id_roundtrip() {
 async fn test_delete_expired() {
     let store = create_test_store().await;
 
-    // Clear any existing sessions from previous test runs
-    let _ = store.delete_expired(None).await;
-
     // Create expired sessions by directly inserting with past deadlines
     use pavex::time::Timestamp;
     let past_deadline = Timestamp::now().as_second() - 3600; // 1 hour ago
@@ -282,9 +306,6 @@ async fn test_delete_expired() {
 #[tokio::test]
 async fn test_delete_expired_with_batch_size() {
     let store = create_test_store().await;
-
-    // Clear any existing sessions from previous test runs
-    let _ = store.delete_expired(None).await;
 
     // Create expired sessions by directly inserting with past deadlines
     use pavex::time::Timestamp;
