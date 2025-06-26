@@ -329,6 +329,7 @@ impl CrateCollection {
     }
 
     /// Retrieve the annotation that these coordinates point to, if any.
+    #[allow(clippy::type_complexity)]
     pub fn annotation_for_coordinates(
         &self,
         c: &AnnotationCoordinates,

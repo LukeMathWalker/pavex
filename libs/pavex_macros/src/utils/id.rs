@@ -49,7 +49,7 @@ fn ty_name(ty_: &syn::Type, current: &mut String) {
                         continue;
                     };
                     current.push_str(&last.ident.to_string());
-                    current.push_str("_");
+                    current.push('_');
                 }
             }
         }
@@ -94,7 +94,7 @@ fn ty_name(ty_: &syn::Type, current: &mut String) {
                     for (i, ty) in type_args.iter().enumerate() {
                         ty_name(ty, current);
                         if i != n_args - 1 {
-                            current.push_str("_");
+                            current.push('_');
                         }
                     }
                 }
@@ -131,7 +131,7 @@ fn ty_name(ty_: &syn::Type, current: &mut String) {
                     current.push_str(&last.ident.to_string());
                 }
                 if i != n_bounds - 1 {
-                    current.push_str("_");
+                    current.push('_');
                 }
             }
         }
@@ -141,7 +141,7 @@ fn ty_name(ty_: &syn::Type, current: &mut String) {
             for (i, elem) in type_tuple.elems.iter().enumerate() {
                 ty_name(elem, current);
                 if i != n_elements - 1 {
-                    current.push_str("_");
+                    current.push('_');
                 }
             }
         }
@@ -154,7 +154,7 @@ pub fn default_id(impl_: Option<&ImplContext>, item: &Callable) -> syn::Ident {
     let name = item.sig.ident.to_string();
     let id = if let Some(impl_) = impl_ {
         let mut buffer = String::new();
-        ty_name(&impl_.self_ty, &mut buffer);
+        ty_name(impl_.self_ty, &mut buffer);
         buffer.push('_');
         buffer.push_str(&name);
         buffer
@@ -166,6 +166,7 @@ pub fn default_id(impl_: Option<&ImplContext>, item: &Callable) -> syn::Ident {
 }
 
 /// Return the definition for the id constant for a given callable item.
+#[allow(clippy::too_many_arguments)]
 pub fn callable_id_def(
     id: &syn::Ident,
     pavex: Option<&syn::Ident>,

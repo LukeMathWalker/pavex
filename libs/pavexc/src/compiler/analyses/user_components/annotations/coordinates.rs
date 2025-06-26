@@ -190,9 +190,7 @@ pub(crate) fn resolve_annotation_coordinates(
 
             if let Some(true) = allow_unused {
                 let lints = aux.id2lints.entry(component_id).or_default();
-                if !lints.contains_key(&Lint::Unused) {
-                    lints.insert(Lint::Unused, LintSetting::Ignore);
-                }
+                lints.entry(Lint::Unused).or_insert(LintSetting::Ignore);
             }
 
             // Use the behaviour specified in the annotation, unless the user has overridden
