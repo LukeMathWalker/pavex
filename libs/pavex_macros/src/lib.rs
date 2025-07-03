@@ -1,7 +1,5 @@
 use config::ConfigAnnotation;
-use constructor::{
-    ConstructorAnnotataion, RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation,
-};
+use constructor::{RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation};
 use error_handler::ErrorHandlerAnnotation;
 use error_observer::ErrorObserverAnnotation;
 use fallback::FallbackAnnotation;
@@ -84,11 +82,6 @@ pub fn pre_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn post_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
     direct_entrypoint::<PostProcessAnnotation>(metadata.into(), input.into())
-}
-
-#[proc_macro_attribute]
-pub fn constructor(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    direct_entrypoint::<ConstructorAnnotataion>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]

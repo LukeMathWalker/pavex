@@ -39,13 +39,12 @@ impl Singleton {
 
 pub mod a {
     #[derive(Clone)]
-    /// Same name as the one above, so Pavex will
-    /// have to include enough path segments to disambiguate.
+    /// Same name as the one above, but different id.
     pub struct Singleton;
 
     #[pavex::methods]
     impl Singleton {
-        #[singleton]
+        #[singleton(id = "SINGLETON_A")]
         pub fn new() -> Self {
             todo!()
         }

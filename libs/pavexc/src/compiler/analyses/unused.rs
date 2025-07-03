@@ -103,14 +103,14 @@ fn emit_unused_warning(
         &callable.path,
     );
     let help = if db.registration(user_id).kind.is_blueprint() {
-        Some("If you want to ignore this warning, call `.ignore(Lint::Unused)` on the registered constructor.".to_string())
+        "If you want to ignore this warning, call `.ignore(Lint::Unused)` on the registered constructor."
     } else {
-        // TODO: Add support for ignoring lints for annotated constructors.
-        None
-    };
+        "If you want to ignore this warning, add `allow(unused)` to your constructor attribute."
+    }
+    .to_string();
     let builder = CompilerDiagnostic::builder(error)
         .optional_source(source)
         .severity(Severity::Warning)
-        .optional_help(help);
+        .help(help);
     diagnostics.push(builder.build())
 }

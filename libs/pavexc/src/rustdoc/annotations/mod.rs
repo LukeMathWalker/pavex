@@ -76,14 +76,16 @@ pub(crate) fn process_queue(
                     continue;
                 }
 
-                items.insert(
+                if let Err(e) = items.insert(
                     id,
                     AnnotatedItem {
                         id,
                         properties: annotation,
                         impl_: None,
                     },
-                );
+                ) {
+                    id_conflict(e, krate, diagnostics);
+                }
             }
             QueueItem::Impl { self_, id: impl_id } => {
                 // Enqueue other items for analysis.
@@ -138,7 +140,7 @@ pub(crate) fn process_queue(
                     }
                 };
 
-                items.insert(
+                if let Err(e) = items.insert(
                     id,
                     AnnotatedItem {
                         id,
@@ -148,7 +150,9 @@ pub(crate) fn process_queue(
                             impl_,
                         }),
                     },
-                );
+                ) {
+                    id_conflict(e, krate, diagnostics);
+                }
             }
         }
     }

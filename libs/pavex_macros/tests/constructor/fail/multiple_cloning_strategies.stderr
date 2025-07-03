@@ -1,31 +1,23 @@
-error: You must specify the lifecycle of your constructor. It can either be `singleton`, `request_scoped`, or `transient`
+error: A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.
  --> tests/constructor/fail/multiple_cloning_strategies.rs:5:1
   |
-5 | #[constructor(clone_if_necessary, never_clone)]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | #[singleton(clone_if_necessary, never_clone)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `constructor` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the attribute macro `singleton` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.
   --> tests/constructor/fail/multiple_cloning_strategies.rs:10:1
    |
-10 | #[singleton(clone_if_necessary, never_clone)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: this error originates in the attribute macro `singleton` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error: A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.
-  --> tests/constructor/fail/multiple_cloning_strategies.rs:15:1
-   |
-15 | #[request_scoped(clone_if_necessary, never_clone)]
+10 | #[request_scoped(clone_if_necessary, never_clone)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the attribute macro `request_scoped` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.
-  --> tests/constructor/fail/multiple_cloning_strategies.rs:20:1
+  --> tests/constructor/fail/multiple_cloning_strategies.rs:15:1
    |
-20 | #[transient(clone_if_necessary, never_clone)]
+15 | #[transient(clone_if_necessary, never_clone)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the attribute macro `transient` (in Nightly builds, run with -Z macro-backtrace for more info)

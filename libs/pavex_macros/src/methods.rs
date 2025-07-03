@@ -3,9 +3,7 @@ use quote::{ToTokens, quote};
 use syn::{Attribute, ImplItem, visit_mut::VisitMut};
 
 use crate::{
-    constructor::{
-        ConstructorAnnotataion, RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation,
-    },
+    constructor::{RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation},
     error_handler::ErrorHandlerAnnotation,
     error_observer::ErrorObserverAnnotation,
     fallback::FallbackAnnotation,
@@ -52,7 +50,6 @@ pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream
             MethodSubAttributes::Singleton => method_entrypoint::<SingletonAnnotation>,
             MethodSubAttributes::RequestScoped => method_entrypoint::<RequestScopedAnnotation>,
             MethodSubAttributes::Transient => method_entrypoint::<TransientAnnotation>,
-            MethodSubAttributes::Constructor => method_entrypoint::<ConstructorAnnotataion>,
             MethodSubAttributes::Get => method_entrypoint::<GetAnnotation>,
             MethodSubAttributes::Post => method_entrypoint::<PostAnnotation>,
             MethodSubAttributes::Put => method_entrypoint::<PutAnnotation>,
@@ -96,7 +93,6 @@ enum MethodSubAttributes {
     Singleton,
     RequestScoped,
     Transient,
-    Constructor,
     Route,
     Get,
     Post,
@@ -121,7 +117,6 @@ impl MethodSubAttributes {
             Singleton => "singleton",
             RequestScoped => "request_scoped",
             Transient => "transient",
-            Constructor => "constructor",
             Route => "route",
             Get => "get",
             Post => "post",
@@ -147,7 +142,6 @@ impl MethodSubAttributes {
             Singleton,
             RequestScoped,
             Transient,
-            Constructor,
             Route,
             Get,
             Post,

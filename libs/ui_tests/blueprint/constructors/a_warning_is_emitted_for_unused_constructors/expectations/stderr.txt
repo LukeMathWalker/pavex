@@ -11,3 +11,5 @@
   [33m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe unused constructor was registered here[0m
   [33m│[0m  [2m9[0m │             todo!()
   [33m│[0m    ╰────
+  [33m│[0m   [36mhelp:[0m If you want to ignore this warning, add `allow(unused)` to your
+  [33m│[0m         constructor attribute.

@@ -18,8 +18,8 @@ use super::reflection::AnnotationCoordinates;
 /// # Stability guarantees
 ///
 /// Use one of Pavex's constructor attributes (
-/// [`singleton`](macro@crate::singleton), [`request_scoped`](macro@crate::request_scoped), [`transient`](macro@crate::transient),
-/// or [`constructor`](macro@crate::constructor)) to create instances of `Constructor`.\
+/// [`singleton`](macro@crate::singleton), [`request_scoped`](macro@crate::request_scoped), or [`transient`](macro@crate::transient))
+/// to create instances of `Constructor`.\
 /// `Constructor`'s fields are an implementation detail of Pavex's macros and should not be relied upon:
 /// newer versions of Pavex may add, remove or modify its fields.
 ///

@@ -352,332 +352,14 @@ pub use pavex_macros::prebuilt;
 /// [`ApplicationConfig`]: https://pavex.dev/docs/guide/configuration/application_config/
 pub use pavex_macros::config;
 
-/// Define a [constructor](https://pavex.dev/docs/guide/dependency_injection/constructors/).
-///
-/// Constructors are functions that create instances of a type as part of Pavex's
-/// dependency injection system.
-///
-/// # Example
-///
-/// ```rust
-/// use pavex::{constructor, methods};
-///
-/// pub struct DatabaseClient {
-///     // [...]
-/// }
-///
-/// #[methods]
-/// impl DatabaseClient {
-///     #[constructor(singleton)]
-///     pub fn new() -> Self {
-///         Self {
-///             // [...]
-///         }
-///     }
-/// }
-/// ```
-///
-/// `DatabaseClient::new` will be called whenever a new instance of `DatabaseClient` is needed.
-///
-/// # Guide
-///
-/// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
-/// section of Pavex's guide for a thorough introduction to dependency injection
-/// in Pavex applications.
-///
-/// # Registration
-///
-/// You can register a constructor with your application in two ways:
-/// - Use [`Blueprint::constructor`] to register a single constructor
-/// - Use [`Blueprint::import`] to import multiple constructors in bulk
-///
-/// The `#[constructor]` macro [generates a constant](#id) that you can use to refer to the
-/// constructor when invoking [`Blueprint::constructor`].
-///
-/// # Shortcuts
-///
-/// `#[constructor]` requires you to specify the [lifetime](#singleton) of the instances it creates.
-/// If you prefer a more concise syntax, you can use the lifetime-specific shortcuts:
-///
-/// | Shortcut                                  | Equivalent to                      |
-/// |-------------------------------------------|------------------------------------|
-/// | [`#[request_scoped]`][macro@request_scoped] | `#[constructor(request_scoped)]`   |
-/// | [`#[singleton]`][macro@singleton]         | `#[constructor(singleton)]`        |
-/// | [`#[transient]`][macro@transient]         | `#[constructor(transient)]`        |
-///
-/// # Arguments
-///
-/// The sections below provide an exhaustive list of all the arguments and flags supported by the [`constructor`][macro@constructor] macro:
-///
-/// | Name                                        | Kind     | Required |
-/// |---------------------------------------------|----------|----------|
-/// | [`singleton`](#singleton)                   | Flag     | Yes*     |
-/// | [`request_scoped`](#request_scoped)         | Flag     | Yes*     |
-/// | [`transient`](#transient)                   | Flag     | Yes*     |
-/// | [`id`](#id)                                 | Argument | No       |
-/// | [`clone_if_necessary`](#clone_if_necessary) | Flag     | No       |
-/// | [`never_clone`](#never_clone)               | Flag     | No       |
-/// | [`allow`](#allow)                           | Argument | No       |
-///
-/// \* One and only one lifetime flag must be specified.
-///
-/// ## `singleton`
-///
-/// The `singleton` flag marks this constructor as creating a singleton instance.
-/// Singleton constructors are invoked once (when the application starts up) to create
-/// a new instance of their output type. The created instance is then shared across all
-/// requests for the lifetime of the application.
-///
-/// This flag is mutually exclusive with `request_scoped` and `transient`.
-///
-/// ### Example
-///
-/// ```rust
-/// use pavex::{constructor, methods};
-///
-/// pub struct SharedCache {
-///     // [...]
-/// }
-///
-/// #[methods]
-/// impl SharedCache {
-///     #[constructor(singleton)]
-///     //            👆 Singleton lifetime
-///     pub fn new() -> Self {
-///         Self {
-///             // Initialize once, share across all requests
-///         }
-///     }
-/// }
-/// ```
-///
-/// ## `request_scoped`
-///
-/// The `request_scoped` flag marks this constructor as creating request-scoped instances.
-/// Request-scoped constructors are invoked once per request to create a new instance
-/// of their output type. The created instance is cached for the duration of the request
-/// processing lifecycle.
-///
-/// This flag is mutually exclusive with `singleton` and `transient`.
-///
-/// ### Example
-///
-/// ```rust
-/// use pavex::{constructor, methods};
-///
-/// pub struct RequestContext {
-///     request_id: String,
-/// }
-///
-/// #[methods]
-/// impl RequestContext {
-///     #[constructor(request_scoped)]
-///     //            👆 Request-scoped lifetime
-///     pub fn new() -> Self {
-///         Self {
-///             request_id: uuid::Uuid::new_v4().to_string(),
-///         }
-///     }
-/// }
-/// ```
-///
-/// ## `transient`
-///
-/// The `transient` flag marks this constructor as creating transient instances.
-/// Transient constructors are invoked each time a new instance of their output type
-/// is needed, even within the same request. The created instances are not cached.
-///
-/// This flag is mutually exclusive with `singleton` and `request_scoped`.
-///
-/// ### Example
-///
-/// ```rust
-/// use pavex::methods;
-///
-/// pub struct TemporaryBuffer {
-///     data: Vec<u8>,
-/// }
-///
-/// #[methods]
-/// impl TemporaryBuffer {
-///     #[constructor(transient)]
-///     //            👆 Transient lifetime
-///     pub fn new() -> Self {
-///         Self {
-///             data: Vec::with_capacity(1024),
-///         }
-///     }
-/// }
-/// ```
-///
-/// ## `id`
-///
-/// By default, Pavex generates a constant named after your type and method
-/// (converted to UPPER_SNAKE_CASE) that you use when registering the constructor.
-///
-/// The `id` argument allows you to customize the name of the generated constant.
-///
-/// ### Example
-///
-/// Using the default generated identifier:
-///
-/// ```rust
-/// use pavex::{methods, Blueprint};
-///
-/// pub struct ApiClient {
-///     // [...]
-/// }
-///
-/// #[methods]
-/// impl ApiClient {
-///     #[constructor(singleton)]
-///     pub fn new() -> Self {
-///         Self {
-///             // [...]
-///         }
-///     }
-/// }
-///
-/// # fn main() {
-/// let mut bp = Blueprint::new();
-/// // The generated constant is named `API_CLIENT_NEW`
-/// // (type name + method name in UPPER_SNAKE_CASE)
-/// bp.constructor(API_CLIENT_NEW);
-/// # }
-/// ```
-///
-/// Using a custom identifier:
-///
-/// ```rust
-/// use pavex::{methods, Blueprint};
-///
-/// pub struct ApiClient {
-///     // [...]
-/// }
-///
-/// #[methods]
-/// impl ApiClient {
-///     #[constructor(singleton, id = "API_CLIENT_CONSTRUCTOR")]
-///     //                       👆 Custom identifier
-///     pub fn new() -> Self {
-///         Self {
-///             // [...]
-///         }
-///     }
-/// }
-///
-/// # fn main() {
-/// let mut bp = Blueprint::new();
-/// // Use the custom identifier when registering
-/// bp.constructor(API_CLIENT_CONSTRUCTOR);
-/// # }
-/// ```
-///
-/// ## `clone_if_necessary`
-///
-/// By default, Pavex will **not** clone the output of constructors. The `clone_if_necessary`
-/// flag allows Pavex to invoke `.clone()` on the output if it helps satisfy Rust's borrow checker.
-///
-/// The constructed type must implement the `Clone` trait.
-///
-/// This flag is mutually exclusive with `never_clone`.
-///
-/// ### Example
-///
-/// ```rust
-/// use pavex::{constructor, methods};
-/// use std::collections::HashMap;
-///
-/// #[derive(Clone)]
-/// pub struct Configuration {
-///     settings: HashMap<String, String>,
-/// }
-///
-/// #[methods]
-/// impl Configuration {
-///     #[constructor(singleton, clone_if_necessary)]
-///     //                       👆 Allow cloning when needed
-///     pub fn new() -> Self {
-///         Self {
-///             settings: HashMap::new(),
-///         }
-///     }
-/// }
-/// ```
-///
-/// ## `never_clone`
-///
-/// The `never_clone` flag explicitly prevents Pavex from cloning the output of this constructor.
-/// This is the default behavior for constructors, so this flag is typically used
-/// for clarity and explicitness.
-///
-/// This flag is mutually exclusive with `clone_if_necessary`.
-///
-/// ### Example
-///
-/// ```rust
-/// use pavex::methods;
-/// use std::fs::File;
-///
-/// pub struct NonCloneableService {
-///     // Contains non-cloneable resources
-///     handle: File,
-/// }
-///
-/// #[methods]
-/// impl NonCloneableService {
-///     #[constructor(singleton, never_clone)]
-///     //                       👆 Explicitly prevent cloning (default behavior)
-///     pub fn new() -> std::io::Result<Self> {
-///         Ok(Self {
-///             handle: File::create("service.log")?,
-///         })
-///     }
-/// }
-/// ```
-///
-/// Pavex will report an error during the code-generation phase if cloning is required
-/// but forbidden.
-///
-/// ## `allow`
-///
-/// The `allow` argument can be used to suppress specific warnings.
-///
-/// Currently, only one value is supported:
-/// - `unused`: Suppress warnings if this constructor is registered but never used
-///
-/// ### Example
-///
-/// ```rust
-/// use pavex::{constructor, methods};
-///
-/// pub struct DiagnosticsService {
-///     // [...]
-/// }
-///
-/// #[methods]
-/// impl DiagnosticsService {
-///     #[constructor(singleton, allow(unused))]
-///     //                       👆 Don't warn if unused
-///     pub fn new() -> Self {
-///         Self {
-///             // [...]
-///         }
-///     }
-/// }
-/// ```
-///
-/// [`Blueprint::import`]: crate::Blueprint::import
-/// [`Blueprint::constructor`]: crate::Blueprint::constructor
-pub use pavex_macros::constructor;
-
 /// Define a [request-scoped constructor](https://pavex.dev/docs/guide/dependency_injection/constructors/).
 ///
 /// Request-scoped constructors are invoked once per request to create a new instance
 /// of their output type. The created instance is cached for the duration of the request
 /// processing lifecycle.
 ///
-/// This is a shorthand for `#[constructor(request_scoped)]`.
+/// Check out [`#[singleton]`](macro@crate::singleton) and [`#[transient]`](macro@crate::transient)
+/// if you need to define constructors with different lifecycles.
 ///
 /// # Example
 ///
@@ -890,7 +572,8 @@ pub use pavex_macros::request_scoped;
 /// a new instance of their output type. The created instance is then shared across all
 /// requests for the lifetime of the application.
 ///
-/// This is a shorthand for `#[constructor(singleton)]`.
+/// Check out [`#[request_scoped]`](macro@crate::request_scoped) and [`#[transient]`](macro@crate::transient)
+/// if you need to define constructors with different lifecycles.
 ///
 /// # Example
 ///
@@ -1106,7 +789,8 @@ pub use pavex_macros::singleton;
 /// Transient constructors are invoked each time a new instance of their output type
 /// is needed, even within the same request. The created instances are not cached.
 ///
-/// This is a shorthand for `#[constructor(transient)]`.
+/// Check out [`#[singleton]`](macro@crate::singleton) and [`#[request_scoped]`](macro@crate::request_scoped)
+/// if you need to define constructors with different lifecycles.
 ///
 /// # Example
 ///
@@ -2357,7 +2041,7 @@ pub use pavex_macros::route;
 /// # Example
 ///
 /// ```rust
-/// use pavex::{methods, get, constructor, error_handler};
+/// use pavex::methods;
 /// use pavex::response::Response;
 ///
 /// pub struct UserService {

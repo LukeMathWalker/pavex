@@ -31,7 +31,7 @@ pub struct D<'a> {
     _a: &'a A,
 }
 
-#[pavex::constructor(transient, id = "D_")]
+#[pavex::transient(id = "D_")]
 /// With a lifetime parameter.
 pub fn d<'a>(_c: &'a C, _a: &'a A) -> D<'a> {
     todo!()

@@ -33,14 +33,32 @@ impl AnnotatedItems {
     }
 
     /// Insert an annotated item.
-    pub fn insert(&mut self, id: rustdoc_types::Id, item: AnnotatedItem) {
+    pub fn insert(&mut self, id: rustdoc_types::Id, item: AnnotatedItem) -> Result<(), IdConflict> {
         let annotation_id = item.properties.id().map(|s| s.to_owned());
         self.item_id2details.insert(id.into(), item);
-        if let Some(annotation_id) = annotation_id {
-            // TODO: error out on conflicts.
-            self.annotation_id2item_id.insert(annotation_id, id);
+        let Some(annotation_id) = annotation_id else {
+            return Ok(());
+        };
+        let previous = self.annotation_id2item_id.insert(annotation_id.clone(), id);
+        if let Some(previous) = previous
+            && previous != id
+        // ^ This can happen for trait methods, when both the trait and `Self` are defined in the same crate.
+        {
+            Err(IdConflict {
+                first: id,
+                second: previous,
+                annotation_id,
+            })
+        } else {
+            Ok(())
         }
     }
+}
+
+pub struct IdConflict {
+    pub first: rustdoc_types::Id,
+    pub second: rustdoc_types::Id,
+    pub annotation_id: String,
 }
 
 /// An item decorated with a Pavex annotation.
