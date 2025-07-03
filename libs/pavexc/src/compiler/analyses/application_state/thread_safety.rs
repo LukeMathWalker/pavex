@@ -8,7 +8,7 @@ use crate::{
         },
         computation::Computation,
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
-        utils::process_framework_path,
+        utils::resolve_type_path,
     },
     diagnostic::{CompilerDiagnostic, ComponentKind},
     language::ResolvedType,
@@ -25,8 +25,8 @@ pub(crate) fn runtime_singletons_are_thread_safe(
     krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
-    let send = process_framework_path("core::marker::Send", krate_collection);
-    let sync = process_framework_path("core::marker::Sync", krate_collection);
+    let send = resolve_type_path("core::marker::Send", krate_collection);
+    let sync = resolve_type_path("core::marker::Sync", krate_collection);
     for (singleton_type, component_id) in runtime_singletons {
         for trait_ in [&send, &sync] {
             let ResolvedType::ResolvedPath(trait_) = trait_ else {

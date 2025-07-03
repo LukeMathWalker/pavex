@@ -24,6 +24,10 @@ pub struct UnresolvedImport {
     pub scope_id: ScopeId,
     /// The sources being imported.
     pub sources: Sources,
+    /// The path to the module where the import is defined.
+    ///
+    /// Used to resolve imports that rely on relative paths.
+    pub relative_to: String,
     /// The location where the import was created.
     pub created_at: CreatedAt,
     /// The location at which the import was registered against the blueprint.
@@ -116,7 +120,10 @@ pub(super) fn resolve_imports(
                             continue;
                         }
                     };
-                    path.make_absolute(&raw_import.created_at);
+                    path.make_absolute(
+                        &raw_import.created_at.package_name,
+                        &raw_import.relative_to,
+                    );
                     // The name of the package, as it appears from the perspective of the code that imported it.
                     let imported_package_name = path.0.first().expect("Module path can't be empty");
                     let package_id = match dependency_name2package_id(
@@ -183,7 +190,7 @@ struct RawModulePath(Vec<String>);
 impl RawModulePath {
     /// Replace any relative path components (e.g. `super`, `self`, `crate`) with
     /// their absolute counterparts.
-    fn make_absolute(&mut self, created_at: &CreatedAt) {
+    fn make_absolute(&mut self, package_name: &str, relative_to: &str) {
         let first = self
             .0
             .first()
@@ -191,12 +198,11 @@ impl RawModulePath {
             .to_owned();
         match first.as_str() {
             "crate" => {
-                self.0[0] = created_at.package_name.clone();
+                self.0[0] = package_name.to_owned();
             }
             "self" => {
                 let old_segments = std::mem::take(&mut self.0);
-                let new_segments = created_at
-                    .module_path
+                let new_segments = relative_to
                     .split("::")
                     .map(|s| s.trim().to_owned())
                     .chain(old_segments.into_iter().skip(1))
@@ -204,14 +210,13 @@ impl RawModulePath {
                 self.0 = new_segments;
             }
             "super" => {
-                // We make the path absolute by adding replacing `super` with the relevant
+                // We make the path absolute by replacing `super` with the relevant
                 // parts of the module path.
                 let n_super = self.0.iter().filter(|s| s.as_str() == "super").count();
                 let old_segments = std::mem::take(&mut self.0);
                 // The path is relative to the current module.
                 // We "rebase" it to get an absolute path.
-                let module_segments: Vec<_> = created_at
-                    .module_path
+                let module_segments: Vec<_> = relative_to
                     .split("::")
                     .map(|s| s.trim().to_owned())
                     .collect();

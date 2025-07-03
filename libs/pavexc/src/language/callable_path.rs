@@ -2,9 +2,8 @@ use std::fmt::{Display, Formatter};
 
 use syn::{ExprPath, GenericArgument, PathArguments, Type, TypePath};
 
-use pavex_bp_schema::RawIdentifiers;
-
 use super::Lifetime;
+use super::RawIdentifiers;
 
 /// A path that can be used in expression position (i.e. to refer to a function or a static method).
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -80,8 +79,8 @@ impl CallPathLifetime {
 impl CallPath {
     pub fn parse_type_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let callable_path: TypePath =
-            syn::parse_str(identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_path: identifiers.raw_path().to_owned(),
+            syn::parse_str(&identifiers.import_path).map_err(|e| InvalidCallPath {
+                raw_path: identifiers.import_path.to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(callable_path.path, None)
@@ -89,8 +88,8 @@ impl CallPath {
 
     pub fn parse_callable_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let expr =
-            syn::parse_str::<ExprPath>(identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_path: identifiers.raw_path().to_owned(),
+            syn::parse_str::<ExprPath>(&identifiers.import_path).map_err(|e| InvalidCallPath {
+                raw_path: identifiers.import_path.to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(expr.path, expr.qself)

@@ -6,7 +6,8 @@ mod diagnostic;
 pub(super) use coordinates::resolve_annotation_coordinates;
 
 use diagnostic::{
-    const_generics_are_not_supported, not_a_module, not_a_type_reexport, unknown_module_path,
+    cannot_resolve_callable_path, const_generics_are_not_supported, invalid_config_type,
+    invalid_prebuilt_type, not_a_module, not_a_type_reexport, unknown_module_path,
     unresolved_external_reexport,
 };
 
@@ -15,7 +16,6 @@ use super::{
     auxiliary::AuxiliaryData,
     blueprint::validate_route_path,
     imports::{ImportKind, ResolvedImport},
-    paths::{cannot_resolve_callable_path, invalid_config_type, invalid_prebuilt_type},
     router_key::RouterKey,
     scope_graph::ScopeGraphBuilder,
 };

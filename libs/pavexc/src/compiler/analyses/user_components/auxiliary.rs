@@ -11,7 +11,7 @@ use crate::{
 };
 use ahash::HashMap;
 use indexmap::IndexMap;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawIdentifiers};
+use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting, Location};
 
 use super::{ScopeId, UserComponent, UserComponentId, imports::UnresolvedImport};
 
@@ -30,7 +30,6 @@ pub(super) struct AuxiliaryData {
     pub(super) imports: Vec<UnresolvedImport>,
     pub(super) annotation_interner: Interner<GlobalItemId>,
     pub(super) annotation_coordinates_interner: Interner<AnnotationCoordinates>,
-    pub(super) identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was
     /// registered at.
     ///

@@ -1,5 +1,5 @@
+use super::diagnostic::invalid_prebuilt_type;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
-use crate::compiler::analyses::user_components::paths::invalid_prebuilt_type;
 use crate::{
     DiagnosticSink, compiler::analyses::computations::ComputationDb, rustdoc::CrateCollection,
 };

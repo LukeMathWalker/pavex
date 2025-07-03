@@ -7,7 +7,7 @@ use crate::{
             computations::ComputationDb,
         },
         traits::{MissingTraitImplementationError, assert_trait_is_implemented},
-        utils::process_framework_path,
+        utils::resolve_type_path,
     },
     diagnostic::{CompilerDiagnostic, ComponentKind},
     language::ResolvedType,
@@ -23,7 +23,7 @@ pub(crate) fn cloneables_can_be_cloned<'a>(
     krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
-    let clone = process_framework_path("core::clone::Clone", krate_collection);
+    let clone = resolve_type_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
         unreachable!()
     };

@@ -25,6 +25,7 @@ pub fn from_(input: TokenStream) -> TokenStream {
                 ::pavex::blueprint::Import {
                     sources: ::pavex::blueprint::reflection::Sources::All,
                     created_at: ::pavex::created_at!(),
+                    relative_to: ::std::module_path!(),
                 }
             }
             .into()
@@ -59,6 +60,7 @@ pub fn from_(input: TokenStream) -> TokenStream {
             ::pavex::blueprint::Import {
                 sources: ::pavex::blueprint::reflection::Sources::Some(vec![#(#sources.into()),*]),
                 created_at: ::pavex::created_at!(),
+                relative_to: ::std::module_path!(),
             }
         }
         .into(),

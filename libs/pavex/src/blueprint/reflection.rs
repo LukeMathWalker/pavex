@@ -60,9 +60,6 @@ pub struct CreatedAt {
     /// The version of the Cargo package where the value was created.
     #[doc(hidden)]
     pub package_version: &'static str,
-    /// The value returned by `std`'s `module_path!` macro.
-    #[doc(hidden)]
-    pub module_path: &'static str,
 }
 
 #[macro_export]
@@ -73,7 +70,6 @@ macro_rules! created_at {
         $crate::blueprint::reflection::CreatedAt {
             package_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
             package_version: ::std::env!("CARGO_PKG_VERSION", "Failed to load the CARGO_PKG_VERSION environment variable. Are you using a custom build system?"),
-            module_path: module_path!(),
         }
     };
 }

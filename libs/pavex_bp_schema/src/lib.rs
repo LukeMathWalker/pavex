@@ -3,7 +3,7 @@
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
 use pavex_reflection::AnnotationCoordinates;
-pub use pavex_reflection::{CreatedAt, CreatedBy, Location, RawIdentifiers};
+pub use pavex_reflection::{CreatedAt, CreatedBy, Location};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fmt::Formatter;
@@ -116,6 +116,11 @@ impl From<RoutesImport> for Component {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RoutesImport {
     pub sources: Sources,
+    /// The path of the module where this import was created (i.e. `from!` was invoked).
+    ///
+    /// It is used to resolve relative paths in the `from!` macro, i.e. paths starting
+    /// with `super` or `self`.
+    pub relative_to: String,
     pub created_at: CreatedAt,
     pub registered_at: Location,
 }
@@ -123,6 +128,11 @@ pub struct RoutesImport {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Import {
     pub sources: Sources,
+    /// The path of the module where this import was created (i.e. `from!` was invoked).
+    ///
+    /// It is used to resolve relative paths in the `from!` macro, i.e. paths starting
+    /// with `super` or `self`.
+    pub relative_to: String,
     pub created_at: CreatedAt,
     pub registered_at: Location,
 }

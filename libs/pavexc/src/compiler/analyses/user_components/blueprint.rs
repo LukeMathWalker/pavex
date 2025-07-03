@@ -1,7 +1,7 @@
 use pavex_bp_schema::{
     Blueprint, Component, ConfigType, Constructor, CreatedAt, Domain, ErrorHandler, ErrorObserver,
     Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix, PostProcessingMiddleware,
-    PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route, RoutesImport, WrappingMiddleware,
+    PreProcessingMiddleware, PrebuiltType, Route, RoutesImport, WrappingMiddleware,
 };
 
 use super::auxiliary::AuxiliaryData;
@@ -14,9 +14,6 @@ use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId, UserCompon
 use crate::compiler::app::PAVEX_VERSION;
 use crate::compiler::component::DefaultStrategy;
 use crate::rustdoc::AnnotationCoordinates;
-
-/// A unique identifier for a `RawCallableIdentifiers`.
-pub type RawIdentifierId = la_arena::Idx<RawIdentifiers>;
 
 /// Process a [`Blueprint`], populating [`AuxiliaryData`] with all its registered components.
 ///
@@ -207,10 +204,12 @@ fn _process_blueprint<'a>(
                 sources,
                 created_at,
                 registered_at,
+                relative_to,
             })
             | Component::Import(Import {
                 sources,
                 created_at,
+                relative_to,
                 registered_at,
             }) => {
                 let kind = if matches!(component, Component::Import(_)) {
@@ -227,6 +226,7 @@ fn _process_blueprint<'a>(
                     scope_id: current_scope_id,
                     sources: sources.to_owned(),
                     created_at: created_at.to_owned(),
+                    relative_to: relative_to.to_owned(),
                     registered_at: registered_at.to_owned(),
                     kind,
                 });
@@ -244,7 +244,6 @@ fn _process_blueprint<'a>(
                 created_at: CreatedAt {
                     package_name: "pavex".to_owned(),
                     package_version: PAVEX_VERSION.to_owned(),
-                    module_path: "pavex::router".to_owned(),
                 },
                 macro_name: "fallback".into(),
             },
@@ -301,7 +300,7 @@ fn process_route(
     };
     let component = UserComponent::RequestHandler {
         router_key,
-        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let request_handler_id = aux.intern_component(
         component,
@@ -514,7 +513,7 @@ fn process_constructor(
         .annotation_coordinates_interner
         .get_or_intern(annotation_coordinates);
     let component = UserComponent::Constructor {
-        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let constructor_id = aux.intern_component(
         component,
@@ -622,7 +621,7 @@ fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_sco
         .annotation_coordinates_interner
         .get_or_intern(annotation_coordinates);
     let component = UserComponent::PrebuiltType {
-        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let id = aux.intern_component(
         component,
@@ -654,7 +653,7 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
         .get_or_intern(annotation_coordinates);
     let component = UserComponent::ConfigType {
         key: String::new(), // Will be filled in during annotation resolution
-        source: UserComponentSource::AnnotationCoordinates(coordinates_id),
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let id = aux.intern_component(
         component,

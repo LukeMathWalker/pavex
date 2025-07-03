@@ -178,6 +178,7 @@ impl Blueprint {
     pub fn import(&mut self, import: Import) -> RegisteredImport {
         let import = pavex_bp_schema::Import {
             sources: sources2sources(import.sources),
+            relative_to: import.relative_to.to_owned(),
             created_at: created_at2created_at(import.created_at),
             registered_at: Location::caller(),
         };
@@ -266,6 +267,7 @@ impl Blueprint {
     pub fn routes(&mut self, import: Import) -> RegisteredRoutes {
         let import = pavex_bp_schema::RoutesImport {
             sources: sources2sources(import.sources),
+            relative_to: import.relative_to.to_owned(),
             created_at: created_at2created_at(import.created_at),
             registered_at: Location::caller(),
         };

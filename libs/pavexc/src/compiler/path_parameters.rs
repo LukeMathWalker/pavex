@@ -13,7 +13,7 @@ use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::compiler::utils::process_framework_path;
+use crate::compiler::utils::resolve_type_path;
 use crate::diagnostic::CompilerDiagnostic;
 use crate::diagnostic::DiagnosticSink;
 use crate::language::{GenericArgument, ResolvedType};
@@ -35,7 +35,7 @@ pub(crate) fn verify_path_parameters(
     krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
-    let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
+    let ResolvedType::ResolvedPath(structural_deserialize) = resolve_type_path(
         "pavex::serialization::StructuralDeserialize",
         krate_collection,
     ) else {

@@ -6,7 +6,6 @@ use crate::compiler::analyses::user_components::annotations::{
     register_imported_components, resolve_annotation_coordinates,
 };
 use crate::compiler::analyses::user_components::imports::resolve_imports;
-use crate::compiler::analyses::user_components::paths::FQPaths;
 use crate::compiler::component::ConfigType;
 use crate::compiler::{
     analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
@@ -14,7 +13,7 @@ use crate::compiler::{
 };
 use crate::diagnostic::TargetSpan;
 use crate::diagnostic::{DiagnosticSink, Registration};
-use crate::{language::FQPath, rustdoc::CrateCollection};
+use crate::rustdoc::CrateCollection;
 use ahash::HashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
@@ -107,13 +106,10 @@ impl UserComponentDb {
 
         let mut aux = AuxiliaryData::default();
         let mut scope_graph_builder = process_blueprint(bp, &mut aux, diagnostics);
-        let mut paths = FQPaths::new();
-        paths.process_identifiers(&aux, krate_collection.package_graph(), diagnostics);
         let imported_modules = resolve_imports(&aux, krate_collection.package_graph(), diagnostics);
 
         precompute_crate_docs(
             krate_collection,
-            paths.values(),
             imported_modules.iter().map(|(i, _)| &i.package_id),
             diagnostics,
         );
@@ -128,13 +124,6 @@ impl UserComponentDb {
             diagnostics,
         );
         resolve_annotation_coordinates(
-            &mut aux,
-            computation_db,
-            prebuilt_type_db,
-            krate_collection,
-            diagnostics,
-        );
-        paths.resolve(
             &mut aux,
             computation_db,
             prebuilt_type_db,
@@ -166,7 +155,6 @@ impl UserComponentDb {
             annotation_interner: _,
             fallible_id2error_handler_id: _,
             imports: _,
-            identifiers_interner: _,
             fallback_id2domain_guard: _,
             fallback_id2path_prefix: _,
             domain_guard2locations: _,
@@ -372,19 +360,14 @@ impl UserComponentDb {
 ///
 /// This is not *necessary*, but it can turn out to be a significant performance improvement
 /// for projects that pull in a lot of dependencies in the signature of their components.
-fn precompute_crate_docs<'a, I, J>(
+fn precompute_crate_docs<'a, J>(
     krate_collection: &CrateCollection,
-    paths: I,
     imported_package_ids: J,
     diagnostics: &DiagnosticSink,
 ) where
-    I: Iterator<Item = &'a FQPath>,
     J: Iterator<Item = &'a PackageId>,
 {
     let mut package_ids = IndexSet::new();
-    for path in paths {
-        path.collect_package_ids(&mut package_ids);
-    }
     package_ids.extend(imported_package_ids);
     let package_ids = package_ids.iter().map(|&p| p.to_owned());
 

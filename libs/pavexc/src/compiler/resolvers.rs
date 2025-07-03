@@ -19,8 +19,6 @@ use crate::language::{
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
 
-use super::utils::process_framework_path;
-
 #[derive(Default)]
 pub(crate) struct GenericBindings {
     pub lifetimes: HashMap<String, String>,
@@ -835,6 +833,6 @@ fn skip_default(krate_collection: &CrateCollection, default: &ResolvedType) -> b
     static GLOBAL_ALLOCATOR: OnceCell<ResolvedType> = OnceCell::new();
 
     let alloc = GLOBAL_ALLOCATOR
-        .get_or_init(|| process_framework_path("alloc::alloc::Global", krate_collection));
+        .get_or_init(|| super::utils::resolve_type_path("alloc::alloc::Global", krate_collection));
     alloc == default
 }

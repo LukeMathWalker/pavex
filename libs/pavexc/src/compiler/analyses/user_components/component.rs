@@ -1,9 +1,6 @@
 use crate::diagnostic::ComponentKind;
 
-use super::{
-    UserComponentSource, annotations::AnnotationCoordinatesId, blueprint::RawIdentifierId,
-    router_key::RouterKey,
-};
+use super::{UserComponentSource, annotations::AnnotationCoordinatesId, router_key::RouterKey};
 
 /// A unique identifier for a [`UserComponent`].
 pub type UserComponentId = la_arena::Idx<UserComponent>;
@@ -76,33 +73,6 @@ pub enum ErrorHandlerTarget {
 }
 
 impl UserComponent {
-    /// Returns the raw identifiers id for this user component.
-    ///
-    /// It's `None` for annotated components.
-    pub fn raw_identifiers_id(&self) -> Option<RawIdentifierId> {
-        match self {
-            UserComponent::RequestHandler {
-                source: UserComponentSource::Identifiers(source),
-                ..
-            }
-            | UserComponent::ConfigType {
-                source: UserComponentSource::Identifiers(source),
-                ..
-            }
-            | UserComponent::PrebuiltType {
-                source: UserComponentSource::Identifiers(source),
-            }
-            | UserComponent::Constructor {
-                source: UserComponentSource::Identifiers(source),
-            }
-            | UserComponent::ErrorHandler {
-                source: UserComponentSource::Identifiers(source),
-                ..
-            } => Some(*source),
-            _ => None,
-        }
-    }
-
     /// Returns the annotation coordinates id for this user component.
     ///
     /// It's `None` for components that don't have associated coordinates.
@@ -111,22 +81,22 @@ impl UserComponent {
             UserComponent::WrappingMiddleware { source }
             | UserComponent::PostProcessingMiddleware { source }
             | UserComponent::ErrorHandler {
-                source: UserComponentSource::AnnotationCoordinates(source),
+                source: UserComponentSource::BlueprintRegistration(source),
                 ..
             }
             | UserComponent::RequestHandler {
-                source: UserComponentSource::AnnotationCoordinates(source),
+                source: UserComponentSource::BlueprintRegistration(source),
                 ..
             }
             | UserComponent::ConfigType {
-                source: UserComponentSource::AnnotationCoordinates(source),
+                source: UserComponentSource::BlueprintRegistration(source),
                 ..
             }
             | UserComponent::PrebuiltType {
-                source: UserComponentSource::AnnotationCoordinates(source),
+                source: UserComponentSource::BlueprintRegistration(source),
             }
             | UserComponent::Constructor {
-                source: UserComponentSource::AnnotationCoordinates(source),
+                source: UserComponentSource::BlueprintRegistration(source),
             }
             | UserComponent::PreProcessingMiddleware { source }
             | UserComponent::Fallback { source }

@@ -12,7 +12,7 @@ use crate::{
         },
         computation::Computation,
         traits::assert_trait_is_implemented,
-        utils::process_framework_path,
+        utils::resolve_type_path,
     },
     diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet},
     language::ResolvedType,
@@ -33,11 +33,11 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
-    let copy = process_framework_path("core::marker::Copy", krate_collection);
+    let copy = resolve_type_path("core::marker::Copy", krate_collection);
     let ResolvedType::ResolvedPath(copy) = copy else {
         unreachable!()
     };
-    let clone = process_framework_path("core::clone::Clone", krate_collection);
+    let clone = resolve_type_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
         unreachable!()
     };

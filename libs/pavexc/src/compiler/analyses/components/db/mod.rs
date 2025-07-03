@@ -19,7 +19,7 @@ use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
 use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
-    get_err_variant, get_ok_variant, process_framework_callable_path, process_framework_path,
+    get_err_variant, get_ok_variant, resolve_framework_callable_path, resolve_type_path,
 };
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
@@ -148,10 +148,9 @@ impl ComponentDb {
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> ComponentDb {
         // We only need to resolve these once.
-        let pavex_error = process_framework_path("pavex::Error", krate_collection);
-        let pavex_processing =
-            process_framework_path("pavex::middleware::Processing", krate_collection);
-        let pavex_response = process_framework_path("pavex::response::Response", krate_collection);
+        let pavex_error = resolve_type_path("pavex::Error", krate_collection);
+        let pavex_processing = resolve_type_path("pavex::middleware::Processing", krate_collection);
+        let pavex_response = resolve_type_path("pavex::response::Response", krate_collection);
         let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
@@ -160,7 +159,7 @@ impl ComponentDb {
             })
         };
         let pavex_noop_wrap_id = {
-            let pavex_noop_wrap_callable = process_framework_callable_path(
+            let pavex_noop_wrap_callable = resolve_framework_callable_path(
                 "pavex::middleware::wrap_noop",
                 package_graph,
                 krate_collection,
@@ -295,7 +294,7 @@ impl ComponentDb {
 
         // Add a synthetic constructor for the `pavex::middleware::Next` type.
         {
-            let callable = process_framework_callable_path(
+            let callable = resolve_framework_callable_path(
                 "pavex::middleware::Next::new",
                 package_graph,
                 krate_collection,
@@ -1186,7 +1185,7 @@ impl ComponentDb {
     ) {
         let into_response = {
             let into_response =
-                process_framework_path("pavex::response::IntoResponse", krate_collection);
+                resolve_type_path("pavex::response::IntoResponse", krate_collection);
             let ResolvedType::ResolvedPath(into_response) = into_response else {
                 unreachable!()
             };

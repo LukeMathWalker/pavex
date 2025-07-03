@@ -21,6 +21,15 @@ pub struct Import {
     /// The modules you want to import components from.
     pub sources: Sources,
     #[doc(hidden)]
+    /// The path of the module where this import was created (i.e. [`from!`] was invoked),
+    /// obtained via [`std::module_path!`].
+    ///
+    /// It is used to resolve relative paths in the [`from!`] macro, i.e. paths starting
+    /// with `super` or `self`.
+    ///
+    /// [`from!`]: super::from
+    pub relative_to: &'static str,
+    #[doc(hidden)]
     /// The location where this instance of [`Import`] was created, invoking the [`from!`] macro.
     ///
     /// [`from!`]: super::from

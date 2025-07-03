@@ -1,29 +1,24 @@
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::IndexSet;
 use itertools::Itertools;
-use quote::format_ident;
 
-use pavex_bp_schema::{CreatedAt, RawIdentifiers};
+use super::RawIdentifiers;
 use rustdoc_types::ItemEnum;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
-use crate::language::callable_path::{
-    CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
-};
+use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{
-    CORE_PACKAGE_ID, CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem,
-    RustdocKindExt,
+    CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt,
 };
 
 use super::krate_name::CrateNameResolutionError;
@@ -63,30 +58,6 @@ pub struct FQPath {
     /// For trait methods, it must be set to the package id of the crate where the
     /// trait is defined.
     pub package_id: PackageId,
-}
-
-impl FQPath {
-    /// Collect all the package ids that are referenced in this path.
-    ///
-    /// This includes the package id of the crate that this path belongs to
-    /// as well as the package ids of all the crates that are referenced in its generic
-    /// arguments and qualified self (if any).
-    pub(crate) fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
-        package_ids.insert(&self.package_id);
-        for segment in &self.segments {
-            for generic_argument in &segment.generic_arguments {
-                match generic_argument {
-                    FQGenericArgument::Type(t) => {
-                        t.collect_package_ids(package_ids);
-                    }
-                    FQGenericArgument::Lifetime(_) => {}
-                }
-            }
-        }
-        if let Some(qself) = &self.qualified_self {
-            qself.type_.collect_package_ids(package_ids);
-        }
-    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -245,33 +216,6 @@ impl FQPathType {
             }
         }
     }
-
-    /// Collect all the package ids that are referenced in this path type.
-    ///
-    /// This includes the package id of the crate that this path belongs to
-    /// as well as the package ids of all the crates that are referenced in its generic
-    /// arguments (if any).
-    fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
-        match self {
-            FQPathType::ResolvedPath(p) => {
-                p.path.collect_package_ids(package_ids);
-            }
-            FQPathType::Reference(r) => {
-                r.inner.collect_package_ids(package_ids);
-            }
-            FQPathType::Tuple(t) => {
-                for element in &t.elements {
-                    element.collect_package_ids(package_ids);
-                }
-            }
-            FQPathType::ScalarPrimitive(_) => {
-                package_ids.insert(&CORE_PACKAGE_ID);
-            }
-            FQPathType::Slice(s) => {
-                s.element.collect_package_ids(package_ids);
-            }
-        }
-    }
 }
 
 impl From<ResolvedType> for FQPathType {
@@ -418,123 +362,19 @@ pub enum PathKind {
 }
 
 impl FQPath {
+    /// Parses a fully qualified path from the given identifiers.
+    ///
+    /// All paths must be fully qualified, meaning that they must start with a package name.
+    /// Using `crate::`/`super::`/`self::` is not allowed.
     pub fn parse(
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
         kind: PathKind,
     ) -> Result<Self, ParseError> {
-        fn replace_crate_in_path_with_registration_crate(p: &mut CallPath, created_at: &CreatedAt) {
-            if p.leading_path_segment() == "crate" {
-                let first_segment = p
-                    .segments
-                    .first_mut()
-                    .expect("Bug: a `CallPath` with no path segments!");
-                // Unwrapping here is safe: there is always at least one path segment in a successfully
-                // parsed `ExprPath`.
-                // We must make sure to normalize the crate name, since it may contain hyphens.
-                first_segment.ident =
-                    format_ident!("{}", created_at.package_name.replace('-', "_"));
-            } else if p.leading_path_segment() == "self" {
-                // We make the path absolute by adding the module path to its beginning.
-                let old_segments = std::mem::take(&mut p.segments);
-                let new_segments: Vec<_> = created_at
-                    .module_path
-                    .split("::")
-                    .map(|s| {
-                        let ident = format_ident!("{}", s.trim().to_owned());
-                        CallPathSegment {
-                            ident,
-                            generic_arguments: vec![],
-                        }
-                    })
-                    .chain(old_segments.into_iter().skip(1))
-                    .collect();
-                p.segments = new_segments;
-            } else if p.leading_path_segment() == "super" {
-                // We make the path absolute by adding replacing `super` with the relevant
-                // parts of the module path.
-                let n_super: usize = {
-                    let mut n_super = 0;
-                    let iter = p.segments.iter();
-                    for p in iter {
-                        if p.ident == "super" {
-                            n_super += 1;
-                        } else {
-                            break;
-                        }
-                    }
-                    n_super
-                };
-                let old_segments = std::mem::take(&mut p.segments);
-                // The path is relative to the current module.
-                // We "rebase" it to get an absolute path.
-                let module_segments: Vec<_> = created_at
-                    .module_path
-                    .split("::")
-                    .map(|s| {
-                        let ident = format_ident!("{}", s.trim().to_owned());
-                        CallPathSegment {
-                            ident,
-                            generic_arguments: vec![],
-                        }
-                    })
-                    .collect();
-                let n_module_segments = module_segments.len();
-                let new_segments: Vec<_> = module_segments
-                    .into_iter()
-                    .take(n_module_segments - n_super)
-                    .chain(old_segments.into_iter().skip(n_super))
-                    .collect();
-                p.segments = new_segments;
-            }
-            for segment in p.segments.iter_mut() {
-                for generic_argument in segment.generic_arguments.iter_mut() {
-                    match generic_argument {
-                        CallPathGenericArgument::Type(t) => {
-                            replace_crate_in_type_with_registration_crate(t, created_at);
-                        }
-                        CallPathGenericArgument::Lifetime(_) => {}
-                    }
-                }
-            }
-        }
-
-        fn replace_crate_in_type_with_registration_crate(
-            t: &mut CallPathType,
-            created_at: &CreatedAt,
-        ) {
-            match t {
-                CallPathType::ResolvedPath(p) => {
-                    replace_crate_in_path_with_registration_crate(p.path.deref_mut(), created_at)
-                }
-                CallPathType::Reference(r) => {
-                    replace_crate_in_type_with_registration_crate(r.inner.deref_mut(), created_at)
-                }
-                CallPathType::Tuple(t) => {
-                    for element in t.elements.iter_mut() {
-                        replace_crate_in_type_with_registration_crate(element, created_at);
-                    }
-                }
-                CallPathType::Slice(s) => {
-                    replace_crate_in_type_with_registration_crate(
-                        s.element_type.deref_mut(),
-                        created_at,
-                    );
-                }
-            }
-        }
-
-        let mut path = match kind {
+        let path = match kind {
             PathKind::Callable => CallPath::parse_callable_path(identifiers),
             PathKind::Type => CallPath::parse_type_path(identifiers),
         }?;
-        replace_crate_in_path_with_registration_crate(&mut path, identifiers.created_at());
-        if let Some(qself) = &mut path.qualified_self {
-            replace_crate_in_type_with_registration_crate(
-                &mut qself.type_,
-                identifiers.created_at(),
-            );
-        }
         Self::parse_call_path(&path, identifiers, graph)
     }
 
@@ -625,8 +465,8 @@ impl FQPath {
         };
 
         let used_in = krate2package_id(
-            &identifiers.created_at().package_name,
-            &identifiers.created_at().package_version,
+            &identifiers.created_at.package_name,
+            &identifiers.created_at.package_version,
             graph,
         )
         .expect("Failed to resolve the created at coordinates to a package id");

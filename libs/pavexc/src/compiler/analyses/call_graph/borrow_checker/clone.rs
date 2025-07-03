@@ -11,7 +11,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
-use crate::compiler::utils::process_framework_path;
+use crate::compiler::utils::resolve_type_path;
 use crate::language::{
     Callable, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime, PathType,
     ResolvedType, TypeReference,
@@ -32,7 +32,7 @@ pub(super) fn get_clone_component_id(
     // We only need to resolve this once.
     static CLONE_PATH_TYPE: OnceCell<PathType> = OnceCell::new();
     let clone = CLONE_PATH_TYPE.get_or_init(|| {
-        let clone = process_framework_path("std::clone::Clone", krate_collection);
+        let clone = resolve_type_path("std::clone::Clone", krate_collection);
         let ResolvedType::ResolvedPath(clone) = clone else {
             unreachable!()
         };

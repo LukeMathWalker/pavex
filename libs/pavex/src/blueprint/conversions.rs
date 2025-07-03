@@ -18,7 +18,6 @@ pub(super) fn created_at2created_at(created_at: CreatedAt) -> pavex_bp_schema::C
     pavex_bp_schema::CreatedAt {
         package_name: created_at.package_name.to_owned(),
         package_version: created_at.package_version.to_owned(),
-        module_path: created_at.module_path.to_owned(),
     }
 }
 
