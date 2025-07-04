@@ -183,18 +183,17 @@ impl RegisteredConstructor<'_> {
         self.cloning(CloningPolicy::NeverClone)
     }
 
-    /// Tell Pavex to ignore a specific [`Lint`] when analysing
-    /// this constructor and the way it's used.
-    pub fn ignore(mut self, lint: Lint) -> Self {
+    /// Silence a specific [`Lint`] for this constructor.
+    pub fn allow(mut self, lint: Lint) -> Self {
         self.constructor()
             .lints
             .insert(lint2lint(lint), LintSetting::Ignore);
         self
     }
 
-    /// Tell Pavex to enforce a specific [`Lint`] when analysing
-    /// this constructor and the way it's used.
-    pub fn enforce(mut self, lint: Lint) -> Self {
+    /// Fail the build if a specific [`Lint`] triggers
+    /// for this constructor.
+    pub fn deny(mut self, lint: Lint) -> Self {
         self.constructor()
             .lints
             .insert(lint2lint(lint), LintSetting::Enforce);
