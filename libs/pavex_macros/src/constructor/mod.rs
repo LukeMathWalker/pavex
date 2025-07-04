@@ -1,6 +1,6 @@
 use crate::utils::fn_like::{Callable, CallableAnnotation, ImplContext};
 use crate::utils::id::{callable_id_def, default_id};
-use crate::utils::{AnnotationCodegen, CloningStrategy, CloningStrategyFlags};
+use crate::utils::{AnnotationCodegen, CloningPolicy, CloningPolicyFlags};
 use darling::util::Flag;
 use lifecycle::Lifecycle;
 use quote::quote;
@@ -25,7 +25,7 @@ pub struct ShorthandSchema {
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct ShorthandProperties {
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
     pub allow_unused: Option<bool>,
@@ -42,7 +42,7 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
             pavex,
             allow,
         } = input;
-        let Ok(cloning_strategy) = CloningStrategyFlags {
+        let Ok(cloning_policy) = CloningPolicyFlags {
             clone_if_necessary,
             never_clone,
         }
@@ -54,7 +54,7 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
         let allow_unused = allow.as_ref().map(|a| a.unused.is_present());
 
         Ok(Self {
-            cloning_strategy,
+            cloning_policy,
             id,
             pavex,
             allow_unused,
@@ -123,7 +123,7 @@ fn shorthand(
     lifecycle: Lifecycle,
 ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
     let ShorthandProperties {
-        cloning_strategy,
+        cloning_policy,
         id,
         pavex,
         allow_unused,
@@ -137,9 +137,9 @@ fn shorthand(
         id = #id_str,
         lifecycle = #lifecycle,
     };
-    if let Some(cloning_strategy) = cloning_strategy {
+    if let Some(cloning_policy) = cloning_policy {
         properties.extend(quote! {
-            cloning_strategy = #cloning_strategy,
+            cloning_policy = #cloning_policy,
         });
     }
     if let Some(allow_unused) = allow_unused {

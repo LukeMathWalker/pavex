@@ -17,7 +17,7 @@ use crate::rustdoc::CrateCollection;
 use ahash::HashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
-use pavex_bp_schema::{Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting};
+use pavex_bp_schema::{Blueprint, CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavex_cli_diagnostic::AnyhowBridge;
 use std::collections::BTreeMap;
 
@@ -55,7 +55,7 @@ pub struct UserComponentDb {
     /// For each constructible component, determine if it can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
-    id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    id2cloning_policy: HashMap<UserComponentId, CloningPolicy>,
     /// Assign the id of each config to its type and key.
     ///
     /// Invariants: there is an entry for every config type.
@@ -144,7 +144,7 @@ impl UserComponentDb {
             id2scope_id,
             id2registration,
             id2lints,
-            id2cloning_strategy,
+            id2cloning_policy,
             id2lifecycle,
             config_id2type,
             config_id2default_strategy,
@@ -166,7 +166,7 @@ impl UserComponentDb {
                 component_interner,
                 id2scope_id,
                 id2registration,
-                id2cloning_strategy,
+                id2cloning_policy,
                 id2lifecycle,
                 config_id2type,
                 config_id2default_strategy,
@@ -303,8 +303,8 @@ impl UserComponentDb {
     /// Return the cloning strategy of the component with the given id.
     /// This is going to be `Some(..)` for constructor and prebuilt type components,
     /// and `None` for all other components.
-    pub fn cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
-        self.id2cloning_strategy.get(&id)
+    pub fn cloning_policy(&self, id: UserComponentId) -> Option<&CloningPolicy> {
+        self.id2cloning_policy.get(&id)
     }
 
     /// Return the resolved type and key for the configuration component with the given id.

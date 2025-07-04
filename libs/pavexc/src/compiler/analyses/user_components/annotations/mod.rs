@@ -38,7 +38,7 @@ use crate::{
         AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt,
     },
 };
-use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
@@ -249,16 +249,16 @@ fn intern_annotated(
         }
         AnnotationProperties::Constructor {
             lifecycle,
-            cloning_strategy,
+            cloning_policy,
             allow_unused,
             id: _,
         } => {
             let constructor = UserComponent::Constructor { source };
             let constructor_id =
                 aux.intern_component(constructor, scope_id, lifecycle, registration.clone());
-            aux.id2cloning_strategy.insert(
+            aux.id2cloning_policy.insert(
                 constructor_id,
-                cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
+                cloning_policy.unwrap_or(CloningPolicy::NeverClone),
             );
 
             let lints = aux.id2lints.entry(constructor_id).or_default();
@@ -321,7 +321,7 @@ fn intern_annotated(
         }
         AnnotationProperties::Config {
             key,
-            cloning_strategy,
+            cloning_policy,
             default_if_missing,
             include_if_unused,
             id: _,
@@ -332,9 +332,9 @@ fn intern_annotated(
             };
             let config_id =
                 aux.intern_component(config, scope_id, Lifecycle::Singleton, registration);
-            aux.id2cloning_strategy.insert(
+            aux.id2cloning_policy.insert(
                 config_id,
-                cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary),
+                cloning_policy.unwrap_or(CloningPolicy::CloneIfNecessary),
             );
             let default_strategy = match default_if_missing {
                 Some(true) => DefaultStrategy::DefaultIfMissing,
@@ -381,15 +381,15 @@ fn intern_annotated(
             Ok(config_id)
         }
         AnnotationProperties::Prebuilt {
-            cloning_strategy,
+            cloning_policy,
             id: _,
         } => {
             let prebuilt = UserComponent::PrebuiltType { source };
             let prebuilt_id =
                 aux.intern_component(prebuilt, scope_id, Lifecycle::Singleton, registration);
-            aux.id2cloning_strategy.insert(
+            aux.id2cloning_policy.insert(
                 prebuilt_id,
-                cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
+                cloning_policy.unwrap_or(CloningPolicy::NeverClone),
             );
 
             let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;

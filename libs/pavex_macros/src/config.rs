@@ -1,5 +1,5 @@
 use crate::utils::type_like::{TypeAnnotation, TypeItem};
-use crate::utils::{AnnotationCodegen, CloningStrategy, CloningStrategyFlags};
+use crate::utils::{AnnotationCodegen, CloningPolicy, CloningPolicyFlags};
 use convert_case::{Case, Casing as _};
 use darling::util::Flag;
 use quote::{format_ident, quote, quote_spanned};
@@ -30,7 +30,7 @@ impl TryFrom<InputSchema> for Properties {
             default_if_missing,
             include_if_unused,
         } = input;
-        let Ok(cloning_strategy) = CloningStrategyFlags {
+        let Ok(cloning_policy) = CloningPolicyFlags {
             clone_if_necessary,
             never_clone,
         }
@@ -44,7 +44,7 @@ impl TryFrom<InputSchema> for Properties {
             id,
             pavex,
             key,
-            cloning_strategy,
+            cloning_policy,
             default_if_missing: default_if_missing.is_present(),
             include_if_unused: include_if_unused.is_present(),
         })
@@ -56,7 +56,7 @@ pub struct Properties {
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
     pub key: String,
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     pub default_if_missing: bool,
     pub include_if_unused: bool,
 }
@@ -86,7 +86,7 @@ fn emit(raw_config: TypeItem, properties: Properties) -> Result<AnnotationCodege
         id,
         pavex,
         key,
-        cloning_strategy,
+        cloning_policy,
         default_if_missing,
         include_if_unused,
     } = properties;
@@ -110,9 +110,9 @@ fn emit(raw_config: TypeItem, properties: Properties) -> Result<AnnotationCodege
         id = #id_str,
         key = #key,
     };
-    if let Some(cloning_strategy) = cloning_strategy {
+    if let Some(cloning_policy) = cloning_policy {
         properties.extend(quote! {
-            cloning_strategy = #cloning_strategy,
+            cloning_policy = #cloning_policy,
         });
     }
     if default_if_missing {

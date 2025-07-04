@@ -6,7 +6,7 @@ use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use quote::quote;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 use tracing::Level;
 
 use crate::compiler::analyses::call_graph::{
@@ -552,7 +552,7 @@ impl RequestHandlerPipeline {
                 }
 
                 let issue = consumers.iter().find_position(|info| {
-                    component_db.cloning_strategy(info.component_id) == CloningStrategy::NeverClone
+                    component_db.cloning_policy(info.component_id) == CloningPolicy::NeverClone
                 });
                 if let Some((issue_index, info)) = issue {
                     let next_ref = cloning_info
@@ -711,7 +711,7 @@ impl RequestHandlerPipeline {
                 next_state_callable_id,
                 Lifecycle::RequestScoped,
                 next_state_scope_id,
-                CloningStrategy::NeverClone,
+                CloningPolicy::NeverClone,
                 computation_db,
                 None,
             )

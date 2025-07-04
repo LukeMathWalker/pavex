@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use once_cell::sync::OnceCell;
 
-use pavex_bp_schema::CloningStrategy;
+use pavex_bp_schema::CloningPolicy;
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{
@@ -47,8 +47,8 @@ pub(super) fn get_clone_component_id(
     let output = c.output_type().to_owned();
 
     // We only add a cloning node if the component is not marked as `NeverClone`.
-    let cloning_strategy = component_db.cloning_strategy(*component_id);
-    if cloning_strategy == CloningStrategy::NeverClone {
+    let cloning_policy = component_db.cloning_policy(*component_id);
+    if cloning_policy == CloningPolicy::NeverClone {
         return None;
     }
 

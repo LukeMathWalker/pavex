@@ -182,7 +182,7 @@ pub struct PrebuiltType {
     /// The coordinates of the annotated type.
     pub coordinates: AnnotationCoordinates,
     /// The strategy dictating when the prebuilt type can be cloned.
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     /// The location where this prebuilt type was registered in the application code.
     pub registered_at: Location,
 }
@@ -194,7 +194,7 @@ pub struct ConfigType {
     /// The coordinates of the annotated type.
     pub coordinates: AnnotationCoordinates,
     /// The strategy dictating when the config type can be cloned.
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     /// Whether to use `Default::default` to generate default configuration
     /// values if the user hasn't specified any.
     pub default_if_missing: Option<bool>,
@@ -213,7 +213,7 @@ pub struct Constructor {
     /// The lifecycle of the constructed type.
     pub lifecycle: Option<Lifecycle>,
     /// The strategy dictating when the constructed type can be cloned.
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     /// The callable in charge of processing errors returned by this constructor, if any.
     pub error_handler: Option<ErrorHandler>,
     /// Lint settings for this constructor.
@@ -308,7 +308,7 @@ impl fmt::Display for Lifecycle {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
-pub enum CloningStrategy {
+pub enum CloningPolicy {
     /// Pavex will **never** try clone the output type returned by the constructor.
     NeverClone,
     /// Pavex will only clone the output type returned by this constructor if it's

@@ -1,5 +1,5 @@
 use crate::utils::type_like::{TypeAnnotation, TypeItem};
-use crate::utils::{AnnotationCodegen, CloningStrategy, CloningStrategyFlags};
+use crate::utils::{AnnotationCodegen, CloningPolicy, CloningPolicyFlags};
 use convert_case::{Case, Casing as _};
 use darling::util::Flag;
 use quote::{format_ident, quote, quote_spanned};
@@ -22,7 +22,7 @@ impl TryFrom<InputSchema> for Properties {
             clone_if_necessary,
             never_clone,
         } = input;
-        let Ok(cloning_strategy) = CloningStrategyFlags {
+        let Ok(cloning_policy) = CloningPolicyFlags {
             clone_if_necessary,
             never_clone,
         }
@@ -32,17 +32,14 @@ impl TryFrom<InputSchema> for Properties {
             ));
         };
 
-        Ok(Properties {
-            id,
-            cloning_strategy,
-        })
+        Ok(Properties { id, cloning_policy })
     }
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 pub struct Properties {
     pub id: Option<syn::Ident>,
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
 }
 
 pub struct PrebuiltAnnotation;
@@ -66,10 +63,7 @@ impl TypeAnnotation for PrebuiltAnnotation {
 /// Decorate the input with a `#[diagnostic::pavex::prebuilt]` attribute
 /// that matches the provided properties.
 fn emit(item: TypeItem, properties: Properties) -> Result<AnnotationCodegen, darling::Error> {
-    let Properties {
-        cloning_strategy,
-        id,
-    } = properties;
+    let Properties { cloning_policy, id } = properties;
 
     let name = item.name();
     // Use the span of the type name if no identifier is provided.
@@ -90,9 +84,9 @@ fn emit(item: TypeItem, properties: Properties) -> Result<AnnotationCodegen, dar
         id = #id_str,
     };
 
-    if let Some(cloning_strategy) = cloning_strategy {
+    if let Some(cloning_policy) = cloning_policy {
         properties.extend(quote! {
-            cloning_strategy = #cloning_strategy,
+            cloning_policy = #cloning_policy,
         });
     }
 

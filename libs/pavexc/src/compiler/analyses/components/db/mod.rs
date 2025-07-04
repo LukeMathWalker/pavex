@@ -29,7 +29,7 @@ use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavex_cli_diagnostic::AnnotatedSource;
 use pavexc_attr_parser::AnnotationProperties;
 use std::borrow::Cow;
@@ -52,7 +52,7 @@ pub(crate) struct ComponentDb {
     /// For each constructible component, determine if it can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
-    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    id2cloning_policy: HashMap<ComponentId, CloningPolicy>,
     /// For each configuration type, determine if it should be defaulted or not.
     ///
     /// Invariants: there is an entry for every configuration type.
@@ -179,7 +179,7 @@ impl ComponentDb {
             match_id2fallible_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
-            id2cloning_strategy: Default::default(),
+            id2cloning_policy: Default::default(),
             config_id2default_strategy: Default::default(),
             config_id2include_if_unused: Default::default(),
             config_id2constructor_id: Default::default(),
@@ -284,7 +284,7 @@ impl ComponentDb {
                     )),
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: framework_item_db.lifecycle(id),
-                    cloning_strategy: framework_item_db.cloning_strategy(id),
+                    cloning_policy: framework_item_db.cloning_policy(id),
                     derived_from: None,
                 },
                 computation_db,
@@ -305,7 +305,7 @@ impl ComponentDb {
                     computation_id: computation_db.get_or_intern(Constructor(computation)),
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: Lifecycle::RequestScoped,
-                    cloning_strategy: CloningStrategy::NeverClone,
+                    cloning_policy: CloningPolicy::NeverClone,
                     derived_from: None,
                 },
                 computation_db,
@@ -388,17 +388,15 @@ impl ComponentDb {
                 UserConstructor {
                     user_component_id, ..
                 } => {
-                    let cloning_strategy =
-                        self.user_db.cloning_strategy(user_component_id).unwrap();
-                    self.id2cloning_strategy
-                        .insert(id, cloning_strategy.to_owned());
+                    let cloning_policy = self.user_db.cloning_policy(user_component_id).unwrap();
+                    self.id2cloning_policy.insert(id, cloning_policy.to_owned());
                 }
                 SyntheticConstructor {
-                    cloning_strategy,
+                    cloning_policy,
                     derived_from,
                     ..
                 } => {
-                    self.id2cloning_strategy.insert(id, cloning_strategy);
+                    self.id2cloning_policy.insert(id, cloning_policy);
                     if let Some(derived_from) = derived_from {
                         self.derived2user_registered.insert(
                             id,
@@ -449,10 +447,8 @@ impl ComponentDb {
                 }
                 UserPrebuiltType { user_component_id } => {
                     let ty_ = &self.prebuilt_type_db[user_component_id];
-                    let cloning_strategy =
-                        self.user_db.cloning_strategy(user_component_id).unwrap();
-                    self.id2cloning_strategy
-                        .insert(id, cloning_strategy.to_owned());
+                    let cloning_policy = self.user_db.cloning_policy(user_component_id).unwrap();
+                    self.id2cloning_policy.insert(id, cloning_policy.to_owned());
                     self.get_or_intern(
                         UnregisteredComponent::SyntheticConstructor {
                             computation_id: computation_db.get_or_intern(Constructor(
@@ -460,7 +456,7 @@ impl ComponentDb {
                             )),
                             scope_id: self.user_db.scope_id(user_component_id),
                             lifecycle: self.user_db.lifecycle(user_component_id),
-                            cloning_strategy: cloning_strategy.to_owned(),
+                            cloning_policy: cloning_policy.to_owned(),
                             derived_from: Some(id),
                         },
                         computation_db,
@@ -468,14 +464,13 @@ impl ComponentDb {
                 }
                 UserConfigType { user_component_id } => {
                     let config = self.user_db.config_type(user_component_id).unwrap();
-                    let cloning_strategy =
-                        self.user_db.cloning_strategy(user_component_id).unwrap();
+                    let cloning_policy = self.user_db.cloning_policy(user_component_id).unwrap();
                     let default_strategy =
                         self.user_db.default_strategy(user_component_id).unwrap();
                     let include_if_unused =
                         self.user_db.include_if_unused(user_component_id).unwrap();
 
-                    self.id2cloning_strategy.insert(id, *cloning_strategy);
+                    self.id2cloning_policy.insert(id, *cloning_policy);
                     self.config_id2default_strategy.insert(id, default_strategy);
                     self.config_id2include_if_unused
                         .insert(id, include_if_unused);
@@ -487,7 +482,7 @@ impl ComponentDb {
                             )),
                             scope_id: self.user_db.scope_id(user_component_id),
                             lifecycle: self.user_db.lifecycle(user_component_id),
-                            cloning_strategy: cloning_strategy.to_owned(),
+                            cloning_policy: cloning_policy.to_owned(),
                             derived_from: Some(id),
                         },
                         computation_db,
@@ -534,7 +529,7 @@ impl ComponentDb {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
                         lifecycle: self.lifecycle(id),
-                        cloning_strategy: self.id2cloning_strategy[&id],
+                        cloning_policy: self.id2cloning_policy[&id],
                         derived_from: Some(id),
                     },
                     computation_db,
@@ -1326,7 +1321,7 @@ impl ComponentDb {
         callable_id: ComputationId,
         lifecycle: Lifecycle,
         scope_id: ScopeId,
-        cloning_strategy: CloningStrategy,
+        cloning_policy: CloningPolicy,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
         derived_from: Option<ComponentId>,
@@ -1342,7 +1337,7 @@ impl ComponentDb {
             lifecycle,
             computation_id: callable_id,
             scope_id,
-            cloning_strategy,
+            cloning_policy,
             derived_from,
         };
         Ok(self.get_or_intern(constructor_component, computation_db))
@@ -1355,7 +1350,7 @@ impl ComponentDb {
         callable_id: ComputationId,
         lifecycle: Lifecycle,
         scope_id: ScopeId,
-        cloning_strategy: CloningStrategy,
+        cloning_policy: CloningPolicy,
         computation_db: &mut ComputationDb,
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
@@ -1363,7 +1358,7 @@ impl ComponentDb {
             lifecycle,
             computation_id: callable_id,
             scope_id,
-            cloning_strategy,
+            cloning_policy,
             derived_from,
         };
         Ok(self.get_or_intern(constructor_component, computation_db))
@@ -1533,10 +1528,10 @@ impl ComponentDb {
     }
 
     #[track_caller]
-    /// Given the id of a component, return the corresponding [`CloningStrategy`].
+    /// Given the id of a component, return the corresponding [`CloningPolicy`].
     /// It panics if called for a non-constructor component.
-    pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
-        self.id2cloning_strategy[&component_id]
+    pub fn cloning_policy(&self, component_id: ComponentId) -> CloningPolicy {
+        self.id2cloning_policy[&component_id]
     }
 
     #[track_caller]
@@ -1855,7 +1850,7 @@ impl ComponentDb {
             .into_owned()
         {
             HydratedComponent::Constructor(constructor) => {
-                let cloning_strategy = self.id2cloning_strategy[&unbound_root_id];
+                let cloning_policy = self.id2cloning_policy[&unbound_root_id];
                 let bound_computation = constructor
                     .0
                     .bind_generic_type_parameters(bindings)
@@ -1865,7 +1860,7 @@ impl ComponentDb {
                     bound_computation_id,
                     self.lifecycle(unbound_root_id),
                     self.scope_id(unbound_root_id),
-                    cloning_strategy,
+                    cloning_policy,
                     computation_db,
                     framework_item_db,
                     Some(unbound_root_id),

@@ -10,18 +10,18 @@ use super::Import;
 
 /// The type returned by [`Blueprint::prefix`] and [`Blueprint::domain`].
 ///
-/// It allows you to customize how nested routes should behave.
+/// Customize routing behaviour for a subset of routes.
 ///
 /// [`Blueprint::prefix`]: crate::Blueprint::prefix
 /// [`Blueprint::domain`]: crate::Blueprint::domain
 #[must_use = "`prefix` and `domain` do nothing unless you invoke `nest` to register some routes under them"]
-pub struct NestingConditions<'a> {
+pub struct RoutingModifiers<'a> {
     pub(super) blueprint: &'a mut BlueprintSchema,
     pub(super) path_prefix: Option<PathPrefix>,
     pub(super) domain: Option<Domain>,
 }
 
-impl<'a> NestingConditions<'a> {
+impl<'a> RoutingModifiers<'a> {
     pub(super) fn empty(blueprint: &'a mut BlueprintSchema) -> Self {
         Self {
             blueprint,

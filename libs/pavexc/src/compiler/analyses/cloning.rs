@@ -1,4 +1,4 @@
-use pavex_bp_schema::CloningStrategy;
+use pavex_bp_schema::CloningPolicy;
 
 use crate::{
     compiler::{
@@ -32,7 +32,7 @@ pub(crate) fn cloneables_can_be_cloned<'a>(
         let hydrated = component_db.hydrated_component(id, computation_db);
         match hydrated {
             HydratedComponent::Constructor(_) | HydratedComponent::PrebuiltType(_) => {
-                if component_db.cloning_strategy(id) != CloningStrategy::CloneIfNecessary {
+                if component_db.cloning_policy(id) != CloningPolicy::CloneIfNecessary {
                     continue;
                 }
             }

@@ -4,7 +4,7 @@ use proc_macro2::Ident;
 use quote::format_ident;
 
 use crate::{compiler::utils::resolve_type_path, language::ResolvedType, rustdoc::CrateCollection};
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 /// The id for a framework item inside [`FrameworkItemDb`].
 pub(crate) type FrameworkItemId = u8;
@@ -36,7 +36,7 @@ impl FrameworkItemDb {
             Self::request_head_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::NeverClone,
+                cloning_policy: CloningPolicy::NeverClone,
                 binding: format_ident!("request_head"),
             },
         );
@@ -47,7 +47,7 @@ impl FrameworkItemDb {
             Self::raw_incoming_body_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::NeverClone,
+                cloning_policy: CloningPolicy::NeverClone,
                 binding: format_ident!("request_body"),
             },
         );
@@ -60,7 +60,7 @@ impl FrameworkItemDb {
             Self::url_params_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("url_params"),
             },
         );
@@ -71,7 +71,7 @@ impl FrameworkItemDb {
             Self::matched_route_template_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("matched_route_template"),
             },
         );
@@ -82,7 +82,7 @@ impl FrameworkItemDb {
             Self::allowed_methods_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("allowed_methods"),
             },
         );
@@ -94,7 +94,7 @@ impl FrameworkItemDb {
             Self::connection_info_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("connection_info"),
             },
         );
@@ -136,9 +136,9 @@ impl FrameworkItemDb {
         self.id2metadata[&item_id].lifecycle
     }
 
-    /// Return the [`CloningStrategy`] associated with a framework item.
-    pub(crate) fn cloning_strategy(&self, item_id: FrameworkItemId) -> CloningStrategy {
-        self.id2metadata[&item_id].cloning_strategy
+    /// Return the [`CloningPolicy`] associated with a framework item.
+    pub(crate) fn cloning_policy(&self, item_id: FrameworkItemId) -> CloningPolicy {
+        self.id2metadata[&item_id].cloning_policy
     }
 
     /// Return the [`FrameworkItemId`] for a type, if it's a framework item.
@@ -176,5 +176,5 @@ impl FrameworkItemDb {
 struct FrameworkItemMetadata {
     lifecycle: Lifecycle,
     binding: Ident,
-    cloning_strategy: CloningStrategy,
+    cloning_policy: CloningPolicy,
 }

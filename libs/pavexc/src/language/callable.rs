@@ -43,9 +43,12 @@ pub struct Callable {
     pub invocation_style: InvocationStyle,
     /// The ids required to locate this callable in the JSON docs for the package where it is
     /// defined.
+    /// It is used exclusively for diagnostic purposes—i.e. retrieve the span where the callable
+    /// is defined in order to show parts of it in error messages.
     ///
-    /// It is optional to allow for flexible usage patterns—e.g. to leverage [`Callable`]
-    /// to work with callables that we want to code-generate into a new crate.
+    /// Source coordinares are optional since [`Callable`] is used to represent
+    /// callables that don't exist yet—i.e. that we will code-generate into the new server SDK
+    /// crate.
     pub source_coordinates: Option<GlobalItemId>,
 }
 

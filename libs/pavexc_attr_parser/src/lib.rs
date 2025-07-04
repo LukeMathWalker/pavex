@@ -1,6 +1,6 @@
 use darling::FromMeta;
 use errors::InvalidAttributeParams;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, MethodGuard};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, MethodGuard};
 
 pub mod atoms;
 pub mod errors;
@@ -47,17 +47,17 @@ pub enum AnnotationProperties {
     Constructor {
         id: String,
         lifecycle: Lifecycle,
-        cloning_strategy: Option<CloningStrategy>,
+        cloning_policy: Option<CloningPolicy>,
         allow_unused: Option<bool>,
     },
     Prebuilt {
         id: String,
-        cloning_strategy: Option<CloningStrategy>,
+        cloning_policy: Option<CloningPolicy>,
     },
     Config {
         id: String,
         key: String,
-        cloning_strategy: Option<CloningStrategy>,
+        cloning_policy: Option<CloningPolicy>,
         default_if_missing: Option<bool>,
         include_if_unused: Option<bool>,
     },

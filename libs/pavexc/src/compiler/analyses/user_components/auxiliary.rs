@@ -11,7 +11,7 @@ use crate::{
 };
 use ahash::HashMap;
 use indexmap::IndexMap;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting, Location};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting, Location};
 
 use super::{ScopeId, UserComponent, UserComponentId, imports::UnresolvedImport};
 
@@ -45,7 +45,7 @@ pub(super) struct AuxiliaryData {
     /// Determine if a type can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor, configuration type and prebuilt type.
-    pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    pub(super) id2cloning_policy: HashMap<UserComponentId, CloningPolicy>,
     /// Assign to each fallible component the error handler that was registered for it,
     /// if any.
     pub(super) fallible_id2error_handler_id: HashMap<UserComponentId, UserComponentId>,
@@ -144,7 +144,7 @@ impl AuxiliaryData {
             match component {
                 Constructor { .. } | PrebuiltType { .. } => {
                     assert!(
-                        self.id2cloning_strategy.contains_key(&id),
+                        self.id2cloning_policy.contains_key(&id),
                         "There is no cloning strategy registered for the user-registered {} #{id:?}",
                         component.kind(),
                     );

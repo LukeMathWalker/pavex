@@ -12,7 +12,7 @@ use super::{
 };
 use crate::compiler::analyses::user_components::UserComponent;
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
-use pavex_bp_schema::{CloningStrategy, Lint, LintSetting};
+use pavex_bp_schema::{CloningPolicy, Lint, LintSetting};
 
 /// Resolve coordinates to the annotation they point to.
 /// Then process the corresponding item.
@@ -68,7 +68,7 @@ pub(crate) fn resolve_annotation_coordinates(
         // Retrieve config properties for config types that have been registered directly against the blueprint
         if let AnnotationProperties::Config {
             key,
-            cloning_strategy,
+            cloning_policy,
             default_if_missing,
             include_if_unused,
             id: _,
@@ -83,9 +83,9 @@ pub(crate) fn resolve_annotation_coordinates(
             *config_key = key.clone();
             // Use the behaviour specified in the annotation, unless the user has overridden
             // it when registering the config directly with the blueprint.
-            aux.id2cloning_strategy
+            aux.id2cloning_policy
                 .entry(component_id)
-                .or_insert_with(|| cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary));
+                .or_insert_with(|| cloning_policy.unwrap_or(CloningPolicy::CloneIfNecessary));
             aux.config_id2default_strategy
                 .entry(component_id)
                 .or_insert_with(|| {
@@ -127,10 +127,7 @@ pub(crate) fn resolve_annotation_coordinates(
         }
 
         // Retrieve prebuilt properties for prebuilt types that have been registered directly against the blueprint
-        if let AnnotationProperties::Prebuilt {
-            cloning_strategy, ..
-        } = &annotation.properties
-        {
+        if let AnnotationProperties::Prebuilt { cloning_policy, .. } = &annotation.properties {
             assert!(matches!(
                 aux.component_interner[component_id],
                 UserComponent::PrebuiltType { .. }
@@ -138,9 +135,9 @@ pub(crate) fn resolve_annotation_coordinates(
 
             // Use the behaviour specified in the annotation, unless the user has overridden
             // it when registering the prebuilt directly with the blueprint.
-            aux.id2cloning_strategy
+            aux.id2cloning_policy
                 .entry(component_id)
-                .or_insert_with(|| cloning_strategy.unwrap_or(CloningStrategy::NeverClone));
+                .or_insert_with(|| cloning_policy.unwrap_or(CloningPolicy::NeverClone));
 
             let Ok(ty) = annotated_item2type(&item, krate, krate_collection, diagnostics) else {
                 continue;
@@ -168,7 +165,7 @@ pub(crate) fn resolve_annotation_coordinates(
         // Retrieve constructor properties for constructors that have been registered directly against the blueprint
         if let AnnotationProperties::Constructor {
             lifecycle,
-            cloning_strategy,
+            cloning_policy,
             allow_unused,
             id: _,
         } = &annotation.properties
@@ -195,9 +192,9 @@ pub(crate) fn resolve_annotation_coordinates(
 
             // Use the behaviour specified in the annotation, unless the user has overridden
             // it when registering the constructor directly with the blueprint.
-            aux.id2cloning_strategy
+            aux.id2cloning_policy
                 .entry(component_id)
-                .or_insert_with(|| cloning_strategy.unwrap_or(CloningStrategy::NeverClone));
+                .or_insert_with(|| cloning_policy.unwrap_or(CloningPolicy::NeverClone));
         }
 
         if matches!(

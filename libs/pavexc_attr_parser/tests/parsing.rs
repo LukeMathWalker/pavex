@@ -30,7 +30,7 @@ fn test_invalid_constructor_lifecycle() {
 }
 
 #[test]
-fn test_cloning_strategy_can_be_omitted() {
+fn test_cloning_policy_can_be_omitted() {
     let c = parse(r#"#[diagnostic::pavex::constructor(id = "B", lifecycle = "singleton")]"#)
         .unwrap()
         .unwrap();
@@ -39,7 +39,7 @@ fn test_cloning_strategy_can_be_omitted() {
         AnnotationProperties::Constructor {
             id: "B".into(),
             lifecycle: Lifecycle::Singleton,
-            cloning_strategy: None,
+            cloning_policy: None,
             allow_unused: None,
         }
     );

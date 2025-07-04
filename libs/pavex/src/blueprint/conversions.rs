@@ -1,7 +1,7 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
 use super::reflection::{AnnotationCoordinates, CreatedAt, Sources};
-use crate::blueprint::linter::Lint;
-use crate::blueprint::{CloningStrategy, Lifecycle};
+use crate::blueprint::Lint;
+use crate::blueprint::{CloningPolicy, Lifecycle};
 
 #[track_caller]
 pub(super) fn coordinates2coordinates(
@@ -29,10 +29,10 @@ pub(super) fn lifecycle2lifecycle(lifecycle: Lifecycle) -> pavex_bp_schema::Life
     }
 }
 
-pub(super) fn cloning2cloning(cloning: CloningStrategy) -> pavex_bp_schema::CloningStrategy {
+pub(super) fn cloning2cloning(cloning: CloningPolicy) -> pavex_bp_schema::CloningPolicy {
     match cloning {
-        CloningStrategy::CloneIfNecessary => pavex_bp_schema::CloningStrategy::CloneIfNecessary,
-        CloningStrategy::NeverClone => pavex_bp_schema::CloningStrategy::NeverClone,
+        CloningPolicy::CloneIfNecessary => pavex_bp_schema::CloningPolicy::CloneIfNecessary,
+        CloningPolicy::NeverClone => pavex_bp_schema::CloningPolicy::NeverClone,
     }
 }
 

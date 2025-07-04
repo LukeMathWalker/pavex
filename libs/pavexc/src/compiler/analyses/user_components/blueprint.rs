@@ -526,9 +526,8 @@ fn process_constructor(
     // let's take note of it.
     // If not, we'll fill things in with the right default values later on,
     // when resolving annotation coordinates.
-    if let Some(cloning_strategy) = constructor.cloning_strategy {
-        aux.id2cloning_strategy
-            .insert(constructor_id, cloning_strategy);
+    if let Some(cloning_policy) = constructor.cloning_policy {
+        aux.id2cloning_policy.insert(constructor_id, cloning_policy);
     }
     if !constructor.lints.is_empty() {
         aux.id2lints
@@ -634,8 +633,8 @@ fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_sco
     // let's take note of it.
     // If not, we'll fill things in with the right default values later on,
     // when resolving annotation coordinates.
-    if let Some(cloning_strategy) = si.cloning_strategy {
-        aux.id2cloning_strategy.insert(id, cloning_strategy);
+    if let Some(cloning_policy) = si.cloning_policy {
+        aux.id2cloning_policy.insert(id, cloning_policy);
     }
 }
 
@@ -666,8 +665,8 @@ fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id
     // let's take note of it.
     // If not, we'll fill things in with the right default values later on,
     // when resolving annotation coordinates.
-    if let Some(cloning_strategy) = t.cloning_strategy {
-        aux.id2cloning_strategy.insert(id, cloning_strategy);
+    if let Some(cloning_policy) = t.cloning_policy {
+        aux.id2cloning_policy.insert(id, cloning_policy);
     }
     if let Some(default_if_missing) = t.default_if_missing {
         let default_strategy = if default_if_missing {

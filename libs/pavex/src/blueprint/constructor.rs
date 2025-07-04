@@ -1,12 +1,12 @@
-use crate::blueprint::CloningStrategy;
 use crate::blueprint::ErrorHandler;
+use crate::blueprint::Lint;
 use crate::blueprint::conversions::{
     cloning2cloning, coordinates2coordinates, lifecycle2lifecycle, lint2lint,
 };
-use crate::blueprint::linter::Lint;
 use pavex_bp_schema::Component;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, LintSetting, Location};
 
+use super::CloningPolicy;
 use super::Lifecycle;
 use super::reflection::AnnotationCoordinates;
 
@@ -166,21 +166,21 @@ impl RegisteredConstructor<'_> {
     /// If the output type implements [`Clone`], you can change the default by invoking
     /// [`clone_if_necessary`](Self::clone_if_necessary): Pavex will clone the output type if
     /// it's necessary to generate code that satisfies Rust's borrow checker.
-    pub fn cloning(mut self, strategy: CloningStrategy) -> Self {
-        self.constructor().cloning_strategy = Some(cloning2cloning(strategy));
+    pub fn cloning(mut self, strategy: CloningPolicy) -> Self {
+        self.constructor().cloning_policy = Some(cloning2cloning(strategy));
         self
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].
+    /// Set the cloning strategy to [`CloningPolicy::CloneIfNecessary`].
     /// Check out [`cloning`](Self::cloning) method for more details.
     pub fn clone_if_necessary(self) -> Self {
-        self.cloning(CloningStrategy::CloneIfNecessary)
+        self.cloning(CloningPolicy::CloneIfNecessary)
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].
+    /// Set the cloning strategy to [`CloningPolicy::NeverClone`].
     /// Check out [`cloning`](Self::cloning) method for more details.
     pub fn never_clone(self) -> Self {
-        self.cloning(CloningStrategy::NeverClone)
+        self.cloning(CloningPolicy::NeverClone)
     }
 
     /// Tell Pavex to ignore a specific [`Lint`] when analysing

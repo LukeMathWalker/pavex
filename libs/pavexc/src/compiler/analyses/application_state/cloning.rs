@@ -1,5 +1,5 @@
 use indexmap::IndexSet;
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 use petgraph::visit::EdgeRef;
 
 use crate::{
@@ -76,7 +76,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                 if assert_trait_is_implemented(krate_collection, type_, &copy).is_ok() {
                     continue;
                 }
-                if component_db.cloning_strategy(id) == CloningStrategy::CloneIfNecessary {
+                if component_db.cloning_policy(id) == CloningPolicy::CloneIfNecessary {
                     continue;
                 }
                 let is_clone = assert_trait_is_implemented(krate_collection, type_, &clone).is_ok();

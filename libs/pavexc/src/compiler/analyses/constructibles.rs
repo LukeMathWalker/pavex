@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::NamedSource;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{ConsumptionMode, HydratedComponent};
@@ -274,9 +274,8 @@ impl ConstructibleDb {
                             };
                         }
                         Lifecycle::RequestScoped => {
-                            let cloning_strategy =
-                                component_db.cloning_strategy(input_component_id);
-                            if cloning_strategy == CloningStrategy::CloneIfNecessary {
+                            let cloning_policy = component_db.cloning_policy(input_component_id);
+                            if cloning_policy == CloningPolicy::CloneIfNecessary {
                                 if let Some(user_component_id) =
                                     component_db.user_component_id(component_id)
                                 {

@@ -1,5 +1,5 @@
 use super::reflection::AnnotationCoordinates;
-use crate::blueprint::{CloningStrategy, conversions::cloning2cloning};
+use crate::blueprint::{CloningPolicy, conversions::cloning2cloning};
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, ConfigType};
 
 /// The input type for [`Blueprint::config`].
@@ -101,21 +101,21 @@ impl RegisteredConfig<'_> {
     ///
     /// Regardless of the chosen strategy, configuration types *must* implement `Clone`,
     /// since the code-generated `ApplicationConfig` type will need to derive it.
-    pub fn cloning(mut self, strategy: CloningStrategy) -> Self {
-        self.config().cloning_strategy = Some(cloning2cloning(strategy));
+    pub fn cloning(mut self, strategy: CloningPolicy) -> Self {
+        self.config().cloning_policy = Some(cloning2cloning(strategy));
         self
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].
+    /// Set the cloning strategy to [`CloningPolicy::CloneIfNecessary`].
     /// Check out [`cloning`](Self::cloning) method for more details.
     pub fn clone_if_necessary(self) -> Self {
-        self.cloning(CloningStrategy::CloneIfNecessary)
+        self.cloning(CloningPolicy::CloneIfNecessary)
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].
+    /// Set the cloning strategy to [`CloningPolicy::NeverClone`].
     /// Check out [`cloning`](Self::cloning) method for more details.
     pub fn never_clone(self) -> Self {
-        self.cloning(CloningStrategy::NeverClone)
+        self.cloning(CloningPolicy::NeverClone)
     }
 
     /// Use the default configuration values returned by [`Default::default`]

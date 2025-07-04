@@ -16,7 +16,7 @@ pub use pavex_macros::from;
 
 #[allow(clippy::module_inception)]
 pub(super) mod blueprint;
-pub use cloning_strategy::CloningStrategy;
+pub use cloning_policy::CloningPolicy;
 pub use lifecycle::Lifecycle;
 
 pub use config::*;
@@ -25,6 +25,8 @@ pub use error_handler::*;
 pub use error_observer::*;
 pub use fallback::*;
 pub use import::*;
+pub use lints::Lint;
+pub use nesting::RoutingModifiers;
 pub use post::*;
 pub use pre::*;
 pub use prebuilt::*;
@@ -32,7 +34,7 @@ pub use route::*;
 pub use routes::*;
 pub use wrapping::*;
 
-mod cloning_strategy;
+mod cloning_policy;
 mod config;
 mod constructor;
 mod conversions;
@@ -41,8 +43,8 @@ mod error_observer;
 mod fallback;
 mod import;
 mod lifecycle;
-pub mod linter;
-pub mod nesting;
+mod lints;
+mod nesting;
 mod post;
 mod pre;
 mod prebuilt;

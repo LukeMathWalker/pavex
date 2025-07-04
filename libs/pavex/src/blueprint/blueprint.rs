@@ -12,7 +12,7 @@ use super::RegisteredImport;
 use super::Route;
 use super::WrappingMiddleware;
 use super::conversions::{coordinates2coordinates, created_at2created_at, sources2sources};
-use super::nesting::NestingConditions;
+use super::nesting::RoutingModifiers;
 use super::{
     Config, RegisteredConfig, RegisteredFallback, RegisteredPostProcessingMiddleware,
     RegisteredPreProcessingMiddleware, RegisteredRoute, RegisteredRoutes,
@@ -453,7 +453,7 @@ impl Blueprint {
     pub fn config(&mut self, config: Config) -> RegisteredConfig {
         let registered = pavex_bp_schema::ConfigType {
             coordinates: coordinates2coordinates(config.coordinates),
-            cloning_strategy: None,
+            cloning_policy: None,
             default_if_missing: None,
             include_if_unused: None,
             registered_at: Location::caller(),
@@ -571,7 +571,7 @@ impl Blueprint {
         let registered_constructor = pavex_bp_schema::Constructor {
             coordinates: coordinates2coordinates(constructor.coordinates),
             lifecycle: None,
-            cloning_strategy: None,
+            cloning_policy: None,
             error_handler: None,
             lints: Default::default(),
             registered_at: Location::caller(),
@@ -884,7 +884,7 @@ impl Blueprint {
     /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), without adding a [common path prefix](Self::prefix)
     /// nor a [domain restriction](Self::domain) to its routes.
     ///
-    /// Check out [`NestingConditions::nest`](super::nesting::NestingConditions::nest) for more details on nesting.
+    /// Check out [`RoutingModifiers::nest`](super::RoutingModifiers::nest) for more details on nesting.
     #[track_caller]
     #[doc(alias("scope"))]
     pub fn nest(&mut self, blueprint: Blueprint) {
@@ -993,8 +993,8 @@ impl Blueprint {
     /// }
     /// # pub fn handler() {}
     /// ```
-    pub fn prefix(&mut self, prefix: &str) -> NestingConditions {
-        NestingConditions::empty(&mut self.schema).prefix(prefix)
+    pub fn prefix(&mut self, prefix: &str) -> RoutingModifiers {
+        RoutingModifiers::empty(&mut self.schema).prefix(prefix)
     }
 
     #[track_caller]
@@ -1054,8 +1054,8 @@ impl Blueprint {
     ///
     /// Keep in mind that the [`Host` header can be easily spoofed by the client](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/17-Testing_for_Host_Header_Injection),
     /// so you should not rely on its value for auth or other security-sensitive operations.
-    pub fn domain(&mut self, domain: &str) -> NestingConditions {
-        NestingConditions::empty(&mut self.schema).domain(domain)
+    pub fn domain(&mut self, domain: &str) -> RoutingModifiers {
+        RoutingModifiers::empty(&mut self.schema).domain(domain)
     }
 
     #[track_caller]
@@ -1400,7 +1400,7 @@ impl Blueprint {
     pub fn prebuilt(&mut self, prebuilt: Prebuilt) -> RegisteredPrebuilt {
         let registered = pavex_bp_schema::PrebuiltType {
             coordinates: coordinates2coordinates(prebuilt.coordinates),
-            cloning_strategy: None,
+            cloning_policy: None,
             registered_at: Location::caller(),
         };
         let component_id = self.push_component(registered);

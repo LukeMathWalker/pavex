@@ -11,7 +11,7 @@
   [31m│[0m
   [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow
   [31m│[0m         checker.
-  [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
+  [31m│[0m         You can do so by invoking `.cloning(CloningPolicy::CloneIfNecessary)`
   [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
   [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_cloneable_input_type_cannot_be_moved_twice/src/lib.rs[0m:21:1]

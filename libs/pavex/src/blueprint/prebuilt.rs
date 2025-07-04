@@ -1,6 +1,6 @@
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, PrebuiltType};
 
-use crate::blueprint::{CloningStrategy, conversions::cloning2cloning};
+use crate::blueprint::{CloningPolicy, conversions::cloning2cloning};
 
 use super::reflection::AnnotationCoordinates;
 
@@ -42,21 +42,21 @@ impl RegisteredPrebuilt<'_> {
     /// If the type implements [`Clone`], you can change the default by invoking
     /// [`clone_if_necessary`](Self::clone_if_necessary): Pavex will clone the prebuilt type if
     /// it's necessary to generate code that satisfies Rust's borrow checker.
-    pub fn cloning(mut self, strategy: CloningStrategy) -> Self {
-        self.prebuilt().cloning_strategy = Some(cloning2cloning(strategy));
+    pub fn cloning(mut self, strategy: CloningPolicy) -> Self {
+        self.prebuilt().cloning_policy = Some(cloning2cloning(strategy));
         self
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].
+    /// Set the cloning strategy to [`CloningPolicy::CloneIfNecessary`].
     /// Check out [`cloning`](Self::cloning) method for more details.
     pub fn clone_if_necessary(self) -> Self {
-        self.cloning(CloningStrategy::CloneIfNecessary)
+        self.cloning(CloningPolicy::CloneIfNecessary)
     }
 
-    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].
+    /// Set the cloning strategy to [`CloningPolicy::NeverClone`].
     /// Check out [`cloning`](Self::cloning) method for more details.
     pub fn never_clone(self) -> Self {
-        self.cloning(CloningStrategy::NeverClone)
+        self.cloning(CloningPolicy::NeverClone)
     }
 
     fn prebuilt(&mut self) -> &mut PrebuiltType {

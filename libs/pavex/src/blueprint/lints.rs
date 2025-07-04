@@ -1,7 +1,3 @@
-//! Tools to lint a [`Blueprint`] for common mistakes and antipatterns.
-//!
-//! [`Blueprint`]: crate::Blueprint
-
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, PartialEq, Hash)]
 #[non_exhaustive]
 /// Common mistakes and antipatterns that Pavex

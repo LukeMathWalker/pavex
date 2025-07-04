@@ -11,7 +11,7 @@ use crate::{AnnotationProperties, atoms::MethodArgument};
 pub struct ConstructorProperties {
     pub id: String,
     pub lifecycle: Lifecycle,
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     pub allow_unused: Option<bool>,
 }
 
@@ -20,7 +20,7 @@ impl From<ConstructorProperties> for AnnotationProperties {
         AnnotationProperties::Constructor {
             id: value.id,
             lifecycle: value.lifecycle.into(),
-            cloning_strategy: value.cloning_strategy.map(Into::into),
+            cloning_policy: value.cloning_policy.map(Into::into),
             allow_unused: value.allow_unused,
         }
     }
@@ -106,7 +106,7 @@ impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
 pub struct ConfigProperties {
     pub id: String,
     pub key: String,
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     pub default_if_missing: Option<bool>,
     pub include_if_unused: Option<bool>,
 }
@@ -116,7 +116,7 @@ impl From<ConfigProperties> for AnnotationProperties {
         AnnotationProperties::Config {
             id: value.id,
             key: value.key,
-            cloning_strategy: value.cloning_strategy.map(Into::into),
+            cloning_policy: value.cloning_policy.map(Into::into),
             default_if_missing: value.default_if_missing,
             include_if_unused: value.include_if_unused,
         }
@@ -185,14 +185,14 @@ impl From<RouteProperties> for AnnotationProperties {
 /// `pavex::diagnostic::prebuilt`.
 pub struct PrebuiltProperties {
     pub id: String,
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
 }
 
 impl From<PrebuiltProperties> for AnnotationProperties {
     fn from(value: PrebuiltProperties) -> Self {
         AnnotationProperties::Prebuilt {
             id: value.id,
-            cloning_strategy: value.cloning_strategy.map(Into::into),
+            cloning_policy: value.cloning_policy.map(Into::into),
         }
     }
 }
@@ -217,16 +217,16 @@ impl From<Lifecycle> for pavex_bp_schema::Lifecycle {
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 #[darling(rename_all = "snake_case")]
-pub enum CloningStrategy {
+pub enum CloningPolicy {
     CloneIfNecessary,
     NeverClone,
 }
 
-impl From<CloningStrategy> for pavex_bp_schema::CloningStrategy {
-    fn from(value: CloningStrategy) -> Self {
+impl From<CloningPolicy> for pavex_bp_schema::CloningPolicy {
+    fn from(value: CloningPolicy) -> Self {
         match value {
-            CloningStrategy::CloneIfNecessary => pavex_bp_schema::CloningStrategy::CloneIfNecessary,
-            CloningStrategy::NeverClone => pavex_bp_schema::CloningStrategy::NeverClone,
+            CloningPolicy::CloneIfNecessary => pavex_bp_schema::CloningPolicy::CloneIfNecessary,
+            CloningPolicy::NeverClone => pavex_bp_schema::CloningPolicy::NeverClone,
         }
     }
 }

@@ -10,7 +10,7 @@
 /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
 /// section of Pavex's guide for a thorough introduction to dependency injection
 /// in Pavex applications.
-pub enum CloningStrategy {
+pub enum CloningPolicy {
     /// Pavex is not allowed to clone the type.\
     /// Pavex will return an error if cloning is necessary to generate code
     /// that satisfies Rust's borrow checker.
