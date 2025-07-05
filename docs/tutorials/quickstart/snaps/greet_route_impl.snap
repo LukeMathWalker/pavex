@@ -1,0 +1,15 @@
+```rust title="app/src/routes/greet.rs" hl_lines="5 9 10 11 12"
+use pavex::{get, request::path::PathParams, response::Response};
+
+#[PathParams]
+pub struct GreetParams {
+    pub name: String, // (1)!
+}
+
+#[get(path = "/greet/{name}")]
+pub fn greet(params: PathParams<GreetParams> /* (2)! */) -> Response {
+    let GreetParams { name } /* (3)! */ = params.0;
+    Response::ok() // (4)!
+        .set_typed_body(format!("Hello, {name}!")) // (5)!
+}
+```

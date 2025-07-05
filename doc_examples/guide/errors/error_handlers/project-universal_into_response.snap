@@ -1,7 +1,0 @@
-```rust title="src/universal/error_handler.rs" hl_lines="3"
-use pavex::response::Response;
-
-pub async fn login_error2response(e: &pavex::Error) -> Response {
-    Response::unauthorized().set_typed_body(e.to_string())
-}
-```

@@ -1,0 +1,17 @@
+```rust hl_lines="5 13"
+use anyhow::Error;
+use pavex::response::Response;
+use pavex_session::Session;
+
+#[derive(serde::Serialize, serde::Deserialize)] // (1)!
+struct AuthInfo {
+    user_id: String,
+    email: String,
+}
+
+#[pavex::get(path = "/get_struct")]
+pub async fn get_struct(session: &Session<'_>) -> Result<Response, Error> {
+    let auth_info: Option<AuthInfo> /* (2)! */ = session.get("user").await?;
+    // [...]
+}
+```

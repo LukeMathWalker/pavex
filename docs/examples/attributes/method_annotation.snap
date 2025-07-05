@@ -1,0 +1,16 @@
+```rust hl_lines="8"
+use pavex::methods;
+use pavex::response::Response;
+
+pub struct AuthError {
+    // [...]
+}
+
+#[methods] // (1)!
+impl AuthError {
+    #[error_handler]
+    pub fn to_response(&self) -> Response {
+        // [...]
+    }
+}
+```

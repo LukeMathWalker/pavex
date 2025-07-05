@@ -11,7 +11,17 @@ pavex new demo
 the CLI will create a project with the following structure:
 
 ```text
---8<-- "doc_examples/quickstart/demo-project_structure.snap"
+app/
+configuration/
+server/
+server_sdk/
+workspace_hack/
+Cargo.toml
+CONFIGURATION.md
+deny.toml
+Dockerfile
+README.md
+rust-toolchain.toml
 ```
 
 What is the purpose of all those folders? Why is [`cargo-px`][cargo-px] needed to build a Pavex project?

@@ -1,0 +1,16 @@
+//! px:catch_all_parameter
+use pavex::get;
+use pavex::request::path::PathParams;
+use pavex::response::Response;
+
+#[PathParams]
+pub struct Info {
+    pub name: String,
+    pub details: Vec<String>,
+}
+
+#[get(path = "/info/{name}/{*details}")] // px::hl
+pub fn detailed_info(info: PathParams<Info>) -> Response {
+    let body = format!("Hello, {}!", info.0.name);
+    Response::ok().set_typed_body(body)
+}

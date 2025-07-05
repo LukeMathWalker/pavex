@@ -1,7 +1,0 @@
-```rust title="app/src/routes/mod.rs" hl_lines="4"
-// [...]
-pub fn register(bp: &mut Blueprint) {
-    bp.route(GET, "/api/ping", f!(self::ping::get));
-    bp.route(GET, "/api/greet/{name}", f!(self::greet::get)); // (1)!
-}
-```

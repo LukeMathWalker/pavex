@@ -4,6 +4,7 @@
 /libs/ui_tests/Cargo.lock
 /libs/target
 /libs/vendor
+/libs/**/*.snap
 /libs/**/mutants.out*
 /ci_utils/target
 /doc_examples/tutorial_envs/
@@ -17,7 +18,6 @@
 /vendor
 .DS_Store
 .claude
-*.snap
 trace-*.json
 /docs/api_reference/
 .direnv/

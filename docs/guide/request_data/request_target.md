@@ -22,7 +22,7 @@ e.g. `/foo/bar?baz=qux`.
 
 Inject [`RequestHead`][RequestHead] to access the request target via its [`target`][RequestHead::target] field:
 
---8<-- "doc_examples/guide/request_data/request_target/project-target.snap"
+--8<-- "docs/examples/request_data/wire_data/target.snap"
 
 ## Use cases
 

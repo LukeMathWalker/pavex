@@ -1,8 +1,0 @@
-```rust title="src/user.rs" hl_lines="3"
-// [...]
-impl User {
-    pub fn extract() -> Self {
-        todo!() // Business logic goes here
-    }
-}
-```

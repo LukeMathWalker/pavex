@@ -1,0 +1,7 @@
+```rust hl_lines="2"
+// [...]
+#[PathParams]
+pub struct GetUserParams {
+    pub id: u64,
+}
+```

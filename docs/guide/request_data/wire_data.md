@@ -16,7 +16,9 @@ invokes your code.
 [`RequestHead`][RequestHead] is a [framework primitive](../dependency_injection/framework_primitives.md),
 you don't have to register a constructor to inject it.
 
---8<-- "doc_examples/guide/request_data/wire_data/project-head.snap"
+--8<-- "docs/examples/request_data/wire_data/head.snap"
+
+1. All our operations are read-only, so it's enough to inject a shared reference as input (i.e. `&RequestHead`).
 
 [`RequestHead`][RequestHead] is a dependency for a wide range of extractors.\
 We recommend injecting a shared reference as input (i.e. `&RequestHead`)
@@ -37,7 +39,7 @@ In most situations, you're better off avoiding [`RawIncomingBody`][RawIncomingBo
 [`RawIncomingBody`][RawIncomingBody] is a [framework primitive](../dependency_injection/framework_primitives.md),
 you don't have to register a constructor to inject it.
 
---8<-- "doc_examples/guide/request_data/wire_data/project-body.snap"
+--8<-- "docs/examples/request_data/wire_data/body.snap"
 
 Most abstractions built on top of [`RawIncomingBody`][RawIncomingBody] consume it by value.\
 You can't really share an instance of [`RawIncomingBody`][RawIncomingBody]: you need exclusive access to pull

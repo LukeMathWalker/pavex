@@ -1,0 +1,12 @@
+```rust title="app/src/user_agent.rs"
+// [...]
+use pavex::response::Response;
+use pavex::{error_handler, methods};
+// [...]
+
+#[error_handler]
+pub fn invalid_user_agent(_e: &ToStrError) -> Response {
+    let body = "The `User-Agent` header value can only use ASCII printable characters.";
+    Response::bad_request().set_typed_body(body)
+}
+```

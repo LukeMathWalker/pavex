@@ -1,7 +1,0 @@
-```rust title="server_sdk/src/lib.rs"
-// [...]
-pub struct ApplicationConfig {}
-pub struct ApplicationState {}
-impl ApplicationState {
-    pub async fn new(
-```

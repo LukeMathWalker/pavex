@@ -1,0 +1,40 @@
+From fcbadd0f44eeea7671a158827242bd4ffc707fc8 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:57:02 +0200
+Subject: [PATCH 30/32] Greet unhappy test
+
+---
+ server/tests/integration/greet.rs | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/server/tests/integration/greet.rs b/server/tests/integration/greet.rs
+index 43ec02b..5a5d7f5 100644
+--- a/server/tests/integration/greet.rs
++++ b/server/tests/integration/greet.rs
+@@ -18,3 +18,23 @@ async fn greet_happy_path() {
+     assert_eq!(response.status(), StatusCode::OK);
+     assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
+ }
++
++#[tokio::test]
++async fn non_utf8_user_agent_is_rejected() {
++    let api = TestApi::spawn().await;
++    let name = "Ursula";
++
++    let response = api
++        .api_client
++        .get(&format!("{}/api/greet/{name}", &api.api_address))
++        .header("User-Agent", b"hello\xfa".as_slice())
++        .send()
++        .await
++        .expect("Failed to execute request.");
++
++    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
++    assert_eq!(
++        response.text().await.unwrap(),
++        "The `User-Agent` header value can only use ASCII printable characters."
++    );
++}
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,240 @@
+(
+    creation_location: (
+        line: 4,
+        column: 18,
+        file: "routing/path_prefixes/src/blueprint.rs",
+    ),
+    components: [
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 5,
+                    column: 18,
+                    file: "routing/path_prefixes/src/intro.rs",
+                ),
+                components: [
+                    nested_blueprint((
+                        blueprint: (
+                            creation_location: (
+                                line: 6,
+                                column: 24,
+                                file: "routing/path_prefixes/src/intro.rs",
+                            ),
+                            components: [
+                                routes_import((
+                                    sources: some([
+                                        "self::home",
+                                    ]),
+                                    relative_to: "path_prefixes::intro",
+                                    created_at: (
+                                        package_name: "path_prefixes",
+                                        package_version: "0.1.0",
+                                    ),
+                                    registered_at: (
+                                        line: 6,
+                                        column: 24,
+                                        file: "routing/path_prefixes/src/intro.rs",
+                                    ),
+                                )),
+                            ],
+                        ),
+                        path_prefix: Some((
+                            path_prefix: "/home",
+                            registered_at: (
+                                line: 6,
+                                column: 8,
+                                file: "routing/path_prefixes/src/intro.rs",
+                            ),
+                        )),
+                        domain: None,
+                        nested_at: (
+                            line: 6,
+                            column: 24,
+                            file: "routing/path_prefixes/src/intro.rs",
+                        ),
+                    )),
+                    route((
+                        coordinates: (
+                            id: "INDEX",
+                            created_at: (
+                                package_name: "path_prefixes",
+                                package_version: "0.1.0",
+                            ),
+                            macro_name: "route",
+                        ),
+                        registered_at: (
+                            line: 7,
+                            column: 8,
+                            file: "routing/path_prefixes/src/intro.rs",
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            domain: None,
+            nested_at: (
+                line: 5,
+                column: 8,
+                file: "routing/path_prefixes/src/blueprint.rs",
+            ),
+        )),
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 5,
+                    column: 18,
+                    file: "routing/path_prefixes/src/deep.rs",
+                ),
+                components: [
+                    nested_blueprint((
+                        blueprint: (
+                            creation_location: (
+                                line: 11,
+                                column: 18,
+                                file: "routing/path_prefixes/src/deep.rs",
+                            ),
+                            components: [
+                                nested_blueprint((
+                                    blueprint: (
+                                        creation_location: (
+                                            line: 17,
+                                            column: 18,
+                                            file: "routing/path_prefixes/src/deep.rs",
+                                        ),
+                                        components: [
+                                            route((
+                                                coordinates: (
+                                                    id: "GET_ROOM",
+                                                    created_at: (
+                                                        package_name: "path_prefixes",
+                                                        package_version: "0.1.0",
+                                                    ),
+                                                    macro_name: "route",
+                                                ),
+                                                registered_at: (
+                                                    line: 18,
+                                                    column: 8,
+                                                    file: "routing/path_prefixes/src/deep.rs",
+                                                ),
+                                                error_handler: None,
+                                            )),
+                                        ],
+                                    ),
+                                    path_prefix: Some((
+                                        path_prefix: "/{home_id}",
+                                        registered_at: (
+                                            line: 12,
+                                            column: 8,
+                                            file: "routing/path_prefixes/src/deep.rs",
+                                        ),
+                                    )),
+                                    domain: None,
+                                    nested_at: (
+                                        line: 12,
+                                        column: 29,
+                                        file: "routing/path_prefixes/src/deep.rs",
+                                    ),
+                                )),
+                            ],
+                        ),
+                        path_prefix: Some((
+                            path_prefix: "/home",
+                            registered_at: (
+                                line: 6,
+                                column: 8,
+                                file: "routing/path_prefixes/src/deep.rs",
+                            ),
+                        )),
+                        domain: None,
+                        nested_at: (
+                            line: 6,
+                            column: 24,
+                            file: "routing/path_prefixes/src/deep.rs",
+                        ),
+                    )),
+                ],
+            ),
+            path_prefix: Some((
+                path_prefix: "/deep",
+                registered_at: (
+                    line: 6,
+                    column: 8,
+                    file: "routing/path_prefixes/src/blueprint.rs",
+                ),
+            )),
+            domain: None,
+            nested_at: (
+                line: 6,
+                column: 24,
+                file: "routing/path_prefixes/src/blueprint.rs",
+            ),
+        )),
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 5,
+                    column: 18,
+                    file: "routing/path_prefixes/src/consecutive.rs",
+                ),
+                components: [
+                    nested_blueprint((
+                        blueprint: (
+                            creation_location: (
+                                line: 7,
+                                column: 22,
+                                file: "routing/path_prefixes/src/consecutive.rs",
+                            ),
+                            components: [
+                                route((
+                                    coordinates: (
+                                        id: "HANDLER",
+                                        created_at: (
+                                            package_name: "path_prefixes",
+                                            package_version: "0.1.0",
+                                        ),
+                                        macro_name: "route",
+                                    ),
+                                    registered_at: (
+                                        line: 8,
+                                        column: 12,
+                                        file: "routing/path_prefixes/src/consecutive.rs",
+                                    ),
+                                    error_handler: None,
+                                )),
+                            ],
+                        ),
+                        path_prefix: Some((
+                            path_prefix: "/prefix",
+                            registered_at: (
+                                line: 6,
+                                column: 8,
+                                file: "routing/path_prefixes/src/consecutive.rs",
+                            ),
+                        )),
+                        domain: None,
+                        nested_at: (
+                            line: 6,
+                            column: 26,
+                            file: "routing/path_prefixes/src/consecutive.rs",
+                        ),
+                    )),
+                ],
+            ),
+            path_prefix: Some((
+                path_prefix: "/consecutive",
+                registered_at: (
+                    line: 7,
+                    column: 8,
+                    file: "routing/path_prefixes/src/blueprint.rs",
+                ),
+            )),
+            domain: None,
+            nested_at: (
+                line: 7,
+                column: 31,
+                file: "routing/path_prefixes/src/blueprint.rs",
+            ),
+        )),
+    ],
+)

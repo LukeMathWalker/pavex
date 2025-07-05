@@ -86,11 +86,15 @@ nav:
               - guide/project_structure/app.md
               - guide/project_structure/server_sdk.md
               - guide/project_structure/server.md
+          - "Attributes":
+              - guide/attributes/index.md
+              - guide/attributes/component_id.md
+              - guide/attributes/functions_and_methods.md
+              - guide/attributes/types.md
+              - guide/attributes/sync_or_async.md
           - "Routing":
               - guide/routing/index.md
-              - guide/routing/method_guards.md
               - guide/routing/path_patterns.md
-              - guide/routing/request_handlers.md
               - guide/routing/path_prefixes.md
               - guide/routing/domain_guards.md
           - "Request data":
@@ -116,7 +120,7 @@ nav:
               - guide/dependency_injection/constructors.md
               - guide/dependency_injection/prebuilt_types.md
               - guide/dependency_injection/application_state.md
-              - guide/dependency_injection/cookbook.md
+              - guide/dependency_injection/generics.md
               - guide/dependency_injection/limitations.md
           - "Middlewares":
               - guide/middleware/index.md
@@ -151,6 +155,8 @@ exclude_docs: |
   Dockerfile
   .dockerignore
   tools/
+  tutorials/
+  examples/
 extra_css:
   - ansi.css
   - mermaid.css

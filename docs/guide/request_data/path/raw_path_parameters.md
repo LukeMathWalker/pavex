@@ -12,7 +12,7 @@ It doesn't perform percent-decoding nor deserialization.
 [`RawPathParams`][RawPathParams] is a [framework primitive](../../dependency_injection/framework_primitives.md),
 you don't have to register a constructor to inject it.
 
---8<-- "doc_examples/guide/request_data/route_params/project-raw_route_params.snap"
+--8<-- "docs/examples/request_data/route_params/raw.snap"
 
 ## What does "raw" mean?
 

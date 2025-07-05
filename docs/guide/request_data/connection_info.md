@@ -18,7 +18,7 @@ Many applications include the peer address in their request logs, for example.
 Inject [`ConnectionInfo`][ConnectionInfo] to access the peer address via its [`peer_addr`][ConnectionInfo::peer_addr]
 method:
 
---8<-- "doc_examples/guide/request_data/connection/project-connection_peer.snap"
+--8<-- "docs/examples/request_data/wire_data/peer.snap"
 
 [ConnectionInfo]: /api_reference/pavex/connection/struct.ConnectionInfo.html
 [ConnectionInfo::peer_addr]: /api_reference/pavex/connection/struct.ConnectionInfo.html#method.peer_addr

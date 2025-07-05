@@ -1,0 +1,11 @@
+```rust hl_lines="6 7"
+use anyhow::Error;
+use pavex::response::Response;
+use pavex_session::Session;
+
+#[pavex::get(path = "/insert")]
+pub async fn insert(session: &mut Session<'_> /* (1)! */) -> Result<Response, Error> {
+    session.insert("user.id", "my-user-identifier").await?;
+    // [...]
+}
+```

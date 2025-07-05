@@ -1,0 +1,71 @@
+(
+    creation_location: (
+        line: 6,
+        column: 18,
+        file: "middleware/post/src/blueprint.rs",
+    ),
+    components: [
+        post_processing_middleware((
+            coordinates: (
+                id: "RESPONSE_LOGGER",
+                created_at: (
+                    package_name: "post",
+                    package_version: "0.1.0",
+                ),
+                macro_name: "post_process",
+            ),
+            registered_at: (
+                line: 7,
+                column: 8,
+                file: "middleware/post/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+        post_processing_middleware((
+            coordinates: (
+                id: "COMPRESS",
+                created_at: (
+                    package_name: "post",
+                    package_version: "0.1.0",
+                ),
+                macro_name: "post_process",
+            ),
+            registered_at: (
+                line: 9,
+                column: 8,
+                file: "middleware/post/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+        import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "post::blueprint",
+            created_at: (
+                package_name: "post",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 10,
+                column: 8,
+                file: "middleware/post/src/blueprint.rs",
+            ),
+        )),
+        routes_import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "post::blueprint",
+            created_at: (
+                package_name: "post",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 11,
+                column: 8,
+                file: "middleware/post/src/blueprint.rs",
+            ),
+        )),
+    ],
+)

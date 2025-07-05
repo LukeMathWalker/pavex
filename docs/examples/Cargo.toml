@@ -1,0 +1,78 @@
+[profile.dev]
+# Minimise the amount of disk space used by build artifacts.
+debug = "none"
+
+[workspace]
+members = [
+    "attributes",
+    "attributes/server_sdk",
+    "configuration",
+    "configuration/server_sdk",
+    "cookies/server_sdk",
+    "cookies",
+    "dependency_injection/user_middleware",
+    "dependency_injection/user_middleware/server_sdk",
+    "dependency_injection/core_concepts",
+    "dependency_injection/core_concepts/server_sdk",
+    "dependency_injection/prebuilt",
+    "dependency_injection/prebuilt/server_sdk",
+    "sessions/in_memory",
+    "sessions/in_memory/server_sdk",
+    "sessions/postgres",
+    "sessions/postgres/server_sdk",
+    "errors/error_handlers",
+    "errors/error_handlers/server_sdk",
+    "errors/error_observers",
+    "errors/error_observers/server_sdk",
+    "middleware/order",
+    "middleware/order/server_sdk",
+    "middleware/pre",
+    "middleware/pre/server_sdk",
+    "middleware/post",
+    "middleware/post/server_sdk",
+    "middleware/wrapping",
+    "middleware/wrapping/server_sdk",
+    "request_data/buffered_body",
+    "request_data/buffered_body/server_sdk",
+    "request_data/json",
+    "request_data/json/server_sdk",
+    "request_data/query_params",
+    "request_data/query_params/server_sdk",
+    "request_data/route_params",
+    "request_data/route_params/server_sdk",
+    "request_data/urlencoded",
+    "request_data/urlencoded/server_sdk",
+    "request_data/wire_data",
+    "request_data/wire_data/server_sdk",
+    "routing/core_concepts",
+    "routing/core_concepts/server_sdk",
+    "routing/domain_guards",
+    "routing/domain_guards/server_sdk",
+    "routing/path_prefixes",
+    "routing/path_prefixes/server_sdk",
+    "workspace_hack",
+]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+pavex = { path = "../../libs/pavex" }
+pavex_cli_client = { path = "../../libs/pavex_cli_client" }
+pavex_session = { path = "../../libs/pavex_session" }
+pavex_session_memory_store = { path = "../../libs/pavex_session_memory_store" }
+pavex_session_sqlx = { path = "../../libs/pavex_session_sqlx" }
+pavex_tracing = { path = "../../libs/pavex_tracing" }
+
+anyhow = "1"
+cargo_px_env = "0.1"
+redact = { version = "0.1", features = ["serde"] }
+reqwest = "0.12"
+serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.8", features = ["postgres"] }
+thiserror = "1"
+tokio = "1"
+tracing = "0.1"
+tracing_log_error = "0.1"
+uuid = { version = "1", features = ["v7"] }

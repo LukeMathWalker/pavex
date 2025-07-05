@@ -1,0 +1,8 @@
+```rust hl_lines="3"
+use pavex::prebuilt;
+
+#[prebuilt]
+pub struct DbConnectionPool {
+    // [...]
+}
+```

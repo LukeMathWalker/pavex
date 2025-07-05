@@ -1,0 +1,11 @@
+```rust hl_lines="6 7"
+use anyhow::Error;
+use pavex::response::Response;
+use pavex_session::Session;
+
+#[pavex::get(path = "/get")]
+pub async fn get_plain(session: &Session<'_> /* (1)! */) -> Result<Response, Error> {
+    let user_id: Option<String> /* (2)! */ = session.get("user.id").await?; // (3)!
+    // [...]
+}
+```

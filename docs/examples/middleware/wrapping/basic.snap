@@ -1,0 +1,16 @@
+```rust hl_lines="11"
+use pavex::middleware::Next;
+use pavex::response::Response;
+use pavex::wrap;
+
+#[wrap]
+pub async fn debug_wrapper<C>(next: Next<C>) -> Response
+where
+    C: IntoFuture<Output = Response>,
+{
+    println!("Before the handler");
+    let response = next.await; // (1)!
+    println!("After the handler");
+    response
+}
+```

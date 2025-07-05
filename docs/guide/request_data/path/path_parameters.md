@@ -4,28 +4,26 @@ In REST APIs, the [path](index.md) is often used to identify a resource.
 For example, in `https://example.com/users/123`, the path is `/users/123` and the resource is the user with ID `123`.
 
 Those dynamic path segments are called **path parameters**.
-In Pavex, you must declare the path parameters for a given path in the route definition—see [Path parameters](../../routing/path_patterns.md#path-parameters)
+In Pavex, you must declare the path parameters for a given path in the route definition—see ["Path patterns"](../../routing/path_patterns.md#path-parameters)
 for more details.
 You then use [`PathParams<T>`][PathParams] to extract the parameters from the incoming request.
 
-## Registration
+## Imports
 
 To use [`PathParams<T>`][PathParams] in your application you need to import its constructor from `pavex`:
 
---8<-- "doc_examples/guide/request_data/route_params/project-route_params_installation.snap"
+--8<-- "docs/examples/request_data/route_params/registration.snap"
 
 ## Overview
 
 Let's keep using `https://example.com/users/123` as an example.
-To extract `123` from the path, you register `/users/{id}` as the path pattern for that route.
+We will `/users/{id}` as the path pattern for that route, allowing Pavex to bind the `id` parameter to 123 at runtime.
 
---8<-- "doc_examples/guide/request_data/route_params/project-route_params_registration.snap"
+Inject [`PathParams<T>`][PathParams] in your route handler to access the `id` value at runtime for a given request:
+
+--8<-- "docs/examples/request_data/route_params/extracted.snap"
 
 1. The path pattern for the route.
-
-You can then access the `id` value for an incoming request by injecting [`PathParams<T>`][PathParams] in your handler:
-
---8<-- "doc_examples/guide/request_data/route_params/project-route_params_extraction.snap"
 
 There are a few moving parts here. Let's break them down!
 
@@ -37,16 +35,16 @@ All struct fields must be named after the path parameters declared in the path p
 In our example, the path pattern is `/users/{id}`.
 Our extraction type, `GetUserParams`, must have a matching field named `id`.
 
---8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct.snap"
+--8<-- "docs/examples/request_data/route_params/struct_def_without_attr.snap"
 
 ### Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.
 The [`#[PathParams]`][PathParamsMacro] attribute macro will automatically derive [`serde::Deserialize`][serde::Deserialize] for you. Alternatively, you can derive or implement [`serde::Deserialize`][serde::Deserialize] directly.
 
---8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct_with_attr.snap"
+--8<-- "docs/examples/request_data/route_params/struct_def.snap"
 
-If you rely on [`#[PathParams]`][PathParamsMacro], Pavex can perform more advanced checks at compile time[^structural-deserialize] (e.g. detect unsupported types).
+If you rely on [`#[PathParams]`][PathParamsMacro], Pavex can perform more advanced checks at compile-time[^structural-deserialize] (e.g. detect unsupported types).
 
 ### Parsing
 
@@ -58,7 +56,7 @@ We could set the field type for `id` to `String` and then parse it into a number
 to get tedious if we need to do it every single time we want to work with a numeric path parameter.
 We can skip all that boilerplate by setting the field type to `u64` directly, and let Pavex do the parsing for us:
 
---8<-- "doc_examples/guide/request_data/route_params/project-route_params_typed_field.snap"
+--8<-- "docs/examples/request_data/route_params/struct_def_without_attr.snap"
 
 Everything works as expected because `u64` implements the [`serde::Deserialize`][serde::Deserialize] trait.
 
@@ -68,7 +66,7 @@ Path parameters are best used to encode **values**, such as numbers, strings, or
 There is no standard way to encode more complex types such as collections (e.g. `Vec<T>`, tuples) in a path parameter.
 As a result, Pavex doesn't support them.
 
-Pavex will do its best to catch unsupported types at compile time, but it's not always possible.
+Pavex will do its best to catch unsupported types at compile-time, but it's not always possible.
 
 ## Avoiding allocations
 
@@ -119,6 +117,7 @@ pub struct Room {
     street_id: u32,
 }
 
+#[pavex::get(/* ... */)]
 pub fn get_room(params: &PathParams<Room>) -> String {
     // [...]
 }
@@ -126,6 +125,7 @@ pub fn get_room(params: &PathParams<Room>) -> String {
 // This isn't self-documenting ❌
 // What does the second u32 represent? The room id? The street id?
 // Impossible to tell without checking the route's path template.
+#[pavex::get(/* ... */)]
 pub fn get_room_tuple(params: &PathParams<(u32, u32, u32)>) -> String {
     // [...]
 }
@@ -144,7 +144,7 @@ For this reason, Pavex does not support the following types as `T` in [`PathPara
     Check out [the API reference](/api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
     to learn more about the rationale behind this decision.
 
-[^wrong-name]: If a field name doesn't match a path parameter name, Pavex will detect it at compile time and return
+[^wrong-name]: If a field name doesn't match a path parameter name, Pavex will detect it at compile-time and return
     an error.
     No more runtime errors because you misspelled a field name!
 

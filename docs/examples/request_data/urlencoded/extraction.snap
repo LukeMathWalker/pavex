@@ -1,0 +1,20 @@
+```rust hl_lines="12"
+use pavex::http::StatusCode;
+use pavex::post;
+use pavex::request::body::UrlEncodedBody;
+
+#[derive(serde::Deserialize)]
+pub struct HomeListing {
+    address: String,
+    price: u64,
+}
+
+#[post(path = "/search")]
+pub fn search_form(body: &UrlEncodedBody<HomeListing> /* (1)! */) -> StatusCode {
+    println!(
+        "New home listing at {}, for ${}",
+        body.0.address, body.0.price
+    );
+    // [...]
+}
+```

@@ -1,0 +1,10 @@
+[package]
+name = "query_params"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+pavex = { workspace = true }
+pavex_cli_client = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+cargo_px_env = { workspace = true }

@@ -1,0 +1,68 @@
+From cd94508134b96de142a9ec75e095d47752851ffc Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:48:22 +0200
+Subject: [PATCH 18/32] Revert "Annotations for user agent constructor"
+
+This reverts commit 8ae3f80d7b28c9fb965ff3277cbbf0612459e5d4.
+---
+ app/src/blueprint.rs  | 10 +++-------
+ app/src/user_agent.rs |  3 ---
+ 2 files changed, 3 insertions(+), 10 deletions(-)
+
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
+index 460913d..5271657 100644
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
+@@ -1,25 +1,21 @@
+-//! px:import_crate
+ use crate::telemetry;
+ use pavex::{Blueprint, blueprint::from};
+ 
+ /// The main blueprint, defining all the components used in this API.
+ pub fn blueprint() -> Blueprint {
+-    // px::skip:start
+     let mut bp = Blueprint::new();
+     // Bring into scope constructors, error handlers, configuration
+     // and prebuilt types defined in the following crates
+-    // px::skip:end
+     bp.import(from![
+-        // Local components, defined in this crate // px::hl
+-        crate, // px::hl
++        // Local components, defined in this crate
++        crate,
+         // Components defined in the `pavex` crate,
+         // by the framework itself.
+         pavex,
+     ]);
+-    // px::skip:start
++
+     telemetry::instrument(&mut bp);
+ 
+     bp.prefix("/api").routes(from![crate]);
+     bp
+-    // px::skip:end
+ }
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
+index 9130472..2ed7734 100644
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
+@@ -1,8 +1,6 @@
+-//! px:user_agent_extract
+ use pavex::http::header::USER_AGENT;
+ use pavex::methods;
+ use pavex::request::RequestHead;
+-// px::skip:start
+ 
+ pub enum UserAgent {
+     /// No `User-Agent` header was provided.
+@@ -10,7 +8,6 @@ pub enum UserAgent {
+     /// The value of the `User-Agent` header for the incoming request.
+     Known(String),
+ }
+-// px::skip:end
+ 
+ #[methods]
+ impl UserAgent {
+-- 
+2.39.5 (Apple Git-154)
+

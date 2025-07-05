@@ -1,0 +1,13 @@
+```rust
+// [...]
+use pavex::Blueprint;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+
+    bp.post_process(POST_1);
+    bp.post_process(POST_2);
+    bp.route(GET_INDEX);
+    // [...]
+}
+```

@@ -1,4 +1,0 @@
-```rust title="src/postgres.rs"
-    // [...]
-    bp.config("postgres", t!(self::PostgresConfig));
-```

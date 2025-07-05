@@ -1,6 +1,0 @@
-```rust title="src/core/routes.rs" hl_lines="0"
-pub fn handler(head: &RequestHead) -> Result<Response, LoginError /* (1)! */> {
-    // Handler logic...
-    // [...]
-}
-```

@@ -1834,7 +1834,7 @@ pub use pavex_macros::fallback;
 /// [`#[get]`](crate::get), [`#[post]`](crate::post), [`#[put]`](crate::put), [`#[patch]`](crate::patch),
 /// [`#[delete]`](crate::delete), [`#[head]`](crate::head), and [`#[options]`](crate::options).
 ///
-/// # Example
+/// # Example: Multiple methods
 ///
 /// ```rust
 /// use pavex::{route, response::Response};
@@ -1986,7 +1986,7 @@ pub use pavex_macros::fallback;
 /// - `any_method`: Match any HTTP method.
 ///    It matches non-standard methods if `non_standard_methods` is also enabled.
 ///
-/// ### Example
+/// ### Example: Non-standard method
 ///
 /// Allow non-standard methods:
 ///
@@ -2001,6 +2001,8 @@ pub use pavex_macros::fallback;
 /// }
 /// ```
 ///
+/// ### Example: Any standard method
+///
 /// Allow any method (no need to specify `method`):
 ///
 /// ```rust
@@ -2013,6 +2015,8 @@ pub use pavex_macros::fallback;
 ///     # Response::ok()
 /// }
 /// ```
+///
+/// ### Example: Arbitrary methods
 ///
 /// Allow any method, including non-standard ones:
 ///

@@ -1,0 +1,8 @@
+```rust title="app/src/lib.rs" hl_lines="6"
+// [...]
+mod blueprint;
+pub mod configuration;
+pub mod routes;
+pub mod telemetry;
+pub mod user_agent;
+```

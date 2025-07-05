@@ -1,6 +1,0 @@
-```rust title="src/query_params/routes.rs"
-// [...]
-pub struct SearchParams {
-    pub sorted: bool,
-}
-```

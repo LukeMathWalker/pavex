@@ -15,7 +15,7 @@ Every Pavex project has, at its core, a [`Blueprint`][Blueprint].
 It's the type you use to declare the structure of your API:
 [routes], [middlewares], [constructors], [error handlers], [error observers], [configuration], etc.
 
---8<-- "doc_examples/quickstart/demo-blueprint_definition.snap"
+--8<-- "docs/tutorials/quickstart/snaps/blueprint.snap"
 
 Think of a [`Blueprint`][Blueprint] as the specification for your API, a **plan for how your application should behave at
 runtime**.
@@ -37,9 +37,7 @@ That's thanks to [`cargo-px`][cargo-px]!\
 If you look into the `Cargo.toml` manifest for the `server_sdk` crate in the `demo` project,
 you'll find this section:
 
-```toml
---8<-- "doc_examples/quickstart/demo-cargo_px_in_manifest.snap"
-```
+--8<-- "docs/tutorials/quickstart/snaps/generate_directive.snap"
 
 It's a [`cargo-px`][cargo-px] configuration section.\
 The `server_sdk` crate is telling [`cargo-px`][cargo-px] to generate the whole crate
@@ -47,7 +45,7 @@ by executing a binary called `bp` (short for `blueprint`) from the current Cargo
 
 That binary is defined in the `demo` crate:
 
---8<-- "doc_examples/quickstart/demo-bp_binary.snap"
+--8<-- "docs/tutorials/quickstart/snaps/generator_entrypoint.snap"
 
 [`Client::generate`][Client::generate] takes care of serializing the [`Blueprint`][Blueprint]
 and passing it as input to `pavex generate`.

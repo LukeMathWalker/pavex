@@ -11,7 +11,7 @@ interact with it, after all.
 
 The template project includes a reference example for the `/api/ping` endpoint:
 
---8<-- "doc_examples/quickstart/09-ping_test.snap"
+--8<-- "docs/tutorials/quickstart/snaps/ping_test.snap"
 
 1. `TestApi` is a helper struct that provides a convenient interface to interact with the application.
    It's defined in `server/tests/helpers.rs`.
@@ -22,16 +22,16 @@ The template project includes a reference example for the `/api/ping` endpoint:
 
 Let's write a new integration test to verify the behaviour on the happy path for `GET /api/greet/{name}`:
 
---8<-- "doc_examples/quickstart/09-new_test_module.snap"
+--8<-- "docs/tutorials/quickstart/snaps/greet_test_mod.snap"
 
---8<-- "doc_examples/quickstart/09-greet_test.snap"
+--8<-- "docs/tutorials/quickstart/snaps/greet_test.snap"
 
 It follows the same pattern as the `ping` test: it spawns a new instance of the application, issues a request to it
 and verifies that the response is correct.
 Let's complement it with a test for the unhappy path as well: requests with a malformed `User-Agent` header should be
 rejected.
 
---8<-- "doc_examples/quickstart/10-greet_test.snap"
+--8<-- "docs/tutorials/quickstart/snaps/greet_unhappy_test.snap"
 
 `cargo px test` should report three passing tests now. As a bonus exercise, try to add a test for the case where the
 `User-Agent` header is missing.

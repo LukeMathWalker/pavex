@@ -1,7 +1,0 @@
-```rust title="src/input/constructor.rs"
-use pavex::request::body::JsonBody;
-
-pub fn length<T>(body: JsonBody<T>) -> u64 {
-// [...]
-}
-```
