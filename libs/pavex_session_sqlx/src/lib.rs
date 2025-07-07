@@ -7,6 +7,7 @@
 //!
 //! - `postgres`: Support for PostgreSQL.
 //! - `mysql`: Support for MySQL.
+//! - `sqlite`: Support for SQLite.
 
 #[cfg(feature = "postgres")]
 #[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
@@ -30,3 +31,12 @@ pub mod mysql;
 #[cfg_attr(docsrs, doc(cfg(feature = "mysql")))]
 #[doc(inline)]
 pub use mysql::MySqlSessionStore;
+
+#[cfg(feature = "sqlite")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sqlite")))]
+pub mod sqlite;
+
+#[cfg(feature = "sqlite")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sqlite")))]
+#[doc(inline)]
+pub use sqlite::SqliteSessionStore;

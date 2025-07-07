@@ -2687,8 +2687,10 @@ dependencies = [
  "px_workspace_hack",
  "serde_json",
  "sqlx",
+ "tempfile",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
