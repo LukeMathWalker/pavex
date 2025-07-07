@@ -28,12 +28,13 @@ console = { version = "0.15" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
 darling_core = { version = "0.20", default-features = false, features = ["suggestions"] }
-digest = { version = "0.10", features = ["mac", "std"] }
+digest = { version = "0.10", features = ["mac", "oid", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
 fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-core = { version = "0.3" }
+futures-executor = { version = "0.3" }
 futures-io = { version = "0.3" }
 futures-sink = { version = "0.3" }
 futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
@@ -45,10 +46,12 @@ hmac = { version = "0.12", default-features = false, features = ["reset"] }
 indexmap = { version = "2", features = ["serde"] }
 jiff = { version = "0.2", features = ["serde"] }
 jiff-sqlx = { version = "0.1", features = ["postgres"] }
+lazy_static = { version = "1", default-features = false, features = ["spin_no_std"] }
+libsqlite3-sys = { version = "0.30", features = ["bundled", "unlock_notify"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", features = ["i128"] }
+num-traits = { version = "0.2", features = ["i128", "libm"] }
 percent-encoding = { version = "2" }
 petgraph = { version = "0.7", default-features = false, features = ["graphmap", "stable_graph"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
@@ -58,18 +61,22 @@ regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-onepass", "hybrid", "meta", "nfa", "perf", "unicode"] }
 regex-syntax = { version = "0.8" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rustls = { version = "0.23", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
-sqlx = { version = "0.8", features = ["postgres", "uuid"] }
+sqlx = { version = "0.8", features = ["mysql", "postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
+sqlx-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "json", "migrate", "offline", "uuid"] }
+sqlx-mysql = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
+sqlx-sqlite = { version = "0.8", default-features = false, features = ["any", "bundled", "json", "migrate", "offline", "uuid"] }
 stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
 syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 textwrap = { version = "0.16" }
 time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing"] }
-tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 toml = { version = "0.8", features = ["preserve_order"] }
 toml_edit = { version = "0.22", features = ["serde"] }
 tracing = { version = "0.1", features = ["log"] }
@@ -90,12 +97,13 @@ console = { version = "0.15" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
 darling_core = { version = "0.20", default-features = false, features = ["suggestions"] }
-digest = { version = "0.10", features = ["mac", "std"] }
+digest = { version = "0.10", features = ["mac", "oid", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
 fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-core = { version = "0.3" }
+futures-executor = { version = "0.3" }
 futures-io = { version = "0.3" }
 futures-sink = { version = "0.3" }
 futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
@@ -107,10 +115,12 @@ hmac = { version = "0.12", default-features = false, features = ["reset"] }
 indexmap = { version = "2", features = ["serde"] }
 jiff = { version = "0.2", features = ["serde"] }
 jiff-sqlx = { version = "0.1", features = ["postgres"] }
+lazy_static = { version = "1", default-features = false, features = ["spin_no_std"] }
+libsqlite3-sys = { version = "0.30", features = ["bundled", "unlock_notify"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", features = ["i128"] }
+num-traits = { version = "0.2", features = ["i128", "libm"] }
 percent-encoding = { version = "2" }
 petgraph = { version = "0.7", default-features = false, features = ["graphmap", "stable_graph"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
@@ -120,20 +130,24 @@ regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-onepass", "hybrid", "meta", "nfa", "perf", "unicode"] }
 regex-syntax = { version = "0.8" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rustls = { version = "0.23", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
-sqlx = { version = "0.8", features = ["postgres", "uuid"] }
-sqlx-macros = { version = "0.8", features = ["derive", "json", "macros", "migrate", "postgres", "uuid"] }
-sqlx-macros-core = { version = "0.8", features = ["derive", "json", "macros", "migrate", "postgres", "uuid"] }
+sqlx = { version = "0.8", features = ["mysql", "postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
+sqlx-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "json", "migrate", "offline", "uuid"] }
+sqlx-macros = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "derive", "json", "macros", "migrate", "mysql", "postgres", "sqlite", "uuid"] }
+sqlx-macros-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "derive", "json", "macros", "migrate", "mysql", "postgres", "sqlite", "uuid"] }
+sqlx-mysql = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
+sqlx-sqlite = { version = "0.8", default-features = false, features = ["any", "bundled", "json", "migrate", "offline", "uuid"] }
 stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
 syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 textwrap = { version = "0.16" }
 time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing"] }
-tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 toml = { version = "0.8", features = ["preserve_order"] }
 toml_edit = { version = "0.22", features = ["serde"] }
 tracing = { version = "0.1", features = ["log"] }
