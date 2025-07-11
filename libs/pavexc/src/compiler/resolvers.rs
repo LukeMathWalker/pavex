@@ -5,7 +5,6 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use ahash::HashMap;
-use anyhow::anyhow;
 use guppy::PackageId;
 use once_cell::sync::OnceCell;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
@@ -14,7 +13,7 @@ use tracing_log_error::log_error;
 use crate::language::{
     Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
     GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
-    ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
+    ResolvedType, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
@@ -46,6 +45,118 @@ impl std::fmt::Debug for GenericBindings {
     }
 }
 
+#[derive(Debug)]
+pub struct TypeResolutionError {
+    pub ty: Type,
+    pub details: TypeResolutionErrorDetails,
+}
+
+impl std::fmt::Display for TypeResolutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Failed to resolve a type, {:?}.", self.ty)?;
+        match &self.details {
+            TypeResolutionErrorDetails::UnsupportedConstGeneric(unsupported_const_generic) => {
+                write!(
+                    f,
+                    "It uses a const generic parameter, {}, which isn't currently supported.",
+                    &unsupported_const_generic.name
+                )
+            }
+            TypeResolutionErrorDetails::UnsupportedFnPointer(unsupported_fn_pointer) => {
+                write!(
+                    f,
+                    "It uses a function pointer with inputs {:?} and output {:?}, which isn't currently supported.",
+                    unsupported_fn_pointer.inputs, unsupported_fn_pointer.output
+                )
+            }
+            TypeResolutionErrorDetails::UnsupportedReturnTypeNotation => {
+                write!(
+                    f,
+                    "It uses return type notation, which isn't currently supported."
+                )
+            }
+            TypeResolutionErrorDetails::UnsupportedTypeKind(unsupported_type_kind) => {
+                write!(
+                    f,
+                    "It is a `{}`, which isn't currently supported.",
+                    unsupported_type_kind.kind
+                )
+            }
+            TypeResolutionErrorDetails::GenericKindMismatch(generic_kind_mismatch) => {
+                write!(
+                    f,
+                    "There was a generic kind mismatch: for parameter `{}` we expected kind `{}` but found kind `{}`.",
+                    generic_kind_mismatch.parameter_name,
+                    generic_kind_mismatch.expected_kind,
+                    generic_kind_mismatch.found_kind
+                )
+            }
+            TypeResolutionErrorDetails::ItemResolutionError(_) => {
+                write!(f, "We failed to resolve one of its sub-types.")
+            }
+            TypeResolutionErrorDetails::TypePartResolutionError(part) => {
+                write!(f, "We failed to resolve {}", part.role)
+            }
+            TypeResolutionErrorDetails::UnknownPrimitive(e) => {
+                write!(f, "{e}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for TypeResolutionError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self.details {
+            TypeResolutionErrorDetails::ItemResolutionError(err) => Some(err.deref()),
+            TypeResolutionErrorDetails::TypePartResolutionError(err) => Some(&err.source),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum TypeResolutionErrorDetails {
+    UnsupportedConstGeneric(UnsupportedConstGeneric),
+    UnsupportedFnPointer(UnsupportedFnPointer),
+    UnsupportedReturnTypeNotation,
+    UnsupportedTypeKind(UnsupportedTypeKind),
+    UnknownPrimitive(UnknownPrimitive),
+    GenericKindMismatch(GenericKindMismatch),
+    ItemResolutionError(anyhow::Error),
+    TypePartResolutionError(Box<TypePartResolutionError>),
+}
+
+#[derive(Debug)]
+pub struct UnsupportedConstGeneric {
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct UnsupportedFnPointer {
+    /// The input types, enclosed in parentheses.
+    pub inputs: Vec<Type>,
+    /// The output type provided after the `->`, if present.
+    pub output: Option<Type>,
+}
+
+#[derive(Debug)]
+pub struct TypePartResolutionError {
+    pub role: String,
+    pub source: TypeResolutionError,
+}
+
+#[derive(Debug)]
+pub struct UnsupportedTypeKind {
+    pub kind: &'static str,
+}
+
+#[derive(Debug)]
+pub struct GenericKindMismatch {
+    pub parameter_name: String,
+    pub expected_kind: &'static str,
+    pub found_kind: &'static str,
+}
+
 pub(crate) fn resolve_type(
     type_: &Type,
     // The package id where the type we are trying to process has been referenced (e.g. as an
@@ -53,7 +164,27 @@ pub(crate) fn resolve_type(
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection,
     generic_bindings: &GenericBindings,
-) -> Result<ResolvedType, anyhow::Error> {
+) -> Result<ResolvedType, TypeResolutionError> {
+    _resolve_type(
+        type_,
+        used_by_package_id,
+        krate_collection,
+        generic_bindings,
+    )
+    .map_err(|details| TypeResolutionError {
+        ty: type_.to_owned(),
+        details,
+    })
+}
+
+pub(crate) fn _resolve_type(
+    type_: &Type,
+    // The package id where the type we are trying to process has been referenced (e.g. as an
+    // input/output parameter).
+    used_by_package_id: &PackageId,
+    krate_collection: &CrateCollection,
+    generic_bindings: &GenericBindings,
+) -> Result<ResolvedType, TypeResolutionErrorDetails> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path {
             id,
@@ -82,11 +213,8 @@ pub(crate) fn resolve_type(
                 re_exporter.unwrap()
             };
             let (global_type_id, base_type) = krate_collection
-                .get_canonical_path_by_local_type_id(
-                    used_by_package_id,
-                    id,
-                    re_exporter_crate_name,
-                )?;
+                .get_canonical_path_by_local_type_id(used_by_package_id, id, re_exporter_crate_name)
+                .map_err(|e| TypeResolutionErrorDetails::ItemResolutionError(e))?;
             let type_item = krate_collection.get_item_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
@@ -116,12 +244,32 @@ pub(crate) fn resolve_type(
                                         used_by_package_id,
                                         krate_collection,
                                         generic_bindings,
-                                    )?
-                                } else {
-                                    anyhow::bail!(
-                                        "Expected `{:?}` to be a generic _type_ parameter, but it wasn't!",
-                                        provided_arg
                                     )
+                                    .map_err(|source| {
+                                        TypeResolutionErrorDetails::TypePartResolutionError(
+                                            Box::new(TypePartResolutionError {
+                                                role: format!(
+                                                    "generic argument ({})",
+                                                    generic_param_def.name
+                                                ),
+                                                source,
+                                            }),
+                                        )
+                                    })?
+                                } else {
+                                    let found = match provided_arg {
+                                        GenericArg::Lifetime(_) => "lifetime",
+                                        GenericArg::Type(_) => "type",
+                                        GenericArg::Const(_) => "constant",
+                                        GenericArg::Infer => "inferred",
+                                    };
+                                    return Err(TypeResolutionErrorDetails::GenericKindMismatch(
+                                        GenericKindMismatch {
+                                            expected_kind: "type".into(),
+                                            parameter_name: generic_param_def.name.to_owned(),
+                                            found_kind: found.into(),
+                                        },
+                                    ));
                                 }
                             } else if let Some(default) = default {
                                 let default = resolve_type(
@@ -129,7 +277,19 @@ pub(crate) fn resolve_type(
                                     &global_type_id.package_id,
                                     krate_collection,
                                     generic_bindings,
-                                )?;
+                                )
+                                .map_err(|source| {
+                                    TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                                        TypePartResolutionError {
+                                            role: format!(
+                                                "default type for generic argument ({})",
+                                                generic_param_def.name
+                                            ),
+                                            source,
+                                        },
+                                    ))
+                                })?;
+
                                 if skip_default(krate_collection, &default) {
                                     continue;
                                 }
@@ -149,20 +309,34 @@ pub(crate) fn resolve_type(
                                 if let GenericArg::Lifetime(provided_arg) = provided_arg {
                                     provided_arg
                                 } else {
-                                    anyhow::bail!("Expected `{:?}` to be a generic _lifetime_ parameter, but it wasn't!", provided_arg)
+                                    let found = match provided_arg {
+                                        GenericArg::Lifetime(_) => "lifetime",
+                                        GenericArg::Type(_) => "type",
+                                        GenericArg::Const(_) => "constant",
+                                        GenericArg::Infer => "inferred",
+                                    };
+                                    return Err(TypeResolutionErrorDetails::GenericKindMismatch(
+                                        GenericKindMismatch {
+                                            expected_kind: "lifetime".into(),
+                                            parameter_name: generic_param_def.name.to_owned(),
+                                            found_kind: found.into(),
+                                        },
+                                    ));
                                 }
                             } else {
                                 &generic_param_def.name
-                            }.to_owned();
+                            }
+                            .to_owned();
                             alias_generic_bindings
                                 .lifetimes
                                 .insert(generic_param_def.name.to_string(), lifetime);
                         }
                         GenericParamDefKind::Const { .. } => {
-                            anyhow::bail!(
-                                "I can only work with generic type parameters when working with type aliases. I can't handle a `{:?}` yet, sorry!",
-                                generic_param_def
-                            )
+                            return Err(TypeResolutionErrorDetails::UnsupportedConstGeneric(
+                                UnsupportedConstGeneric {
+                                    name: generic_param_def.name.to_owned(),
+                                },
+                            ));
                         }
                     }
                 }
@@ -171,7 +345,16 @@ pub(crate) fn resolve_type(
                     &global_type_id.package_id,
                     krate_collection,
                     &alias_generic_bindings,
-                )?;
+                )
+                .map_err(|source| {
+                    TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                        TypePartResolutionError {
+                            role: "aliased type".into(),
+                            source,
+                        },
+                    ))
+                })?;
+
                 Ok(type_)
             } else {
                 let mut generics = vec![];
@@ -242,7 +425,18 @@ pub(crate) fn resolve_type(
                                                     used_by_package_id,
                                                     krate_collection,
                                                     generic_bindings,
-                                                )?)
+                                                )
+                                                .map_err(|source| {
+                                                    TypeResolutionErrorDetails::TypePartResolutionError(
+                                                        Box::new(TypePartResolutionError {
+                                                            role: format!(
+                                                                "assigned type for generic parameter `{}`",
+                                                                arg_def.name
+                                                            ),
+                                                            source,
+                                                        }),
+                                                    )
+                                                })?)
                                             }
                                         } else if let Some(default) = default {
                                             let default = resolve_type(
@@ -250,7 +444,18 @@ pub(crate) fn resolve_type(
                                                 &global_type_id.package_id,
                                                 krate_collection,
                                                 generic_bindings,
-                                            )?;
+                                            )
+                                            .map_err(|source| {
+                                                TypeResolutionErrorDetails::TypePartResolutionError(
+                                                    Box::new(TypePartResolutionError {
+                                                        role: format!(
+                                                            "default type for generic parameter `{}`",
+                                                            arg_def.name
+                                                        ),
+                                                        source,
+                                                    }),
+                                                )
+                                            })?;
                                             if skip_default(krate_collection, &default) {
                                                 continue;
                                             }
@@ -264,21 +469,28 @@ pub(crate) fn resolve_type(
                                         }
                                     }
                                     GenericParamDefKind::Const { .. } => {
-                                        return Err(anyhow!(
-                                            "I don't support const generics in types yet. Sorry!"
-                                        ));
+                                        return Err(
+                                            TypeResolutionErrorDetails::UnsupportedConstGeneric(
+                                                UnsupportedConstGeneric {
+                                                    name: arg_def.name.to_owned(),
+                                                },
+                                            ),
+                                        );
                                     }
                                 };
                                 generics.push(generic_argument);
                             }
                         }
-                        GenericArgs::Parenthesized { .. } => {
-                            return Err(anyhow!("I don't support function pointers yet. Sorry!"));
+                        GenericArgs::Parenthesized { inputs, output } => {
+                            return Err(TypeResolutionErrorDetails::UnsupportedFnPointer(
+                                UnsupportedFnPointer {
+                                    inputs: inputs.to_owned(),
+                                    output: output.to_owned(),
+                                },
+                            ));
                         }
                         GenericArgs::ReturnTypeNotation => {
-                            return Err(anyhow!(
-                                "I don't support return-type notation yet. Sorry!"
-                            ));
+                            return Err(TypeResolutionErrorDetails::UnsupportedReturnTypeNotation);
                         }
                     }
                 }
@@ -301,7 +513,15 @@ pub(crate) fn resolve_type(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
-            )?;
+            )
+            .map_err(|source| {
+                TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                    TypePartResolutionError {
+                        role: "referenced type".into(),
+                        source,
+                    },
+                ))
+            })?;
             let t = TypeReference {
                 is_mutable: *is_mutable,
                 lifetime: lifetime.to_owned().into(),
@@ -318,31 +538,81 @@ pub(crate) fn resolve_type(
         }
         Type::Tuple(t) => {
             let mut types = Vec::with_capacity(t.len());
-            for type_ in t {
-                types.push(resolve_type(
+            for (i, type_) in t.iter().enumerate() {
+                let type_ = resolve_type(
                     type_,
                     used_by_package_id,
                     krate_collection,
                     generic_bindings,
-                )?);
+                )
+                .map_err(|source| {
+                    TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                        TypePartResolutionError {
+                            role: format!("type of element {} in tuple", i + 1),
+                            source,
+                        },
+                    ))
+                })?;
+                types.push(type_);
             }
             Ok(ResolvedType::Tuple(Tuple { elements: types }))
         }
-        Type::Primitive(p) => Ok(ResolvedType::ScalarPrimitive(p.as_str().try_into()?)),
+        Type::Primitive(p) => Ok(ResolvedType::ScalarPrimitive(
+            p.as_str()
+                .try_into()
+                .map_err(|e| TypeResolutionErrorDetails::UnknownPrimitive(e))?,
+        )),
         Type::Slice(type_) => {
             let inner = resolve_type(
                 type_,
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
-            )?;
+            )
+            .map_err(|source| {
+                TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                    TypePartResolutionError {
+                        role: "slice type".into(),
+                        source,
+                    },
+                ))
+            })?;
+
             Ok(ResolvedType::Slice(Slice {
                 element_type: Box::new(inner),
             }))
         }
-        _ => Err(anyhow!(
-            "I can't handle this kind ({:?}) of type yet. Sorry!",
-            type_
+        Type::Array { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind { kind: "array" },
+        )),
+        Type::DynTrait(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind { kind: "dyn trait" },
+        )),
+        Type::FunctionPointer(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind {
+                kind: "function pointer",
+            },
+        )),
+        Type::Pat { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind { kind: "pattern" },
+        )),
+        Type::ImplTrait(..) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind { kind: "impl trait" },
+        )),
+        Type::Infer => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind {
+                kind: "inferred type",
+            },
+        )),
+        Type::RawPointer { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind {
+                kind: "raw pointer",
+            },
+        )),
+        Type::QualifiedPath { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+            UnsupportedTypeKind {
+                kind: "qualified path",
+            },
         )),
     }
 }
@@ -464,7 +734,7 @@ pub(crate) fn resolve_callable(
                     parameter_type: parameter_type.to_owned(),
                     callable_path: new_callable_path.to_owned(),
                     callable_item: callable_item.item.clone().into_owned(),
-                    source: Arc::new(e),
+                    source: Arc::new(e.into()),
                     parameter_index,
                 }
                 .into());
@@ -487,7 +757,7 @@ pub(crate) fn resolve_callable(
                         output_type: output_type.to_owned(),
                         callable_path: new_callable_path.to_owned(),
                         callable_item: callable_item.item.clone().into_owned(),
-                        source: Arc::new(e),
+                        source: Arc::new(e.into()),
                     }
                     .into());
                 }
@@ -635,7 +905,7 @@ fn get_trait_generic_bindings(
 pub(crate) fn resolve_type_path(
     path: &FQPath,
     krate_collection: &CrateCollection,
-) -> Result<ResolvedType, TypeResolutionError> {
+) -> Result<ResolvedType, TypePathResolutionError> {
     fn _resolve_type_path(
         path: &FQPath,
         krate_collection: &CrateCollection,
@@ -644,7 +914,7 @@ pub(crate) fn resolve_type_path(
         resolve_type_path_with_item(path, &item, krate_collection)
     }
 
-    _resolve_type_path(path, krate_collection).map_err(|source| TypeResolutionError {
+    _resolve_type_path(path, krate_collection).map_err(|source| TypePathResolutionError {
         path: path.clone(),
         source,
     })
@@ -768,7 +1038,7 @@ pub(crate) enum CallableResolutionError {
 
 #[derive(Debug, thiserror::Error)]
 #[error("I can't resolve `{path}` to a type.")]
-pub(crate) struct TypeResolutionError {
+pub(crate) struct TypePathResolutionError {
     path: FQPath,
     #[source]
     pub source: anyhow::Error,

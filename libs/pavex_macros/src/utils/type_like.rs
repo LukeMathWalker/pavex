@@ -14,6 +14,7 @@ use crate::utils::{AnnotationCodegen, deny_unreachable_pub_attr, validation::mus
 pub enum TypeItem {
     Enum(syn::ItemEnum),
     Struct(syn::ItemStruct),
+    TypeAlias(syn::ItemType),
     Use(syn::ItemUse),
 }
 
@@ -22,6 +23,7 @@ impl TypeItem {
         match self {
             TypeItem::Enum(item) => &item.vis,
             TypeItem::Struct(item) => &item.vis,
+            TypeItem::TypeAlias(item) => &item.vis,
             TypeItem::Use(item) => &item.vis,
         }
     }
@@ -31,6 +33,7 @@ impl TypeItem {
         match self {
             TypeItem::Enum(item_enum) => item_enum.ident.clone(),
             TypeItem::Struct(item_struct) => item_struct.ident.clone(),
+            TypeItem::TypeAlias(item_type_alias) => item_type_alias.ident.clone(),
             TypeItem::Use(item_use) => {
                 let mut current = &item_use.tree;
                 loop {
@@ -63,6 +66,14 @@ impl ToTokens for TypeItem {
                 item.ident.to_tokens(tokens);
                 item.generics.to_tokens(tokens);
             }
+            TypeItem::TypeAlias(item) => {
+                item.vis.to_tokens(tokens);
+                item.type_token.to_tokens(tokens);
+                item.ident.to_tokens(tokens);
+                item.generics.to_tokens(tokens);
+                item.eq_token.to_tokens(tokens);
+                item.ty.to_tokens(tokens);
+            }
             TypeItem::Use(item) => {
                 item.vis.to_tokens(tokens);
                 item.use_token.to_tokens(tokens);
@@ -80,6 +91,8 @@ impl TypeItem {
             TypeItem::Struct(struct_)
         } else if let Ok(enum_) = syn::parse2::<syn::ItemEnum>(input.clone()) {
             TypeItem::Enum(enum_)
+        } else if let Ok(type_alias) = syn::parse2::<syn::ItemType>(input.clone()) {
+            TypeItem::TypeAlias(type_alias)
         } else if let Ok(use_) = syn::parse2::<syn::ItemUse>(input.clone()) {
             let mut current = &use_.tree;
             loop {
@@ -126,7 +139,7 @@ impl TypeItem {
             TypeItem::Use(use_)
         } else {
             let msg = format!(
-                "{} can only be applied to structs, enums and re-exports.",
+                "{} can only be applied to structs, enums, type aliases and re-exports.",
                 M::ATTRIBUTE
             );
             return Err(syn::Error::new_spanned(input, msg)
@@ -140,6 +153,7 @@ impl TypeItem {
             &match &type_ {
                 TypeItem::Enum(item) => item.ident.clone(),
                 TypeItem::Struct(item) => item.ident.clone(),
+                TypeItem::TypeAlias(item) => item.ident.clone(),
                 // We need the error message to nudge the user towards marking the _re-export_
                 // as `pub`, not the re-exported item.
                 // You may wonder: why does the annotated `use` need to be `pub`?
@@ -188,8 +202,11 @@ pub fn entrypoint<M: TypeAnnotation>(
         let allow_unused =
             matches!(type_, TypeItem::Use(_)).then_some(parse_quote! { #[allow(unused)] });
 
+        let is_use = matches!(type_, TypeItem::Use(_));
         let mut output = M::codegen(parse_metadata(metadata)?, type_)?;
-        output.new_attributes.push(deny_unreachable_pub_attr());
+        if !is_use {
+            output.new_attributes.push(deny_unreachable_pub_attr());
+        }
         if let Some(allow_unused) = allow_unused {
             output.new_attributes.push(allow_unused);
         }

@@ -1,5 +1,6 @@
 pub type IntermediateAlias = ActualType;
 pub type IntermediateGenericAlias<A, B> = GenericType<A, B>;
+pub type IntermediateAssignedGenericAlias = GenericType<bool, u8>;
 
 pub struct DoubleLifetimeType<'a, 'b> {
     _a: &'a str,

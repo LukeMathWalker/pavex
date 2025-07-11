@@ -11,7 +11,7 @@ pub use krate_name::{
 use pavex_bp_schema::CreatedAt;
 pub(crate) use resolved_type::{
     Generic, GenericArgument, GenericLifetimeParameter, Lifetime, PathType, ResolvedType, Slice,
-    Tuple, TypeReference,
+    Tuple, TypeReference, UnknownPrimitive,
 };
 
 mod callable;

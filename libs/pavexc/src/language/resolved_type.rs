@@ -691,8 +691,14 @@ impl Display for ScalarPrimitive {
     }
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Unknown primitive type, `{name}`")]
+pub struct UnknownPrimitive {
+    pub name: String,
+}
+
 impl TryFrom<&str> for ScalarPrimitive {
-    type Error = anyhow::Error;
+    type Error = UnknownPrimitive;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let v = match value {
@@ -713,7 +719,11 @@ impl TryFrom<&str> for ScalarPrimitive {
             "bool" => Self::Bool,
             "char" => Self::Char,
             "str" => Self::Str,
-            _ => anyhow::bail!("Unknown primitive scalar type: {}", value),
+            _ => {
+                return Err(UnknownPrimitive {
+                    name: value.to_string(),
+                });
+            }
         };
         Ok(v)
     }

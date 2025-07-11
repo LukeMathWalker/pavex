@@ -2,6 +2,7 @@ use crate::{
     compiler::{
         analyses::user_components::{UserComponentId, imports::UnresolvedImport},
         component::{ConfigTypeValidationError, PrebuiltTypeValidationError},
+        resolvers::{TypeResolutionError, UnsupportedConstGeneric},
     },
     diagnostic::{
         self, CallableDefSource, ComponentKind, DiagnosticSink, OptionalLabeledSpanExt,
@@ -13,10 +14,10 @@ use guppy::graph::PackageGraph;
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use rustdoc_types::Item;
 
-use super::{AuxiliaryData, CallableResolutionError, ConstGenericsAreNotSupported, FQPath};
+use super::{AuxiliaryData, CallableResolutionError, FQPath};
 
 pub(super) fn const_generics_are_not_supported(
-    e: ConstGenericsAreNotSupported,
+    e: UnsupportedConstGeneric,
     item: &Item,
     diagnostics: &DiagnosticSink,
 ) {
@@ -40,6 +41,25 @@ pub(super) fn const_generics_are_not_supported(
     let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err_msg))
         .optional_source(source)
         .help("Remove the const generic parameter from your type definition, or use a different type.".into())
+        .build();
+    diagnostics.push(diagnostic);
+}
+
+pub(super) fn type_resolution_error(
+    e: TypeResolutionError,
+    item: &Item,
+    diagnostics: &DiagnosticSink,
+) {
+    let source = item.span.as_ref().and_then(|s| {
+        diagnostics.annotated(
+            TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
+            "The annotated item",
+        )
+    });
+    let err_msg = format!("Pavex failed to process the type you annotated.");
+    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(e).context(err_msg))
+        .optional_source(source)
+        .help("Re-run with PAVEX_DEBUG=true to get more information.".into())
         .build();
     diagnostics.push(diagnostic);
 }

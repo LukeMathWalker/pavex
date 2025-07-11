@@ -7,8 +7,8 @@ pub(super) use coordinates::resolve_annotation_coordinates;
 
 use diagnostic::{
     cannot_resolve_callable_path, const_generics_are_not_supported, invalid_config_type,
-    invalid_prebuilt_type, not_a_module, not_a_type_reexport, unknown_module_path,
-    unresolved_external_reexport,
+    invalid_prebuilt_type, not_a_module, not_a_type_reexport, type_resolution_error,
+    unknown_module_path, unresolved_external_reexport,
 };
 
 use super::{
@@ -25,7 +25,8 @@ use crate::{
         component::{ConfigType, DefaultStrategy, PrebuiltType},
         resolvers::{
             CallableResolutionError, GenericBindings, InputParameterResolutionError,
-            OutputTypeResolutionError, SelfResolutionError, resolve_type,
+            OutputTypeResolutionError, SelfResolutionError, TypeResolutionError,
+            UnsupportedConstGeneric, resolve_type,
         },
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
@@ -482,7 +483,7 @@ fn annotated_item2type(
                 )
             };
         match &imported_item.inner {
-            ItemEnum::Enum(_) | ItemEnum::Struct(_) => {}
+            ItemEnum::Enum(_) | ItemEnum::Struct(_) | ItemEnum::TypeAlias(_) => {}
             other => {
                 not_a_type_reexport(item, other.kind(), ComponentKind::ConfigType, diagnostics);
                 return Err(());
@@ -492,31 +493,85 @@ fn annotated_item2type(
     }
 
     let (item, krate) = annotated_item2def(item, krate, krate_collection, diagnostics)?;
-    match rustdoc_item_def2type(&item, krate) {
-        Ok(t) => Ok(t),
-        Err(e) => {
-            const_generics_are_not_supported(e, &item, diagnostics);
-            Err(())
-        }
-    }
+    rustdoc_item_def2type(&item, krate, krate_collection, diagnostics)
 }
 
-/// Convert an `enum` or a `struct` definition from the JSON documentation
+/// Convert an enum, a struct or a type alias definition from the JSON documentation
 /// for a crate into our own representation for types.
 ///
 /// # Panics
 ///
-/// Panics if the item isn't of kind `enum` or `struct`.
+/// Panics if the item isn't of kind enum, struct or type alias.
 fn rustdoc_item_def2type(
     item: &Item,
     krate: &Crate,
-) -> Result<ResolvedType, ConstGenericsAreNotSupported> {
+    krate_collection: &CrateCollection,
+    diagnostics: &DiagnosticSink,
+) -> Result<ResolvedType, ()> {
+    match item.inner {
+        ItemEnum::Struct(_) | ItemEnum::Enum(_) => match rustdoc_new_type_def2type(item, krate) {
+            Ok(t) => Ok(t),
+            Err(e) => {
+                const_generics_are_not_supported(e, &item, diagnostics);
+                Err(())
+            }
+        },
+        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(item, krate, krate_collection) {
+            Ok(t) => Ok(t),
+            Err(e) => {
+                type_resolution_error(e, &item, diagnostics);
+                Err(())
+            }
+        },
+        _ => unreachable!(
+            "Unexpected item type, `{}`. Expected a struct, an enum or a type alias.",
+            item.inner.kind()
+        ),
+    }
+}
+
+/// Convert a type alias definition from the JSON documentation
+/// for a crate into our own representation for types.
+///
+/// # Panics
+///
+/// Panics if the item isn't a type alias.
+fn rustdoc_type_alias2type(
+    item: &Item,
+    krate: &Crate,
+    krate_collection: &CrateCollection,
+) -> Result<ResolvedType, TypeResolutionError> {
+    let ItemEnum::TypeAlias(inner) = &item.inner else {
+        unreachable!(
+            "Unexpected item type, `{}`. Expected a a type alias.",
+            item.inner.kind()
+        )
+    };
+    let mut generic_bindings = GenericBindings::default();
+    let resolved = resolve_type(
+        &inner.type_,
+        &krate.core.package_id,
+        krate_collection,
+        &mut generic_bindings,
+    )?;
+    Ok(resolved)
+}
+
+/// Convert an enum or a struct definition from the JSON documentation
+/// for a crate into our own representation for types.
+///
+/// # Panics
+///
+/// Panics if the item isn't of kind enum or struct.
+fn rustdoc_new_type_def2type(
+    item: &Item,
+    krate: &Crate,
+) -> Result<ResolvedType, UnsupportedConstGeneric> {
     assert!(
         matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_)),
-        "Unexpected item type, `{}`. Expected a struct or enum.",
+        "Unexpected item type, `{}`. Expected a struct or an enum.",
         item.inner.kind()
     );
-
     let path = krate.import_index.items[&item.id].canonical_path();
 
     let mut generic_arguments = vec![];
@@ -548,11 +603,6 @@ fn rustdoc_item_def2type(
         base_type: path.into(),
         generic_arguments,
     }))
-}
-
-#[derive(Debug)]
-struct ConstGenericsAreNotSupported {
-    pub name: String,
 }
 
 /// Convert a free function from `rustdoc_types` into a `Callable`.
@@ -592,7 +642,7 @@ fn rustdoc_free_fn2callable(
                     callable_item: item.clone(),
                     parameter_type: input_ty.clone(),
                     parameter_index,
-                    source: Arc::new(e),
+                    source: Arc::new(e.into()),
                 }
                 .into());
             }
@@ -613,7 +663,7 @@ fn rustdoc_free_fn2callable(
                         callable_path: path,
                         callable_item: item.clone(),
                         output_type: output_ty.clone(),
-                        source: Arc::new(e),
+                        source: Arc::new(e.into()),
                     }
                     .into());
                 }
@@ -688,7 +738,7 @@ fn rustdoc_method2callable(
                     qualified_self: None,
                     package_id: krate.core.package_id.clone(),
                 },
-                source: Arc::new(e),
+                source: Arc::new(e.into()),
             }
             .into());
         }
@@ -810,7 +860,7 @@ fn rustdoc_method2callable(
                     callable_item: method_item.clone(),
                     parameter_type: parameter_type.clone(),
                     parameter_index,
-                    source: Arc::new(e),
+                    source: Arc::new(e.into()),
                 }
                 .into());
             }
@@ -831,7 +881,7 @@ fn rustdoc_method2callable(
                         callable_path: method_path,
                         callable_item: method_item.clone(),
                         output_type: output_ty.clone(),
-                        source: Arc::new(e),
+                        source: Arc::new(e.into()),
                     }
                     .into());
                 }
