@@ -264,22 +264,35 @@ impl SessionStorageBackend for RedisSessionStore {
     /// The server-side state is left unchanged.
     #[tracing::instrument(name = "Change id for server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn change_id(&self, old_id: &SessionId, new_id: &SessionId) -> Result<(), ChangeIdError> {
-        let nchanged: u64 = self
-            .conn
-            .clone()
-            .rename_nx(self.redis_key(old_id), self.redis_key(new_id))
+        // Atomically check whether a key exists and then rename if it does.
+        const LUA_RENAME_IF_EXISTS: &str = r#"
+            if redis.call('EXISTS', KEYS[1]) == 1 then
+                -- returns 1 on success or 0 if fails because KEYS[2] already exists
+                return redis.call('RENAMENX', KEYS[1], KEYS[2])
+            else
+                return -1
+            end
+        "#;
+
+        let script = redis::Script::new(LUA_RENAME_IF_EXISTS);
+        let mut conn = self.conn.clone();
+        let old_key = self.redis_key(old_id);
+        let new_key = self.redis_key(new_id);
+        let result: i32 = script
+            .key(&old_key)
+            .key(&new_key)
+            .invoke_async(&mut conn)
             .await
             .map_err(|e| ChangeIdError::Other(e.into()))?;
 
-        if nchanged == 1 {
-            Ok(())
-        } else if nchanged == 0 {
-            Err(err_duplicate(new_id).into())
-        } else {
-            return Err(ChangeIdError::Other(anyhow::anyhow!(
-                "Redis RENAMENX replied {:?}. Expected 0 or 1",
-                nchanged
-            )));
+        match result {
+            -1 => Err(err_unknown(old_id).into()),  // Key didn't exist
+            1 => Ok(()),                            // Successfully renamed
+            0 => Err(err_duplicate(new_id).into()), // Key existed but new_key already exists (RENAMENX failed)
+            other => Err(ChangeIdError::Other(anyhow::anyhow!(
+                "Redis RENAMENX replied {:?}. Expected INT 0 or 1",
+                other
+            ))),
         }
     }
 
@@ -756,5 +769,281 @@ mod tests {
         assert!(matches!(store_c.load(&session_a).await.unwrap(), None));
         assert!(matches!(store_c.load(&session_b).await.unwrap(), None));
         assert!(matches!(store_c.load(&session_c).await.unwrap(), Some(_)));
+    }
+
+    // Unhappy path tests - Error scenarios
+
+    #[tokio::test]
+    async fn test_create_duplicate_id_error() {
+        let store = create_test_store().await;
+        let (session_id, state) = create_test_record(3600);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Create initial session
+        store.create(&session_id, record).await.unwrap();
+
+        // Try to create another session with the same ID but different data
+        let (_, different_state) = create_test_record(7200);
+        let mut conflicting_state = different_state;
+        conflicting_state.insert(
+            Cow::Borrowed("conflict_field"),
+            serde_json::Value::String("this should conflict".to_string()),
+        );
+
+        let conflicting_record = SessionRecordRef {
+            state: Cow::Borrowed(&conflicting_state),
+            ttl: Duration::from_secs(1), // Short TTL to force conflict
+        };
+
+        // Verify the original session exists
+        let loaded = store.load(&session_id).await.unwrap();
+        assert!(loaded.is_some());
+
+        // Verify that attempt to create a duplicate session returns an error
+        match store.create(&session_id, conflicting_record).await {
+            Err(CreateError::DuplicateId(_)) =>  (),
+            other => panic!("Expected CreateError::DuplicateId, got {:?}", other)
+        };
+
+        // Verify the original data is still there (not overwritten)
+        let loaded_after = store.load(&session_id).await.unwrap().unwrap();
+        for (key, expected_value) in &state {
+            assert_eq!(
+                loaded_after.state.get(key).unwrap(),
+                expected_value,
+                "Original data should be preserved when session is not expired"
+            );
+        }
+
+        // Verify conflicting data was not written
+        assert!(loaded_after.state.get("conflict_field").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_update_unknown_id_error() {
+        let store = create_test_store().await;
+        let non_existent_id = SessionId::random();
+        let (_, state) = create_test_record(3600);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // Try to update a session that doesn't exist
+        let result = store.update(&non_existent_id, record).await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            pavex_session::store::errors::UpdateError::UnknownIdError(err) => {
+                assert!(err.id == non_existent_id);
+            }
+            other => panic!("Expected UnknownId error, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_ttl_unknown_id_error() {
+        let store = create_test_store().await;
+        let non_existent_id = SessionId::random();
+
+        // Try to update TTL for a session that doesn't exist
+        let result = store
+            .update_ttl(&non_existent_id, Duration::from_secs(7200))
+            .await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            pavex_session::store::errors::UpdateTtlError::UnknownId(err) => {
+                assert!(err.id == non_existent_id);
+            }
+            other => panic!("Expected UnknownId error, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_delete_unknown_id_error() {
+        let store = create_test_store().await;
+        let non_existent_id = SessionId::random();
+
+        // Try to delete a session that doesn't exist
+        let result = store.delete(&non_existent_id).await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            pavex_session::store::errors::DeleteError::UnknownId(err) => {
+                assert!(err.id == non_existent_id);
+            }
+            other => panic!("Expected UnknownId error, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_change_id_unknown_old_id_error() {
+        let store = create_test_store().await;
+        let non_existent_old_id = SessionId::random();
+        let new_id = SessionId::random();
+
+        // Try to change ID for a session that doesn't exist
+        let result = store.change_id(&non_existent_old_id, &new_id).await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            pavex_session::store::errors::ChangeIdError::UnknownId(err) => {
+                assert!(err.id == non_existent_old_id);
+            }
+            other => panic!("Expected UnknownId error, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_change_id_duplicate_new_id_error() {
+        let store = create_test_store().await;
+        let (session_id_1, state_1) = create_test_record(3600);
+        let (session_id_2, state_2) = create_test_record(3600);
+
+        // Create two different sessions
+        let record_1 = SessionRecordRef {
+            state: Cow::Borrowed(&state_1),
+            ttl: Duration::from_secs(3600),
+        };
+        let record_2 = SessionRecordRef {
+            state: Cow::Borrowed(&state_2),
+            ttl: Duration::from_secs(3600),
+        };
+
+        store.create(&session_id_1, record_1).await.unwrap();
+        store.create(&session_id_2, record_2).await.unwrap();
+
+        // Try to change session_id_1 to session_id_2 (which already exists)
+        let result = store.change_id(&session_id_1, &session_id_2).await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            pavex_session::store::errors::ChangeIdError::DuplicateId(err) => {
+                assert!(err.id == session_id_2);
+            }
+            other => panic!("Expected DuplicateId error, got: {:?}", other),
+        }
+
+        // Verify both original sessions still exist
+        assert!(store.load(&session_id_1).await.unwrap().is_some());
+        assert!(store.load(&session_id_2).await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_operations_on_expired_session() {
+        let store = create_test_store().await;
+        let (session_id, state) = create_test_record(1);
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(1), // Very short TTL
+        };
+
+        // Create session with short TTL
+        store.create(&session_id, record).await.unwrap();
+
+        // Wait for expiration
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        // Try to update expired session - should return UnknownId error
+        let (_, new_state) = create_test_record(3600);
+        let new_record = SessionRecordRef {
+            state: Cow::Borrowed(&new_state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        let update_result = store.update(&session_id, new_record).await;
+        assert!(update_result.is_err());
+        match update_result.unwrap_err() {
+            pavex_session::store::errors::UpdateError::UnknownIdError(err) => {
+                assert!(err.id == session_id);
+            }
+            other => panic!(
+                "Expected UnknownId error for expired session update, got: {:?}",
+                other
+            ),
+        }
+
+        // Try to update TTL of expired session - should return UnknownId error
+        let update_ttl_result = store
+            .update_ttl(&session_id, Duration::from_secs(7200))
+            .await;
+        assert!(update_ttl_result.is_err());
+        match update_ttl_result.unwrap_err() {
+            pavex_session::store::errors::UpdateTtlError::UnknownId(err) => {
+                assert!(err.id == session_id);
+            }
+            other => panic!(
+                "Expected UnknownId error for expired session TTL update, got: {:?}",
+                other
+            ),
+        }
+
+        // Try to delete expired session - should return UnknownId error
+        let delete_result = store.delete(&session_id).await;
+        assert!(delete_result.is_err());
+        match delete_result.unwrap_err() {
+            pavex_session::store::errors::DeleteError::UnknownId(err) => {
+                assert!(err.id == session_id);
+            }
+            other => panic!(
+                "Expected UnknownId error for expired session delete, got: {:?}",
+                other
+            ),
+        }
+
+        // Try to change ID of expired session - should return UnknownId error
+        let new_id = SessionId::random();
+        let change_id_result = store.change_id(&session_id, &new_id).await;
+        assert!(change_id_result.is_err());
+        match change_id_result.unwrap_err() {
+            pavex_session::store::errors::ChangeIdError::UnknownId(err) => {
+                assert!(err.id == session_id);
+            }
+            other => panic!(
+                "Expected UnknownId error for expired session ID change, got: {:?}",
+                other
+            ),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_serialization_error() {
+        let store = create_test_store().await;
+        let session_id = SessionId::random();
+
+        // Create a problematic state that might cause serialization issues
+        let mut state = HashMap::new();
+
+        // JSON serialization should handle this fine, but let's test with some edge cases
+        state.insert(Cow::Borrowed("inf_value"), serde_json::json!(f64::INFINITY));
+
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(3600),
+        };
+
+        // This should succeed because serde_json handles infinity as null in JSON
+        let result = store.create(&session_id, record).await;
+
+        // If it fails, it should be a serialization error
+        match result {
+            Ok(_) => {
+                // Verify we can load it back
+                let loaded = store.load(&session_id).await.unwrap().unwrap();
+                // Infinity becomes null in JSON
+                assert!(loaded.state.get("inf_value").unwrap().is_null());
+            }
+            Err(pavex_session::store::errors::CreateError::SerializationError(_)) => {
+                // This is also acceptable - serialization failed as expected
+            }
+            Err(other) => panic!("Unexpected error type: {:?}", other),
+        }
     }
 }
