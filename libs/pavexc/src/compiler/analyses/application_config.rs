@@ -251,7 +251,7 @@ fn same_type_different_key(
     comma_separated_list(
         &mut msg,
         key2component_id.keys(),
-        |k| format!("`{}`", k),
+        |k| format!("`{k}`"),
         "and",
     )
     .unwrap();

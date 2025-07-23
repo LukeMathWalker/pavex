@@ -189,7 +189,7 @@ impl GraphicalReportHandler {
         if self.links == LinkStyle::Link && diagnostic.url().is_some() {
             let url = diagnostic.url().unwrap(); // safe
             let code = if let Some(code) = diagnostic.code() {
-                format!("{} ", code)
+                format!("{code} ")
             } else {
                 "".to_string()
             };
@@ -199,15 +199,15 @@ impl GraphicalReportHandler {
                 code.style(severity_style),
                 "(link)".style(self.theme.styles.link)
             );
-            write!(header, "{}", link)?;
-            writeln!(f, "{}", header)?;
+            write!(header, "{link}")?;
+            writeln!(f, "{header}")?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
                 let url = diagnostic.url().unwrap(); // safe
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
-            writeln!(f, "{}", header)?;
+            writeln!(f, "{header}")?;
         } else {
             let prefix = match diagnostic.severity() {
                 Some(Severity::Error) | None => "ERROR",
@@ -748,7 +748,7 @@ impl GraphicalReportHandler {
                 (hl, vbar_offset)
             })
             .collect();
-        writeln!(f, "{}", underlines)?;
+        writeln!(f, "{underlines}")?;
 
         enum LabelPosition {
             Left,

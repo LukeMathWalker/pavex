@@ -201,16 +201,16 @@ impl Display for CallPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathType::ResolvedPath(p) => {
-                write!(f, "{}", p)?;
+                write!(f, "{p}")?;
             }
             CallPathType::Reference(r) => {
-                write!(f, "{}", r)?;
+                write!(f, "{r}")?;
             }
             CallPathType::Tuple(t) => {
-                write!(f, "{}", t)?;
+                write!(f, "{t}")?;
             }
             CallPathType::Slice(s) => {
-                write!(f, "{}", s)?;
+                write!(f, "{s}")?;
             }
         }
         Ok(())
@@ -228,7 +228,7 @@ impl Display for CallPathTuple {
         write!(f, "(")?;
         let last_argument_index = self.elements.len().saturating_sub(1);
         for (i, element) in self.elements.iter().enumerate() {
-            write!(f, "{}", element)?;
+            write!(f, "{element}")?;
             if i != last_argument_index {
                 write!(f, ", ")?;
             }
@@ -296,10 +296,10 @@ impl Display for CallPathGenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathGenericArgument::Type(t) => {
-                write!(f, "{}", t)?;
+                write!(f, "{t}")?;
             }
             CallPathGenericArgument::Lifetime(l) => {
-                write!(f, "{}", l)?;
+                write!(f, "{l}")?;
             }
         }
         Ok(())
@@ -310,7 +310,7 @@ impl Display for CallPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathLifetime::Static => write!(f, "'static"),
-            CallPathLifetime::Named(name) => write!(f, "'{}", name),
+            CallPathLifetime::Named(name) => write!(f, "'{name}"),
         }
     }
 }

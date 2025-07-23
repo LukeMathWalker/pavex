@@ -115,7 +115,7 @@ It's so easy to shoot yourself in the foot that it's better to avoid `&mut` refe
 
 [IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
 [Response]: /api_reference/pavex/response/struct.Response.html
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Next]: /api_reference/pavex/middleware/struct.Next.html
 [instrument]: https://docs.rs/tracing/0.1.40/tracing/trait.Instrument.html#method.instrument
 [timeout]: https://docs.rs/tokio/1.35.1/tokio/time/fn.timeout.html

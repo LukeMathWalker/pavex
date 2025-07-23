@@ -54,9 +54,8 @@ All this is done automatically for you when you run `cargo px build` or `cargo p
 [`cargo-px`][cargo-px] examines all the crates in your workspace, generates the ones
 that need it, and then goes on to complete the build process.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Client::generate]: /api_reference/pavex_cli_client/client/struct.Client.html#method.generate
-[Lifecycle::Singleton]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 [Server]: /api_reference/pavex/server/struct.Server.html
 [routes]: ../routing/index.md
 [constructors]: ../dependency_injection/index.md

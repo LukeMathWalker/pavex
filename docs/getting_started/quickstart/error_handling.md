@@ -40,5 +40,5 @@ Define a new `invalid_user_agent` function in `app/src/user_agent.rs`:
 
 The application should compile successfully now.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Response]: /api_reference/pavex/response/struct.Response.html

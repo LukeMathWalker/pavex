@@ -1984,7 +1984,7 @@ pub use pavex_macros::fallback;
 /// Currently, the following values are supported:
 /// - `non_standard_methods`: Allow non-standard HTTP methods
 /// - `any_method`: Match any HTTP method.
-///    It matches non-standard methods if `non_standard_methods` is also enabled.
+///   It matches non-standard methods if `non_standard_methods` is also enabled.
 ///
 /// ### Example: Non-standard method
 ///

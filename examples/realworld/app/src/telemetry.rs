@@ -1,4 +1,4 @@
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
 use pavex::response::Response;

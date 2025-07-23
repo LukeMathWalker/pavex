@@ -165,5 +165,6 @@ validation:
   omitted_files: warn
   absolute_links: relative_to_docs
   unrecognized_links: warn
+  anchors: warn
 not_in_nav: |
   api_reference/*

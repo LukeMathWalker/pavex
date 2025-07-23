@@ -16,5 +16,5 @@ Middlewares apply to all routes in nested [`Blueprint`s][Blueprint] that were **
 The `WRAP_2` middleware has been registered **after** the call to [`.nest`][nest],
 so it won't apply to the route registered against the nested [`Blueprint`][Blueprint], `GET /`.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[nest]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.nest
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
+[nest]: /api_reference/pavex/struct.Blueprint.html#method.nest

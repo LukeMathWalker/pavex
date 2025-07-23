@@ -47,11 +47,11 @@ Alternatively, register routes one by one using [`Blueprint::route`][Blueprint::
 
 Be careful when registering routes: their position relative to [middlewares](/guide/middleware/execution_order.md) and [error observers](/guide/errors/error_observers.md#position-matters) determines if they are affected by them, or not.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::route]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.route
-[Blueprint::routes]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.routes
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
+[Blueprint::route]: /api_reference/pavex/struct.Blueprint.html#method.route
+[Blueprint::routes]: /api_reference/pavex/struct.Blueprint.html#method.routes
 [IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
-[**Fallbacks**]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.fallback
+[**Fallbacks**]: /api_reference/pavex/struct.Blueprint.html#method.fallback
 [get_attr]: /api_reference/pavex/attr.get.html
 [post_attr]: /api_reference/pavex/attr.post.html
 [put_attr]: /api_reference/pavex/attr.put.html

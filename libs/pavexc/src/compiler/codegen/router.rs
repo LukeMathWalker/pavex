@@ -416,7 +416,7 @@ fn path_router(
                             #pavex::http::Method::#i
                         }
                     } else {
-                        let expect_msg = format!("{} is not a valid (custom) HTTP method", m);
+                        let expect_msg = format!("{m} is not a valid (custom) HTTP method");
                         quote! {
                             #pavex::http::Method::try_from(#m).expect(#expect_msg)
                         }

@@ -94,7 +94,7 @@ impl ExtractPathParamsError {
     pub fn into_response(&self) -> Response {
         match self {
             ExtractPathParamsError::InvalidUtf8InPathParameter(e) => {
-                Response::bad_request().set_typed_body(format!("Invalid URL.\n{}", e))
+                Response::bad_request().set_typed_body(format!("Invalid URL.\n{e}"))
             }
             ExtractPathParamsError::PathDeserializationError(e) => match e.kind {
                 ErrorKind::ParseErrorAtKey { .. } | ErrorKind::ParseError { .. } => {

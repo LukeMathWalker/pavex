@@ -56,7 +56,7 @@ pub(super) fn type_resolution_error(
             "The annotated item",
         )
     });
-    let err_msg = format!("Pavex failed to process the type you annotated.");
+    let err_msg = "Pavex failed to process the type you annotated.".to_string();
     let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(e).context(err_msg))
         .optional_source(source)
         .help("Re-run with PAVEX_DEBUG=true to get more information.".into())

@@ -30,7 +30,7 @@ impl std::fmt::Debug for GenericBindings {
         if !self.lifetimes.is_empty() {
             write!(f, "lifetimes: {{ ")?;
             for (name, value) in &self.lifetimes {
-                writeln!(f, "{} -> {}, ", name, value)?;
+                writeln!(f, "{name} -> {value}, ")?;
             }
             write!(f, "}}, ")?;
         }
@@ -214,7 +214,7 @@ pub(crate) fn _resolve_type(
             };
             let (global_type_id, base_type) = krate_collection
                 .get_canonical_path_by_local_type_id(used_by_package_id, id, re_exporter_crate_name)
-                .map_err(|e| TypeResolutionErrorDetails::ItemResolutionError(e))?;
+                .map_err(TypeResolutionErrorDetails::ItemResolutionError)?;
             let type_item = krate_collection.get_item_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
@@ -265,9 +265,9 @@ pub(crate) fn _resolve_type(
                                     };
                                     return Err(TypeResolutionErrorDetails::GenericKindMismatch(
                                         GenericKindMismatch {
-                                            expected_kind: "type".into(),
+                                            expected_kind: "type",
                                             parameter_name: generic_param_def.name.to_owned(),
-                                            found_kind: found.into(),
+                                            found_kind: found,
                                         },
                                     ));
                                 }
@@ -317,9 +317,9 @@ pub(crate) fn _resolve_type(
                                     };
                                     return Err(TypeResolutionErrorDetails::GenericKindMismatch(
                                         GenericKindMismatch {
-                                            expected_kind: "lifetime".into(),
+                                            expected_kind: "lifetime",
                                             parameter_name: generic_param_def.name.to_owned(),
-                                            found_kind: found.into(),
+                                            found_kind: found,
                                         },
                                     ));
                                 }
@@ -560,7 +560,7 @@ pub(crate) fn _resolve_type(
         Type::Primitive(p) => Ok(ResolvedType::ScalarPrimitive(
             p.as_str()
                 .try_into()
-                .map_err(|e| TypeResolutionErrorDetails::UnknownPrimitive(e))?,
+                .map_err(TypeResolutionErrorDetails::UnknownPrimitive)?,
         )),
         Type::Slice(type_) => {
             let inner = resolve_type(
@@ -810,7 +810,8 @@ pub(crate) fn resolve_callable(
             _ => None,
         };
 
-        let canonical_path = match parent_canonical_path {
+        
+        match parent_canonical_path {
             Some(p) => {
                 // We have already canonicalized the parent path, so we just need to append the method name and we're done.
                 let mut segments = p.segments;
@@ -859,8 +860,7 @@ pub(crate) fn resolve_callable(
                     }
                 }
             }
-        };
-        canonical_path
+        }
     };
 
     let callable = Callable {

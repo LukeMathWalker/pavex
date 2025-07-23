@@ -102,8 +102,7 @@ pub(crate) fn application_state_call_graph(
                     continue;
                 }
                 panic!(
-                    "One of the output components is not a `MatchResult` transformer: {:?}",
-                    component
+                    "One of the output components is not a `MatchResult` transformer: {component:?}"
                 );
             };
             if matcher.variant == MatchResultVariant::Err {

@@ -128,7 +128,7 @@ where
     /// handle !Send futures.
     pub(super) fn spawn(self) -> Result<thread::JoinHandle<()>, anyhow::Error> {
         let id = self.id;
-        let name = || format!("pavex-worker-{}", id);
+        let name = || format!("pavex-worker-{id}");
         thread::Builder::new()
             .name(name())
             .spawn(move || {

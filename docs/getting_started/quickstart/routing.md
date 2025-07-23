@@ -70,7 +70,7 @@ You should see `Hello, Ursula!` in your terminal if everything went well.
 [routes]: /guide/routing/index.md
 [pavex_get_attr]: /api_reference/pavex/attr.get.html
 [path_parameters]: /guide/routing/path_patterns.md#path-parameters
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [StatusCode]: /api_reference/pavex/http/struct.StatusCode.html
 [Response]: /api_reference/pavex/response/struct.Response.html
 [IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html

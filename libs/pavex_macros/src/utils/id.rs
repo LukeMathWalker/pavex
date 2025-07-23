@@ -10,7 +10,7 @@ fn callable_doc_link(impl_: Option<&ImplContext>, item: &Callable) -> Option<Str
     let name = &item.sig.ident;
     let Some(impl_) = impl_ else {
         // A free function.
-        return Some(format!("{}()", name));
+        return Some(format!("{name}()"));
     };
     if impl_.is_trait_impl {
         return None;
@@ -27,7 +27,7 @@ fn callable_doc_link(impl_: Option<&ImplContext>, item: &Callable) -> Option<Str
             return None;
         }
     };
-    Some(format!("{}::{}()", ty_name, name))
+    Some(format!("{ty_name}::{name}()"))
 }
 
 fn ty_name(ty_: &syn::Type, current: &mut String) {

@@ -232,7 +232,7 @@ fn report_non_existing_path_parameters(
             };
             let path_parameters = path_parameter_names
                 .iter()
-                .map(|p| format!("- `{}`", p))
+                .map(|p| format!("- `{p}`"))
                 .join("\n");
             let error = anyhow!(
                 "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\

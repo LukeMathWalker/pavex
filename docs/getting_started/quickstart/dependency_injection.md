@@ -91,7 +91,7 @@ multiple times for the same request.
   multiple times would be wasteful.
   As a request-scoped constructor, it's done once and the outcome is reused.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [request_scoped]: /api_reference/pavex/attr.request_scoped.html
 [PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
 [lifecycle]: ../../guide/dependency_injection/constructors.md#lifecycles

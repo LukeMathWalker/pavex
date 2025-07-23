@@ -36,7 +36,7 @@ impl std::fmt::Debug for ConstructibleDb {
                 f,
                 "- {scope_id}:\n{}",
                 // TODO: Use a PadAdapter down here to avoid allocating an intermediate string
-                textwrap::indent(&format!("{:?}", constructibles), "    ")
+                textwrap::indent(&format!("{constructibles:?}"), "    ")
             )?;
         }
         Ok(())

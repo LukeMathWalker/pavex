@@ -57,5 +57,5 @@ graph
 
 If you want to know more, read on!
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [cargo-px]: https://github.com/LukeMathWalker/cargo-px

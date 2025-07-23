@@ -11,7 +11,7 @@ You need to add a few lines to set it up:
 It's enough to add [`INJECT_RESPONSE_COOKIES`][INJECT_RESPONSE_COOKIES] to your middleware stack
 if you're already importing components from the `pavex` crate.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [CookieKit]: /api_reference/pavex/cookie/struct.CookieKit.html
 [ProcessorConfig]: /api_reference/pavex/cookie/struct.ProcessorConfig.html
 [ProcessorConfig::default]: /api_reference/pavex/cookie/struct.ProcessorConfig.html#method.default

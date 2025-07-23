@@ -66,7 +66,7 @@ impl<'a> WrappingMiddleware<'a> {
             GenericArgument::TypeParameter(ResolvedType::Generic(_)) => {}
             t => {
                 return Err(NextGenericParameterMustBeNaked {
-                    parameter: format!("{:?}", t),
+                    parameter: format!("{t:?}"),
                 });
             }
         }

@@ -179,8 +179,7 @@ impl RequestHandlerPipeline {
                 .hydrated_component(*ordered_by_registration.first().unwrap(), computation_db);
             assert!(
                 matches!(first, HydratedComponent::WrappingMiddleware(_)),
-                "First component should be a wrapping middleware, but it's a {:?}",
-                first
+                "First component should be a wrapping middleware, but it's a {first:?}"
             );
             let mut stage_ids = vec![];
             let mut pres = vec![];
@@ -358,7 +357,7 @@ impl RequestHandlerPipeline {
                     let mut buffer = String::new();
                     inputs.bindings.0.iter().map(|b| &b.type_).for_each(|t| {
                         use std::fmt::Write as _;
-                        writeln!(&mut buffer, "- {:?}", t).unwrap();
+                        writeln!(&mut buffer, "- {t:?}").unwrap();
                     });
                     tracing::debug!(
                         "The `Next` state parameter for {} contains:\n{buffer}",
@@ -598,17 +597,17 @@ impl RequestHandlerPipeline {
             let mut post_processing_index = 0u32;
             let mut get_ident = |id| match component_db.hydrated_component(id, computation_db) {
                 HydratedComponent::WrappingMiddleware(_) => {
-                    let ident = format!("wrapping_{}", wrapping_index);
+                    let ident = format!("wrapping_{wrapping_index}");
                     wrapping_index += 1;
                     ident
                 }
                 HydratedComponent::PostProcessingMiddleware(_) => {
-                    let ident = format!("post_processing_{}", post_processing_index);
+                    let ident = format!("post_processing_{post_processing_index}");
                     post_processing_index += 1;
                     ident
                 }
                 HydratedComponent::PreProcessingMiddleware(_) => {
-                    let ident = format!("pre_processing_{}", pre_processing_index);
+                    let ident = format!("pre_processing_{pre_processing_index}");
                     pre_processing_index += 1;
                     ident
                 }
@@ -813,8 +812,7 @@ impl RequestHandlerPipeline {
                 };
                 let path = callable.path.to_string();
                 let message = format!(
-                    "Request-scoped component `{}` should be invoked at most once in a request pipeline, but it's invoked {} times instead.",
-                    path, n_invocations
+                    "Request-scoped component `{path}` should be invoked at most once in a request pipeline, but it's invoked {n_invocations} times instead."
                 );
                 for call_graph in self.id2call_graph.values() {
                     call_graph.print_debug_dot(&path, component_db, computation_db);

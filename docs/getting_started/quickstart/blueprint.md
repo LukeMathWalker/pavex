@@ -7,4 +7,4 @@ You can find the [`Blueprint`][Blueprint] for the `demo` project in the `app/src
 
 --8<-- "docs/tutorials/quickstart/snaps/blueprint.snap"
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html

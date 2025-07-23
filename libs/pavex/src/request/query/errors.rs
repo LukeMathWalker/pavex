@@ -29,7 +29,7 @@ impl ExtractQueryParamsError {
     pub fn into_response(&self) -> Response {
         match self {
             Self::QueryDeserializationError(e) => Response::bad_request()
-                .set_typed_body(format!("Invalid query parameters.\n{:?}", e)),
+                .set_typed_body(format!("Invalid query parameters.\n{e:?}")),
         }
     }
 }

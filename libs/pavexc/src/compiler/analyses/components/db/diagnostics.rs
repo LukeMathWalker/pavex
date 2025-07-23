@@ -92,7 +92,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -301,7 +301,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -409,7 +409,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -487,7 +487,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -576,7 +576,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -810,7 +810,7 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p), "and").unwrap();
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{p}`"), "and").unwrap();
                     buffer
                 };
                 let error = anyhow::anyhow!(e)

@@ -381,7 +381,7 @@ fn acquire(
     if try_acquire(path, lock_try)? {
         return Ok(());
     }
-    let msg = format!("waiting for file lock on {}", msg);
+    let msg = format!("waiting for file lock on {msg}");
     SHELL.status_with_color("Blocking", &msg, &pavex_cli_shell::style::NOTE);
 
     lock_block().with_context(|| format!("failed to lock file: {}", path.display()))?;

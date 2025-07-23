@@ -919,7 +919,7 @@ pub enum GenericLifetimeParameter {
 impl Display for GenericLifetimeParameter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GenericLifetimeParameter::Named(s) => write!(f, "'{}", s),
+            GenericLifetimeParameter::Named(s) => write!(f, "'{s}"),
             GenericLifetimeParameter::Static => write!(f, "'static"),
         }
     }
@@ -1176,7 +1176,7 @@ impl Debug for Lifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Lifetime::Static => write!(f, "'static"),
-            Lifetime::Named(name) => write!(f, "'{}", name),
+            Lifetime::Named(name) => write!(f, "'{name}"),
             Lifetime::Elided => Ok(()),
         }
     }
@@ -1185,7 +1185,7 @@ impl Debug for Lifetime {
 impl Debug for GenericLifetimeParameter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GenericLifetimeParameter::Named(name) => write!(f, "'{}", name),
+            GenericLifetimeParameter::Named(name) => write!(f, "'{name}"),
             GenericLifetimeParameter::Static => write!(f, "'static"),
         }
     }

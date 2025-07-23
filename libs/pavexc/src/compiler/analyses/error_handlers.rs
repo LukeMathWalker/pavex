@@ -22,7 +22,7 @@ impl std::fmt::Debug for ErrorHandlersDb {
                 f,
                 "- {scope_id}:\n{}",
                 // TODO: Use a PadAdapter down here to avoid allocating an intermediate string
-                textwrap::indent(&format!("{:?}", error_handlers), "    ")
+                textwrap::indent(&format!("{error_handlers:?}"), "    ")
             )?;
         }
         Ok(())

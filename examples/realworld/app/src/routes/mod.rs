@@ -1,4 +1,4 @@
-use pavex::blueprint::{Blueprint, from};
+use pavex::{Blueprint, blueprint::from};
 use status::PING;
 use tags::LIST_TAGS;
 
@@ -9,21 +9,11 @@ pub mod tags;
 pub mod users;
 
 pub fn router(bp: &mut Blueprint) {
-    bp.prefix("/articles").nest({
-        let mut bp = Blueprint::new();
-        bp.routes(from![crate::routes::articles]);
-        bp
-    });
-    bp.prefix("/profiles").nest({
-        let mut bp = Blueprint::new();
-        bp.routes(from![crate::routes::profiles]);
-        bp
-    });
-    bp.nest({
-        let mut bp = Blueprint::new();
-        bp.routes(from![crate::routes::users]);
-        bp
-    });
+    bp.prefix("/articles")
+        .routes(from![crate::routes::articles]);
+    bp.prefix("/profiles")
+        .routes(from![crate::routes::profiles]);
+    bp.routes(from![crate::routes::users]);
     bp.route(PING);
     bp.route(LIST_TAGS);
 }

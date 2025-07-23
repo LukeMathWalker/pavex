@@ -4,14 +4,14 @@
   uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
   with:
     rustflags: ""
-    cache-workspaces: "./doc_examples/tutorial_generator -> ./target"
+    cache-workspaces: "./docs/tools/pxh -> ./target"
 - name: Build CLI
   run: |
-    cd doc_examples/tutorial_generator
+    cd docs/tools/pxh
     cargo build
 - name: Store CLI artifact
   uses: actions/upload-artifact@v4
   with:
-    name: tutorial_generator
-    path: doc_examples/tutorial_generator/target/debug/tutorial_generator
+    name: pxh
+    path: docs/tools/pxh/target/debug/pxh
 <%- endblock %>

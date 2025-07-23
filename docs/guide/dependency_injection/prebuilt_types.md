@@ -54,8 +54,8 @@ require it to implement the [`Send`][Send] and [`Sync`][Sync] traits.
 [lifecycles]: constructors.md#lifecycles
 [Send]: https://doc.rust-lang.org/std/marker/trait.Send.html
 [Sync]: https://doc.rust-lang.org/std/marker/trait.Sync.html
-[Blueprint::prebuilt]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.prebuilt
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::prebuilt]: /api_reference/pavex/struct.Blueprint.html#method.prebuilt
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [server_crate]: /guide/project_structure/server.md
 [prebuilt_attr]: /api_reference/pavex/attr.prebuilt.html
 [import_other_crates]: /api_reference/pavex/struct.Blueprint.html#dependencies

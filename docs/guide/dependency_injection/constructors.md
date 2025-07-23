@@ -140,11 +140,8 @@ That's why Pavex allows them to inject mutable references as input parameters.
     Check [their guide](../middleware/wrapping.md#use-with-caution) 
     to learn more about the rationale for this exception.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::constructor]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
-[Lifecycle::Singleton]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
-[Lifecycle::RequestScoped]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
-[Lifecycle::Transient]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
+[Blueprint::constructor]: /api_reference/pavex/struct.Blueprint.html#method.constructor
 [RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
 [server SDK crate]: ../project_structure/server_sdk.md
 [singleton_attr]: /api_reference/pavex/attr.singleton.html

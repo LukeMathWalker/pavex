@@ -16,8 +16,7 @@ pub fn must_be_public<T: ToTokens>(
     }
 
     let mut msg = format!(
-        "{kind} must be public.\nMark `{}` as `pub`,",
-        ident_after_visibility
+        "{kind} must be public.\nMark `{ident_after_visibility}` as `pub`,"
     );
     let suffix = " and make sure it can be imported from outside your crate.";
     // If the visibility is inherited, there is no token we can "highlight".

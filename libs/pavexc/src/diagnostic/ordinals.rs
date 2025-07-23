@@ -22,13 +22,13 @@ impl Display for ZeroBasedOrdinal {
                 let last_two_digits = n % 100;
                 let last_digit = last_two_digits % 10;
                 if last_digit == 1 && last_two_digits != 11 {
-                    write!(f, "{}st", n)
+                    write!(f, "{n}st")
                 } else if last_digit == 2 && last_two_digits != 12 {
-                    write!(f, "{}nd", n)
+                    write!(f, "{n}nd")
                 } else if last_digit == 3 && last_two_digits != 13 {
-                    write!(f, "{}rd", n)
+                    write!(f, "{n}rd")
                 } else {
-                    write!(f, "{}th", n)
+                    write!(f, "{n}th")
                 }
             }
         }

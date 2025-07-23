@@ -152,52 +152,43 @@ impl AuxiliaryData {
                 ConfigType { .. } => {
                     assert!(
                         self.config_id2type.contains_key(&id),
-                        "The type is missing for the user-registered config #{:?}",
-                        id
+                        "The type is missing for the user-registered config #{id:?}"
                     );
                     assert!(
                         self.config_id2default_strategy.contains_key(&id),
-                        "The default strategy is missing for the user-registered config #{:?}",
-                        id
+                        "The default strategy is missing for the user-registered config #{id:?}"
                     );
                     assert!(
                         self.config_id2include_if_unused.contains_key(&id),
-                        "The include policy is missing for the user-registered config #{:?}",
-                        id
+                        "The include policy is missing for the user-registered config #{id:?}"
                     );
                 }
                 RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.contains_key(&id),
-                        "The middleware chain is missing for the user-registered request handler #{:?}",
-                        id
+                        "The middleware chain is missing for the user-registered request handler #{id:?}"
                     );
                     assert!(
                         self.handler_id2error_observer_ids.contains_key(&id),
-                        "The list of error observers is missing for the user-registered request handler #{:?}",
-                        id
+                        "The list of error observers is missing for the user-registered request handler #{id:?}"
                     );
                 }
                 Fallback { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.contains_key(&id),
-                        "The middleware chain is missing for the user-registered fallback #{:?}",
-                        id
+                        "The middleware chain is missing for the user-registered fallback #{id:?}"
                     );
                     assert!(
                         self.handler_id2error_observer_ids.contains_key(&id),
-                        "The list of error observers is missing for the user-registered fallback #{:?}",
-                        id
+                        "The list of error observers is missing for the user-registered fallback #{id:?}"
                     );
                     assert!(
                         self.fallback_id2path_prefix.contains_key(&id),
-                        "There is no path prefix associated with the user-registered fallback #{:?}",
-                        id
+                        "There is no path prefix associated with the user-registered fallback #{id:?}"
                     );
                     assert!(
                         self.fallback_id2domain_guard.contains_key(&id),
-                        "There is no domain guard associated with the user-registered fallback #{:?}",
-                        id
+                        "There is no domain guard associated with the user-registered fallback #{id:?}"
                     );
                 }
                 ErrorHandler { .. }

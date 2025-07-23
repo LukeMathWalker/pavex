@@ -183,8 +183,8 @@ Pay attention to the fact that `POST_2` is not executed, even though it is a pos
 That's because of `WRAP_1`: since `POST_2` is part of the request processing pipeline that `WRAP_1` wraps around,
 it will be skipped if `WRAP_1` is skipped.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[nest]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.nest
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
+[nest]: /api_reference/pavex/struct.Blueprint.html#method.nest
 [pre-processing]: pre_processing.md
 [post-processing]: post_processing.md
 [wrapping middlewares]: wrapping.md

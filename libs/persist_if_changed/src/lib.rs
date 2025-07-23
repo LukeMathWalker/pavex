@@ -122,7 +122,7 @@ fn compute_file_checksum(file: fs_err::File) -> std::io::Result<String> {
     }
 
     let result = hasher.finalize();
-    Ok(format!("{:x}", result))
+    Ok(format!("{result:x}"))
 }
 
 /// Compute the checksum of an in-memory bytes buffer.
@@ -131,5 +131,5 @@ fn compute_buffer_checksum(buffer: &[u8]) -> String {
     let mut hasher = sha2::Sha256::new();
     hasher.update(buffer);
     let result = hasher.finalize();
-    format!("{:x}", result)
+    format!("{result:x}")
 }

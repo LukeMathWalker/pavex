@@ -925,14 +925,14 @@ impl Display for FQPath {
 impl Display for FQPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            FQPathType::ResolvedPath(p) => write!(f, "{}", p),
-            FQPathType::Reference(r) => write!(f, "{}", r),
-            FQPathType::Tuple(t) => write!(f, "{}", t),
+            FQPathType::ResolvedPath(p) => write!(f, "{p}"),
+            FQPathType::Reference(r) => write!(f, "{r}"),
+            FQPathType::Tuple(t) => write!(f, "{t}"),
             FQPathType::ScalarPrimitive(s) => {
-                write!(f, "{}", s)
+                write!(f, "{s}")
             }
             FQPathType::Slice(s) => {
-                write!(f, "{}", s)
+                write!(f, "{s}")
             }
         }
     }
@@ -965,7 +965,7 @@ impl Display for FQTuple {
         write!(f, "(")?;
         let last_element_index = self.elements.len().saturating_sub(1);
         for (i, element) in self.elements.iter().enumerate() {
-            write!(f, "{}", element)?;
+            write!(f, "{element}")?;
             if i != last_element_index {
                 write!(f, ", ")?;
             }
@@ -998,10 +998,10 @@ impl Display for FQGenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             FQGenericArgument::Type(t) => {
-                write!(f, "{}", t)
+                write!(f, "{t}")
             }
             FQGenericArgument::Lifetime(l) => {
-                write!(f, "{}", l)
+                write!(f, "{l}")
             }
         }
     }
@@ -1011,7 +1011,7 @@ impl Display for ResolvedPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ResolvedPathLifetime::Static => write!(f, "'static"),
-            ResolvedPathLifetime::Named(name) => write!(f, "{}", name),
+            ResolvedPathLifetime::Named(name) => write!(f, "{name}"),
         }
     }
 }

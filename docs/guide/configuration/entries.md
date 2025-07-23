@@ -49,12 +49,12 @@ it'll be added as a field to [`ApplicationState`][ApplicationState].
 In this case, Pavex will expect the configuration type to implement the [`Send`][Send] and [`Sync`][Sync] traits in addition
 to the other [trait requirements](#required-traits).
 
-[Lifecycle::Singleton]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
+[Lifecycle::Singleton]: /guide/dependency_injection/constructors.md#lifecycles
 [ApplicationState]: /guide/dependency_injection/application_state.md
 [Send]: https://doc.rust-lang.org/std/marker/trait.Send.html
 [Sync]: https://doc.rust-lang.org/std/marker/trait.Sync.html
-[Blueprint::config]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.config
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::config]: /api_reference/pavex/struct.Blueprint.html#method.config
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [server_crate]: /guide/project_structure/server.md
 [Debug]: https://doc.rust-lang.org/std/fmt/trait.Debug.html
 [Clone]: https://doc.rust-lang.org/std/clone/trait.Clone.html

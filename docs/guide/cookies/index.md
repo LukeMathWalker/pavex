@@ -48,7 +48,7 @@ Once everything is in place, you can start using cookies in your application:
 - Check out ["Response cookies"](response_cookies.md) to learn how to attach cookies to the response,
   to either set new cookies, update existing ones, or delete them.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [CookieKit]: /api_reference/pavex/cookie/struct.CookieKit.html
 [ProcessorConfig]: /api_reference/pavex/cookie/struct.ProcessorConfig.html
 [ProcessorConfig::default]: /api_reference/pavex/cookie/struct.ProcessorConfig.html#method.default

@@ -95,7 +95,7 @@ using Pavex's first-party extractors.
 
 [IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
 [Response]: /api_reference/pavex/response/struct.Response.html
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
 [Processing]: /api_reference/pavex/middleware/enum.Processing.html
 [Processing::Continue]: /api_reference/pavex/middleware/enum.Processing.html#variant.Continue

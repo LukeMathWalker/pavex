@@ -160,10 +160,10 @@ where
         None => String::new(),
         Some(first_elt) => {
             let mut result = String::with_capacity(separator.len() * iter.size_hint().0);
-            write!(&mut result, "{}", first_elt).unwrap();
+            write!(&mut result, "{first_elt}").unwrap();
             iter.for_each(|element| {
                 result.push_str(separator);
-                write!(&mut result, "{}", element).unwrap();
+                write!(&mut result, "{element}").unwrap();
             });
             result
         }

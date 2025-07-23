@@ -73,4 +73,4 @@ Sessions are built on top of [cookies][cookie], so both must be installed for se
 [ResponseCookies]: /api_reference/pavex/cookie/struct.ResponseCookies.html
 [inject_response_cookies]: /api_reference/pavex/cookie/fn.inject_response_cookies.html
 [finalize_session]: /api_reference/pavex_session/fn.finalize_session.html
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html

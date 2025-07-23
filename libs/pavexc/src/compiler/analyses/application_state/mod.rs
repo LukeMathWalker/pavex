@@ -184,7 +184,8 @@ impl ApplicationState {
         // We build a "mock" callable that has the right inputs in order to drive the machinery
         // that builds the dependency graph.
         let ty_ = self.type_();
-        let callable = Callable {
+        
+        Callable {
             is_async: false,
             takes_self_as_ref: false,
             path: ty_.resolved_path(),
@@ -203,8 +204,7 @@ impl ApplicationState {
                 extra_field2default_value: Default::default(),
             },
             source_coordinates: None,
-        };
-        callable
+        }
     }
 
     /// Return a bi-directional map between field names and their types.

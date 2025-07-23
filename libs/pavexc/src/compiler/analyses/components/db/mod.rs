@@ -1557,7 +1557,7 @@ impl ComponentDb {
         match self.config_id2constructor_id.get(&id) {
             Some(constructor_id) => *constructor_id,
             None => {
-                panic!("No constructor found for component {:?}", id)
+                panic!("No constructor found for component {id:?}")
             }
         }
     }
@@ -1948,8 +1948,7 @@ impl ComponentDb {
                     .unwrap_or_else(||
                         panic!(
                             "The transformed component's output type is not equivalent to the \
-                            transformer's input type.\nTransformed component: {:?}\nTransformer: {:?}",
-                            unbound_transformed_output, transformer_input_type
+                            transformer's input type.\nTransformed component: {unbound_transformed_output:?}\nTransformer: {transformer_input_type:?}"
                         )
                     );
                 let mut transformer_bindings = HashMap::new();

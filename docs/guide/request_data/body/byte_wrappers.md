@@ -54,4 +54,4 @@ You can leverage nesting to define more granular limits.
 [BufferedBody::extract]: /api_reference/pavex/request/body/struct.BufferedBody.html#method.extract
 [SizeLimitExceeded]: /api_reference/pavex/request/body/errors/enum.ExtractBufferedBodyError.html#variant.SizeLimitExceeded
 [BodySizeLimit]: /api_reference/pavex/request/body/enum.BodySizeLimit.html
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html

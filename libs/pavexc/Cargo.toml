@@ -7,6 +7,9 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[lints]
+clippy = { large_enum_variant = "allow", result_large_err = "allow" }
+
 [build-dependencies]
 vergen-gitcl = { workspace = true }
 anyhow = { workspace = true }

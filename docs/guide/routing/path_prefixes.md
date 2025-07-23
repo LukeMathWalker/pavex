@@ -45,4 +45,4 @@ your route path if that's what you want:
 
 --8<-- "docs/examples/routing/path_prefixes/consecutive.snap"
 
-[Blueprint::prefix]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.prefix
+[Blueprint::prefix]: /api_reference/pavex/struct.Blueprint.html#method.prefix

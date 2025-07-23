@@ -4,7 +4,7 @@
 server:
   ip: "0.0.0.0"
   port: 8000
-  graceful_shutdown_timeout: 1 minute
+  graceful_shutdown_timeout: "1 minute"
 greet:
   use_name: true
   greeting_message: "Thank you for choosing Pavex for your project!"

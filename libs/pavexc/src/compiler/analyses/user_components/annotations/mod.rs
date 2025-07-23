@@ -512,14 +512,14 @@ fn rustdoc_item_def2type(
         ItemEnum::Struct(_) | ItemEnum::Enum(_) => match rustdoc_new_type_def2type(item, krate) {
             Ok(t) => Ok(t),
             Err(e) => {
-                const_generics_are_not_supported(e, &item, diagnostics);
+                const_generics_are_not_supported(e, item, diagnostics);
                 Err(())
             }
         },
         ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(item, krate, krate_collection) {
             Ok(t) => Ok(t),
             Err(e) => {
-                type_resolution_error(e, &item, diagnostics);
+                type_resolution_error(e, item, diagnostics);
                 Err(())
             }
         },
@@ -547,12 +547,11 @@ fn rustdoc_type_alias2type(
             item.inner.kind()
         )
     };
-    let mut generic_bindings = GenericBindings::default();
     let resolved = resolve_type(
         &inner.type_,
         &krate.core.package_id,
         krate_collection,
-        &mut generic_bindings,
+        &GenericBindings::default(),
     )?;
     Ok(resolved)
 }

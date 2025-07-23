@@ -117,10 +117,9 @@ impl RequestHandlerPipeline {
                                             });
                                         let fn_name = fn_.sig.ident.to_string();
                                         panic!(
-                                            "Could not find a binding for input type `{:?}` in the input bindings \
+                                            "Could not find a binding for input type `{input_type:?}` in the input bindings \
                                             available to `{fn_name}`.\n\
-                                            Input bindings: {bindings}",
-                                            input_type)
+                                            Input bindings: {bindings}")
                                     }
                                     Some(i) => {
                                         let mut output = i.to_token_stream();
@@ -421,18 +420,17 @@ impl CodegenedRequestHandlerPipeline {
                     let rs_bindings = request_scoped_bindings
                         .iter()
                         .fold(String::new(), |acc, (ident, type_)| {
-                            format!("{}\n- {}: {:?}, ", acc, ident, type_)
+                            format!("{acc}\n- {ident}: {type_:?}, ")
                         });
                     let st_bindings = application_state.bindings()
                         .iter()
                         .fold(String::new(), |acc, (ident, type_)| {
-                            format!("{}\n- {}: {:?}, ", acc, ident, type_)
+                            format!("{acc}\n- {ident}: {type_:?}, ")
                         });
                     panic!(
-                        "Could not find a binding for input type `{:?}` in the application state or request-scoped bindings.\n\
+                        "Could not find a binding for input type `{type_:?}` in the application state or request-scoped bindings.\n\
                         Request-scoped bindings: {rs_bindings}\n\
                         Application state: {st_bindings}",
-                        type_,
                     );
                 };
                 if is_shared_reference {
