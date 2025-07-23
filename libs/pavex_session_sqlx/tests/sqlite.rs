@@ -716,9 +716,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::UpdateError::UnknownIdError(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session update, got: {other:?}"
-        ),
+        other => panic!("Expected UnknownId error for expired session update, got: {other:?}"),
     }
 
     // Try to update TTL of expired session - should return UnknownId error
@@ -730,9 +728,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::UpdateTtlError::UnknownId(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session TTL update, got: {other:?}"
-        ),
+        other => panic!("Expected UnknownId error for expired session TTL update, got: {other:?}"),
     }
 
     // Try to delete expired session - should return UnknownId error
@@ -742,9 +738,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::DeleteError::UnknownId(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session delete, got: {other:?}"
-        ),
+        other => panic!("Expected UnknownId error for expired session delete, got: {other:?}"),
     }
 
     // Try to change ID of expired session - should return UnknownId error
@@ -755,9 +749,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::ChangeIdError::UnknownId(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session ID change, got: {other:?}"
-        ),
+        other => panic!("Expected UnknownId error for expired session ID change, got: {other:?}"),
     }
 }
 
@@ -818,9 +810,7 @@ async fn test_database_unavailable_error() {
         pavex_session::store::errors::CreateError::Other(_) => {
             // Expected - database connection error
         }
-        other => panic!(
-            "Expected Other error for database unavailability, got: {other:?}"
-        ),
+        other => panic!("Expected Other error for database unavailability, got: {other:?}"),
     }
 
     let load_result = store.load(&session_id).await;
@@ -829,8 +819,6 @@ async fn test_database_unavailable_error() {
         pavex_session::store::errors::LoadError::Other(_) => {
             // Expected - database connection error
         }
-        other => panic!(
-            "Expected Other error for database unavailability, got: {other:?}"
-        ),
+        other => panic!("Expected Other error for database unavailability, got: {other:?}"),
     }
 }
