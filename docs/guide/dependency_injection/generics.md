@@ -1,6 +1,6 @@
 # Generics
 
-As a general rule, Pavex components aren't allowed to have generic type parameters. 
+As a general rule, Pavex components aren't allowed to have generic type parameters.
 
 There is one exception: the signature of a constructor can include generic type parameters, as long as they are [**output-driven**](#output-driven).
 

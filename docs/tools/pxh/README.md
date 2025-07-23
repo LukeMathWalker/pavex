@@ -122,7 +122,7 @@ Extracts these two snippets:
   }
   ```
   ````
-- Full: 
+- Full:
   ````text
   ```rust
   fn greet() {
@@ -139,7 +139,7 @@ If you want to exclude some lines, you can either use:
   For example:
   ```rust
   //! px:example_snippet
-  
+
   fn main() {
       println!("Hello, world!");
       println!("Skipped line!"); // px:example_snippet:skip
@@ -176,8 +176,8 @@ If you want to exclude some lines, you can either use:
   ```
   ````
 
-If no other snippets are defined in the same file, you can omit the snippet name in skip comments—i.e. `// px::skip`, 
-`// px::skip:start` and `// px::skip:end` will be accepted.  
+If no other snippets are defined in the same file, you can omit the snippet name in skip comments—i.e. `// px::skip`,
+`// px::skip:start` and `// px::skip:end` will be accepted.\
 You can also omit the snippet name if you want the marked lines to be skipped by all snippets that would include them.
 
 ### Highlighting lines
@@ -193,7 +193,9 @@ fn main() {
     println!("Highlighted line!"); // px:example_snippet:hl
 }
 ```
+
 extracts:
+
 ````text
 ```rust hl_lines="3"
 fn main() {
@@ -218,7 +220,9 @@ fn greet(/* px::ann:1 */ name: String) {
     println!("Hello, {name}!");
 }
 ```
+
 extracts:
+
 ````text
 ```rust
 fn greet(/* (1)! */ name: String) {

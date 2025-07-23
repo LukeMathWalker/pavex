@@ -12,7 +12,7 @@ Use [`insert`][insert] to store an entry in the server-side state of your sessio
 
 --8<-- "docs/examples/sessions/postgres/server_insert.snap"
 
-1. Pavex knows how to inject a `&mut Session` or a `&Session` as an input parameter 
+1. Pavex knows how to inject a `&mut Session` or a `&Session` as an input parameter
    thanks to [your `pavex_session` import](installation.md#blueprint).
 
 In the example above, [`insert`][insert] will create a new `user.id` entry in the session state.
