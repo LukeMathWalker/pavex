@@ -1,16 +1,20 @@
-use convert_case::{Case, Casing};
-use quote::{format_ident, quote, quote_spanned};
-use syn::Ident;
+use quote::quote;
 
-use crate::{
+use crate::utils::{
+    AnnotationCodegen,
     fn_like::{Callable, CallableAnnotation, ImplContext},
-    utils::AnnotationCodegen,
+    id::{callable_id_def, default_id},
 };
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for the error handler macro.
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
+    /// Whether the error handler should be use as the default
+    /// whenever an error of the matching type is emitted.
+    ///
+    /// If omitted, default to true.
+    pub default: Option<bool>,
     pub pavex: Option<syn::Ident>,
 }
 
@@ -18,14 +22,16 @@ pub struct InputSchema {
 pub struct Properties {
     pub id: Option<syn::Ident>,
     pub error_ref_input_index: usize,
+    pub default: Option<bool>,
     pub pavex: Option<syn::Ident>,
 }
 
 impl Properties {
     pub fn new(schema: InputSchema, error_ref_input_index: usize) -> Self {
-        let InputSchema { id, pavex } = schema;
+        let InputSchema { id, pavex, default } = schema;
         Self {
             id,
+            default,
             error_ref_input_index,
             pavex,
         }
@@ -48,7 +54,7 @@ impl CallableAnnotation for ErrorHandlerAnnotation {
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
         let error_ref_index = find_error_ref_index(&item).map_err(|e| e.write_errors())?;
         let properties = Properties::new(metadata, error_ref_index);
-        Ok(emit(impl_.map(|i| i.self_ty), item.sig.ident, properties))
+        Ok(emit(impl_, item, properties))
     }
 }
 
@@ -99,70 +105,35 @@ fn find_error_ref_index(func: &Callable) -> Result<usize, darling::Error> {
 
 /// Decorate the input with a `#[diagnostic::pavex::wrap]` attribute
 /// that matches the provided properties.
-fn emit(self_ty: Option<&syn::Type>, name: Ident, properties: Properties) -> AnnotationCodegen {
+fn emit(impl_: Option<ImplContext>, item: Callable, properties: Properties) -> AnnotationCodegen {
     let Properties {
         id,
         error_ref_input_index,
         pavex,
+        default,
     } = properties;
-    // Use the span of the function name if no identifier is provided.
-    let id_span = id.as_ref().map(|id| id.span()).unwrap_or(name.span());
+    let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
+    let id_str = id.to_string();
 
-    let name = name.to_string();
-    let handler_path = if let Some(syn::Type::Path(self_ty)) = self_ty {
-        let ty_name = &self_ty
-            .path
-            .segments
-            .last()
-            .expect("The type path must contains at least one segment, the type name")
-            .ident;
-        format!("{}::{}", ty_name, name)
-    } else {
-        name
+    let mut properties = quote! {
+        id = #id_str,
+        error_ref_input_index = #error_ref_input_index,
     };
-
-    // If the user didn't specify an identifier, generate one based on the function name.
-    let id = id.unwrap_or_else(|| {
-        format_ident!(
-            "{}",
-            handler_path.replace("::", "_").to_case(Case::Constant)
-        )
-    });
-    let properties = quote! {
-        id = #id,
-        error_ref_input_index = #error_ref_input_index
-    };
-
-    let id_docs = format!(
-        r#"A strongly-typed id to add [`{handler_path}`] as an error handler to your Pavex application.
-
-# Example
-
-```rust,ignore
-use pavex::blueprint::Blueprint;
-// [...]
-// ^ Import `{id}` here
-
-let mut bp = Blueprint::new();
-// Add `{handler_path}` as an error handler to your application.
-bp.error_handler({id});
-```"#
-    );
-    let pavex = match pavex {
-        Some(c) => quote! { #c },
-        None => quote! { ::pavex },
-    };
-    let id_def = quote_spanned! { id_span =>
-        #[doc = #id_docs]
-        pub const #id: #pavex::blueprint::reflection::WithLocation<#pavex::blueprint::reflection::RawIdentifiers> =
-            #pavex::with_location!(#pavex::blueprint::reflection::RawIdentifiers {
-                import_path: concat!(module_path!(), "::", #handler_path),
-                macro_name: "error_handler",
-            });
-    };
-
+    if let Some(default) = default {
+        properties.extend(quote! { default = #default, });
+    }
     AnnotationCodegen {
-        id_def: Some(id_def),
+        id_def: Some(callable_id_def(
+            &id,
+            pavex.as_ref(),
+            "error_handler",
+            "ErrorHandler",
+            "an error handler",
+            "error handler",
+            true,
+            impl_.as_ref(),
+            &item,
+        )),
         new_attributes: vec![
             syn::parse_quote! { #[diagnostic::pavex::error_handler(#properties)] },
         ],

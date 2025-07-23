@@ -233,7 +233,7 @@ impl RustdocGlobalFsCache {
         // The cost we pay: the user will have to re-generate the documentation for all their crates
         // when they upgrade Pavex.
         // We can improve this in the future, if needed.
-        let cache_path = cache_dir.join(format!("{}.db", pavex_fingerprint));
+        let cache_path = cache_dir.join(format!("{pavex_fingerprint}.db"));
 
         let manager = SqliteConnectionManager::file(cache_dir.join(cache_path));
         let pool = r2d2::Pool::builder()

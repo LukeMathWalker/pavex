@@ -1,0 +1,30 @@
+From 88df6c79cc52acdf8f4847c69b02237b359fd30f Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:57:26 +0200
+Subject: [PATCH 32/32] Revert "Greet test annotations"
+
+This reverts commit 55cf090221161e8350067bf613cc2256dad9ddeb.
+---
+ server/tests/integration/greet.rs | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/server/tests/integration/greet.rs b/server/tests/integration/greet.rs
+index 947ca6f..5a5d7f5 100644
+--- a/server/tests/integration/greet.rs
++++ b/server/tests/integration/greet.rs
+@@ -19,7 +19,6 @@ async fn greet_happy_path() {
+     assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
+ }
+ 
+-// px:greet_unhappy_test:start
+ #[tokio::test]
+ async fn non_utf8_user_agent_is_rejected() {
+     let api = TestApi::spawn().await;
+@@ -39,4 +38,3 @@ async fn non_utf8_user_agent_is_rejected() {
+         "The `User-Agent` header value can only use ASCII printable characters."
+     );
+ }
+-// px:greet_unhappy_test:end
+-- 
+2.39.5 (Apple Git-154)
+

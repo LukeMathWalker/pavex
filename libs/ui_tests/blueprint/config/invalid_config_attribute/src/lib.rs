@@ -1,21 +1,20 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::f;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
-#[pavex::config(key = "a")]
+#[pavex::config(key = "a", id = "A_")]
 pub struct A<'a> {
     pub a: &'a str,
 }
 
 #[derive(Clone)]
 /// One generic parameter
-#[pavex::config(key = "b")]
+#[pavex::config(key = "b", id = "B_")]
 pub struct B<T>(T);
 
 #[derive(Clone)]
 /// More than one lifetime
-#[pavex::config(key = "c")]
+#[pavex::config(key = "c", id = "C_")]
 pub struct C<'a, 'b, 'c> {
     pub a: &'a str,
     pub b: &'b str,
@@ -24,12 +23,12 @@ pub struct C<'a, 'b, 'c> {
 
 #[derive(Clone)]
 /// More than one generic parameter
-#[pavex::config(key = "d")]
+#[pavex::config(key = "d", id = "D_")]
 pub struct D<T, S, Z>(T, S, Z);
 
 #[derive(Clone)]
 #[allow(dead_code)]
-#[pavex::config(key = "f")]
+#[pavex::config(key = "f", id = "F_")]
 // Some static, some elided.
 pub struct F<'a, 'b>(std::borrow::Cow<'a, str>, &'b str);
 
@@ -73,6 +72,7 @@ mod private {
     pub mod not_a_type {}
 }
 
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -80,6 +80,6 @@ pub fn handler() -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

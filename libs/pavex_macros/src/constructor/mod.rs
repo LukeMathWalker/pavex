@@ -1,5 +1,6 @@
-use crate::fn_like::{Callable, CallableAnnotation, ImplContext};
-use crate::utils::{AnnotationCodegen, CloningStrategy, CloningStrategyFlags};
+use crate::utils::fn_like::{Callable, CallableAnnotation, ImplContext};
+use crate::utils::id::{callable_id_def, default_id};
+use crate::utils::{AnnotationCodegen, CloningPolicy, CloningPolicyFlags};
 use darling::util::Flag;
 use lifecycle::Lifecycle;
 use quote::quote;
@@ -7,89 +8,27 @@ use quote::quote;
 mod lifecycle;
 
 #[derive(darling::FromMeta, Debug, Clone)]
-/// The available options for `#[pavex::constructor]`.
-pub struct InputSchema {
-    pub singleton: Flag,
-    pub request_scoped: Flag,
-    pub transient: Flag,
-    pub clone_if_necessary: Flag,
-    pub never_clone: Flag,
-    pub error_handler: Option<String>,
+pub struct ConstructorAllows {
+    unused: Flag,
 }
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for `#[pavex::request_scoped]`, `#[pavex::transient]`
 /// and `#[pavex::singleton]`.
-/// Everything in [`InputSchema`], minus `lifecycle`.
 pub struct ShorthandSchema {
+    pub id: Option<syn::Ident>,
+    pub pavex: Option<syn::Ident>,
     pub clone_if_necessary: Flag,
     pub never_clone: Flag,
-    pub error_handler: Option<String>,
-}
-
-impl TryFrom<InputSchema> for Properties {
-    type Error = darling::Error;
-
-    fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let InputSchema {
-            singleton,
-            request_scoped,
-            transient,
-            clone_if_necessary,
-            never_clone,
-            error_handler,
-        } = input;
-
-        let lifecycle = match (
-            singleton.is_present(),
-            request_scoped.is_present(),
-            transient.is_present(),
-        ) {
-            (true, false, false) => Lifecycle::Singleton,
-            (false, true, false) => Lifecycle::RequestScoped,
-            (false, false, true) => Lifecycle::Transient,
-            (false, false, false) => {
-                return Err(darling::Error::custom(
-                    "You must specify the lifecycle of your constructor. It can either be `singleton`, `request_scoped`, or `transient`",
-                ));
-            }
-            _ => {
-                return Err(darling::Error::custom(
-                    "A constructor can't have multiple lifecycles. You can only specify *one* of `singleton`, `request_scoped`, or `transient`.",
-                ));
-            }
-        };
-
-        let Ok(cloning_strategy) = CloningStrategyFlags {
-            clone_if_necessary,
-            never_clone,
-        }
-        .try_into() else {
-            return Err(darling::Error::custom(
-                "A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.",
-            ));
-        };
-
-        Ok(Properties {
-            lifecycle,
-            cloning_strategy,
-            error_handler,
-        })
-    }
+    pub allow: Option<ConstructorAllows>,
 }
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
-pub struct Properties {
-    pub lifecycle: Lifecycle,
-    pub cloning_strategy: Option<CloningStrategy>,
-    pub error_handler: Option<String>,
-}
-
-#[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
-/// Everything in [`Properties`], minus `lifecycle`.
 pub struct ShorthandProperties {
-    pub cloning_strategy: Option<CloningStrategy>,
-    pub error_handler: Option<String>,
+    pub cloning_policy: Option<CloningPolicy>,
+    pub id: Option<syn::Ident>,
+    pub pavex: Option<syn::Ident>,
+    pub allow_unused: Option<bool>,
 }
 
 impl TryFrom<ShorthandSchema> for ShorthandProperties {
@@ -99,9 +38,11 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
         let ShorthandSchema {
             clone_if_necessary,
             never_clone,
-            error_handler,
+            id,
+            pavex,
+            allow,
         } = input;
-        let Ok(cloning_strategy) = CloningStrategyFlags {
+        let Ok(cloning_policy) = CloningPolicyFlags {
             clone_if_necessary,
             never_clone,
         }
@@ -110,32 +51,14 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
                 "A constructor can't have multiple cloning strategies. You can only specify *one* of `never_clone` and `clone_if_necessary`.",
             ));
         };
+        let allow_unused = allow.as_ref().map(|a| a.unused.is_present());
 
         Ok(Self {
-            cloning_strategy,
-            error_handler,
+            cloning_policy,
+            id,
+            pavex,
+            allow_unused,
         })
-    }
-}
-
-pub struct ConstructorAnnotataion;
-
-impl CallableAnnotation for ConstructorAnnotataion {
-    const PLURAL_COMPONENT_NAME: &str = "Constructors";
-
-    const ATTRIBUTE: &str = "#[pavex::constructor]";
-
-    type InputSchema = InputSchema;
-
-    fn codegen(
-        _impl_: Option<ImplContext>,
-        metadata: Self::InputSchema,
-        _item: Callable,
-    ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        let properties = metadata
-            .try_into()
-            .map_err(|e: darling::Error| e.write_errors())?;
-        Ok(emit(properties))
     }
 }
 
@@ -149,11 +72,11 @@ impl CallableAnnotation for RequestScopedAnnotation {
     type InputSchema = ShorthandSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
-        _item: Callable,
+        item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        shorthand(metadata, Lifecycle::RequestScoped)
+        shorthand(impl_, metadata, item, Lifecycle::RequestScoped)
     }
 }
 
@@ -167,11 +90,11 @@ impl CallableAnnotation for TransientAnnotation {
     type InputSchema = ShorthandSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
-        _item: Callable,
+        item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        shorthand(metadata, Lifecycle::Transient)
+        shorthand(impl_, metadata, item, Lifecycle::Transient)
     }
 }
 
@@ -185,58 +108,60 @@ impl CallableAnnotation for SingletonAnnotation {
     type InputSchema = ShorthandSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
-        _item: Callable,
+        item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        shorthand(metadata, Lifecycle::Singleton)
+        shorthand(impl_, metadata, item, Lifecycle::Singleton)
     }
 }
 
 fn shorthand(
+    impl_: Option<ImplContext>,
     schema: ShorthandSchema,
+    item: Callable,
     lifecycle: Lifecycle,
 ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
     let ShorthandProperties {
-        cloning_strategy,
-        error_handler,
+        cloning_policy,
+        id,
+        pavex,
+        allow_unused,
     } = schema
         .try_into()
         .map_err(|e: darling::Error| e.write_errors())?;
-    let properties = Properties {
-        lifecycle,
-        cloning_strategy,
-        error_handler,
-    };
-    Ok(emit(properties))
-}
+    let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
+    let id_str = id.to_string();
 
-/// Decorate the input with a `#[diagnostic::pavex::constructor]` attribute
-/// that matches the provided properties.
-fn emit(properties: Properties) -> AnnotationCodegen {
-    let Properties {
-        lifecycle,
-        cloning_strategy,
-        error_handler,
-    } = properties;
     let mut properties = quote! {
+        id = #id_str,
         lifecycle = #lifecycle,
     };
-    if let Some(cloning_strategy) = cloning_strategy {
+    if let Some(cloning_policy) = cloning_policy {
         properties.extend(quote! {
-            cloning_strategy = #cloning_strategy,
+            cloning_policy = #cloning_policy,
         });
     }
-    if let Some(error_handler) = error_handler {
+    if let Some(allow_unused) = allow_unused {
         properties.extend(quote! {
-            error_handler = #error_handler,
+            allow_unused = #allow_unused,
         });
     }
 
-    AnnotationCodegen {
-        id_def: None,
+    Ok(AnnotationCodegen {
+        id_def: Some(callable_id_def(
+            &id,
+            pavex.as_ref(),
+            "constructor",
+            "Constructor",
+            "a constructor",
+            "constructor",
+            true,
+            impl_.as_ref(),
+            &item,
+        )),
         new_attributes: vec![syn::parse_quote! {
             #[diagnostic::pavex::constructor(#properties)]
         }],
-    }
+    })
 }

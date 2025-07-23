@@ -1,13 +1,13 @@
-use pavex::blueprint::Blueprint;
 use pavex::connection::ConnectionInfo;
-use pavex::f;
 use pavex::request::{
     body::RawIncomingBody,
     path::{MatchedPathPattern, RawPathParams},
     RequestHead,
 };
 use pavex::router::AllowedMethods;
+use pavex::Blueprint;
 
+#[pavex::fallback]
 pub fn handler(
     _info: &ConnectionInfo,
     _head: &RequestHead,
@@ -23,9 +23,9 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.prefix("/nested").nest({
         let mut bp = Blueprint::new();
-        bp.fallback(f!(crate::handler));
+        bp.fallback(HANDLER);
         bp
     });
-    bp.fallback(f!(crate::handler));
+    bp.fallback(HANDLER);
     bp
 }

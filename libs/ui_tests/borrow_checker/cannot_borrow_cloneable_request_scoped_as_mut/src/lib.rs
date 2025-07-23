@@ -1,21 +1,22 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 use pavex::response::Response;
 
 #[derive(Clone)]
 pub struct A;
 
+#[pavex::request_scoped(clone_if_necessary)]
 pub fn build() -> A {
     A
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: &mut A) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(self::build)).clone_if_necessary();
-    bp.route(GET, "/", f!(self::handler));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

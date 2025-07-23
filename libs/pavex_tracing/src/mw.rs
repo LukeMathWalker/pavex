@@ -14,7 +14,7 @@ use tracing::Instrument;
 /// Use [`Blueprint::wrap`] to register `logger` as a middleware:
 ///
 /// ```rust
-/// use pavex::blueprint::Blueprint;
+/// use pavex::Blueprint;
 /// use pavex_tracing::LOGGER;
 ///
 /// let mut bp = Blueprint::new();
@@ -24,7 +24,7 @@ use tracing::Instrument;
 /// You will also need to register a constructor for [`RootSpan`].
 /// Check out its documentation for more information.
 ///
-/// [`Blueprint::wrap`]: pavex::blueprint::Blueprint::wrap
+/// [`Blueprint::wrap`]: pavex::Blueprint::wrap
 #[pavex::wrap]
 pub async fn logger<C>(root_span: RootSpan, next: Next<C>) -> Response
 where

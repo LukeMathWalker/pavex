@@ -10,8 +10,8 @@ error: unreachable `pub` item
 note: the lint level is defined here
  --> tests/config/fail/unreachable_pub.rs:4:5
   |
-4 |     #[config(key = "a")]
-  |     ^^^^^^^^^^^^^^^^^^^^
+4 |     #[config(key = "a", id = "A_")]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   = note: this error originates in the attribute macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: unreachable `pub` item

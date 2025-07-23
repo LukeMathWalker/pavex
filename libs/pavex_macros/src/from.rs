@@ -22,7 +22,11 @@ pub fn from_(input: TokenStream) -> TokenStream {
         return if paths.len() == 1 {
             // If only `*` was provided, return `Sources::All`
             quote! {
-                ::pavex::with_location!(::pavex::blueprint::reflection::Sources::All)
+                ::pavex::blueprint::Import {
+                    sources: ::pavex::blueprint::reflection::Sources::All,
+                    created_at: ::pavex::created_at!(),
+                    relative_to: ::std::module_path!(),
+                }
             }
             .into()
         } else {
@@ -53,7 +57,11 @@ pub fn from_(input: TokenStream) -> TokenStream {
     match error {
         Some(err) => err.to_compile_error().into(),
         None => quote! {
-            ::pavex::with_location!(::pavex::blueprint::reflection::Sources::Some(vec![#(#sources.into()),*]))
+            ::pavex::blueprint::Import {
+                sources: ::pavex::blueprint::reflection::Sources::Some(vec![#(#sources.into()),*]),
+                created_at: ::pavex::created_at!(),
+                relative_to: ::std::module_path!(),
+            }
         }
         .into(),
     }

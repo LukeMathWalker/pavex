@@ -2,7 +2,8 @@
 //!
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
-pub use pavex_reflection::{CreatedAt, CreatedBy, Location, RawIdentifiers};
+use pavex_reflection::AnnotationCoordinates;
+pub use pavex_reflection::{CreatedAt, CreatedBy, Location};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fmt::Formatter;
@@ -115,6 +116,11 @@ impl From<RoutesImport> for Component {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RoutesImport {
     pub sources: Sources,
+    /// The path of the module where this import was created (i.e. `from!` was invoked).
+    ///
+    /// It is used to resolve relative paths in the `from!` macro, i.e. paths starting
+    /// with `super` or `self`.
+    pub relative_to: String,
     pub created_at: CreatedAt,
     pub registered_at: Location,
 }
@@ -122,6 +128,11 @@ pub struct RoutesImport {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Import {
     pub sources: Sources,
+    /// The path of the module where this import was created (i.e. `from!` was invoked).
+    ///
+    /// It is used to resolve relative paths in the `from!` macro, i.e. paths starting
+    /// with `super` or `self`.
+    pub relative_to: String,
     pub created_at: CreatedAt,
     pub registered_at: Location,
 }
@@ -129,130 +140,116 @@ pub struct Import {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A route registered against a `Blueprint` via `Blueprint::route`.
 pub struct Route {
-    /// The path of the route.
-    pub path: String,
-    /// The HTTP method guard for the route.
-    pub method_guard: MethodGuard,
-    /// The callable in charge of processing incoming requests for this route.
-    pub request_handler: Callable,
-    /// The callable in charge of processing errors returned by the request handler, if any.
-    pub error_handler: Option<Callable>,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
+    /// The callable in charge of processing errors returned by this route, if any.
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A request handler registered against a `Blueprint` via `Blueprint::fallback` to
 /// process requests that don't match any of the registered routes.
 pub struct Fallback {
-    /// The callable in charge of processing incoming requests.
-    pub request_handler: Callable,
-    /// The callable in charge of processing errors returned by the request handler, if any.
-    pub error_handler: Option<Callable>,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
+    /// The callable in charge of processing errors returned by this fallback, if any.
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// An error observer registered against a `Blueprint` via `Blueprint::error_observer` to
 /// intercept unhandled errors.
 pub struct ErrorObserver {
-    /// The callable in charge of processing unhandled errors.
-    pub error_observer: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// An error handler registered against a `Blueprint` via `Blueprint::error_handler`.
 pub struct ErrorHandler {
-    /// The callable in charge of processing the error.
-    pub error_handler: Callable,
-    /// The index (as an input parameter) of the reference to the error type being handled.
-    pub error_ref_input_index: usize,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A type registered against a `Blueprint` via `Blueprint::prebuilt` to
 /// be added as an input parameter to `ApplicationState::new`.
 pub struct PrebuiltType {
-    /// The type.
-    pub input: Type,
+    /// The coordinates of the annotated type.
+    pub coordinates: AnnotationCoordinates,
     /// The strategy dictating when the prebuilt type can be cloned.
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
+    /// The location where this prebuilt type was registered in the application code.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A type registered against a `Blueprint` via `Blueprint::config` to
 /// become part of the overall configuration for the application.
 pub struct ConfigType {
-    /// The type.
-    pub input: Type,
-    /// The field name.
-    pub key: String,
+    /// The coordinates of the annotated type.
+    pub coordinates: AnnotationCoordinates,
     /// The strategy dictating when the config type can be cloned.
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     /// Whether to use `Default::default` to generate default configuration
     /// values if the user hasn't specified any.
     pub default_if_missing: Option<bool>,
     /// Whether to include the config type as a field in the generated
     /// configuration struct even if it was never injected.
     pub include_if_unused: Option<bool>,
+    /// The location where this configuration type was registered in the application code.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A constructor registered against a `Blueprint` via `Blueprint::constructor`.
 pub struct Constructor {
-    /// The callable in charge of constructing the desired type.
-    pub constructor: Callable,
+    /// The coordinates of the annotated constructor.
+    pub coordinates: AnnotationCoordinates,
     /// The lifecycle of the constructed type.
-    pub lifecycle: Lifecycle,
+    pub lifecycle: Option<Lifecycle>,
     /// The strategy dictating when the constructed type can be cloned.
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     /// The callable in charge of processing errors returned by this constructor, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
     /// Lint settings for this constructor.
     pub lints: BTreeMap<Lint, LintSetting>,
+    /// The location where this constructor was registered in the application code.
+    pub registered_at: Location,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::wrap`.
 pub struct WrappingMiddleware {
-    /// The callable that executes the middleware's logic.
-    pub middleware: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::post_process`.
 pub struct PostProcessingMiddleware {
-    /// The callable that executes the middleware's logic.
-    pub middleware: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<Callable>,
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 /// A middleware registered against a `Blueprint` via `Blueprint::pre_process`.
 pub struct PreProcessingMiddleware {
-    /// The callable that executes the middleware's logic.
-    pub middleware: Callable,
+    pub coordinates: AnnotationCoordinates,
+    /// The location where the component was registered against the `Blueprint`.
+    pub registered_at: Location,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<Callable>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
-/// A "callable" registered against a `Blueprint`—either a free function or a method,
-/// used as a request handler, error handler or constructor.
-pub struct Callable {
-    /// Metadata that uniquely identifies the callable.
-    pub callable: RawIdentifiers,
-    /// The location where the callable was registered against the `Blueprint`.
-    pub registered_at: Location,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
-/// A type (enum or struct) registered against a `Blueprint`.
-pub struct Type {
-    /// Metadata that uniquely identifies the type.
-    pub type_: RawIdentifiers,
-    /// The location where the type was registered against the `Blueprint`.
-    pub registered_at: Location,
+    pub error_handler: Option<ErrorHandler>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -311,7 +308,7 @@ impl fmt::Display for Lifecycle {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
-pub enum CloningStrategy {
+pub enum CloningPolicy {
     /// Pavex will **never** try clone the output type returned by the constructor.
     NeverClone,
     /// Pavex will only clone the output type returned by this constructor if it's

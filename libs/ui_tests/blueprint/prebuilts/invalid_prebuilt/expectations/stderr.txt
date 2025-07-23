@@ -1,108 +1,56 @@
 [31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
-  [31m│[0m `app::B1` has a generic type parameter, `T`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:22:1]
-  [31m│[0m  [2m22[0m │
-  [31m│[0m  [2m23[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
-  [31m│[0m  [2m24[0m │ [35;1m│[0m   #[pavex::prebuilt]
-  [31m│[0m  [2m25[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct B1<T>(T);
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
-  [31m│[0m  [2m26[0m │
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Remove all generic type parameters from the definition of your
-  [31m│[0m         configuration type.
-[31;1mERROR[0m:
-  [31m×[0m Prebuilt types can't have unassigned generic type parameters.
-  [31m│[0m `app::D1` has 3 generic type parameters: `T`, `S` and `Z`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:26:1]
-  [31m│[0m  [2m26[0m │
-  [31m│[0m  [2m27[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
-  [31m│[0m  [2m28[0m │ [35;1m│[0m   #[pavex::prebuilt]
-  [31m│[0m  [2m29[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct D1<T, S, Z>(T, S, Z);
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
-  [31m│[0m  [2m30[0m │
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Remove all generic type parameters from the definition of your
-  [31m│[0m         configuration type.
-[31;1mERROR[0m:
-  [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
-  [31m│[0m `app::A1` has a named lifetime parameter, `'a`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:30:1]
-  [31m│[0m  [2m30[0m │
-  [31m│[0m  [2m31[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
-  [31m│[0m  [2m32[0m │ [35;1m│[0m   #[pavex::prebuilt]
-  [31m│[0m  [2m33[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct A1<'a> {
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
-  [31m│[0m  [2m34[0m │         pub a: &'a str,
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
-  [31m│[0m         configuration type.
-[31;1mERROR[0m:
-  [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
-  [31m│[0m `app::C1` has 3 named lifetime parameters: `'a`, `'b` and `'c`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:36:1]
-  [31m│[0m  [2m36[0m │
-  [31m│[0m  [2m37[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
-  [31m│[0m  [2m38[0m │ [35;1m│[0m   #[pavex::prebuilt]
-  [31m│[0m  [2m39[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct C1<'a, 'b, 'c> {
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
-  [31m│[0m  [2m40[0m │         pub a: &'a str,
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
-  [31m│[0m         configuration type.
-[31;1mERROR[0m:
-  [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
-  [31m│[0m `app::A` has a named lifetime parameter, `'a`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:51:1]
-  [31m│[0m  [2m51[0m │     bp.import(from![crate]);
-  [31m│[0m  [2m52[0m │     bp.prebuilt(t!(crate::A));
-  [31m│[0m     · [35;1m                ──────┬─────[0m
-  [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
-  [31m│[0m         configuration type.
-[31;1mERROR[0m:
-  [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::B` has a generic type parameter, `T`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:52:1]
-  [31m│[0m  [2m52[0m │     bp.prebuilt(t!(crate::A));
-  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
-  [31m│[0m     · [35;1m                ──────┬─────[0m
-  [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::C));
-  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:3:1]
+  [31m│[0m  [2m3[0m │
+  [31m│[0m  [2m4[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
+  [31m│[0m  [2m5[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "B_")]
+  [31m│[0m  [2m6[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct B<T>(T);
+  [31m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
+  [31m│[0m  [2m7[0m │
+  [31m│[0m    ╰────
   [31m│[0m   [36mhelp:[0m Remove all generic type parameters from the definition of your
-  [31m│[0m         configuration type.
-[31;1mERROR[0m:
-  [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
-  [31m│[0m `app::C` has 3 named lifetime parameters: `'a`, `'b` and `'c`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:53:1]
-  [31m│[0m  [2m53[0m │     bp.prebuilt(t!(crate::B));
-  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::C));
-  [31m│[0m     · [35;1m                ──────┬─────[0m
-  [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::D));
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.
 [31;1mERROR[0m:
   [31m×[0m Prebuilt types can't have unassigned generic type parameters.
   [31m│[0m `app::D` has 3 generic type parameters: `T`, `S` and `Z`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:54:1]
-  [31m│[0m  [2m54[0m │     bp.prebuilt(t!(crate::C));
-  [31m│[0m  [2m55[0m │     bp.prebuilt(t!(crate::D));
-  [31m│[0m     · [35;1m                ──────┬─────[0m
-  [31m│[0m     ·                       [35;1m╰── The prebuilt type was registered here[0m
-  [31m│[0m  [2m56[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:7:1]
+  [31m│[0m  [2m 7[0m │
+  [31m│[0m  [2m 8[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
+  [31m│[0m  [2m 9[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "D_")]
+  [31m│[0m  [2m10[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct D<T, S, Z>(T, S, Z);
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
+  [31m│[0m  [2m11[0m │
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove all generic type parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
+  [31m│[0m `app::A` has a named lifetime parameter, `'a`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:11:1]
+  [31m│[0m  [2m11[0m │
+  [31m│[0m  [2m12[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
+  [31m│[0m  [2m13[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "A_")]
+  [31m│[0m  [2m14[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct A<'a> {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
+  [31m│[0m  [2m15[0m │         pub a: &'a str,
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
+  [31m│[0m         configuration type.
+[31;1mERROR[0m:
+  [31m×[0m Prebuilt types can't have non-'static lifetime parameters.
+  [31m│[0m `app::C` has 3 named lifetime parameters: `'a`, `'b` and `'c`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/prebuilts/invalid_prebuilt/src/lib.rs[0m:17:1]
+  [31m│[0m  [2m17[0m │
+  [31m│[0m  [2m18[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[derive(Clone)]
+  [31m│[0m  [2m19[0m │ [35;1m│[0m   #[pavex::prebuilt(id = "C_")]
+  [31m│[0m  [2m20[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub struct C<'a, 'b, 'c> {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe prebuilt type was registered here[0m
+  [31m│[0m  [2m21[0m │         pub a: &'a str,
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Remove all lifetime parameters from the definition of your
   [31m│[0m         configuration type.

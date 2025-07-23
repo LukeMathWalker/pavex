@@ -1,0 +1,53 @@
+From 63d944f04f650ff9f7187a3ca02f73fa846d4d83 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:44:33 +0200
+Subject: [PATCH 16/32] Constructor for user agent
+
+---
+ app/src/user_agent.rs | 19 +++++++++++++++++++
+ example.yml           |  2 --
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
+index f16d4c1..2ed7734 100644
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
+@@ -1,6 +1,25 @@
++use pavex::http::header::USER_AGENT;
++use pavex::methods;
++use pavex::request::RequestHead;
++
+ pub enum UserAgent {
+     /// No `User-Agent` header was provided.
+     Unknown,
+     /// The value of the `User-Agent` header for the incoming request.
+     Known(String),
+ }
++
++#[methods]
++impl UserAgent {
++    #[request_scoped]
++    pub fn extract(request_head: &RequestHead) -> Self {
++        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
++            return Self::Unknown;
++        };
++
++        match user_agent.to_str() {
++            Ok(s) => Self::Known(s.into()),
++            Err(_e) => todo!(),
++        }
++    }
++}
+diff --git a/example.yml b/example.yml
+index 84eca79..6b6a345 100644
+--- a/example.yml
++++ b/example.yml
+@@ -1,5 +1,3 @@
+ snippets_base_dir: "../snaps"
+ prune_orphaned_snippets: false
+ use_path_as_title: true
+-compilation: "failure"
+-compilation_output_filename: "missing_user_agent_constructor"
+-- 
+2.39.5 (Apple Git-154)
+

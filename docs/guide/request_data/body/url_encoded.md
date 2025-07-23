@@ -6,21 +6,17 @@ of the formats used by browsers to encode the data submitted via a `POST` web fo
 You can use [`UrlEncodedBody<T>`][UrlEncodedBody] to work with URL encoded payloads:
 it parses the raw request body into an instance of the type `T` you specified.
 
---8<-- "doc_examples/guide/request_data/urlencoded/project-whole.snap"
+--8<-- "docs/examples/request_data/urlencoded/extraction.snap"
+
+1. The parsed body is injected as an input parameter.
 
 The whole request body is buffered in memory before being deserialized.
 
-## Registration
+## Imports
 
 To use [`UrlEncodedBody<T>`][UrlEncodedBody] in your application, you need to import its constructor from `pavex`:
 
---8<-- "doc_examples/guide/request_data/urlencoded/project-installation.snap"
-
-## Extraction
-
-Inject [`UrlEncodedBody<T>`][UrlEncodedBody] as an input in your components to access the parsed body:
-
---8<-- "doc_examples/guide/request_data/urlencoded/project-extraction.snap"
+--8<-- "docs/examples/request_data/urlencoded/registration.snap"
 
 ## Deserialization
 
@@ -28,7 +24,7 @@ The newly defined struct must be **deserializable**—i.e. it must implement
 the [`serde::Deserialize`][serde::Deserialize] trait.\
 You can derive [`serde::Deserialize`][serde::Deserialize] in most cases.
 
---8<-- "doc_examples/guide/request_data/urlencoded/project-struct_with_attr.snap"
+--8<-- "docs/examples/request_data/urlencoded/struct_def.snap"
 
 ## Unsupported field types
 

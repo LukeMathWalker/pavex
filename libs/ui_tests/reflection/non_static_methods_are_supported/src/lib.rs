@@ -1,5 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct Streamer;
 
@@ -9,11 +8,14 @@ impl Default for Streamer {
     }
 }
 
+#[pavex::methods]
 impl Streamer {
+    #[request_scoped]
     pub fn new() -> Self {
         todo!()
     }
 
+    #[get(path = "/home")]
     pub fn stream_file(&self, _logger: Logger) -> pavex::response::Response {
         todo!()
     }
@@ -30,11 +32,14 @@ impl Default for LoggerFactory {
     }
 }
 
+#[pavex::methods]
 impl LoggerFactory {
+    #[singleton]
     pub fn new() -> Self {
         todo!()
     }
 
+    #[transient]
     pub fn logger(&self) -> Logger {
         todo!()
     }
@@ -42,9 +47,7 @@ impl LoggerFactory {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::Streamer::new), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::LoggerFactory::new), Lifecycle::Singleton);
-    bp.constructor(f!(crate::LoggerFactory::logger), Lifecycle::Transient);
-    bp.route(GET, "/home", f!(crate::Streamer::stream_file));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

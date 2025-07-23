@@ -1,4 +1,0 @@
-description = "pavex cannot resolve relative callable paths, even if they are local (yet)"
-
-[expectations]
-codegen = "fail"

@@ -8,12 +8,12 @@
   [31m│[0m There is no path parameter named `y`, but there is a struct field named
   [31m│[0m `y` in `app::MissingOne`. This is going to cause a runtime error!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_non_existing_fields/src/lib.rs[0m:41:1]
-  [31m│[0m  [2m41[0m │         ));
-  [31m│[0m  [2m42[0m │     bp.route(GET, "/a/{x}", f!(crate::missing_one));
-  [31m│[0m     · [35;1m                            ───────────┬──────────[0m
-  [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::MissingOne>`[0m
-  [31m│[0m  [2m43[0m │     bp.route(GET, "/b/{x}", f!(crate::missing_two));
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_non_existing_fields/src/lib.rs[0m:9:1]
+  [31m│[0m  [2m 9[0m │
+  [31m│[0m  [2m10[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/a/{x}")]
+  [31m│[0m  [2m11[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn missing_one(_params: PathParams<MissingOne>) -> StatusCode {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler asking for `PathParams<app::MissingOne>`[0m
+  [31m│[0m  [2m12[0m │         todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove or rename the fields that do not map to a valid path parameter.
 [31;1mERROR[0m:
@@ -27,12 +27,12 @@
   [31m│[0m names in `app::MissingTwo`. This is going to cause a runtime
   [31m│[0m error!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_non_existing_fields/src/lib.rs[0m:42:1]
-  [31m│[0m  [2m42[0m │     bp.route(GET, "/a/{x}", f!(crate::missing_one));
-  [31m│[0m  [2m43[0m │     bp.route(GET, "/b/{x}", f!(crate::missing_two));
-  [31m│[0m     · [35;1m                            ───────────┬──────────[0m
-  [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::MissingTwo>`[0m
-  [31m│[0m  [2m44[0m │     bp.route(GET, "/c", f!(crate::no_path_params));
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_non_existing_fields/src/lib.rs[0m:21:1]
+  [31m│[0m  [2m21[0m │
+  [31m│[0m  [2m22[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/b/{x}")]
+  [31m│[0m  [2m23[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn missing_two(_params: PathParams<MissingTwo>) -> StatusCode {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler asking for `PathParams<app::MissingTwo>`[0m
+  [31m│[0m  [2m24[0m │         todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Remove or rename the fields that do not map to a valid path parameter.
 [31;1mERROR[0m:
@@ -40,12 +40,12 @@
   [31m│[0m `PathParams<app::NoPathParams>`.
   [31m│[0m But there are no path parameters in `/c`, the corresponding path pattern!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_non_existing_fields/src/lib.rs[0m:43:1]
-  [31m│[0m  [2m43[0m │     bp.route(GET, "/b/{x}", f!(crate::missing_two));
-  [31m│[0m  [2m44[0m │     bp.route(GET, "/c", f!(crate::no_path_params));
-  [31m│[0m     · [35;1m                        ────────────┬────────────[0m
-  [31m│[0m     ·  [35;1mThe request handler asking for `PathParams<app::NoPathParams>`[0m
-  [31m│[0m  [2m45[0m │     bp
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_non_existing_fields/src/lib.rs[0m:32:1]
+  [31m│[0m  [2m32[0m │
+  [31m│[0m  [2m33[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/c")]
+  [31m│[0m  [2m34[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn no_path_params(_params: PathParams<NoPathParams>) -> StatusCode {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler asking for `PathParams<app::NoPathParams>`[0m
+  [31m│[0m  [2m35[0m │         todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Stop trying to extract path parameters, or add them to the path
   [31m│[0m         pattern!

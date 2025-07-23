@@ -1,6 +1,0 @@
-```rust title="src/di/error_observer.rs" hl_lines="1"
-pub async fn error_logger(e: &pavex::Error, root_span: &RootSpan /* (1)! */) {
-    root_span.record("error.msg", tracing::field::display(e));
-    root_span.record("error.details", tracing::field::debug(e));
-}
-```

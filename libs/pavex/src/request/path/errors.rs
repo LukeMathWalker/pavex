@@ -38,7 +38,7 @@ pub enum ExtractPathParamsError {
 ///
 /// # Example
 ///
-/// One of our routes is `/address/:address_id`.
+/// One of our routes is `/address/{address_id}`.
 /// We receive a request with `/address/the%20street` as path—`address_id` is set to
 /// `the%20street` and Pavex automatically decodes it into `the street`.
 ///
@@ -94,7 +94,7 @@ impl ExtractPathParamsError {
     pub fn into_response(&self) -> Response {
         match self {
             ExtractPathParamsError::InvalidUtf8InPathParameter(e) => {
-                Response::bad_request().set_typed_body(format!("Invalid URL.\n{}", e))
+                Response::bad_request().set_typed_body(format!("Invalid URL.\n{e}"))
             }
             ExtractPathParamsError::PathDeserializationError(e) => match e.kind {
                 ErrorKind::ParseErrorAtKey { .. } | ErrorKind::ParseError { .. } => {

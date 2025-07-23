@@ -1,38 +1,19 @@
 [31;1mERROR[0m:
-  [31m×[0m There are 2 different request handlers for `GET /bp/` requests.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:30:1]
-  [31m│[0m  [2m30[0m │         let mut bp = Blueprint::new();
-  [31m│[0m  [2m31[0m │         bp.route(ANY, "/", f!(crate::handler_1));
-  [31m│[0m     · [35;1m                           ──────────┬─────────[0m
-  [31m│[0m     ·                                      [35;1m╰── The first handler[0m
-  [31m│[0m  [2m32[0m │         bp.route(GET, "/", f!(crate::handler_2));
-  [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:31:1]
-  [31m│[0m  [2m31[0m │         bp.route(ANY, "/", f!(crate::handler_1));
-  [31m│[0m  [2m32[0m │         bp.route(GET, "/", f!(crate::handler_2));
-  [31m│[0m     · [35;1m                           ──────────┬─────────[0m
-  [31m│[0m     ·                                      [35;1m╰── The second handler[0m
-  [31m│[0m  [2m33[0m │         bp
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m You can only register one request handler for a given path+method
-  [31m│[0m         combination. Remove all but one of the conflicting request handlers.
-[31;1mERROR[0m:
   [31m×[0m There are 2 different request handlers for `GET /` requests.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:15:1]
-  [31m│[0m  [2m15[0m │
-  [31m│[0m  [2m16[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/")]
-  [31m│[0m  [2m17[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn handler_ann_1() -> pavex::response::Response {
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe first handler[0m
-  [31m│[0m  [2m18[0m │         todo!()
-  [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:20:1]
-  [31m│[0m  [2m20[0m │
-  [31m│[0m  [2m21[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::route(path = "/", allow(any_method))]
-  [31m│[0m  [2m22[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn handler_ann_2() -> pavex::response::Response {
+  [31m│[0m    ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:3:1]
+  [31m│[0m  [2m3[0m │
+  [31m│[0m  [2m4[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::route(path = "/", allow(any_method))]
+  [31m│[0m  [2m5[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn any_root() -> Response {
+  [31m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe first handler[0m
+  [31m│[0m  [2m6[0m │         todo!()
+  [31m│[0m    ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:8:1]
+  [31m│[0m  [2m 8[0m │
+  [31m│[0m  [2m 9[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/")]
+  [31m│[0m  [2m10[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn get_root() -> Response {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe second handler[0m
-  [31m│[0m  [2m23[0m │         todo!()
+  [31m│[0m  [2m11[0m │         todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m You can only register one request handler for a given path+method
   [31m│[0m         combination. Remove all but one of the conflicting request handlers.

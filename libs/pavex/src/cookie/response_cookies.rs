@@ -69,7 +69,7 @@ impl ResponseCookies {
     /// let set = ResponseCookies::new();
     /// assert_eq!(set.iter().count(), 0);
     /// ```
-    #[request_scoped]
+    #[request_scoped(pavex = crate)]
     pub fn new() -> ResponseCookies {
         ResponseCookies::default()
     }

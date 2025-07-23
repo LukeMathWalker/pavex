@@ -691,8 +691,14 @@ impl Display for ScalarPrimitive {
     }
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Unknown primitive type, `{name}`")]
+pub struct UnknownPrimitive {
+    pub name: String,
+}
+
 impl TryFrom<&str> for ScalarPrimitive {
-    type Error = anyhow::Error;
+    type Error = UnknownPrimitive;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let v = match value {
@@ -713,7 +719,11 @@ impl TryFrom<&str> for ScalarPrimitive {
             "bool" => Self::Bool,
             "char" => Self::Char,
             "str" => Self::Str,
-            _ => anyhow::bail!("Unknown primitive scalar type: {}", value),
+            _ => {
+                return Err(UnknownPrimitive {
+                    name: value.to_string(),
+                });
+            }
         };
         Ok(v)
     }
@@ -909,7 +919,7 @@ pub enum GenericLifetimeParameter {
 impl Display for GenericLifetimeParameter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GenericLifetimeParameter::Named(s) => write!(f, "'{}", s),
+            GenericLifetimeParameter::Named(s) => write!(f, "'{s}"),
             GenericLifetimeParameter::Static => write!(f, "'static"),
         }
     }
@@ -1166,7 +1176,7 @@ impl Debug for Lifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Lifetime::Static => write!(f, "'static"),
-            Lifetime::Named(name) => write!(f, "'{}", name),
+            Lifetime::Named(name) => write!(f, "'{name}"),
             Lifetime::Elided => Ok(()),
         }
     }
@@ -1175,7 +1185,7 @@ impl Debug for Lifetime {
 impl Debug for GenericLifetimeParameter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GenericLifetimeParameter::Named(name) => write!(f, "'{}", name),
+            GenericLifetimeParameter::Named(name) => write!(f, "'{name}"),
             GenericLifetimeParameter::Static => write!(f, "'static"),
         }
     }

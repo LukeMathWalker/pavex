@@ -1,9 +1,9 @@
-use pavex_macros::constructor;
+use pavex_macros::request_scoped;
 
 pub struct A;
 
 impl A {
-    #[constructor]
+    #[request_scoped]
     const A: usize = 42;
 }
 

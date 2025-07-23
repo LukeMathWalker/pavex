@@ -1,0 +1,17 @@
+```rust hl_lines="8 12"
+use pavex::{Blueprint, fallback, http::StatusCode};
+
+pub fn bp() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.domain("pavex.dev").nest(website_bp());
+    bp.domain("api.pavex.dev").prefix("/v1").nest(api_bp());
+    // If no domain matches, return a 403.
+    bp.fallback(UNKNOWN_DOMAIN);
+    // [...]
+}
+
+#[fallback]
+pub fn unknown_domain() -> StatusCode {
+    StatusCode::FORBIDDEN
+}
+```

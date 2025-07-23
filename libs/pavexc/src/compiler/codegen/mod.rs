@@ -336,13 +336,13 @@ where
                                         dependency_details.rev = Some(rev.to_string());
                                     }
                                     guppy::graph::GitReq::Default => {}
-                                    _ => panic!("Unknown git requirements: {:?}", req),
+                                    _ => panic!("Unknown git requirements: {req:?}"),
                                 }
                             }
-                            _ => panic!("External source of unknown kind: {}", parsed_external),
+                            _ => panic!("External source of unknown kind: {parsed_external}"),
                         }
                     } else {
-                        panic!("Could not parse external source: {}", source);
+                        panic!("Could not parse external source: {source}");
                     }
                 }
             }

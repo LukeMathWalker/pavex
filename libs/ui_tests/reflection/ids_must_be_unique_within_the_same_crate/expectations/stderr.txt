@@ -1,0 +1,21 @@
+[31;1mERROR[0m:
+  [31m×[0m The identifier for Pavex components must be unique within the package
+  [31m│[0m where they are defined.
+  [31m│[0m CONFLICT is used by two different components.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mreflection/ids_must_be_unique_within_the_same_crate/src/lib.rs[0m:13:1]
+  [31m│[0m  [2m13[0m │
+  [31m│[0m  [2m14[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::get(path = "/", id = "CONFLICT")]
+  [31m│[0m  [2m15[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn handler() -> Response {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe first component[0m
+  [31m│[0m  [2m16[0m │             todo!()
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4mreflection/ids_must_be_unique_within_the_same_crate/src/lib.rs[0m:5:1]
+  [31m│[0m  [2m5[0m │
+  [31m│[0m  [2m6[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::singleton]
+  [31m│[0m  [2m7[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn conflict() -> A {
+  [31m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe second component[0m
+  [31m│[0m  [2m8[0m │         todo!()
+  [31m│[0m    ╰────
+  [31m│[0m   [36mhelp:[0m Use the `id` macro argument to change the identifier of one of the
+  [31m│[0m         two components.

@@ -1,18 +1,23 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::response::Response;
+use pavex::Blueprint;
 
-pub fn handler() -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn root() -> Response {
+    todo!()
+}
+
+#[pavex::get(path = "/id")]
+pub fn id() -> Response {
     todo!()
 }
 
 #[pavex::fallback]
-pub fn unauthorized() -> pavex::response::Response {
+pub fn unauthorized() -> Response {
     Response::unauthorized()
 }
 
 #[pavex::fallback]
-pub fn forbidden() -> pavex::response::Response {
+pub fn forbidden() -> Response {
     Response::forbidden()
 }
 
@@ -20,10 +25,10 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.prefix("/users").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::handler));
+        bp.route(ROOT);
         bp.nest({
             let mut bp = Blueprint::new();
-            bp.route(GET, "/id", f!(crate::handler));
+            bp.route(ID);
             bp.fallback(FORBIDDEN);
             bp
         });

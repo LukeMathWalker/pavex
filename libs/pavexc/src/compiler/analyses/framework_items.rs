@@ -3,10 +3,8 @@ use bimap::BiHashMap;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use crate::{
-    compiler::utils::process_framework_path, language::ResolvedType, rustdoc::CrateCollection,
-};
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use crate::{compiler::utils::resolve_type_path, language::ResolvedType, rustdoc::CrateCollection};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 /// The id for a framework item inside [`FrameworkItemDb`].
 pub(crate) type FrameworkItemId = u8;
@@ -32,28 +30,28 @@ impl FrameworkItemDb {
         let mut items = BiHashMap::with_capacity(capacity);
         let mut id2metadata = HashMap::with_capacity(capacity);
 
-        let request_head = process_framework_path("pavex::request::RequestHead", krate_collection);
+        let request_head = resolve_type_path("pavex::request::RequestHead", krate_collection);
         items.insert(request_head, Self::request_head_id());
         id2metadata.insert(
             Self::request_head_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::NeverClone,
+                cloning_policy: CloningPolicy::NeverClone,
                 binding: format_ident!("request_head"),
             },
         );
         let http_request =
-            process_framework_path("pavex::request::body::RawIncomingBody", krate_collection);
+            resolve_type_path("pavex::request::body::RawIncomingBody", krate_collection);
         items.insert(http_request, Self::raw_incoming_body_id());
         id2metadata.insert(
             Self::raw_incoming_body_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::NeverClone,
+                cloning_policy: CloningPolicy::NeverClone,
                 binding: format_ident!("request_body"),
             },
         );
-        let raw_path_parameters = process_framework_path(
+        let raw_path_parameters = resolve_type_path(
             "pavex::request::path::RawPathParams::<'server, 'request>",
             krate_collection,
         );
@@ -62,42 +60,41 @@ impl FrameworkItemDb {
             Self::url_params_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("url_params"),
             },
         );
         let matched_route_template =
-            process_framework_path("pavex::request::path::MatchedPathPattern", krate_collection);
+            resolve_type_path("pavex::request::path::MatchedPathPattern", krate_collection);
         items.insert(matched_route_template, Self::matched_route_template_id());
         id2metadata.insert(
             Self::matched_route_template_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("matched_route_template"),
             },
         );
 
-        let allowed_methods =
-            process_framework_path("pavex::router::AllowedMethods", krate_collection);
+        let allowed_methods = resolve_type_path("pavex::router::AllowedMethods", krate_collection);
         items.insert(allowed_methods, Self::allowed_methods_id());
         id2metadata.insert(
             Self::allowed_methods_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("allowed_methods"),
             },
         );
 
         let connection_info =
-            process_framework_path("pavex::connection::ConnectionInfo", krate_collection);
+            resolve_type_path("pavex::connection::ConnectionInfo", krate_collection);
         items.insert(connection_info, Self::connection_info_id());
         id2metadata.insert(
             Self::connection_info_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
-                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                cloning_policy: CloningPolicy::CloneIfNecessary,
                 binding: format_ident!("connection_info"),
             },
         );
@@ -139,9 +136,9 @@ impl FrameworkItemDb {
         self.id2metadata[&item_id].lifecycle
     }
 
-    /// Return the [`CloningStrategy`] associated with a framework item.
-    pub(crate) fn cloning_strategy(&self, item_id: FrameworkItemId) -> CloningStrategy {
-        self.id2metadata[&item_id].cloning_strategy
+    /// Return the [`CloningPolicy`] associated with a framework item.
+    pub(crate) fn cloning_policy(&self, item_id: FrameworkItemId) -> CloningPolicy {
+        self.id2metadata[&item_id].cloning_policy
     }
 
     /// Return the [`FrameworkItemId`] for a type, if it's a framework item.
@@ -179,5 +176,5 @@ impl FrameworkItemDb {
 struct FrameworkItemMetadata {
     lifecycle: Lifecycle,
     binding: Ident,
-    cloning_strategy: CloningStrategy,
+    cloning_policy: CloningPolicy,
 }

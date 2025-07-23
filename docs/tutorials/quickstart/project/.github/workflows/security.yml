@@ -1,0 +1,21 @@
+name: Verify dependencies
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  push:
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+
+jobs:
+  advisories:
+    name: Advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          # Check if security advisories have been issued
+          # against any of the crates in our dependency tree
+          command: check advisories

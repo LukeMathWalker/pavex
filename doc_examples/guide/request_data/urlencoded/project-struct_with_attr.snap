@@ -1,8 +1,0 @@
-```rust title="src/urlencoded/routes.rs" hl_lines="2"
-// [...]
-#[derive(serde::Deserialize)]
-pub struct HomeListing {
-    address: String,
-    price: u64,
-}
-```

@@ -1,0 +1,11 @@
+```rust
+use pavex::get;
+use pavex::http::StatusCode;
+use pavex::request::RequestHead;
+
+#[get(path = "/target")]
+pub fn request_target(head: &RequestHead) -> StatusCode {
+    println!("The request target is {}", head.target);
+    // [...]
+}
+```

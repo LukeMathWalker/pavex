@@ -6,7 +6,7 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
@@ -58,7 +58,7 @@ pub(crate) fn application_state_call_graph(
             computation_db.get_or_intern(application_state.initializer()),
             Lifecycle::Singleton,
             component_db.scope_graph().application_state_scope_id(),
-            CloningStrategy::NeverClone,
+            CloningPolicy::NeverClone,
             computation_db,
             framework_item_db,
             None,
@@ -102,8 +102,7 @@ pub(crate) fn application_state_call_graph(
                     continue;
                 }
                 panic!(
-                    "One of the output components is not a `MatchResult` transformer: {:?}",
-                    component
+                    "One of the output components is not a `MatchResult` transformer: {component:?}"
                 );
             };
             if matcher.variant == MatchResultVariant::Err {

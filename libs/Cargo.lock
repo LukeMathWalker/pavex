@@ -2766,6 +2766,7 @@ dependencies = [
  "pavex_bp_schema",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
+ "pavex_reflection",
  "pavexc_attr_parser",
  "pavexc_rustdoc_types",
  "persist_if_changed",

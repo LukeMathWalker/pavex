@@ -14,7 +14,7 @@
 // - `ResponseCookies`, which is customized in the `response_cookies` module
 // - the `errors` module, which is augmented with additional error types in the `errors` module
 // - the `response` module, which is replaced with a wrapped version in the `response` module
-#[crate::config(key = "cookies", default_if_missing)]
+#[crate::config(key = "cookies", default_if_missing, pavex = crate)]
 pub use biscotti::ProcessorConfig;
 pub use biscotti::{
     Expiration, Key, Processor, RemovalCookie, RequestCookie, RequestCookies, ResponseCookie,
@@ -24,10 +24,15 @@ pub mod errors;
 pub mod response;
 
 mod components;
-pub use components::{extract_request_cookies, inject_response_cookies};
-
-mod kit;
-pub use kit::CookieKit;
+pub use components::{INJECT_RESPONSE_COOKIES, extract_request_cookies, inject_response_cookies};
 
 mod response_cookies;
 pub use response_cookies::ResponseCookies;
+
+#[crate::singleton(pavex = crate)]
+#[doc(hidden)]
+// TODO: Remove once we have Pavex's annotations directly in `biscotti`,
+// behind a `pavex` feature flag.
+pub fn config_into_processor(config: ProcessorConfig) -> Processor {
+    config.into()
+}

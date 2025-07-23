@@ -1,0 +1,33 @@
+From cd4231ce022b93a56b58b1faf9693efdfae64c06 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:55:10 +0200
+Subject: [PATCH 26/32] Revert "Annotations for ping test"
+
+This reverts commit 817f90b2d8e4c58512c428c9f87b739b5b5b00c3.
+---
+ server/tests/integration/ping.rs | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/server/tests/integration/ping.rs b/server/tests/integration/ping.rs
+index 0210bc2..c52114e 100644
+--- a/server/tests/integration/ping.rs
++++ b/server/tests/integration/ping.rs
+@@ -1,12 +1,11 @@
+-//! px:ping_test
+-use crate::helpers::TestApi; // px::ann:1
++use crate::helpers::TestApi;
+ use pavex::http::StatusCode;
+ 
+ #[tokio::test]
+ async fn ping_works() {
+-    let api = TestApi::spawn().await; // px::ann:2
++    let api = TestApi::spawn().await;
+ 
+-    let response = api.get_ping().await; // px::ann:3
++    let response = api.get_ping().await;
+ 
+     assert_eq!(response.status(), StatusCode::OK);
+ }
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,25 +1,20 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::middleware::Processing;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
+#[pavex::pre_process]
 pub fn pre() -> Processing {
     todo!()
 }
 
-#[pavex::pre_process]
-pub fn pre1() -> Processing {
-    todo!()
-}
-
+#[pavex::get(path = "/home")]
 pub fn handler() -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.pre_process(f!(crate::pre));
-    bp.pre_process(PRE_1);
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.pre_process(PRE);
+    bp.routes(from![crate]);
     bp
 }

@@ -1,0 +1,14 @@
+//! px:logger
+use pavex::middleware::Next;
+use pavex::response::Response;
+use pavex::wrap;
+use tracing::Instrument;
+
+#[wrap]
+pub async fn logger<C>(next: Next<C>) -> Response
+where
+    C: IntoFuture<Output = Response>,
+{
+    let span = tracing::info_span!("Request processing");
+    next.into_future().instrument(span).await
+}

@@ -1,75 +1,64 @@
 # Constructors
 
-To make a type injectable, you can **register a constructor** for it.\
-Pavex will then invoke your constructor to create instances of that type when needed.
+Define a **constructor** to make a type injectable.
+Pavex will invoke your constructor whenever it needs to create an instance of that type.
 
-## Requirements
+## Defining a constructor
 
-A constructor must satisfy a few requirements:
+Pavex provides three different attributes to define a constructor: [`#[singleton]`][singleton_attr], [`#[request_scoped]`][request_scoped_attr] and [`#[transient]`][transient_attr].
 
-<div class="annotate" markdown>
+--8<-- "docs/examples/dependency_injection/user_middleware/user_constructor.snap"
 
-- It must be a function, a method or a trait method.
-- It must be public (1), importable from outside the crate it is defined in.
-- It must return, as output, the type you want to make injectable.\
-  [Constructors can be fallible](#constructors-can-fail): a constructor for a type `T` can return `Result<T, E>`,
-  where `E` is an error type.
+1. The [`#[methods]`][methods_attr] attribute must be added to the `impl` block if you want to annotate one of its methods with a Pavex attribute.
 
-</div>
+### Lifecycles
 
-1. Constructors must be invoked in the generated code.
-   The generated code lives in a separate crate, the [server SDK crate], hence the requirement.
+Each attribute attaches a different lifecycle to the output type:
 
-Going back to our `User` example, this would be a valid signature for a constructor:
-
---8<-- "doc_examples/guide/dependency_injection/user_middleware/project-constructor_def.snap"
-
-!!! warning
-
-    Constructors can be either sync or async.  
-    Check out 
-    [the "Sync or async" section](../routing/request_handlers.md#sync-or-async) in the guide on request handlers
-    to learn when to use one or the other.
-
-## Registration
-
-Once you have defined a constructor, you need to register it with the application [`Blueprint`][Blueprint]:
-
---8<-- "doc_examples/guide/dependency_injection/user_middleware/project-constructor_registration.snap"
-
-[`Blueprint::constructor`][Blueprint::constructor] takes two arguments:
-
-- An [unambiguous path](cookbook.md) to the constructor, wrapped in the [`f!`][f] macro.
-- The [constructor's lifecycle](#lifecycles).
-
-Alternatively, you could use [`Blueprint::request_scoped`][Blueprint::request_scoped] as
-a shorthand to perform the same registration:
-
---8<-- "doc_examples/guide/dependency_injection/user_middleware/02-constructor_registration.snap"
-
-There is a shorthand for each lifecycle: [`Blueprint::singleton`][Blueprint::singleton],
-[`Blueprint::request_scoped`][Blueprint::request_scoped], [`Blueprint::transient`][Blueprint::transient].
-
-## Lifecycles
-
-Pavex supports three different lifecycles for constructors:
-
-- [`Singleton`][Lifecycle::Singleton].
-  The constructor is invoked **at most once**, before the application starts.\
+- **Singleton.**\
+  The constructor is invoked **at most once**, before the application starts.
   The same instance is injected every time the type is needed.
-- [`RequestScoped`][Lifecycle::RequestScoped]. The constructor is invoked **at most once per request**.\
+- **Request-scoped.**\
+  The constructor is invoked **at most once per request**.
   The same instance is injected every time the type is needed when handling the same request.
-- [`Transient`][Lifecycle::Transient]. The constructor is invoked **every time the type is needed**.\
-  The injected instance is always newly created.
+- **Transient.**\
+  The constructor is invoked **every time the type is needed**.
+  Instances are never reused.
 
 Let's look at a few common scenarios to build some intuition around lifecycles:
 
-| Scenario                 | Lifecycle                                 | Why?                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Database connection pool | [Singleton][Lifecycle::Singleton]         | The entire application should use the same pool. <br/>Each request will fetch a connection from the pool when needed.                                                                                                                                                                                                                                                                    |
-| HTTP client              | [Singleton][Lifecycle::Singleton]         | Most HTTP clients keep, under the hood, a connection pool. <br/>You want to reuse those connections across requests to minimise latency and the number of open file descriptors.                                                                                                                                                                                                         |
-| Path parameters          | [RequestScoped][Lifecycle::RequestScoped] | Path parameters are extracted from the incoming request. <br/> They must not be shared across requests, therefore they can't be a [`Singleton`][Lifecycle::Singleton].<br/> They could be [`Transient`][Lifecycle::Transient], but re-parsing the parameters before every use would be expensive.<br/>[`RequestScoped`][Lifecycle::RequestScoped] is the optimal choice.                 |
-| Database connection      | [Transient][Lifecycle::Transient]         | The connection is retrieved from a shared pool.<br/>It could be [`RequestScoped`][Lifecycle::RequestScoped], but you might end up keeping the connection booked (i.e. outside of the pool) for longer than it's strictly necessary.<br/>[`Transient`][Lifecycle::Transient] is the optimal choice: you only remove the connection from the pool when it's needed, put it back when idle. |
+| Scenario                 | Lifecycle      | Why?                                                                                                                                                                                                                                                                                                                              |
+| ------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database connection pool | Singleton      | The entire application should use the same pool. <br/>Each request will fetch a connection from the pool when needed.                                                                                                                                                                                                             |
+| HTTP client              | Singleton      | Most HTTP clients keep, under the hood, a connection pool. <br/>You want to reuse those connections across requests to minimise latency and the number of open file descriptors.                                                                                                                                                  |
+| Path parameters          | Request-scoped | Path parameters are extracted from the incoming request. <br/> They must not be shared across requests, therefore they can't be a singleton.<br/> They could be transient, but re-parsing the parameters before every use would be expensive.<br/>Request-scoped is the optimal choice.                                           |
+| Database connection      | Transient      | The connection is retrieved from a shared pool.<br/>It could be request-scoped, but you might end up keeping the connection booked (i.e. outside of the pool) for longer than it's strictly necessary.<br/>Transient is the optimal choice: you only remove the connection from the pool when it's needed, put it back when idle. |
+
+## Requirements
+
+Constructors must return, as output, the type you want to make injectable.\
+[Constructors can fail](#constructors-can-fail), too. A fallible constructor will return `Result<T, E>`, where `T` is the type you want to make injectable and `E` is an error type.
+
+Other than that, you have a lot of freedom in how you define your constructors:
+
+- [They can be free functions or methods.](/guide/attributes/functions_and_methods.md)
+- [They can be synchronous or asynchronous.](/guide/attributes/sync_or_async.md)
+- [They can take additional input parameters, leaning (recursively!) on Pavex's dependency injection system.](#recursive-dependencies)
+
+## Registration
+
+Use an import to register in bulk all the constructors defined in the current crate:
+
+--8<-- "docs/examples/dependency_injection/user_middleware/registration.snap"
+
+1. You can also import constructors from [other crates][import_other_crates] or [specific modules][import_specific_modules].
+
+Alternatively, register constructors one by one using [`Blueprint::constructor`][Blueprint::constructor]:
+
+--8<-- "docs/examples/dependency_injection/user_middleware/register_one.snap"
+
+1. `USER_EXTRACT` is a strongly-typed constant generated by the [`#[request_scoped]`][request_scoped_attr] attribute on the `User::extract` method.\
+   Check out the documentation on [component ids](/guide/attributes/component_id.md) for more details.
 
 ## Recursive dependencies
 
@@ -81,31 +70,34 @@ Going back to our `User` example: it's unlikely that you'll be able to build a `
 taking a look at the incoming request, or some data extracted from it.
 
 Let's say you want to build a `User` instance based on the value of the `Authorization` header
-of the incoming request.\
-You could define a constructor like this:
+of the incoming request. We would modify the previous constructor to inject a [`&RequestHead`][RequestHead] instance:
 
---8<-- "doc_examples/guide/dependency_injection/user_middleware/01-constructor_def.snap"
+--8<-- "docs/examples/dependency_injection/core_concepts/user_constructor2.snap"
 
-[`RequestHead`][RequestHead] represents the incoming request data, minus the body.\
-When Pavex examines your application [`Blueprint`][Blueprint], the following happens:
+1. [`RequestHead`][RequestHead] represents the incoming request data, minus the body.
+
+When Pavex examines your [`Blueprint`][Blueprint], the following happens:
 
 - The `reject_anonymous` middleware must be invoked. Does `reject_anonymous` have any input parameters?
-  - Yes, it needs a `User` instance. Do we have a constructor for `User`?
-    - Yes, we do: `User::extract`. Does `User::extract` have any input parameters?
-      - Yes, it needs a reference to a `RequestHead`. Do we have a constructor for `RequestHead`?
+  - Yes, it needs a `User` instance. Can `User` be injected?
+    - Yes, we can build it with `User::extract`. Does `User::extract` have any input parameters?
+      - Yes, it needs a reference to a `RequestHead`. Can `&RequestHead` be injected?
         - Etc.
 
-The recursion continues until Pavex finds a constructor that doesn't have any input parameters or
-a type that doesn't need to be constructed.\
-If a type needs to be constructed, but Pavex can't find a constructor for it,
-[it will report an error](../../getting_started/quickstart/dependency_injection.md#missing-constructor).
+The recursion continues until:
+
+- The required input has a constructor with no input parameters, _or_
+- The required input is a [framework primitive](framework_primitives.md), _or_
+- The required input is a [prebuilt type](prebuilt_types.md), _or_
+- The required input is a [configuration type](../configuration/index.md).
+
+If the required input doesn't match any of the conditions above, Pavex will complain about
+[a missing constructor](../../getting_started/quickstart/dependency_injection.md#missing-constructor).
 
 ## Constructors can fail
 
-Constructors can be fallible: they can return a `Result<T, E>`, where `E` is an error type.\
-If a constructor is fallible, you must specify an [**error handler**](../errors/error_handlers.md) when registering
-it with the application [`Blueprint`][Blueprint].
-Check out the [error handling guide](../errors/error_handlers.md) for more details.
+Constructors can return a `Result<T, E>`, where `E` is an error type.\
+Check out the [error handling guide](../errors/error_handlers.md) for more details on how to handle the error case.
 
 ## Invocation order
 
@@ -113,7 +105,7 @@ Pavex provides no guarantees on the _relative_ invocation order of constructors.
 
 Consider the following request handler:
 
---8<-- "doc_examples/guide/dependency_injection/core_concepts/project-handler.snap"
+--8<-- "docs/examples/dependency_injection/core_concepts/handler.snap"
 
 It injects two different types as input parameters, `A` and `B`.\
 The way input parameters are ordered in `handler`'s definition does not influence the invocation order
@@ -136,7 +128,7 @@ It'd be quite difficult to reason about mutations since you can't control the
 [invocation order of constructors](#invocation-order).
 
 On the other hand, invocation order is well-defined for other types of components:
-[request handlers](../routing/request_handlers.md),
+[routes](../routing/index.md),
 [pre-processing middlewares](../middleware/pre_processing.md) and
 [post-processing middlewares](../middleware/post_processing.md).
 That's why Pavex allows them to inject mutable references as input parameters.
@@ -148,14 +140,13 @@ That's why Pavex allows them to inject mutable references as input parameters.
     Check [their guide](../middleware/wrapping.md#use-with-caution) 
     to learn more about the rationale for this exception.
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::constructor]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
-[Blueprint::singleton]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.singleton
-[Blueprint::request_scoped]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
-[Blueprint::transient]: /api_reference/pavex/blueprint/struct.Blueprint.html#method.transient
-[f]: /api_reference/pavex/macro.f.html
-[Lifecycle::Singleton]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
-[Lifecycle::RequestScoped]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
-[Lifecycle::Transient]: /api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
+[Blueprint::constructor]: /api_reference/pavex/struct.Blueprint.html#method.constructor
 [RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
 [server SDK crate]: ../project_structure/server_sdk.md
+[singleton_attr]: /api_reference/pavex/attr.singleton.html
+[request_scoped_attr]: /api_reference/pavex/attr.request_scoped.html
+[transient_attr]: /api_reference/pavex/attr.transient.html
+[methods_attr]: /api_reference/pavex/attr.methods.html
+[import_other_crates]: /api_reference/pavex/struct.Blueprint.html#dependencies
+[import_specific_modules]: /api_reference/pavex/struct.Blueprint.html#specific-modules

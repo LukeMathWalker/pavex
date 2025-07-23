@@ -20,16 +20,16 @@
   with:
     name: pavexc_cli_linux
     path: ~/.cargo/bin
-- name: Download tutorial_generator CLI artifact
+- name: Download pxh CLI artifact
   uses: actions/download-artifact@v4
   with:
-    name: tutorial_generator
+    name: pxh
     path: ~/.cargo/bin
 - name: Mark as executable
-  run: | 
+  run: |
     chmod +x ~/.cargo/bin/pavex
     chmod +x ~/.cargo/bin/pavexc
-    chmod +x ~/.cargo/bin/tutorial_generator
+    chmod +x ~/.cargo/bin/pxh
 - name: Activate pavex
   env:
     PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
@@ -41,8 +41,8 @@
   run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px@0.1
 - name: Install exa
   run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} exa@0.10
-- name: Verify tutorials
+- name: Verify examples
   run: |
-    cd doc_examples
-    RUST_BACKTRACE=0 tutorial_generator --verify
+    cd docs/examples
+    RUST_BACKTRACE=0 pxh example verify
 <%- endblock %>

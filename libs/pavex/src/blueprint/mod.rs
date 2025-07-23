@@ -1,25 +1,54 @@
-//! Define the routes and the structure of your application using a [`Blueprint`].
+//! Define the structure of your application using a [`Blueprint`].
 //!
 //! Check out the ["Project structure"](https://pavex.dev/docs/guide/project_structure) section of the
 //! Pavex guide for more details on the role of [`Blueprint`] in Pavex applications.
-pub use blueprint::Blueprint;
+//!
+//! [`Blueprint`]: crate::Blueprint
+
 /// Capture a list of sources to be checked by Pavex for components.
 ///
-/// It is used by [`Blueprint::import`] to determine which modules should
-/// be scanned for macro-annotated constructors, error handlers and configuration types.
+/// `from!` is used by [`Blueprint::import`] and [`Blueprint::routes`] to determine
+/// which modules should be examined.
+///
+/// [`Blueprint::import`]: crate::Blueprint::import
+/// [`Blueprint::routes`]: crate::Blueprint::routes
 pub use pavex_macros::from;
 
 #[allow(clippy::module_inception)]
-mod blueprint;
-pub mod config;
-pub mod constructor;
+pub(super) mod blueprint;
+pub use cloning_policy::CloningPolicy;
+pub use lifecycle::Lifecycle;
+
+pub use config::*;
+pub use constructor::*;
+pub use error_handler::*;
+pub use error_observer::*;
+pub use fallback::*;
+pub use import::*;
+pub use lints::Lint;
+pub use nesting::RoutingModifiers;
+pub use post::*;
+pub use pre::*;
+pub use prebuilt::*;
+pub use route::*;
+pub use routes::*;
+pub use wrapping::*;
+
+mod cloning_policy;
+mod config;
+mod constructor;
 mod conversions;
-pub mod error_handler;
-pub mod error_observer;
-pub mod import;
-pub mod linter;
-pub mod middleware;
-pub mod nesting;
-pub mod prebuilt;
+mod error_handler;
+mod error_observer;
+mod fallback;
+mod import;
+mod lifecycle;
+mod lints;
+mod nesting;
+mod post;
+mod pre;
+mod prebuilt;
 pub mod reflection;
-pub mod router;
+mod route;
+mod routes;
+mod wrapping;

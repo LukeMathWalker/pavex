@@ -1,12 +1,12 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::f;
+use pavex::Blueprint;
 
 #[pavex::get(path = "/")]
-pub fn non_domain() -> String {
+pub fn domain_agnostic() -> String {
     todo!()
 }
 
-pub fn handler() -> String {
+#[pavex::get(path = "/")]
+pub fn domain_specific() -> String {
     todo!()
 }
 
@@ -15,10 +15,10 @@ pub fn blueprint() -> Blueprint {
     // Domain-specific
     bp.domain("company.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::handler));
+        bp.route(DOMAIN_SPECIFIC);
         bp
     });
     // Domain-agnostic
-    bp.routes(from![crate]);
+    bp.route(DOMAIN_AGNOSTIC);
     bp
 }

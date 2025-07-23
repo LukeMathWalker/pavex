@@ -84,7 +84,7 @@ pub(super) fn derive_config_profile(input: TokenStream) -> TokenStream {
     let error_name = format_ident!("{}ParseError", name);
     let valid_profiles_str = valid_profiles
         .iter()
-        .map(|s| format!("`{}`", s))
+        .map(|s| format!("`{s}`"))
         .collect::<Vec<_>>()
         .join(", ");
 

@@ -1,8 +1,7 @@
 use std::path::PathBuf;
+use pavex::{blueprint::from, Blueprint};
 
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
-
+#[pavex::request_scoped]
 pub async fn infallible_constructor() -> PathBuf {
     todo!()
 }
@@ -10,18 +9,20 @@ pub async fn infallible_constructor() -> PathBuf {
 #[derive(Debug)]
 pub struct ExtractPathError;
 
+#[pavex::error_handler]
 pub fn error_handler(_e: &ExtractPathError) -> pavex::response::Response {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn request_handler(_inner: PathBuf) -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::infallible_constructor), Lifecycle::RequestScoped)
-        .error_handler(f!(crate::error_handler));
-    bp.route(GET, "/home", f!(crate::request_handler));
+    bp.constructor(INFALLIBLE_CONSTRUCTOR)
+        .error_handler(ERROR_HANDLER);
+    bp.routes(from![crate]);
     bp
 }

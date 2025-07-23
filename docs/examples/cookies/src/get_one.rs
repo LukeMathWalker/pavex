@@ -1,0 +1,12 @@
+//! px:get_one
+use pavex::cookie::RequestCookies;
+use pavex::get;
+use pavex::response::Response;
+
+#[get(path = "/")]
+pub fn get_one(request_cookies: &RequestCookies) -> Response {
+    let Some(session_id) = request_cookies.get("session_id") else {
+        return Response::unauthorized();
+    };
+    Response::ok() // px::skip
+}

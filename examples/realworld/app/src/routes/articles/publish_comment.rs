@@ -1,5 +1,6 @@
 use pavex::{
     http::StatusCode,
+    post,
     request::{body::JsonBody, path::PathParams},
 };
 
@@ -29,6 +30,7 @@ pub struct PublishCommentResponse {
     pub comment: Comment,
 }
 
+#[post(path = "/{slug}/comments")]
 pub fn publish_comment(
     _route: PathParams<PublishCommentRoute>,
     _body: JsonBody<PublishCommentBody>,

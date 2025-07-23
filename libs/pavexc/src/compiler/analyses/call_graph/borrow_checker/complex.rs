@@ -289,7 +289,7 @@ fn emit_borrow_checking_error(
             if let Some(user_id) = db.user_component_id(component_id) {
                 let help_msg = format!(
                     "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
-                        You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
+                        You can do so by invoking `.cloning(CloningPolicy::CloneIfNecessary)` on the type returned by `.constructor`.",
                 );
                 let kind = db.user_db()[user_id].kind();
                 let help = match diagnostics.annotated(

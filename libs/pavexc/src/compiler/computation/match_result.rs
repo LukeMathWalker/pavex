@@ -24,7 +24,7 @@ impl MatchResult {
     /// It panics if `result_type` is not an enum.
     pub(crate) fn match_result(result_type: &ResolvedType) -> ResultMatchers {
         let ResolvedType::ResolvedPath(inner_result_type) = result_type else {
-            panic!("Expected a ResolvedPath, got {:?}", result_type)
+            panic!("Expected a ResolvedPath, got {result_type:?}")
         };
         assert_eq!(
             inner_result_type.generic_arguments.len(),

@@ -26,7 +26,7 @@ impl RouterKey {
             self.path,
             self.domain_guard
                 .as_ref()
-                .map(|d| format!(" [for {}]", d))
+                .map(|d| format!(" [for {d}]"))
                 .unwrap_or_else(|| String::from(""))
         )
     }

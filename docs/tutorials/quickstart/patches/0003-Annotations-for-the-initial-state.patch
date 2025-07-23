@@ -1,0 +1,85 @@
+From 4ee8f7c35a906f0c0e4778512e62f73c6e829f4c Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 12:13:18 +0200
+Subject: [PATCH 03/32] Annotations for the initial state
+
+---
+ app/src/bin/bp.rs                | 1 +
+ app/src/blueprint.rs             | 1 +
+ app/src/routes/ping.rs           | 3 ++-
+ server/src/bin/server.rs         | 1 +
+ server/tests/integration/ping.rs | 1 +
+ server_sdk/Cargo.toml            | 2 ++
+ 6 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/app/src/bin/bp.rs b/app/src/bin/bp.rs
+index 8d8049d..36773e4 100644
+--- a/app/src/bin/bp.rs
++++ b/app/src/bin/bp.rs
+@@ -1,3 +1,4 @@
++//! px:generator_entrypoint
+ use app::blueprint;
+ use cargo_px_env::generated_pkg_manifest_path;
+ use pavex_cli_client::Client;
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
+index 5271657..4ef1030 100644
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
+@@ -1,3 +1,4 @@
++//! px:blueprint
+ use crate::telemetry;
+ use pavex::{Blueprint, blueprint::from};
+ 
+diff --git a/app/src/routes/ping.rs b/app/src/routes/ping.rs
+index d8ec66a..5484848 100644
+--- a/app/src/routes/ping.rs
++++ b/app/src/routes/ping.rs
+@@ -1,9 +1,10 @@
++//! px:ping_route
+ use pavex::get;
+ use pavex::http::StatusCode;
+ 
+ /// Respond with a `200 OK` status code to indicate that the server is alive
+ /// and ready to accept new requests.
+-#[get(path = "/ping")]
++#[get(path = "/ping")] // px::ann:1
+ pub fn ping() -> StatusCode {
+     StatusCode::OK
+ }
+diff --git a/server/src/bin/server.rs b/server/src/bin/server.rs
+index 8a06ccf..d236fff 100644
+--- a/server/src/bin/server.rs
++++ b/server/src/bin/server.rs
+@@ -1,3 +1,4 @@
++//! px:server_entrypoint
+ use anyhow::Context;
+ use pavex::config::ConfigLoader;
+ use pavex::server::{Server, ServerHandle, ShutdownMode};
+diff --git a/server/tests/integration/ping.rs b/server/tests/integration/ping.rs
+index c52114e..640039b 100644
+--- a/server/tests/integration/ping.rs
++++ b/server/tests/integration/ping.rs
+@@ -1,3 +1,4 @@
++//! px:ping_test
+ use crate::helpers::TestApi;
+ use pavex::http::StatusCode;
+ 
+diff --git a/server_sdk/Cargo.toml b/server_sdk/Cargo.toml
+index ffb9ae7..a919a7d 100644
+--- a/server_sdk/Cargo.toml
++++ b/server_sdk/Cargo.toml
+@@ -3,9 +3,11 @@ name = "server_sdk"
+ version = "0.1.0"
+ edition = "2024"
+ 
++# px:generate_directive:start
+ [package.metadata.px.generate]
+ generator_type = "cargo_workspace_binary"
+ generator_name = "bp"
++# px:generate_directive:end
+ 
+ [package.metadata.px.verify]
+ verifier_type = "cargo_workspace_binary"
+-- 
+2.39.5 (Apple Git-154)
+

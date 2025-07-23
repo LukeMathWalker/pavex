@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::path::PathParams};
+use pavex::{delete, http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Profile;
 
@@ -14,6 +14,7 @@ pub struct UnfollowProfileResponse {
     pub profile: Profile,
 }
 
+#[delete(path = "/{username}/follow")]
 pub fn unfollow_profile(_params: PathParams<UnfollowProfile>) -> StatusCode {
     StatusCode::OK
 }

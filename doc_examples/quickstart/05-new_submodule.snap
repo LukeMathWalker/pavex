@@ -1,9 +1,0 @@
-```rust title="app/src/lib.rs" hl_lines="7"
-pub use blueprint::blueprint;
-
-mod blueprint;
-pub mod configuration;
-pub mod routes;
-pub mod telemetry;
-pub mod user_agent;
-```

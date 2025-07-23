@@ -1,19 +1,22 @@
-use pavex::blueprint::{
-    router::{GET, POST},
-    Blueprint,
-};
-use pavex::f;
+use pavex::Blueprint;
 
-pub fn handler() -> pavex::response::Response {
+#[pavex::get(path = "/id")]
+pub fn get_id() -> pavex::response::Response {
+    todo!()
+}
+
+#[pavex::post(path = "/id")]
+pub fn post_id() -> pavex::response::Response {
     todo!()
 }
 
 #[pavex::fallback]
-pub fn fallback1() -> pavex::response::Response {
+pub fn get_fallback() -> pavex::response::Response {
     todo!()
 }
 
-pub fn fallback2() -> pavex::response::Response {
+#[pavex::fallback]
+pub fn post_fallback() -> pavex::response::Response {
     todo!()
 }
 
@@ -21,14 +24,14 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/id", f!(crate::handler));
-        bp.fallback(FALLBACK_1);
+        bp.route(GET_ID);
+        bp.fallback(GET_FALLBACK);
         bp
     });
     bp.nest({
         let mut bp = Blueprint::new();
-        bp.route(POST, "/id", f!(crate::handler));
-        bp.fallback(f!(crate::fallback2));
+        bp.route(POST_ID);
+        bp.fallback(POST_FALLBACK);
         bp
     });
     bp

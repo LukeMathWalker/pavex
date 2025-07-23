@@ -1,9 +1,9 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 pub use private::*;
 
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B) -> Response {
     todo!()
 }
@@ -11,16 +11,16 @@ pub fn handler(_a: A, _b: B) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     register(&mut bp);
-    bp.route(GET, "/", f!(self::handler));
+    bp.routes(from![crate]);
     bp
 }
 
 mod private {
-    use pavex::blueprint::Blueprint;
-    use pavex::f;
+    use pavex::{blueprint::from, Blueprint};
 
     pub struct A;
 
+    #[pavex::request_scoped(id = "A_")]
     pub fn a() -> A {
         todo!()
     }
@@ -33,14 +33,15 @@ mod private {
         }
     }
 
+    #[pavex::methods]
     impl B {
+        #[request_scoped]
         pub fn new() -> B {
             todo!()
         }
     }
 
     pub fn register(bp: &mut Blueprint) {
-        bp.request_scoped(f!(self::a));
-        bp.request_scoped(f!(self::B::new));
+        bp.import(from![crate::private]);
     }
 }

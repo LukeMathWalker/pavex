@@ -14,8 +14,6 @@ use pavex_session::{
     },
 };
 
-pub use kit::{InMemorySessionKit, RegisteredInMemorySessionKit};
-
 #[derive(Clone)]
 /// An in-memory session store.
 ///
@@ -229,85 +227,4 @@ impl SessionStorageBackend for InMemorySessionStore {
         }
         Ok(num_deleted)
     }
-}
-
-mod kit {
-    use pavex::blueprint::{Blueprint, from, middleware::PostProcessingMiddleware};
-
-    #[derive(Clone, Debug)]
-    #[non_exhaustive]
-    /// Components required to work with sessions using an in-memory store
-    /// as the storage backend.
-    ///
-    /// # Guide
-    ///
-    /// Check out the [session installation](https://pavex.dev/guide/sessions/installation/)
-    /// section of Pavex's guide for a thorough introduction to sessions and how to
-    /// customize them.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use pavex::blueprint::Blueprint;
-    /// use pavex::cookie::CookieKit;
-    /// use pavex_session_memory_store::InMemorySessionKit;
-    ///
-    /// let mut bp = Blueprint::new();
-    /// InMemorySessionKit::new().register(&mut bp);
-    /// // Sessions are built on top of cookies,
-    /// // so you need to set those up too.
-    /// // Order is important here!
-    /// CookieKit::new().register(&mut bp);
-    /// ```
-    pub struct InMemorySessionKit {
-        /// A post-processing middleware to sync the session state with the session store
-        /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
-        ///
-        /// By default, it's set to [`finalize_session`].
-        /// The error is handled by [`FinalizeError::into_response`].
-        ///
-        /// [`FinalizeError::into_response`]: https://pavex.dev/docs/api_reference/pavex_session/errors/enum.FinalizeError.html#method.into_response
-        /// [`finalize_session`]: https://pavex.dev/docs/api_reference/pavex_session/fn.finalize_session.html
-        pub session_finalizer: Option<PostProcessingMiddleware>,
-    }
-
-    impl Default for InMemorySessionKit {
-        fn default() -> Self {
-            Self::new()
-        }
-    }
-
-    impl InMemorySessionKit {
-        /// Create a new [`InMemorySessionKit`] with all the bundled constructors and middlewares.
-        pub fn new() -> Self {
-            let pavex_session::SessionKit {
-                session_finalizer, ..
-            } = pavex_session::SessionKit::new();
-            Self { session_finalizer }
-        }
-
-        #[doc(hidden)]
-        #[deprecated(note = "This call is no longer necessary. \
-            The session configuration will automatically use its default values if left unspecified.")]
-        pub fn with_default_config(self) -> Self {
-            self
-        }
-
-        /// Register all the bundled constructors and middlewares with a [`Blueprint`].
-        ///
-        /// If a component is set to `None` it will not be registered.
-        pub fn register(self, bp: &mut Blueprint) -> RegisteredInMemorySessionKit {
-            bp.import(from![crate]);
-            let mut kit = pavex_session::SessionKit::new();
-            kit.session_finalizer = self.session_finalizer;
-            kit.register(bp);
-
-            RegisteredInMemorySessionKit {}
-        }
-    }
-
-    #[derive(Clone, Debug)]
-    #[non_exhaustive]
-    /// The type returned by [`InMemorySessionKit::register`].
-    pub struct RegisteredInMemorySessionKit {}
 }

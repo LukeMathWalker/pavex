@@ -30,23 +30,47 @@ of your application crate:
     pavex_session_memory_store = "0.1"
     ```
 
-## Kits
+## Blueprint
 
-Kits bundles together all the components you need to work with a specific session setup.
-Register the one provided by the storage backend you chose against your [`Blueprint`][Blueprint]:
+You need to add a few imports and middlewares to your [`Blueprint`][Blueprint] to get sessions up and running:
 
 === "Postgres"
 
-    --8<-- "doc_examples/guide/sessions/installation/project-postgres.snap"
+    --8<-- "docs/examples/sessions/postgres/postgres.snap"
+
+    1. `pavex` provides the core request/response types as well as cookies.
+    2. `pavex_session` provides the `Session` type and the machinery to manage the session lifecycle.
+    3. `pavex_session_sqlx::postgres` provides a Postgres-based session store implementation.
+    4. [`finalize_session`][finalize_session] looks at the current session state and decides whether 
+       a session cookie must be set or not on the outgoing response.
+    5. [`inject_response_cookies`][inject_response_cookies] converts [`ResponseCookies`][ResponseCookies]
+       into `Set-Cookie` headers on the response.\
+       It **must** execute after [`finalize_session`][finalize_session],
+       otherwise the session cookie will not be set.
+       If you get the order wrong, the code generation process will fail.
 
 === "In-memory"
 
-    --8<-- "doc_examples/guide/sessions/installation_memory/project-in_memory.snap"
+    --8<-- "docs/examples/sessions/in_memory/in_memory.snap"
 
-You can customize each component inside the kit to suit your needs.
-Check out their respective documentation for more information.
+    1. `pavex` provides the core request/response types as well as cookies.
+    2. `pavex_session` provides the `Session` type and the machinery to manage the session lifecycle.
+    3. `pavex_session_memory_store` provides the in-memory session store implementation.
+    4. [`finalize_session`][finalize_session] looks at the current session state and decides whether 
+       a session cookie must be set or not on the outgoing response.
+    5. [`inject_response_cookies`][inject_response_cookies] converts [`ResponseCookies`][ResponseCookies]
+       into `Set-Cookie` headers on the response.\
+       It **must** execute after [`finalize_session`][finalize_session],
+       otherwise the session cookie will not be set.
+       If you get the order wrong, the code generation process will fail.
 
+Sessions are built on top of [cookies][cookie], so both must be installed for sessions to work correctly.
+
+[cookie]: /guide/cookies/index.md
 [pavex_session]: /api_reference/pavex_session/index.html
 [pavex_session_sqlx]: /api_reference/pavex_session_sqlx/index.html
 [pavex_session_memory_store]: /api_reference/pavex_session_memory_store/index.html
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[ResponseCookies]: /api_reference/pavex/cookie/struct.ResponseCookies.html
+[inject_response_cookies]: /api_reference/pavex/cookie/fn.inject_response_cookies.html
+[finalize_session]: /api_reference/pavex_session/fn.finalize_session.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html

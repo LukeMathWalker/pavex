@@ -1,4 +1,4 @@
-/// `RootSpan` is the top-level *logical* [`tracing::Span`] for an incoming request.  
+/// `RootSpan` is the top-level *logical* [`tracing::Span`] for an incoming request.
 ///
 /// It is not necessarily the top-level *physical* span, as it may be a child of
 /// another span (e.g. a span representing the underlying HTTP connection).
@@ -6,7 +6,7 @@
 /// # What's the purpose of a root span?
 ///
 /// The root span should contain enough information, on its own, to determine
-/// what happened to a request.  
+/// what happened to a request.
 /// It is good practice to enrich the root span throughout the request processing lifecycle:
 ///
 /// - With data from the incoming request, when it's created (e.g. method, path, etc.)
@@ -21,11 +21,11 @@
 ///
 /// You can leverage [Pavex's dependency injection system](https://pavex.dev/docs/guide/dependency_injection/)
 /// to access the root span from any of your components—request handlers,
-/// middlewares, error observers, etc.  
+/// middlewares, error observers, etc.
 /// It's enough to add an input parameter with type `&RootSpan` to your component.
 ///
 /// ```rust
-/// use pavex::blueprint::Blueprint;
+/// use pavex::Blueprint;
 /// use pavex::middleware::Next;
 /// use pavex::response::Response;
 /// use pavex_tracing::fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE};
@@ -50,7 +50,7 @@
 /// # Why is there no default constructor for `RootSpan` in `pavex_tracing`?
 ///
 /// `pavex_tracing` defines `RootSpan` but, unlike other first-party extractors in Pavex,
-/// it doesn't provide a default constructor.  
+/// it doesn't provide a default constructor.
 /// It's an intentional choice; it stems from the way the `tracing` crate works:
 /// every field on a `Span` must be declared when the `Span` is created.
 /// **You can't add an extra field after span creation.**
@@ -72,9 +72,9 @@
 /// ```
 ///
 /// Over time, every application wants to enrich its [`RootSpan`] with domain-specific fields or
-/// have tighter control over the way "default" fields are named or populated.  
+/// have tighter control over the way "default" fields are named or populated.
 /// To make it happen, you need to control span creation, which in turn implies that you need
-/// to control the constructor.  
+/// to control the constructor.
 /// For this very reason, `pavex new` scaffolds a constructor for [`RootSpan`] **in your own project**,
 /// which you are then free to customize and tailor to your own needs when the time comes.
 ///

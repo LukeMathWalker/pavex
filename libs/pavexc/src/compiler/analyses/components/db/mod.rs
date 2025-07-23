@@ -4,7 +4,7 @@ use crate::compiler::analyses::components::{
     unregistered::UnregisteredComponent,
 };
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
-use crate::compiler::analyses::error_handlers::ErrorHandlersDb;
+use crate::compiler::analyses::error_handlers::{ErrorHandlerEntry, ErrorHandlersDb};
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::into_error::register_error_new_transformer;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
@@ -19,7 +19,7 @@ use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
 use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
-    get_err_variant, get_ok_variant, process_framework_callable_path, process_framework_path,
+    get_err_variant, get_ok_variant, resolve_framework_callable_path, resolve_type_path,
 };
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
@@ -29,8 +29,9 @@ use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavex_cli_diagnostic::AnnotatedSource;
+use pavexc_attr_parser::AnnotationProperties;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -51,7 +52,7 @@ pub(crate) struct ComponentDb {
     /// For each constructible component, determine if it can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
-    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    id2cloning_policy: HashMap<ComponentId, CloningPolicy>,
     /// For each configuration type, determine if it should be defaulted or not.
     ///
     /// Invariants: there is an entry for every configuration type.
@@ -147,10 +148,9 @@ impl ComponentDb {
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> ComponentDb {
         // We only need to resolve these once.
-        let pavex_error = process_framework_path("pavex::Error", krate_collection);
-        let pavex_processing =
-            process_framework_path("pavex::middleware::Processing", krate_collection);
-        let pavex_response = process_framework_path("pavex::response::Response", krate_collection);
+        let pavex_error = resolve_type_path("pavex::Error", krate_collection);
+        let pavex_processing = resolve_type_path("pavex::middleware::Processing", krate_collection);
+        let pavex_response = resolve_type_path("pavex::response::Response", krate_collection);
         let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
@@ -159,7 +159,7 @@ impl ComponentDb {
             })
         };
         let pavex_noop_wrap_id = {
-            let pavex_noop_wrap_callable = process_framework_callable_path(
+            let pavex_noop_wrap_callable = resolve_framework_callable_path(
                 "pavex::middleware::wrap_noop",
                 package_graph,
                 krate_collection,
@@ -179,7 +179,7 @@ impl ComponentDb {
             match_id2fallible_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
-            id2cloning_strategy: Default::default(),
+            id2cloning_policy: Default::default(),
             config_id2default_strategy: Default::default(),
             config_id2include_if_unused: Default::default(),
             config_id2constructor_id: Default::default(),
@@ -284,7 +284,7 @@ impl ComponentDb {
                     )),
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: framework_item_db.lifecycle(id),
-                    cloning_strategy: framework_item_db.cloning_strategy(id),
+                    cloning_policy: framework_item_db.cloning_policy(id),
                     derived_from: None,
                 },
                 computation_db,
@@ -294,7 +294,7 @@ impl ComponentDb {
 
         // Add a synthetic constructor for the `pavex::middleware::Next` type.
         {
-            let callable = process_framework_callable_path(
+            let callable = resolve_framework_callable_path(
                 "pavex::middleware::Next::new",
                 package_graph,
                 krate_collection,
@@ -305,7 +305,7 @@ impl ComponentDb {
                     computation_id: computation_db.get_or_intern(Constructor(computation)),
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: Lifecycle::RequestScoped,
-                    cloning_strategy: CloningStrategy::NeverClone,
+                    cloning_policy: CloningPolicy::NeverClone,
                     derived_from: None,
                 },
                 computation_db,
@@ -388,17 +388,15 @@ impl ComponentDb {
                 UserConstructor {
                     user_component_id, ..
                 } => {
-                    let cloning_strategy =
-                        self.user_db.cloning_strategy(user_component_id).unwrap();
-                    self.id2cloning_strategy
-                        .insert(id, cloning_strategy.to_owned());
+                    let cloning_policy = self.user_db.cloning_policy(user_component_id).unwrap();
+                    self.id2cloning_policy.insert(id, cloning_policy.to_owned());
                 }
                 SyntheticConstructor {
-                    cloning_strategy,
+                    cloning_policy,
                     derived_from,
                     ..
                 } => {
-                    self.id2cloning_strategy.insert(id, cloning_strategy);
+                    self.id2cloning_policy.insert(id, cloning_policy);
                     if let Some(derived_from) = derived_from {
                         self.derived2user_registered.insert(
                             id,
@@ -449,10 +447,8 @@ impl ComponentDb {
                 }
                 UserPrebuiltType { user_component_id } => {
                     let ty_ = &self.prebuilt_type_db[user_component_id];
-                    let cloning_strategy =
-                        self.user_db.cloning_strategy(user_component_id).unwrap();
-                    self.id2cloning_strategy
-                        .insert(id, cloning_strategy.to_owned());
+                    let cloning_policy = self.user_db.cloning_policy(user_component_id).unwrap();
+                    self.id2cloning_policy.insert(id, cloning_policy.to_owned());
                     self.get_or_intern(
                         UnregisteredComponent::SyntheticConstructor {
                             computation_id: computation_db.get_or_intern(Constructor(
@@ -460,7 +456,7 @@ impl ComponentDb {
                             )),
                             scope_id: self.user_db.scope_id(user_component_id),
                             lifecycle: self.user_db.lifecycle(user_component_id),
-                            cloning_strategy: cloning_strategy.to_owned(),
+                            cloning_policy: cloning_policy.to_owned(),
                             derived_from: Some(id),
                         },
                         computation_db,
@@ -468,14 +464,13 @@ impl ComponentDb {
                 }
                 UserConfigType { user_component_id } => {
                     let config = self.user_db.config_type(user_component_id).unwrap();
-                    let cloning_strategy =
-                        self.user_db.cloning_strategy(user_component_id).unwrap();
+                    let cloning_policy = self.user_db.cloning_policy(user_component_id).unwrap();
                     let default_strategy =
                         self.user_db.default_strategy(user_component_id).unwrap();
                     let include_if_unused =
                         self.user_db.include_if_unused(user_component_id).unwrap();
 
-                    self.id2cloning_strategy.insert(id, *cloning_strategy);
+                    self.id2cloning_policy.insert(id, *cloning_policy);
                     self.config_id2default_strategy.insert(id, default_strategy);
                     self.config_id2include_if_unused
                         .insert(id, include_if_unused);
@@ -487,7 +482,7 @@ impl ComponentDb {
                             )),
                             scope_id: self.user_db.scope_id(user_component_id),
                             lifecycle: self.user_db.lifecycle(user_component_id),
-                            cloning_strategy: cloning_strategy.to_owned(),
+                            cloning_policy: cloning_policy.to_owned(),
                             derived_from: Some(id),
                         },
                         computation_db,
@@ -534,7 +529,7 @@ impl ComponentDb {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
                         lifecycle: self.lifecycle(id),
-                        cloning_strategy: self.id2cloning_strategy[&id],
+                        cloning_policy: self.id2cloning_policy[&id],
                         derived_from: Some(id),
                     },
                     computation_db,
@@ -584,11 +579,14 @@ impl ComponentDb {
                 .computation();
             let error_type = get_err_variant(fallible_computation.output_type().unwrap());
             match error_handlers_db.get_or_try_bind(scope_id, error_type, self) {
-                Some((error_handler, error_handler_user_id)) => {
+                Some(ErrorHandlerEntry::Valid {
+                    error_handler,
+                    component_id,
+                }) => {
                     let error_matcher_id = self.fallible_id2match_ids.get(&fallible_id).unwrap().1;
                     self.get_or_intern(
                         UnregisteredComponent::ErrorHandler {
-                            source_id: error_handler_user_id.into(),
+                            source_id: component_id.into(),
                             error_handler,
                             error_matcher_id,
                             error_source_id: error_matcher_id,
@@ -596,6 +594,7 @@ impl ComponentDb {
                         computation_db,
                     );
                 }
+                Some(ErrorHandlerEntry::Invalid) => {}
                 None => {
                     Self::missing_error_handler(fallible_user_id, &self.user_db, diagnostics);
                 }
@@ -1051,12 +1050,42 @@ impl ComponentDb {
                 ErrorHandlerTarget::ErrorType {
                     error_ref_input_index,
                 } => {
-                    let e = match ErrorHandler::new(
+                    let error_ref_input_index = if let Some(index) = error_ref_input_index {
+                        index
+                    } else {
+                        let Some(source_id) =
+                            &computation_db[error_handler_user_component_id].source_coordinates
+                        else {
+                            unreachable!()
+                        };
+                        let Some(annotation) = krate_collection.annotation(source_id) else {
+                            // TODO: convert into diagnostic.
+                            panic!("Can't find the annotation for this error handler");
+                        };
+                        let AnnotationProperties::ErrorHandler {
+                            error_ref_input_index,
+                            id: _,
+                            default: _,
+                        } = annotation.properties
+                        else {
+                            unreachable!()
+                        };
+                        error_ref_input_index
+                    };
+                    let scope_id = self.user_db.scope_id(error_handler_user_component_id);
+                    match ErrorHandler::new(
                         error_handler_callable.to_owned(),
                         error_ref_input_index,
                     ) {
-                        Ok(e) => e,
+                        Ok(e) => {
+                            error_handlers_db.insert(e, scope_id, error_handler_user_component_id);
+                        }
                         Err(e) => {
+                            if let Some(error_type_ref) =
+                                error_handler_callable.inputs.get(error_ref_input_index)
+                            {
+                                error_handlers_db.insert_invalid(error_type_ref, scope_id);
+                            }
                             Self::invalid_error_handler(
                                 e,
                                 error_handler_user_component_id,
@@ -1065,14 +1094,8 @@ impl ComponentDb {
                                 krate_collection,
                                 diagnostics,
                             );
-                            continue;
                         }
                     };
-                    error_handlers_db.insert(
-                        e,
-                        self.user_db.scope_id(error_handler_user_component_id),
-                        error_handler_user_component_id,
-                    );
                 }
             }
         }
@@ -1157,7 +1180,7 @@ impl ComponentDb {
     ) {
         let into_response = {
             let into_response =
-                process_framework_path("pavex::response::IntoResponse", krate_collection);
+                resolve_type_path("pavex::response::IntoResponse", krate_collection);
             let ResolvedType::ResolvedPath(into_response) = into_response else {
                 unreachable!()
             };
@@ -1298,7 +1321,7 @@ impl ComponentDb {
         callable_id: ComputationId,
         lifecycle: Lifecycle,
         scope_id: ScopeId,
-        cloning_strategy: CloningStrategy,
+        cloning_policy: CloningPolicy,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
         derived_from: Option<ComponentId>,
@@ -1314,7 +1337,7 @@ impl ComponentDb {
             lifecycle,
             computation_id: callable_id,
             scope_id,
-            cloning_strategy,
+            cloning_policy,
             derived_from,
         };
         Ok(self.get_or_intern(constructor_component, computation_db))
@@ -1327,7 +1350,7 @@ impl ComponentDb {
         callable_id: ComputationId,
         lifecycle: Lifecycle,
         scope_id: ScopeId,
-        cloning_strategy: CloningStrategy,
+        cloning_policy: CloningPolicy,
         computation_db: &mut ComputationDb,
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
@@ -1335,7 +1358,7 @@ impl ComponentDb {
             lifecycle,
             computation_id: callable_id,
             scope_id,
-            cloning_strategy,
+            cloning_policy,
             derived_from,
         };
         Ok(self.get_or_intern(constructor_component, computation_db))
@@ -1505,10 +1528,10 @@ impl ComponentDb {
     }
 
     #[track_caller]
-    /// Given the id of a component, return the corresponding [`CloningStrategy`].
+    /// Given the id of a component, return the corresponding [`CloningPolicy`].
     /// It panics if called for a non-constructor component.
-    pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
-        self.id2cloning_strategy[&component_id]
+    pub fn cloning_policy(&self, component_id: ComponentId) -> CloningPolicy {
+        self.id2cloning_policy[&component_id]
     }
 
     #[track_caller]
@@ -1534,7 +1557,7 @@ impl ComponentDb {
         match self.config_id2constructor_id.get(&id) {
             Some(constructor_id) => *constructor_id,
             None => {
-                panic!("No constructor found for component {:?}", id)
+                panic!("No constructor found for component {id:?}")
             }
         }
     }
@@ -1827,7 +1850,7 @@ impl ComponentDb {
             .into_owned()
         {
             HydratedComponent::Constructor(constructor) => {
-                let cloning_strategy = self.id2cloning_strategy[&unbound_root_id];
+                let cloning_policy = self.id2cloning_policy[&unbound_root_id];
                 let bound_computation = constructor
                     .0
                     .bind_generic_type_parameters(bindings)
@@ -1837,7 +1860,7 @@ impl ComponentDb {
                     bound_computation_id,
                     self.lifecycle(unbound_root_id),
                     self.scope_id(unbound_root_id),
-                    cloning_strategy,
+                    cloning_policy,
                     computation_db,
                     framework_item_db,
                     Some(unbound_root_id),
@@ -1925,8 +1948,7 @@ impl ComponentDb {
                     .unwrap_or_else(||
                         panic!(
                             "The transformed component's output type is not equivalent to the \
-                            transformer's input type.\nTransformed component: {:?}\nTransformer: {:?}",
-                            unbound_transformed_output, transformer_input_type
+                            transformer's input type.\nTransformed component: {unbound_transformed_output:?}\nTransformer: {transformer_input_type:?}"
                         )
                     );
                 let mut transformer_bindings = HashMap::new();

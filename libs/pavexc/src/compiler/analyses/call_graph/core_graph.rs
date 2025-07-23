@@ -462,7 +462,8 @@ where
             assert_eq!(children.len(), 1);
             children[0]
         };
-        let ok_matcher_node_index = {
+        
+        {
             let children: Vec<_> = call_graph
                 .neighbors_directed(match_node_index, Direction::Outgoing)
                 .collect();
@@ -483,8 +484,7 @@ where
                     false
                 })
                 .unwrap()
-        };
-        ok_matcher_node_index
+        }
     } else {
         root_node_index
     };

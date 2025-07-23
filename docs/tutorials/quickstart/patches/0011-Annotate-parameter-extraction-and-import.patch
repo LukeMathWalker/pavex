@@ -1,0 +1,68 @@
+From 659d0c4fca6b0c061bd167f9d2f8f906f5d05b45 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 13:15:15 +0200
+Subject: [PATCH 11/32] Annotate parameter extraction and import
+
+---
+ app/src/blueprint.rs    |  6 ++++++
+ app/src/routes/greet.rs | 10 ++++++----
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
+index 5271657..7f8f415 100644
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
+@@ -1,11 +1,14 @@
+ use crate::telemetry;
++// px:pavex_import:start
+ use pavex::{Blueprint, blueprint::from};
+ 
+ /// The main blueprint, defining all the components used in this API.
+ pub fn blueprint() -> Blueprint {
++    // px::skip:start
+     let mut bp = Blueprint::new();
+     // Bring into scope constructors, error handlers, configuration
+     // and prebuilt types defined in the following crates
++    // px::skip:end
+     bp.import(from![
+         // Local components, defined in this crate
+         crate,
+@@ -13,9 +16,12 @@ pub fn blueprint() -> Blueprint {
+         // by the framework itself.
+         pavex,
+     ]);
++    // px::skip:start
+ 
+     telemetry::instrument(&mut bp);
+ 
+     bp.prefix("/api").routes(from![crate]);
+     bp
++    // px::skip:end
+ }
++// px:pavex_import:end
+diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
+index 2e90f24..d33b9f6 100644
+--- a/app/src/routes/greet.rs
++++ b/app/src/routes/greet.rs
+@@ -1,12 +1,14 @@
++//! px:greet_route_impl
+ use pavex::{get, request::path::PathParams, response::Response};
+ 
+ #[PathParams]
+ pub struct GreetParams {
+-    pub name: String,
++    pub name: String, // px::ann:1
+ }
+ 
+ #[get(path = "/greet/{name}")]
+-pub fn greet(params: PathParams<GreetParams>) -> Response {
+-    let GreetParams { name } = params.0;
+-    Response::ok().set_typed_body(format!("Hello, {name}!"))
++pub fn greet(params: PathParams<GreetParams> /* px::ann:2 */) -> Response {
++    let GreetParams { name } /* px::ann:3 */ = params.0;
++    Response::ok() // px::ann:4
++        .set_typed_body(format!("Hello, {name}!")) // px::ann:5
+ }
+-- 
+2.39.5 (Apple Git-154)
+

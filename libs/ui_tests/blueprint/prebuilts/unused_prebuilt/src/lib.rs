@@ -1,15 +1,11 @@
-use pavex::blueprint::{from, Blueprint};
-use pavex::t;
-
-pub struct Unused;
+use pavex::{blueprint::from, Blueprint};
 
 #[pavex::prebuilt]
 #[derive(Clone)]
-pub struct Unused1;
+pub struct Unused;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.prebuilt(t!(crate::Unused));
     bp
 }

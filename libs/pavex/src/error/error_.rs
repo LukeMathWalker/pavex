@@ -27,6 +27,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+use crate::{methods, response::Response};
 use std::fmt;
 
 /// Pavex's error type: an opaque wrapper around the concrete error type
@@ -48,6 +49,7 @@ pub struct Error {
     inner: Box<dyn std::error::Error + Send + Sync>,
 }
 
+#[methods]
 impl Error {
     /// Create a new [`Error`] from a boxable error.
     pub fn new<E>(error: E) -> Self
@@ -67,6 +69,19 @@ impl Error {
     /// Return a reference to the underlying boxed error.
     pub fn inner_ref(&self) -> &(dyn std::error::Error + Send + Sync) {
         &*self.inner
+    }
+
+    /// Return an opaque `500 Internal Server Error` to the caller.
+    ///
+    /// It is used as the default error handler for [`pavex::Error`][`Error`].
+    ///
+    /// # Guide
+    ///
+    /// Check out [the "Fallback error handler" section of the guide](https://pavex.dev/docs/guide/errors/error_handlers/#fallback-error-handler)
+    /// for more details on the special role played by the error handler for [`pavex::Error`][`Error`] in Pavex.
+    #[error_handler(pavex = crate)]
+    pub fn to_response(&self) -> Response {
+        Response::internal_server_error()
     }
 }
 

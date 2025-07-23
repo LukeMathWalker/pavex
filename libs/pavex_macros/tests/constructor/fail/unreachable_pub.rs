@@ -3,7 +3,7 @@ mod private {
 
     pub struct A;
 
-    #[singleton]
+    #[singleton(id = "A_")]
     pub fn a() -> A {
         todo!()
     }

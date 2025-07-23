@@ -1,25 +1,17 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
 use pavex::response::Response;
-use pavex::{f, t};
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Debug, Clone, serde::Deserialize)]
+#[pavex::config(key = "a", id = "CONFIG_A")]
 // Won't be included in the generated `ApplicationConfig`.
 pub struct A;
 
 #[derive(Debug, Clone, serde::Deserialize)]
-#[pavex::config(key = "a1")]
-// Won't be included in the generated `ApplicationConfig`.
-pub struct A1;
-
-#[derive(Debug, Clone, serde::Deserialize)]
 // Will be included in the generated `ApplicationConfig`.
+#[pavex::config(key = "b", id = "CONFIG_B", include_if_unused)]
 pub struct B;
 
-#[derive(Debug, Clone, serde::Deserialize)]
-// Will be included in the generated `ApplicationConfig`.
-#[pavex::config(key = "b1", include_if_unused)]
-pub struct B1;
-
+#[pavex::get(path = "/")]
 pub fn handler() -> Response {
     todo!()
 }
@@ -27,8 +19,6 @@ pub fn handler() -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.config("a", t!(crate::A));
-    bp.config("b", t!(crate::B)).include_if_unused();
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

@@ -1,7 +1,5 @@
 //! Types related to [`PostgresSessionStore`].
 use jiff_sqlx::ToSqlx;
-use pavex::blueprint::middleware::PostProcessingMiddleware;
-use pavex::blueprint::{Blueprint, from};
 use pavex::methods;
 use pavex::time::Timestamp;
 use pavex_session::SessionStore;
@@ -360,80 +358,3 @@ fn as_unknown_id_error(r: &PgQueryResult, id: &SessionId) -> Result<(), UnknownI
     );
     Ok(())
 }
-
-#[derive(Clone, Debug)]
-#[non_exhaustive]
-/// Components required to work with sessions using Postgres as
-/// the storage backend.
-///
-/// # Guide
-///
-/// Check out the [session installation](https://pavex.dev/guide/sessions/installation/)
-/// section of Pavex's guide for a thorough introduction to sessions and how to
-/// customize them.
-///
-/// # Example
-///
-/// ```rust
-/// use pavex::blueprint::Blueprint;
-/// use pavex::cookie::CookieKit;
-/// use pavex_session_sqlx::PostgresSessionKit;
-///
-/// let mut bp = Blueprint::new();
-/// PostgresSessionKit::new().register(&mut bp);
-/// // Sessions are built on top of cookies,
-/// // so you need to set those up too.
-/// // Order is important here!
-/// CookieKit::new().register(&mut bp);
-/// ```
-pub struct PostgresSessionKit {
-    /// A post-processing middleware to sync the session state with the session store
-    /// and inject the session cookie into the outgoing response via the `Set-Cookie` header.
-    ///
-    /// By default, it's set to [`finalize_session`].
-    /// The error is handled by [`FinalizeError::into_response`].
-    ///
-    /// [`FinalizeError::into_response`]: https://pavex.dev/docs/api_reference/pavex_session/errors/enum.FinalizeError.html#method.into_response
-    /// [`finalize_session`]: https://pavex.dev/docs/api_reference/pavex_session/fn.finalize_session.html
-    pub session_finalizer: Option<PostProcessingMiddleware>,
-}
-
-impl Default for PostgresSessionKit {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl PostgresSessionKit {
-    /// Create a new [`PostgresSessionKit`] with all the bundled constructors and middlewares.
-    pub fn new() -> Self {
-        let pavex_session::SessionKit {
-            session_finalizer, ..
-        } = pavex_session::SessionKit::new();
-        Self { session_finalizer }
-    }
-
-    #[doc(hidden)]
-    #[deprecated(note = "This call is no longer necessary. \
-        The session configuration will automatically use its default values if left unspecified.")]
-    pub fn with_default_config(self) -> Self {
-        self
-    }
-
-    /// Register all the bundled constructors and middlewares with a [`Blueprint`].
-    ///
-    /// If a component is set to `None` it will not be registered.
-    pub fn register(self, bp: &mut Blueprint) -> RegisteredPostgresSessionKit {
-        bp.import(from![crate]);
-        let mut kit = pavex_session::SessionKit::new();
-        kit.session_finalizer = self.session_finalizer;
-        kit.register(bp);
-
-        RegisteredPostgresSessionKit {}
-    }
-}
-
-#[derive(Clone, Debug)]
-#[non_exhaustive]
-/// The type returned by [`PostgresSessionKit::register`].
-pub struct RegisteredPostgresSessionKit {}

@@ -1,5 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct A;
 
@@ -7,70 +6,54 @@ pub struct B;
 
 pub struct C;
 
-pub struct D;
-
-pub struct E;
-
-#[derive(Default)]
 pub struct F;
+
+#[pavex::methods]
+// A foreign trait, from `std`.
+impl Default for F {
+    #[request_scoped]
+    fn default() -> Self {
+        todo!()
+    }
+}
 
 pub trait MyTrait {
     fn a_method_that_returns_self() -> Self;
     fn a_method_that_borrows_self(&self) -> B;
-    fn a_method_with_a_generic<T>(&self) -> D;
 }
 
 pub trait AnotherTrait {
     fn a_method_that_consumes_self(self) -> C;
 }
 
-pub trait GenericTrait<T> {
-    fn a_method(&self) -> E;
-}
-
+#[pavex::methods]
 impl MyTrait for A {
+    #[request_scoped]
     fn a_method_that_returns_self() -> Self {
         todo!()
     }
+    #[request_scoped]
     fn a_method_that_borrows_self(&self) -> B {
-        todo!()
-    }
-    fn a_method_with_a_generic<T>(&self) -> D {
         todo!()
     }
 }
 
+#[pavex::methods]
 impl AnotherTrait for B {
+    #[request_scoped]
     fn a_method_that_consumes_self(self) -> C {
         todo!()
     }
 }
 
-impl<T> GenericTrait<T> for C {
-    fn a_method(&self) -> E {
-        todo!()
-    }
-}
-
-pub fn handler(_a: A, _c: C, _d: D, _e: E, _f: F) -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn handler(_a: A, _c: C, _f: F) -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    // A foreign trait, from `std`.
-    bp.request_scoped(f!(<crate::F as std::default::Default>::default));
-    bp.request_scoped(f!(<crate::A as crate::MyTrait>::a_method_that_returns_self));
-    bp.request_scoped(f!(<crate::A as crate::MyTrait>::a_method_that_borrows_self));
-    bp.request_scoped(f!(<crate::A as crate::MyTrait>::a_method_with_a_generic::<
-        std::string::String,
-    >));
-    bp.request_scoped(f!(
-        <crate::B as crate::AnotherTrait>::a_method_that_consumes_self
-    ));
-    bp.request_scoped(f!(
-        <crate::C as crate::GenericTrait<std::string::String>>::a_method
-    ));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

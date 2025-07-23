@@ -330,8 +330,7 @@ impl std::fmt::Display for InvalidDomainConstraint {
                 write!(
                     f,
                     "Catch-all parameters must appear at the very beginning of the domain.\n\
-                    That's not the case for `{}`: there is a catch-all parameter, `{}`, but it doesn't appear first.",
-                    original, parameter
+                    That's not the case for `{original}`: there is a catch-all parameter, `{parameter}`, but it doesn't appear first."
                 )
             }
             InvalidDomainConstraint::Empty => {
@@ -345,14 +344,12 @@ impl std::fmt::Display for InvalidDomainConstraint {
                 if *templated {
                     write!(
                         f,
-                        "`{}` is too long to be a valid domain constraint. The maximum allowed length is 253 characters, but this domain constraint would only match domains that are at least {} characters long.",
-                        original, length
+                        "`{original}` is too long to be a valid domain constraint. The maximum allowed length is 253 characters, but this domain constraint would only match domains that are at least {length} characters long."
                     )
                 } else {
                     write!(
                         f,
-                        "`{}` is too long to be a valid domain. The maximum allowed length is 253 characters, but this domain is {} characters long.",
-                        original, length
+                        "`{original}` is too long to be a valid domain. The maximum allowed length is 253 characters, but this domain is {length} characters long."
                     )
                 }
             }
@@ -395,7 +392,7 @@ impl std::fmt::Display for InvalidDomainConstraint {
                             if i > 0 {
                                 write!(f, ", ")?;
                             }
-                            write!(f, "`{}`", c)?;
+                            write!(f, "`{c}`")?;
                         }
                         Ok(())
                     }
@@ -403,14 +400,12 @@ impl std::fmt::Display for InvalidDomainConstraint {
                         if *templated {
                             write!(
                                 f,
-                                "DNS labels must be at most 63 characters long, but `{invalid_label}` would only match labels that are at least {} characters long.",
-                                length
+                                "DNS labels must be at most 63 characters long, but `{invalid_label}` would only match labels that are at least {length} characters long."
                             )
                         } else {
                             write!(
                                 f,
-                                "DNS labels must be at most 63 characters long, but `{invalid_label}` is {} characters long.",
-                                length
+                                "DNS labels must be at most 63 characters long, but `{invalid_label}` is {length} characters long."
                             )
                         }
                     }
@@ -432,7 +427,7 @@ impl std::fmt::Display for InvalidDomainConstraint {
                             } else if i > 0 {
                                 write!(f, ", ")?;
                             }
-                            write!(f, "`{}`", p)?;
+                            write!(f, "`{p}`")?;
                         }
                         write!(f, ".")
                     }

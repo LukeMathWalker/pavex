@@ -1,29 +1,24 @@
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::IndexSet;
 use itertools::Itertools;
-use quote::format_ident;
 
-use pavex_bp_schema::{CreatedAt, RawIdentifiers};
+use super::RawIdentifiers;
 use rustdoc_types::ItemEnum;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
-use crate::language::callable_path::{
-    CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
-};
+use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{
-    CORE_PACKAGE_ID, CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem,
-    RustdocKindExt,
+    CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt,
 };
 
 use super::krate_name::CrateNameResolutionError;
@@ -63,30 +58,6 @@ pub struct FQPath {
     /// For trait methods, it must be set to the package id of the crate where the
     /// trait is defined.
     pub package_id: PackageId,
-}
-
-impl FQPath {
-    /// Collect all the package ids that are referenced in this path.
-    ///
-    /// This includes the package id of the crate that this path belongs to
-    /// as well as the package ids of all the crates that are referenced in its generic
-    /// arguments and qualified self (if any).
-    pub(crate) fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
-        package_ids.insert(&self.package_id);
-        for segment in &self.segments {
-            for generic_argument in &segment.generic_arguments {
-                match generic_argument {
-                    FQGenericArgument::Type(t) => {
-                        t.collect_package_ids(package_ids);
-                    }
-                    FQGenericArgument::Lifetime(_) => {}
-                }
-            }
-        }
-        if let Some(qself) = &self.qualified_self {
-            qself.type_.collect_package_ids(package_ids);
-        }
-    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -245,33 +216,6 @@ impl FQPathType {
             }
         }
     }
-
-    /// Collect all the package ids that are referenced in this path type.
-    ///
-    /// This includes the package id of the crate that this path belongs to
-    /// as well as the package ids of all the crates that are referenced in its generic
-    /// arguments (if any).
-    fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
-        match self {
-            FQPathType::ResolvedPath(p) => {
-                p.path.collect_package_ids(package_ids);
-            }
-            FQPathType::Reference(r) => {
-                r.inner.collect_package_ids(package_ids);
-            }
-            FQPathType::Tuple(t) => {
-                for element in &t.elements {
-                    element.collect_package_ids(package_ids);
-                }
-            }
-            FQPathType::ScalarPrimitive(_) => {
-                package_ids.insert(&CORE_PACKAGE_ID);
-            }
-            FQPathType::Slice(s) => {
-                s.element.collect_package_ids(package_ids);
-            }
-        }
-    }
 }
 
 impl From<ResolvedType> for FQPathType {
@@ -418,123 +362,19 @@ pub enum PathKind {
 }
 
 impl FQPath {
+    /// Parses a fully qualified path from the given identifiers.
+    ///
+    /// All paths must be fully qualified, meaning that they must start with a package name.
+    /// Using `crate::`/`super::`/`self::` is not allowed.
     pub fn parse(
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
         kind: PathKind,
     ) -> Result<Self, ParseError> {
-        fn replace_crate_in_path_with_registration_crate(p: &mut CallPath, created_at: &CreatedAt) {
-            if p.leading_path_segment() == "crate" {
-                let first_segment = p
-                    .segments
-                    .first_mut()
-                    .expect("Bug: a `CallPath` with no path segments!");
-                // Unwrapping here is safe: there is always at least one path segment in a successfully
-                // parsed `ExprPath`.
-                // We must make sure to normalize the crate name, since it may contain hyphens.
-                first_segment.ident =
-                    format_ident!("{}", created_at.package_name.replace('-', "_"));
-            } else if p.leading_path_segment() == "self" {
-                // We make the path absolute by adding the module path to its beginning.
-                let old_segments = std::mem::take(&mut p.segments);
-                let new_segments: Vec<_> = created_at
-                    .module_path
-                    .split("::")
-                    .map(|s| {
-                        let ident = format_ident!("{}", s.trim().to_owned());
-                        CallPathSegment {
-                            ident,
-                            generic_arguments: vec![],
-                        }
-                    })
-                    .chain(old_segments.into_iter().skip(1))
-                    .collect();
-                p.segments = new_segments;
-            } else if p.leading_path_segment() == "super" {
-                // We make the path absolute by adding replacing `super` with the relevant
-                // parts of the module path.
-                let n_super: usize = {
-                    let mut n_super = 0;
-                    let iter = p.segments.iter();
-                    for p in iter {
-                        if p.ident == "super" {
-                            n_super += 1;
-                        } else {
-                            break;
-                        }
-                    }
-                    n_super
-                };
-                let old_segments = std::mem::take(&mut p.segments);
-                // The path is relative to the current module.
-                // We "rebase" it to get an absolute path.
-                let module_segments: Vec<_> = created_at
-                    .module_path
-                    .split("::")
-                    .map(|s| {
-                        let ident = format_ident!("{}", s.trim().to_owned());
-                        CallPathSegment {
-                            ident,
-                            generic_arguments: vec![],
-                        }
-                    })
-                    .collect();
-                let n_module_segments = module_segments.len();
-                let new_segments: Vec<_> = module_segments
-                    .into_iter()
-                    .take(n_module_segments - n_super)
-                    .chain(old_segments.into_iter().skip(n_super))
-                    .collect();
-                p.segments = new_segments;
-            }
-            for segment in p.segments.iter_mut() {
-                for generic_argument in segment.generic_arguments.iter_mut() {
-                    match generic_argument {
-                        CallPathGenericArgument::Type(t) => {
-                            replace_crate_in_type_with_registration_crate(t, created_at);
-                        }
-                        CallPathGenericArgument::Lifetime(_) => {}
-                    }
-                }
-            }
-        }
-
-        fn replace_crate_in_type_with_registration_crate(
-            t: &mut CallPathType,
-            created_at: &CreatedAt,
-        ) {
-            match t {
-                CallPathType::ResolvedPath(p) => {
-                    replace_crate_in_path_with_registration_crate(p.path.deref_mut(), created_at)
-                }
-                CallPathType::Reference(r) => {
-                    replace_crate_in_type_with_registration_crate(r.inner.deref_mut(), created_at)
-                }
-                CallPathType::Tuple(t) => {
-                    for element in t.elements.iter_mut() {
-                        replace_crate_in_type_with_registration_crate(element, created_at);
-                    }
-                }
-                CallPathType::Slice(s) => {
-                    replace_crate_in_type_with_registration_crate(
-                        s.element_type.deref_mut(),
-                        created_at,
-                    );
-                }
-            }
-        }
-
-        let mut path = match kind {
+        let path = match kind {
             PathKind::Callable => CallPath::parse_callable_path(identifiers),
             PathKind::Type => CallPath::parse_type_path(identifiers),
         }?;
-        replace_crate_in_path_with_registration_crate(&mut path, identifiers.created_at());
-        if let Some(qself) = &mut path.qualified_self {
-            replace_crate_in_type_with_registration_crate(
-                &mut qself.type_,
-                identifiers.created_at(),
-            );
-        }
         Self::parse_call_path(&path, identifiers, graph)
     }
 
@@ -625,8 +465,8 @@ impl FQPath {
         };
 
         let used_in = krate2package_id(
-            &identifiers.created_at().package_name,
-            &identifiers.created_at().package_version,
+            &identifiers.created_at.package_name,
+            &identifiers.created_at.package_version,
             graph,
         )
         .expect("Failed to resolve the created at coordinates to a package id");
@@ -873,6 +713,40 @@ impl FQPath {
             }
         }
     }
+
+    /// A utility method to render the path for usage in error messages.
+    ///
+    /// It doesn't require a "package_id <> name" mapping.
+    pub fn render_for_error(&self, buffer: &mut String) {
+        let mut qself_closing_wedge_index = None;
+        if let Some(qself) = &self.qualified_self {
+            write!(buffer, "<").unwrap();
+            qself.type_.render_for_error(buffer);
+            write!(buffer, " as ",).unwrap();
+            qself_closing_wedge_index = Some(qself.position.saturating_sub(1));
+        }
+        for (index, path_segment) in self.segments.iter().enumerate() {
+            if index != 0 {
+                buffer.push_str("::");
+            }
+            buffer.push_str(&path_segment.ident);
+            let generic_arguments = &path_segment.generic_arguments;
+            if !generic_arguments.is_empty() {
+                write!(buffer, "::<").unwrap();
+                let mut arguments = generic_arguments.iter().peekable();
+                while let Some(argument) = arguments.next() {
+                    argument.render_for_error(buffer);
+                    if arguments.peek().is_some() {
+                        write!(buffer, ", ").unwrap();
+                    }
+                }
+                write!(buffer, ">").unwrap();
+            }
+            if Some(index + 1) == qself_closing_wedge_index {
+                write!(buffer, ">").unwrap();
+            }
+        }
+    }
 }
 
 /// There are two key callables in Rust: functions and methods.
@@ -907,12 +781,30 @@ impl FQPathType {
             FQPathType::Slice(s) => s.render_path(id2name, buffer),
         }
     }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        match self {
+            FQPathType::ResolvedPath(p) => p.render_for_error(buffer),
+            FQPathType::Reference(r) => r.render_for_error(buffer),
+            FQPathType::Tuple(t) => t.render_for_error(buffer),
+            FQPathType::ScalarPrimitive(s) => {
+                write!(buffer, "{s}").unwrap();
+            }
+            FQPathType::Slice(s) => s.render_for_error(buffer),
+        }
+    }
 }
 
 impl FQSlice {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         write!(buffer, "[").unwrap();
         self.element.render_path(id2name, buffer);
+        write!(buffer, "]").unwrap();
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "[").unwrap();
+        self.element.render_for_error(buffer);
         write!(buffer, "]").unwrap();
     }
 }
@@ -935,11 +827,33 @@ impl FQGenericArgument {
             },
         }
     }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        match self {
+            FQGenericArgument::Type(t) => {
+                t.render_for_error(buffer);
+            }
+            FQGenericArgument::Lifetime(l) => match l {
+                ResolvedPathLifetime::Static => {
+                    write!(buffer, "'static").unwrap();
+                }
+                ResolvedPathLifetime::Named(_) => {
+                    // TODO: we should have proper name mapping for lifetimes here, but we know all our current
+                    //   usecases will work with lifetime elision.
+                    write!(buffer, "'_").unwrap();
+                }
+            },
+        }
+    }
 }
 
 impl FQResolvedPathType {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         self.path.render_path(id2name, buffer);
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        self.path.render_for_error(buffer);
     }
 }
 
@@ -955,6 +869,18 @@ impl FQTuple {
         }
         write!(buffer, ")").unwrap();
     }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "(").unwrap();
+        let mut types = self.elements.iter().peekable();
+        while let Some(ty) = types.next() {
+            ty.render_for_error(buffer);
+            if types.peek().is_some() {
+                write!(buffer, ", ").unwrap();
+            }
+        }
+        write!(buffer, ")").unwrap();
+    }
 }
 
 impl FQReference {
@@ -964,6 +890,14 @@ impl FQReference {
             write!(buffer, "mut ").unwrap();
         }
         self.inner.render_path(id2name, buffer);
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "&").unwrap();
+        if self.is_mutable {
+            write!(buffer, "mut ").unwrap();
+        }
+        self.inner.render_for_error(buffer);
     }
 }
 
@@ -991,14 +925,14 @@ impl Display for FQPath {
 impl Display for FQPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            FQPathType::ResolvedPath(p) => write!(f, "{}", p),
-            FQPathType::Reference(r) => write!(f, "{}", r),
-            FQPathType::Tuple(t) => write!(f, "{}", t),
+            FQPathType::ResolvedPath(p) => write!(f, "{p}"),
+            FQPathType::Reference(r) => write!(f, "{r}"),
+            FQPathType::Tuple(t) => write!(f, "{t}"),
             FQPathType::ScalarPrimitive(s) => {
-                write!(f, "{}", s)
+                write!(f, "{s}")
             }
             FQPathType::Slice(s) => {
-                write!(f, "{}", s)
+                write!(f, "{s}")
             }
         }
     }
@@ -1031,7 +965,7 @@ impl Display for FQTuple {
         write!(f, "(")?;
         let last_element_index = self.elements.len().saturating_sub(1);
         for (i, element) in self.elements.iter().enumerate() {
-            write!(f, "{}", element)?;
+            write!(f, "{element}")?;
             if i != last_element_index {
                 write!(f, ", ")?;
             }
@@ -1064,10 +998,10 @@ impl Display for FQGenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             FQGenericArgument::Type(t) => {
-                write!(f, "{}", t)
+                write!(f, "{t}")
             }
             FQGenericArgument::Lifetime(l) => {
-                write!(f, "{}", l)
+                write!(f, "{l}")
             }
         }
     }
@@ -1077,7 +1011,7 @@ impl Display for ResolvedPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ResolvedPathLifetime::Static => write!(f, "'static"),
-            ResolvedPathLifetime::Named(name) => write!(f, "{}", name),
+            ResolvedPathLifetime::Named(name) => write!(f, "{name}"),
         }
     }
 }

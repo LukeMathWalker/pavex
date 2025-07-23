@@ -1,6 +1,6 @@
 use crate::diagnostic::ComponentKind;
 
-use super::{UserComponentSource, blueprint::RawIdentifierId, router_key::RouterKey};
+use super::{UserComponentSource, annotations::AnnotationCoordinatesId, router_key::RouterKey};
 
 /// A unique identifier for a [`UserComponent`].
 pub type UserComponentId = la_arena::Idx<UserComponent>;
@@ -20,7 +20,7 @@ pub enum UserComponent {
         router_key: RouterKey,
     },
     Fallback {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     ErrorHandler {
         source: UserComponentSource,
@@ -37,16 +37,16 @@ pub enum UserComponent {
         key: String,
     },
     WrappingMiddleware {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     PostProcessingMiddleware {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     PreProcessingMiddleware {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
     ErrorObserver {
-        source: RawIdentifierId,
+        source: AnnotationCoordinatesId,
     },
 }
 
@@ -63,38 +63,43 @@ pub enum ErrorHandlerTarget {
     ErrorType {
         /// The index of the error reference within the vector of input parameters
         /// for the error handler callable.
-        error_ref_input_index: usize,
+        ///
+        /// It is set to `Some` for components that have been imported.
+        /// It is set to `None` for components that have been registered against
+        /// the blueprint. They'll have to be matched with the original annotation
+        /// to fill in the missing information.
+        error_ref_input_index: Option<usize>,
     },
 }
 
 impl UserComponent {
-    /// Returns the raw identifiers id for this user component.
+    /// Returns the annotation coordinates id for this user component.
     ///
-    /// It's `None` for annotated components.
-    pub fn raw_identifiers_id(&self) -> Option<RawIdentifierId> {
+    /// It's `None` for components that don't have associated coordinates.
+    pub fn coordinates_id(&self) -> Option<AnnotationCoordinatesId> {
         match self {
-            UserComponent::Fallback { source }
-            | UserComponent::WrappingMiddleware { source }
+            UserComponent::WrappingMiddleware { source }
             | UserComponent::PostProcessingMiddleware { source }
-            | UserComponent::PreProcessingMiddleware { source }
+            | UserComponent::ErrorHandler {
+                source: UserComponentSource::BlueprintRegistration(source),
+                ..
+            }
             | UserComponent::RequestHandler {
-                source: UserComponentSource::Identifiers(source),
+                source: UserComponentSource::BlueprintRegistration(source),
                 ..
             }
             | UserComponent::ConfigType {
-                source: UserComponentSource::Identifiers(source),
+                source: UserComponentSource::BlueprintRegistration(source),
                 ..
             }
             | UserComponent::PrebuiltType {
-                source: UserComponentSource::Identifiers(source),
+                source: UserComponentSource::BlueprintRegistration(source),
             }
             | UserComponent::Constructor {
-                source: UserComponentSource::Identifiers(source),
+                source: UserComponentSource::BlueprintRegistration(source),
             }
-            | UserComponent::ErrorHandler {
-                source: UserComponentSource::Identifiers(source),
-                ..
-            }
+            | UserComponent::PreProcessingMiddleware { source }
+            | UserComponent::Fallback { source }
             | UserComponent::ErrorObserver { source } => Some(*source),
             _ => None,
         }

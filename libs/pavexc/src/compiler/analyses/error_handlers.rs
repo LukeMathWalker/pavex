@@ -22,7 +22,7 @@ impl std::fmt::Debug for ErrorHandlersDb {
                 f,
                 "- {scope_id}:\n{}",
                 // TODO: Use a PadAdapter down here to avoid allocating an intermediate string
-                textwrap::indent(&format!("{:?}", error_handlers), "    ")
+                textwrap::indent(&format!("{error_handlers:?}"), "    ")
             )?;
         }
         Ok(())
@@ -44,6 +44,16 @@ impl ErrorHandlersDb {
         scope_handlers.insert(error_handler, id);
     }
 
+    /// Record that an error handler was registered for the given type, even
+    /// though the callable didn't pass our validation checks.
+    pub(crate) fn insert_invalid(&mut self, error_type_ref: &ResolvedType, scope_id: ScopeId) {
+        let scope_handlers = self
+            .scope_id2error_handlers
+            .entry(scope_id)
+            .or_insert_with(ErrorHandlersInScope::new);
+        scope_handlers.insert_invalid(error_type_ref);
+    }
+
     /// Find the error handler for a given error type in a given scope.
     ///
     /// If the error type has no handler in the given scope, we look for a handler in the
@@ -59,7 +69,7 @@ impl ErrorHandlersDb {
         scope_id: ScopeId,
         type_: &ResolvedType,
         component_db: &ComponentDb,
-    ) -> Option<(ErrorHandler, UserComponentId)> {
+    ) -> Option<ErrorHandlerEntry> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
@@ -74,6 +84,21 @@ impl ErrorHandlersDb {
     }
 }
 
+/// The output type of [`ErrorHandlersDb::get_or_try_bind`].
+#[derive(Clone, Debug)]
+pub enum ErrorHandlerEntry {
+    /// There is an error handler for the given type.
+    Valid {
+        error_handler: ErrorHandler,
+        component_id: UserComponentId,
+    },
+    /// An error handler for the given type was registered,
+    /// but it didn't pass our validation checks.
+    ///
+    /// We should *not* emit a "missing error handler" diagnostic.
+    Invalid,
+}
+
 /// The set of constructibles that have been registered in a given scope.
 ///
 /// Be careful! This is not the set of all types that can be constructed in the given scope!
@@ -81,7 +106,7 @@ impl ErrorHandlersDb {
 /// scope as well as any of its parent scopes.
 struct ErrorHandlersInScope {
     /// Map each supported error type to the dedicated error handler.
-    type2handler: HashMap<ResolvedType, (ErrorHandler, UserComponentId)>,
+    type2handler: HashMap<ResolvedType, ErrorHandlerEntry>,
     /// Every time we encounter an error type that contains an unassigned generic type
     /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
     ///
@@ -103,7 +128,7 @@ impl ErrorHandlersInScope {
     }
 
     /// Retrieve the handler for a given error type, if it exists.
-    fn get(&self, type_: &ResolvedType) -> Option<&(ErrorHandler, UserComponentId)> {
+    fn get(&self, type_: &ResolvedType) -> Option<&ErrorHandlerEntry> {
         self.type2handler.get(type_)
     }
 
@@ -111,7 +136,7 @@ impl ErrorHandlersInScope {
     ///
     /// If it doesn't exist, check the templated handlers to see if there is one
     /// that can be specialized to handle the given type.
-    fn get_or_try_bind(&mut self, type_: &ResolvedType) -> Option<(ErrorHandler, UserComponentId)> {
+    fn get_or_try_bind(&mut self, type_: &ResolvedType) -> Option<ErrorHandlerEntry> {
         if let Some(handler) = self.get(type_) {
             return Some(handler.to_owned());
         }
@@ -121,7 +146,13 @@ impl ErrorHandlersInScope {
                 Some((bindings, templated_error_type))
             })?;
         let (templated_error_handler, component_id) =
-            self.get(templated_error_type).cloned().unwrap();
+            match self.get(templated_error_type).cloned().unwrap() {
+                ErrorHandlerEntry::Valid {
+                    error_handler,
+                    component_id,
+                } => (error_handler, component_id),
+                ErrorHandlerEntry::Invalid => return Some(ErrorHandlerEntry::Invalid),
+            };
         let bound_handler = templated_error_handler.bind_generic_type_parameters(&bindings);
         self.insert(bound_handler, component_id);
         let bound = self.get(type_);
@@ -149,16 +180,35 @@ impl ErrorHandlersInScope {
         if error_type.is_a_template() {
             self.templated.insert(error_type.clone());
         }
+        self.type2handler.insert(
+            error_type,
+            ErrorHandlerEntry::Valid {
+                error_handler,
+                component_id,
+            },
+        );
+    }
+
+    /// Record that an error handler was registered for the given type, even
+    /// though the callable didn't pass our validation checks.
+    fn insert_invalid(&mut self, error_type_ref: &ResolvedType) {
+        let ResolvedType::Reference(TypeReference { inner, .. }) = error_type_ref else {
+            return;
+        };
+        let error_type = *inner.to_owned();
+        if error_type.is_a_template() {
+            self.templated.insert(error_type.clone());
+        }
         self.type2handler
-            .insert(error_type, (error_handler, component_id));
+            .insert(error_type, ErrorHandlerEntry::Invalid);
     }
 }
 
 impl std::fmt::Debug for ErrorHandlersInScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error handlers:")?;
-        for (type_, component_id) in &self.type2handler {
-            writeln!(f, "- {} -> {:?}", type_.display_for_error(), component_id)?;
+        for (type_, entry) in &self.type2handler {
+            writeln!(f, "- {} -> {:?}", type_.display_for_error(), entry)?;
         }
         Ok(())
     }

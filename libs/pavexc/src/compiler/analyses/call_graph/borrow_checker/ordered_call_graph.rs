@@ -134,7 +134,7 @@ impl OrderedCallGraph {
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) {
-        let replacement = format!("digraph \"{}\" {{", title);
+        let replacement = format!("digraph \"{title}\" {{");
         eprintln!(
             "{}",
             self.debug_dot(component_db, computation_db)

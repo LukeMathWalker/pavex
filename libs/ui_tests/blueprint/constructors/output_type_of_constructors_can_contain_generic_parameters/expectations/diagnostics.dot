@@ -1,7 +1,25 @@
+digraph "* * - 0" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| crate::route_0::Next0(&'a pavex::router::AllowedMethods) -> crate::route_0::Next0<'a>"]
+    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 -> 3 [ ]
+    1 -> 2 [ ]
+    3 -> 4 [ ]
+    0 -> 1 [ ]
+}
+digraph "* * - 1" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+}
 digraph "GET /home - 0" {
-    0 [ label = "0| crate::route_0::Next0() -> crate::route_0::Next0"]
-    1 [ label = "1| pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
-    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    0 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -23,13 +41,13 @@ digraph "GET /home - 1" {
     12 [ label = "12| core::result::Result<app::FallibleForm<u16>, app::GenericError<u16>> -> app::GenericError<u16>"]
     13 [ label = "13| app::generic_error_handler(&app::GenericError<u16>) -> pavex::response::Response"]
     14 [ label = "14| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    15 [ label = "15| app::fallible_with_generic_error2() -> core::result::Result<app::FallibleForm2<u8>, app::GenericError<u8>>"]
+    15 [ label = "15| app::fallible_with_generic_error2() -> core::result::Result<app::FallibleForm2<u8>, app::GenericError2<u8>>"]
     16 [ label = "16| `match`"]
-    17 [ label = "17| core::result::Result<app::FallibleForm2<u8>, app::GenericError<u8>> -> app::GenericError<u8>"]
+    17 [ label = "17| core::result::Result<app::FallibleForm2<u8>, app::GenericError2<u8>> -> app::GenericError2<u8>"]
     18 [ label = "18| app::json() -> app::Json<u8>"]
-    19 [ label = "19| app::doubly_generic_error_handler(&app::GenericError<u8>, &app::Json<u8>) -> pavex::response::Response"]
+    19 [ label = "19| app::doubly_generic_error_handler(&app::GenericError2<u8>, &app::Json<u8>) -> pavex::response::Response"]
     20 [ label = "20| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    21 [ label = "21| core::result::Result<app::FallibleForm2<u8>, app::GenericError<u8>> -> app::FallibleForm2<u8>"]
+    21 [ label = "21| core::result::Result<app::FallibleForm2<u8>, app::GenericError2<u8>> -> app::FallibleForm2<u8>"]
     22 [ label = "22| core::result::Result<app::FallibleForm<u16>, app::GenericError<u16>> -> app::FallibleForm<u16>"]
     23 [ label = "23| core::result::Result<app::FallibleForm<app::AType>, app::GenericError<app::AType>> -> app::FallibleForm<app::AType>"]
     24 [ label = "24| core::result::Result<app::Form<u64>, app::FallibleError> -> app::Form<u64>"]
@@ -65,24 +83,6 @@ digraph "GET /home - 1" {
     15 -> 16 [ ]
     10 -> 11 [ ]
     5 -> 6 [ ]
-    0 -> 1 [ ]
-}
-digraph "* * - 0" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-digraph "* * - 1" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 2 [ ]
     0 -> 1 [ ]
 }
 digraph app_state {

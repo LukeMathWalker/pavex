@@ -1,4 +1,5 @@
 use crate::configuration::GreetConfig;
+use pavex::get;
 use pavex::request::path::PathParams;
 use pavex::response::Response;
 
@@ -8,7 +9,8 @@ pub struct GreetParams {
 }
 
 /// Response with a preconfigured message, greeting the caller.
-pub fn get(params: PathParams<GreetParams>, config: &GreetConfig) -> Response {
+#[get(path = "/greet/{name}")]
+pub fn greet(params: PathParams<GreetParams>, config: &GreetConfig) -> Response {
     let body = if config.use_name {
         format!("Hello {},\n{}", params.0.name, config.greeting_message)
     } else {

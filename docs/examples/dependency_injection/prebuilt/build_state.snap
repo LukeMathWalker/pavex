@@ -1,0 +1,8 @@
+```rust
+// [...]
+impl ApplicationState {
+    pub async fn new(
+        _app_config: crate::ApplicationConfig,
+        v0: di_prebuilt::pool::DbConnectionPool,
+    ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+```

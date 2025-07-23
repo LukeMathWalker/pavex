@@ -1,5 +1,6 @@
 //! Refer to Pavex's [configuration guide](https://pavex.dev/docs/guide/configuration) for more details
 //! on how to manage configuration values.
+use pavex::config;
 use pavex::server::IncomingStream;
 
 {% if greet_route -%}
@@ -8,7 +9,7 @@ use pavex::server::IncomingStream;
 ///
 /// Feel free to delete `GreetConfig` once you start working on your app!
 /// It's here as a reference example on how to add a new configuration type.
-#[pavex::config(key = "greet")]
+#[config(key = "greet")]
 pub struct GreetConfig {
     /// Say "Hello {name}," rather than "Hello," in the response.
     pub use_name: bool,
@@ -20,7 +21,7 @@ pub struct GreetConfig {
 #[derive(serde::Deserialize, Debug, Clone)]
 /// Configuration for the HTTP server used to expose our API
 /// to users.
-#[pavex::config(key = "server", include_if_unused)]
+#[config(key = "server", include_if_unused)]
 pub struct ServerConfig {
     /// The port that the server must listen on.
     ///

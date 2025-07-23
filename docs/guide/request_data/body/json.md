@@ -3,28 +3,24 @@
 You can use [`JsonBody<T>`][JsonBody] to work with [JSON-encoded](https://www.json.org/json-en.html) request bodies.\
 [`JsonBody<T>`][JsonBody] parses the raw JSON into an instance of the type `T` you specified.
 
---8<-- "doc_examples/guide/request_data/json/project-whole.snap"
+--8<-- "docs/examples/request_data/json/extraction.snap"
+
+1. The parsed body is injected as an input parameter.
 
 The whole request body is buffered in memory before being deserialized.
 
-## Registration
+## Imports
 
 To use [`JsonBody`][JsonBody] in your application, you need to import its constructor from `pavex`:
 
---8<-- "doc_examples/guide/request_data/json/project-installation.snap"
-
-## Extraction
-
-Inject [`JsonBody<T>`][JsonBody] as an input in your components to access the parsed body:
-
---8<-- "doc_examples/guide/request_data/json/project-extraction.snap"
+--8<-- "docs/examples/request_data/json/registration.snap"
 
 ## Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.\
 You can derive [`serde::Deserialize`][serde::Deserialize] in most cases.
 
---8<-- "doc_examples/guide/request_data/json/project-struct_with_attr.snap"
+--8<-- "docs/examples/request_data/json/struct_def.snap"
 
 ## Avoiding allocations
 

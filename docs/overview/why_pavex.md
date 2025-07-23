@@ -20,7 +20,7 @@ Pavex aims to **lower the barrier of entry**: you'll only need **an understandin
 When things go wrong, we'll be there to help you: Pavex's transpiler will provide **detailed error messages** to help you understand what went wrong and how to fix it.
 
 ```ansi-color
---8<-- "doc_examples/quickstart/07-error.snap"
+--8<-- "docs/tutorials/quickstart/snaps/missing_user_agent_constructor.snap"
 ```
 
 ## Safe

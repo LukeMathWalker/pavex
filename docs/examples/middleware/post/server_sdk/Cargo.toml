@@ -1,0 +1,23 @@
+[package]
+name = "post_server_sdk"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "post"
+
+[package.metadata.px.verify]
+verifier_type = "cargo_workspace_binary"
+verifier_name = "post"
+verifier_args = ["--check"]
+
+[dependencies]
+http = { version = "1", default-features = false }
+hyper = { version = "1", default-features = false }
+matchit = { version = "0.8", default-features = false }
+pavex = { version = "0.1", path = "../../../../../libs/pavex", default-features = false }
+pavex_tracing = { version = "0.1", path = "../../../../../libs/pavex_tracing", default-features = false }
+post = { version = "0.1", path = "..", default-features = false }
+serde = { version = "1", default-features = false }
+thiserror = { version = "2", default-features = false }

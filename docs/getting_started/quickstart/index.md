@@ -19,13 +19,9 @@ pavex new --template="quickstart" demo && cd demo
 ### Build a Pavex project
 
 `cargo` is not enough, on its own, to build a Pavex project:
-you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead(1).\
+you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead[^cargo-px].
 From a usage perspective, it's a **drop-in replacement for `cargo`**:
 you can use it to build, test, run, etc. your project just like you would with `cargo` itself.
-{ .annotate }
-
-1. `cargo-px` is a thin wrapper around `cargo` that adds support for more powerful code generation,
-   overcoming some limitations of `cargo`'s build scripts.
 
 Let's use it to check that your project compiles successfully:
 
@@ -36,7 +32,7 @@ cargo px check # (1)!
 1. `cargo px check` is faster than `cargo px build` because it doesn't produce an executable binary.
    It's the quickest way to check that your project compiles while you're working on it.
 
-If everything went well, try to execute the test suite:
+If everything went well, execute the test suite:
 
 ```bash
 cargo px test
@@ -91,3 +87,5 @@ If all goes according to plan, you'll receive a `200 OK` response with an empty 
 
 You've just created a new Pavex project, built it, launched it and verified that it accepts requests correctly.\
 It's a good time to start exploring the codebase!
+
+[^cargo-px]: `cargo-px` is a thin wrapper around `cargo` that adds support for more powerful code generation, overcoming some limitations of `cargo`'s build scripts.

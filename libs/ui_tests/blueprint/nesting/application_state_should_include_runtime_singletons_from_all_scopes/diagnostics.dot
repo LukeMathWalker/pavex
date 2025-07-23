@@ -52,7 +52,7 @@ digraph "GET /child - 0" {
 
 digraph "GET /child - 1" {
     0 [ label = "0| u32"]
-    1 [ label = "1| app_ea86e18a::nested_handler(u32) -> http::StatusCode"]
+    1 [ label = "1| app_ea86e18a::child_handler(u32) -> http::StatusCode"]
     2 [ label = "2| <http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
     0 -> 1 [ ]
     1 -> 2 [ ]

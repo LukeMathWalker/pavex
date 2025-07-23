@@ -1,0 +1,58 @@
+(
+    creation_location: (
+        line: 6,
+        column: 18,
+        file: "sessions/in_memory/src/blueprint.rs",
+    ),
+    components: [
+        import((
+            sources: some([
+                "pavex",
+                "pavex_session",
+                "pavex_session_memory_store",
+            ]),
+            relative_to: "in_memory_sessions::blueprint",
+            created_at: (
+                package_name: "in_memory_sessions",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 8,
+                column: 8,
+                file: "sessions/in_memory/src/blueprint.rs",
+            ),
+        )),
+        post_processing_middleware((
+            coordinates: (
+                id: "FINALIZE_SESSION",
+                created_at: (
+                    package_name: "pavex_session",
+                    package_version: "0.1.80",
+                ),
+                macro_name: "post_process",
+            ),
+            registered_at: (
+                line: 14,
+                column: 8,
+                file: "sessions/in_memory/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+        post_processing_middleware((
+            coordinates: (
+                id: "INJECT_RESPONSE_COOKIES",
+                created_at: (
+                    package_name: "pavex",
+                    package_version: "0.1.80",
+                ),
+                macro_name: "post_process",
+            ),
+            registered_at: (
+                line: 15,
+                column: 8,
+                file: "sessions/in_memory/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+    ],
+)

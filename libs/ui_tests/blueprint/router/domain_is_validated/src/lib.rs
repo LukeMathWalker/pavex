@@ -1,7 +1,11 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 pub fn handler() -> String {
+    todo!()
+}
+
+#[pavex::get(path = "/")]
+pub fn nested_handler() -> String {
     todo!()
 }
 
@@ -10,7 +14,7 @@ pub fn blueprint() -> Blueprint {
     // Invalid domain!
     bp.domain("s{.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::handler));
+        bp.routes(from![crate]);
         bp
     });
     bp

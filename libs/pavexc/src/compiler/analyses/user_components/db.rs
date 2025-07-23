@@ -3,10 +3,9 @@ use super::{ScopeGraph, ScopeId};
 use super::{UserComponent, auxiliary::AuxiliaryData};
 use super::{blueprint::process_blueprint, router::Router};
 use crate::compiler::analyses::user_components::annotations::{
-    augment_from_annotation, register_imported_components,
+    register_imported_components, resolve_annotation_coordinates,
 };
 use crate::compiler::analyses::user_components::imports::resolve_imports;
-use crate::compiler::analyses::user_components::paths::FQPaths;
 use crate::compiler::component::ConfigType;
 use crate::compiler::{
     analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
@@ -14,11 +13,11 @@ use crate::compiler::{
 };
 use crate::diagnostic::TargetSpan;
 use crate::diagnostic::{DiagnosticSink, Registration};
-use crate::{language::FQPath, rustdoc::CrateCollection};
+use crate::rustdoc::CrateCollection;
 use ahash::HashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
-use pavex_bp_schema::{Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting};
+use pavex_bp_schema::{Blueprint, CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavex_cli_diagnostic::AnyhowBridge;
 use std::collections::BTreeMap;
 
@@ -56,7 +55,7 @@ pub struct UserComponentDb {
     /// For each constructible component, determine if it can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor and prebuilt type.
-    id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    id2cloning_policy: HashMap<UserComponentId, CloningPolicy>,
     /// Assign the id of each config to its type and key.
     ///
     /// Invariants: there is an entry for every config type.
@@ -107,13 +106,10 @@ impl UserComponentDb {
 
         let mut aux = AuxiliaryData::default();
         let mut scope_graph_builder = process_blueprint(bp, &mut aux, diagnostics);
-        let mut paths = FQPaths::new();
-        paths.process_identifiers(&aux, krate_collection.package_graph(), diagnostics);
         let imported_modules = resolve_imports(&aux, krate_collection.package_graph(), diagnostics);
 
         precompute_crate_docs(
             krate_collection,
-            paths.values(),
             imported_modules.iter().map(|(i, _)| &i.package_id),
             diagnostics,
         );
@@ -127,7 +123,7 @@ impl UserComponentDb {
             krate_collection,
             diagnostics,
         );
-        paths.resolve(
+        resolve_annotation_coordinates(
             &mut aux,
             computation_db,
             prebuilt_type_db,
@@ -135,37 +131,30 @@ impl UserComponentDb {
             diagnostics,
         );
         exit_on_errors!(diagnostics);
-
-        augment_from_annotation(&mut aux, computation_db, krate_collection, diagnostics);
-        // New paths have been registered, which must be resolved now!
-        paths.resolve(
-            &mut aux,
-            computation_db,
-            prebuilt_type_db,
-            krate_collection,
-            diagnostics,
-        );
 
         let scope_graph = scope_graph_builder.build();
-        let router = Router::new(&aux, &scope_graph, diagnostics)?;
+        let router = Router::new(&aux, computation_db, &scope_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
+
+        #[cfg(debug_assertions)]
+        aux.check_invariants();
 
         let AuxiliaryData {
             component_interner,
             id2scope_id,
             id2registration,
             id2lints,
-            id2cloning_strategy,
+            id2cloning_policy,
             id2lifecycle,
             config_id2type,
             config_id2default_strategy,
             config_id2include_if_unused,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
+            annotation_coordinates_interner: _,
             annotation_interner: _,
             fallible_id2error_handler_id: _,
             imports: _,
-            identifiers_interner: _,
             fallback_id2domain_guard: _,
             fallback_id2path_prefix: _,
             domain_guard2locations: _,
@@ -177,7 +166,7 @@ impl UserComponentDb {
                 component_interner,
                 id2scope_id,
                 id2registration,
-                id2cloning_strategy,
+                id2cloning_policy,
                 id2lifecycle,
                 config_id2type,
                 config_id2default_strategy,
@@ -314,8 +303,8 @@ impl UserComponentDb {
     /// Return the cloning strategy of the component with the given id.
     /// This is going to be `Some(..)` for constructor and prebuilt type components,
     /// and `None` for all other components.
-    pub fn cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
-        self.id2cloning_strategy.get(&id)
+    pub fn cloning_policy(&self, id: UserComponentId) -> Option<&CloningPolicy> {
+        self.id2cloning_policy.get(&id)
     }
 
     /// Return the resolved type and key for the configuration component with the given id.
@@ -371,19 +360,14 @@ impl UserComponentDb {
 ///
 /// This is not *necessary*, but it can turn out to be a significant performance improvement
 /// for projects that pull in a lot of dependencies in the signature of their components.
-fn precompute_crate_docs<'a, I, J>(
+fn precompute_crate_docs<'a, J>(
     krate_collection: &CrateCollection,
-    paths: I,
     imported_package_ids: J,
     diagnostics: &DiagnosticSink,
 ) where
-    I: Iterator<Item = &'a FQPath>,
     J: Iterator<Item = &'a PackageId>,
 {
     let mut package_ids = IndexSet::new();
-    for path in paths {
-        path.collect_package_ids(&mut package_ids);
-    }
     package_ids.extend(imported_package_ids);
     let package_ids = package_ids.iter().map(|&p| p.to_owned());
 

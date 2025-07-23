@@ -1,8 +1,0 @@
-starter_project_folder: "project"
-commands:
-  - command: "cargo px c"
-    expected_outcome: "success"
-snippets:
-  - name: "raw_query"
-    source_path: "src/query/routes.rs"
-    ranges: [ "0..9", "10..11" ]

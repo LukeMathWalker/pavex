@@ -1,22 +1,19 @@
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, ConfigType, Constructor, CreatedAt, CreatedBy,
-    Domain, ErrorObserver, Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix,
-    PostProcessingMiddleware, PreProcessingMiddleware, PrebuiltType, RawIdentifiers, Route,
-    RoutesImport, WrappingMiddleware,
+    Blueprint, Component, ConfigType, Constructor, CreatedAt, Domain, ErrorHandler, ErrorObserver,
+    Fallback, Import, Lifecycle, Location, NestedBlueprint, PathPrefix, PostProcessingMiddleware,
+    PreProcessingMiddleware, PrebuiltType, Route, RoutesImport, WrappingMiddleware,
 };
 
 use super::auxiliary::AuxiliaryData;
 use super::imports::{ImportKind, UnresolvedImport};
-use super::{ErrorHandlerTarget, UserComponentId};
+use super::{ErrorHandlerTarget, UserComponentId, UserComponentSource};
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId, UserComponent};
 use crate::compiler::app::PAVEX_VERSION;
 use crate::compiler::component::DefaultStrategy;
-
-/// A unique identifier for a `RawCallableIdentifiers`.
-pub type RawIdentifierId = la_arena::Idx<RawIdentifiers>;
+use crate::rustdoc::AnnotationCoordinates;
 
 /// Process a [`Blueprint`], populating [`AuxiliaryData`] with all its registered components.
 ///
@@ -100,9 +97,6 @@ pub(super) fn process_blueprint(
             diagnostics,
         );
     }
-
-    #[cfg(debug_assertions)]
-    aux.check_invariants();
 
     scope_graph_builder
 }
@@ -210,10 +204,12 @@ fn _process_blueprint<'a>(
                 sources,
                 created_at,
                 registered_at,
+                relative_to,
             })
             | Component::Import(Import {
                 sources,
                 created_at,
+                relative_to,
                 registered_at,
             }) => {
                 let kind = if matches!(component, Component::Import(_)) {
@@ -230,56 +226,44 @@ fn _process_blueprint<'a>(
                     scope_id: current_scope_id,
                     sources: sources.to_owned(),
                     created_at: created_at.to_owned(),
+                    relative_to: relative_to.to_owned(),
                     registered_at: registered_at.to_owned(),
                     kind,
                 });
             }
         }
     }
-    if let Some(fallback) = &fallback {
-        process_fallback(
-            aux,
-            fallback,
-            path_prefix,
-            domain_guard,
-            current_middleware_chain,
-            current_observer_chain,
-            current_scope_id,
-            scope_graph_builder,
-        );
-    } else if is_root {
+
+    let fallback = fallback.cloned().or_else(|| {
         // We need to have a top-level fallback handler.
         // If the user hasn't registered one against the top-level blueprint,
-        // we must provide a framework default.
-        let raw_callable_identifiers = RawIdentifiers::from_raw_parts(
-            "pavex::router::default_fallback".to_owned(),
-            CreatedAt {
-                package_name: "pavex".to_owned(),
-                package_version: PAVEX_VERSION.to_owned(),
-                module_path: "pavex".to_owned(),
+        // we use the framework's default one.
+        is_root.then(|| Fallback {
+            coordinates: pavex_reflection::AnnotationCoordinates {
+                id: "DEFAULT_FALLBACK".into(),
+                created_at: CreatedAt {
+                    package_name: "pavex".to_owned(),
+                    package_version: PAVEX_VERSION.to_owned(),
+                },
+                macro_name: "fallback".into(),
             },
-            CreatedBy::Framework,
-        );
-        let registered_fallback = Fallback {
-            request_handler: Callable {
-                callable: raw_callable_identifiers,
-                // We don't have a location for the default fallback handler.
-                // Nor do we have a way (yet) to identify this component as "framework provided".
-                // Something to fix in the future.
-                registered_at: bp.creation_location.clone(),
-            },
+            // TODO: We should have a better location for framework-provided
+            //   components.
+            registered_at: bp.creation_location.clone(),
             error_handler: None,
-        };
+        })
+    });
+    if let Some(fallback) = fallback {
         process_fallback(
             aux,
-            &registered_fallback,
+            &fallback,
             path_prefix,
             domain_guard,
             current_middleware_chain,
             current_observer_chain,
             current_scope_id,
             scope_graph_builder,
-        )
+        );
     }
 }
 
@@ -288,45 +272,41 @@ fn _process_blueprint<'a>(
 /// (if present).
 fn process_route(
     aux: &mut AuxiliaryData,
-    registered_route: &Route,
+    route: &Route,
     current_middleware_chain: &[UserComponentId],
     current_observer_chain: &[UserComponentId],
     current_scope_id: ScopeId,
     domain_guard: Option<DomainGuard>,
     path_prefix: Option<&str>,
     scope_graph_builder: &mut ScopeGraphBuilder,
-    diagnostics: &crate::diagnostic::DiagnosticSink,
+    _diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-    let raw_callable_identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(registered_route.request_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: route.coordinates.id.clone(),
+        created_at: route.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let router_key = {
-        let path = match path_prefix {
-            Some(prefix) => format!("{}{}", prefix, registered_route.path),
-            None => registered_route.path.to_owned(),
-        };
-        RouterKey {
-            path,
-            domain_guard,
-            method_guard: registered_route.method_guard.clone(),
-        }
+
+    // For routes registered directly via bp.route(), we create a partial `RouterKey`.
+    let router_key = RouterKey {
+        path: path_prefix.unwrap_or_default().to_owned(), // Will be finalized later, during annotation resolution
+        method_guard: pavex_bp_schema::MethodGuard::Any, // Will be filled in during annotation resolution
+        domain_guard,
     };
     let component = UserComponent::RequestHandler {
         router_key,
-        source: raw_callable_identifiers_id.into(),
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let request_handler_id = aux.intern_component(
         component,
         route_scope_id,
         ROUTE_LIFECYCLE,
-        registered_route
-            .request_handler
-            .registered_at
-            .clone()
-            .into(),
+        route.registered_at.clone().into(),
     );
 
     aux.handler_id2middleware_ids
@@ -334,11 +314,11 @@ fn process_route(
     aux.handler_id2error_observer_ids
         .insert(request_handler_id, current_observer_chain.to_owned());
 
-    validate_route_path(aux, request_handler_id, &registered_route.path, diagnostics);
+    // Path validation will happen during annotation resolution
 
     process_component_specific_error_handler(
         aux,
-        &registered_route.error_handler,
+        &route.error_handler,
         ROUTE_LIFECYCLE,
         current_scope_id,
         request_handler_id,
@@ -360,18 +340,22 @@ fn process_fallback(
 ) {
     const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-    let raw_callable_identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(fallback.request_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: fallback.coordinates.id.clone(),
+        created_at: fallback.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
     let component = UserComponent::Fallback {
-        source: raw_callable_identifiers_id,
+        source: coordinates_id,
     };
     let fallback_id = aux.intern_component(
         component,
         route_scope_id,
         ROUTE_LIFECYCLE,
-        fallback.request_handler.registered_at.clone().into(),
+        fallback.registered_at.clone().into(),
     );
 
     aux.handler_id2middleware_ids
@@ -405,17 +389,21 @@ fn process_middleware(
     const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
     let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(middleware.middleware.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: middleware.coordinates.id.clone(),
+        created_at: middleware.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::WrappingMiddleware {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let component_id = aux.intern_component(
         component,
         middleware_scope_id,
         MIDDLEWARE_LIFECYCLE,
-        middleware.middleware.registered_at.clone().into(),
+        middleware.registered_at.clone().into(),
     );
     current_middleware_chain.push(component_id);
 
@@ -441,17 +429,21 @@ fn process_pre_processing_middleware(
     const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
     let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(middleware.middleware.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: middleware.coordinates.id.clone(),
+        created_at: middleware.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::PreProcessingMiddleware {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let component_id = aux.intern_component(
         component,
         middleware_scope_id,
         MIDDLEWARE_LIFECYCLE,
-        middleware.middleware.registered_at.clone().into(),
+        middleware.registered_at.clone().into(),
     );
     current_middleware_chain.push(component_id);
 
@@ -477,17 +469,21 @@ fn process_post_processing_middleware(
     const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
     let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(middleware.middleware.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: middleware.coordinates.id.clone(),
+        created_at: middleware.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::PostProcessingMiddleware {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let component_id = aux.intern_component(
         component,
         middleware_scope_id,
         MIDDLEWARE_LIFECYCLE,
-        middleware.middleware.registered_at.clone().into(),
+        middleware.registered_at.clone().into(),
     );
     current_middleware_chain.push(component_id);
 
@@ -509,25 +505,30 @@ fn process_constructor(
     constructor: &Constructor,
     current_scope_id: ScopeId,
 ) {
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(constructor.constructor.callable.clone());
-    let component = UserComponent::Constructor {
-        source: identifiers_id.into(),
+    let annotation_coordinates = AnnotationCoordinates {
+        id: constructor.coordinates.id.clone(),
+        created_at: constructor.coordinates.created_at.clone(),
     };
-    let lifecycle = constructor.lifecycle;
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+    let component = UserComponent::Constructor {
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
+    };
     let constructor_id = aux.intern_component(
         component,
         current_scope_id,
-        lifecycle,
-        constructor.constructor.registered_at.clone().into(),
+        constructor.lifecycle,
+        constructor.registered_at.clone().into(),
     );
-    aux.id2cloning_strategy.insert(
-        constructor_id,
-        constructor
-            .cloning_strategy
-            .unwrap_or(CloningStrategy::NeverClone),
-    );
+
+    // If the user has specified/overridden the expected behaviour for the constructor,
+    // let's take note of it.
+    // If not, we'll fill things in with the right default values later on,
+    // when resolving annotation coordinates.
+    if let Some(cloning_policy) = constructor.cloning_policy {
+        aux.id2cloning_policy.insert(constructor_id, cloning_policy);
+    }
     if !constructor.lints.is_empty() {
         aux.id2lints
             .insert(constructor_id, constructor.lints.clone());
@@ -536,7 +537,7 @@ fn process_constructor(
     process_component_specific_error_handler(
         aux,
         &constructor.error_handler,
-        lifecycle,
+        None,
         current_scope_id,
         constructor_id,
     );
@@ -553,17 +554,22 @@ fn process_error_observer(
 ) {
     const LIFECYCLE: Lifecycle = Lifecycle::Transient;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(eo.error_observer.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: eo.coordinates.id.clone(),
+        created_at: eo.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+
     let component = UserComponent::ErrorObserver {
-        source: identifiers_id,
+        source: coordinates_id,
     };
     let id = aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        eo.error_observer.registered_at.clone().into(),
+        eo.registered_at.clone().into(),
     );
     current_observer_chain.push(id);
 }
@@ -578,20 +584,25 @@ fn process_error_handler(
 ) {
     const LIFECYCLE: Lifecycle = Lifecycle::Transient;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(eh.error_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: eh.coordinates.id.clone(),
+        created_at: eh.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
+
     let component = UserComponent::ErrorHandler {
-        source: identifiers_id.into(),
+        source: coordinates_id.into(),
         target: ErrorHandlerTarget::ErrorType {
-            error_ref_input_index: eh.error_ref_input_index,
+            error_ref_input_index: None,
         },
     };
     aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        eh.error_handler.registered_at.clone().into(),
+        eh.registered_at.clone().into(),
     );
 }
 
@@ -601,22 +612,30 @@ fn process_error_handler(
 fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_scope_id: ScopeId) {
     const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(si.input.type_.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: si.coordinates.id.clone(),
+        created_at: si.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::PrebuiltType {
-        source: identifiers_id.into(),
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let id = aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        si.input.registered_at.clone().into(),
+        si.registered_at.clone().into(),
     );
-    aux.id2cloning_strategy.insert(
-        id,
-        si.cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
-    );
+
+    // If the user has specified/overridden the expected behaviour for the prebuilt type,
+    // let's take note of it.
+    // If not, we'll fill things in with the right default values later on,
+    // when resolving annotation coordinates.
+    if let Some(cloning_policy) = si.cloning_policy {
+        aux.id2cloning_policy.insert(id, cloning_policy);
+    }
 }
 
 /// Register a config type.
@@ -624,63 +643,73 @@ fn process_prebuilt_type(aux: &mut AuxiliaryData, si: &PrebuiltType, current_sco
 fn process_config_type(aux: &mut AuxiliaryData, t: &ConfigType, current_scope_id: ScopeId) {
     const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
 
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(t.input.type_.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: t.coordinates.id.clone(),
+        created_at: t.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::ConfigType {
-        key: t.key.clone(),
-        source: identifiers_id.into(),
+        key: String::new(), // Will be filled in during annotation resolution
+        source: UserComponentSource::BlueprintRegistration(coordinates_id),
     };
     let id = aux.intern_component(
         component,
         current_scope_id,
         LIFECYCLE,
-        t.input.registered_at.clone().into(),
+        t.registered_at.clone().into(),
     );
-    aux.id2cloning_strategy.insert(
-        id,
-        t.cloning_strategy
-            .unwrap_or(CloningStrategy::CloneIfNecessary),
-    );
-    let default_strategy = t
-        .default_if_missing
-        .map(|b| {
-            if b {
-                DefaultStrategy::DefaultIfMissing
-            } else {
-                DefaultStrategy::Required
-            }
-        })
-        .unwrap_or_default();
-    aux.config_id2default_strategy.insert(id, default_strategy);
-    aux.config_id2include_if_unused
-        .insert(id, t.include_if_unused.unwrap_or(false));
+
+    // If the user has specified/overriden the expected behaviour for the config type,
+    // let's take note of it.
+    // If not, we'll fill things in with the right default values later on,
+    // when resolving annotation coordinates.
+    if let Some(cloning_policy) = t.cloning_policy {
+        aux.id2cloning_policy.insert(id, cloning_policy);
+    }
+    if let Some(default_if_missing) = t.default_if_missing {
+        let default_strategy = if default_if_missing {
+            DefaultStrategy::DefaultIfMissing
+        } else {
+            DefaultStrategy::Required
+        };
+        aux.config_id2default_strategy.insert(id, default_strategy);
+    }
+    if let Some(include_if_unused) = t.include_if_unused {
+        aux.config_id2include_if_unused
+            .insert(id, include_if_unused);
+    }
 }
 
 /// Process the error handler registered against a (supposedly) fallible component, if
 /// any.
 fn process_component_specific_error_handler(
     aux: &mut AuxiliaryData,
-    error_handler: &Option<Callable>,
-    lifecycle: Lifecycle,
+    eh: &Option<ErrorHandler>,
+    lifecycle: impl Into<Option<Lifecycle>>,
     scope_id: ScopeId,
     fallible_id: UserComponentId,
 ) {
-    let Some(error_handler) = error_handler else {
+    let Some(eh) = eh else {
         return;
     };
-    let identifiers_id = aux
-        .identifiers_interner
-        .get_or_intern(error_handler.callable.clone());
+    let annotation_coordinates = AnnotationCoordinates {
+        id: eh.coordinates.id.clone(),
+        created_at: eh.coordinates.created_at.clone(),
+    };
+    let coordinates_id = aux
+        .annotation_coordinates_interner
+        .get_or_intern(annotation_coordinates);
     let component = UserComponent::ErrorHandler {
-        source: identifiers_id.into(),
+        source: coordinates_id.into(),
         target: ErrorHandlerTarget::FallibleComponent { fallible_id },
     };
     let error_handler_id = aux.intern_component(
         component,
         scope_id,
         lifecycle,
-        error_handler.registered_at.clone().into(),
+        eh.registered_at.clone().into(),
     );
     aux.fallible_id2error_handler_id
         .insert(fallible_id, error_handler_id);

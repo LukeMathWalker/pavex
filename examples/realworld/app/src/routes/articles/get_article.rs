@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::path::PathParams};
+use pavex::{get, http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Article;
 
@@ -14,6 +14,7 @@ pub struct GetArticleResponse {
     pub article: Article,
 }
 
+#[get(path = "/{slug}")]
 pub fn get_article(_params: PathParams<GetArticle>) -> StatusCode {
     StatusCode::OK
 }

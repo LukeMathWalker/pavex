@@ -1,8 +1,8 @@
 use generic::MiddlewareKind;
 
 use crate::{
-    fn_like::{Callable, CallableAnnotation, ImplContext},
     utils::AnnotationCodegen,
+    utils::fn_like::{Callable, CallableAnnotation, ImplContext},
 };
 
 mod generic;
@@ -17,11 +17,11 @@ impl CallableAnnotation for WrapAnnotation {
     type InputSchema = generic::InputSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
         item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        generic::middleware(MiddlewareKind::Wrap, metadata, item)
+        generic::middleware(MiddlewareKind::Wrap, impl_, metadata, item)
     }
 }
 
@@ -35,11 +35,11 @@ impl CallableAnnotation for PreProcessAnnotation {
     type InputSchema = generic::InputSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
         item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        generic::middleware(MiddlewareKind::PreProcess, metadata, item)
+        generic::middleware(MiddlewareKind::PreProcess, impl_, metadata, item)
     }
 }
 
@@ -53,10 +53,10 @@ impl CallableAnnotation for PostProcessAnnotation {
     type InputSchema = generic::InputSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
         item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        generic::middleware(MiddlewareKind::PostProcess, metadata, item)
+        generic::middleware(MiddlewareKind::PostProcess, impl_, metadata, item)
     }
 }

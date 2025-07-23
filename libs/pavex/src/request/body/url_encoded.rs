@@ -48,7 +48,7 @@ pub struct UrlEncodedBody<T>(pub T);
 
 #[methods]
 impl<T> UrlEncodedBody<T> {
-    #[request_scoped]
+    #[request_scoped(pavex = crate, id = "URL_ENCODED_BODY_EXTRACT")]
     pub fn extract<'head, 'body>(
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,

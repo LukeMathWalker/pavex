@@ -60,7 +60,7 @@ impl<T> JsonBody<T> {
     //
     // We are using two separate lifetimes here to make it clear to the compiler
     // that `JsonBody` doesn't borrow from `RequestHead`.
-    #[request_scoped]
+    #[request_scoped(pavex = crate, id = "JSON_BODY_EXTRACT")]
     pub fn extract<'head, 'body>(
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,

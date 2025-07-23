@@ -1,0 +1,39 @@
+(
+    creation_location: (
+        line: 5,
+        column: 18,
+        file: "dependency_injection/prebuilt/src/blueprint.rs",
+    ),
+    components: [
+        import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "di_prebuilt::blueprint",
+            created_at: (
+                package_name: "di_prebuilt",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 6,
+                column: 8,
+                file: "dependency_injection/prebuilt/src/blueprint.rs",
+            ),
+        )),
+        routes_import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "di_prebuilt::blueprint",
+            created_at: (
+                package_name: "di_prebuilt",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 7,
+                column: 8,
+                file: "dependency_injection/prebuilt/src/blueprint.rs",
+            ),
+        )),
+    ],
+)

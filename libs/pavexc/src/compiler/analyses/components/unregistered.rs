@@ -5,7 +5,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::ComputationId;
 use crate::compiler::analyses::user_components::{ScopeId, UserComponentId};
 use crate::compiler::component::ErrorHandler;
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// All the information needed to register a component.
@@ -62,7 +62,7 @@ pub(crate) enum UnregisteredComponent {
         lifecycle: Lifecycle,
         computation_id: ComputationId,
         scope_id: ScopeId,
-        cloning_strategy: CloningStrategy,
+        cloning_policy: CloningPolicy,
         /// Synthetic constructors can be built by "deriving" user-registered constructors.
         /// For example, by binding unassigned generic parameters or by extracting the `Ok` variant
         /// from the output of fallible constructors.

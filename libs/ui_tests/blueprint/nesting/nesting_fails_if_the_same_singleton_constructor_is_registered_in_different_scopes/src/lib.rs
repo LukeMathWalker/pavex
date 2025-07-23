@@ -1,27 +1,32 @@
-
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
 use pavex::http::StatusCode;
+use pavex::Blueprint;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
-    bp.route(GET, "/parent", f!(crate::handler));
+    bp.constructor(SINGLETON);
+    bp.route(PARENT_HANDLER);
     bp.nest(sub_blueprint());
     bp
 }
 
+#[pavex::singleton]
 pub fn singleton() -> u64 {
     todo!()
 }
 
-pub fn handler(_x: u64) -> StatusCode {
+#[pavex::get(path = "/parent")]
+pub fn parent_handler(_x: u64) -> StatusCode {
+    todo!()
+}
+
+#[pavex::get(path = "/child")]
+pub fn child_handler(_x: u64) -> StatusCode {
     todo!()
 }
 
 fn sub_blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
-    bp.route(GET, "/child", f!(crate::handler));
+    bp.constructor(SINGLETON);
+    bp.route(CHILD_HANDLER);
     bp
 }

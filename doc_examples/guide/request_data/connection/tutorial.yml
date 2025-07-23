@@ -1,8 +1,0 @@
-starter_project_folder: "project"
-commands:
-  - command: "cargo px c"
-    expected_outcome: "success"
-snippets:
-  - name: "connection_peer"
-    source_path: "src/connection/peer.rs"
-    ranges: [ ".." ]

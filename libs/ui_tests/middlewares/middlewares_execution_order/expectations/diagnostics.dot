@@ -63,7 +63,7 @@ digraph "GET /nested - 4" {
 }
 digraph "GET /nested - 5" {
     0 [ label = "0| &app::Spy"]
-    1 [ label = "1| app::handler(&app::Spy) -> pavex::response::Response"]
+    1 [ label = "1| app::nested_handler(&app::Spy) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -145,7 +145,7 @@ digraph "GET /failing_pre - 4" {
 }
 digraph "GET /failing_pre - 5" {
     0 [ label = "0| &app::Spy"]
-    1 [ label = "1| app::handler(&app::Spy) -> pavex::response::Response"]
+    1 [ label = "1| app::failing_pre_handler(&app::Spy) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -215,7 +215,7 @@ digraph "GET /early_return - 4" {
 }
 digraph "GET /early_return - 5" {
     0 [ label = "0| &app::Spy"]
-    1 [ label = "1| app::handler(&app::Spy) -> pavex::response::Response"]
+    1 [ label = "1| app::early_return_handler(&app::Spy) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -268,7 +268,7 @@ digraph "GET /after_handler - 2" {
 }
 digraph "GET /after_handler - 3" {
     0 [ label = "0| &app::Spy"]
-    1 [ label = "1| app::handler(&app::Spy) -> pavex::response::Response"]
+    1 [ label = "1| app::after_handler_handler(&app::Spy) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -329,7 +329,7 @@ digraph "GET /top_level - 4" {
 }
 digraph "GET /top_level - 5" {
     0 [ label = "0| &app::Spy"]
-    1 [ label = "1| app::handler(&app::Spy) -> pavex::response::Response"]
+    1 [ label = "1| app::top_level_handler(&app::Spy) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]

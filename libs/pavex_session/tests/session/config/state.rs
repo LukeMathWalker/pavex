@@ -7,7 +7,7 @@ fn test_ttl_extension_threshold_valid() {
     let valid_values = [0.0, 0.5, 1.0];
     for &value in &valid_values {
         let threshold = TtlExtensionThreshold::new(value);
-        assert!(threshold.is_ok(), "Expected value {} to be valid", value);
+        assert!(threshold.is_ok(), "Expected value {value} to be valid");
     }
 }
 
@@ -16,7 +16,7 @@ fn test_ttl_extension_threshold_invalid() {
     let invalid_values = [-0.1, 1.1];
     for &value in &invalid_values {
         let threshold = TtlExtensionThreshold::new(value);
-        assert!(threshold.is_err(), "Expected value {} to be invalid", value);
+        assert!(threshold.is_err(), "Expected value {value} to be invalid");
     }
 }
 
@@ -28,15 +28,13 @@ fn test_ttl_extension_threshold_try_from_f32() {
     let valid_threshold = TtlExtensionThreshold::try_from(valid_value);
     assert!(
         valid_threshold.is_ok(),
-        "Expected value {} to be valid",
-        valid_value
+        "Expected value {valid_value} to be valid"
     );
 
     let invalid_threshold = TtlExtensionThreshold::try_from(invalid_value);
     assert!(
         invalid_threshold.is_err(),
-        "Expected value {} to be invalid",
-        invalid_value
+        "Expected value {invalid_value} to be invalid"
     );
 }
 
@@ -48,15 +46,13 @@ fn test_ttl_extension_threshold_try_from_f64() {
     let valid_threshold = TtlExtensionThreshold::try_from(valid_value);
     assert!(
         valid_threshold.is_ok(),
-        "Expected value {} to be valid",
-        valid_value
+        "Expected value {valid_value} to be valid"
     );
 
     let invalid_threshold = TtlExtensionThreshold::try_from(invalid_value);
     assert!(
         invalid_threshold.is_err(),
-        "Expected value {} to be invalid",
-        invalid_value
+        "Expected value {invalid_value} to be invalid"
     );
 }
 

@@ -1,0 +1,33 @@
+From c5e355f9d31be0968a6c5624e3adf4e5db154e08 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 13:04:05 +0200
+Subject: [PATCH 07/32] Add greet scaffolding
+
+---
+ app/src/routes/greet.rs | 6 ++++++
+ app/src/routes/mod.rs   | 1 +
+ 2 files changed, 7 insertions(+)
+ create mode 100644 app/src/routes/greet.rs
+
+diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
+new file mode 100644
+index 0000000..9a82e41
+--- /dev/null
++++ b/app/src/routes/greet.rs
+@@ -0,0 +1,6 @@
++use pavex::{get, response::Response};
++
++#[get(path = "/greet/{name}")]
++pub fn greet() -> Response {
++    todo!()
++}
+diff --git a/app/src/routes/mod.rs b/app/src/routes/mod.rs
+index a766209..1bd5b42 100644
+--- a/app/src/routes/mod.rs
++++ b/app/src/routes/mod.rs
+@@ -1 +1,2 @@
++pub mod greet;
+ pub mod ping;
+-- 
+2.39.5 (Apple Git-154)
+

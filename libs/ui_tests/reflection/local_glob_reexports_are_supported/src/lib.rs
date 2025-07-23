@@ -1,15 +1,17 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::from;
+use pavex::Blueprint;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/home", f!(crate::nested::function));
+    bp.routes(from![crate::nested]);
     bp
 }
 
 pub mod nested {
     pub mod module {
         use pavex::http::StatusCode;
+
+        #[pavex::get(path = "/home")]
         pub fn function() -> StatusCode {
             StatusCode::OK
         }

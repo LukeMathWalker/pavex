@@ -45,7 +45,7 @@ impl<T> QueryParams<T> {
     /// If the extraction fails, an [`ExtractQueryParamsError`] is returned.
     ///
     /// Check out [`QueryParams`] for more information on query parameters.
-    #[request_scoped]
+    #[request_scoped(pavex = crate, id = "QUERY_PARAMS_EXTRACT")]
     pub fn extract<'request>(
         request_head: &'request RequestHead,
     ) -> Result<Self, ExtractQueryParamsError>

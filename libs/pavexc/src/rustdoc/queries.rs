@@ -16,13 +16,15 @@ use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
-use crate::language::{FQGenericArgument, FQPathType};
+use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id};
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
 
 use super::AnnotatedItem;
-use super::annotations::{self, AnnotatedItems, QueueItem, invalid_diagnostic_attribute};
+use super::annotations::{
+    self, AnnotatedItems, AnnotationCoordinates, QueueItem, invalid_diagnostic_attribute,
+};
 use super::compute::{RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
 
 /// The main entrypoint for accessing the documentation of the crates
@@ -321,7 +323,30 @@ impl CrateCollection {
     /// Retrieve the annotation associated with the given item, if any.
     pub fn annotation(&self, item_id: &GlobalItemId) -> Option<&AnnotatedItem> {
         let krate = self.get_crate_by_package_id(&item_id.package_id)?;
-        krate.annotated_items.get(item_id.rustdoc_item_id)
+        krate
+            .annotated_items
+            .get_by_item_id(item_id.rustdoc_item_id)
+    }
+
+    /// Retrieve the annotation that these coordinates point to, if any.
+    #[allow(clippy::type_complexity)]
+    pub fn annotation_for_coordinates(
+        &self,
+        c: &AnnotationCoordinates,
+    ) -> Result<Result<Option<(&Crate, &AnnotatedItem)>, UnknownCrate>, CannotGetCrateData> {
+        let package_id = match krate2package_id(
+            &c.created_at.package_name,
+            &c.created_at.package_version,
+            &self.package_graph,
+        ) {
+            Ok(p) => p,
+            Err(e) => return Ok(Err(e)),
+        };
+        let krate = self.get_or_compute_crate_by_package_id(&package_id)?;
+        Ok(Ok(krate
+            .annotated_items
+            .get_by_annotation_id(&c.id)
+            .map(|item| (krate, item))))
     }
 
     /// Retrieve type information given its [`GlobalItemId`].

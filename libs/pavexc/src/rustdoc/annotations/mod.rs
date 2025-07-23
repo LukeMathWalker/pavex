@@ -5,6 +5,7 @@ mod queue;
 use super::Crate;
 use crate::diagnostic::DiagnosticSink;
 use diagnostic::*;
+use pavex_bp_schema::CreatedAt;
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{Enum, ItemEnum, Struct, Trait};
 use std::collections::BTreeSet;
@@ -12,6 +13,14 @@ use std::collections::BTreeSet;
 pub(crate) use diagnostic::invalid_diagnostic_attribute;
 pub use items::{AnnotatedItem, AnnotatedItems, ImplInfo};
 pub(crate) use queue::QueueItem;
+
+/// Enough information to locate an annotated component in the
+/// package where it was defined.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AnnotationCoordinates {
+    pub id: String,
+    pub created_at: CreatedAt,
+}
 
 /// Extract annotated items from the documentation of the specified package.
 ///
@@ -67,14 +76,16 @@ pub(crate) fn process_queue(
                     continue;
                 }
 
-                items.insert(
+                if let Err(e) = items.insert(
                     id,
                     AnnotatedItem {
                         id,
                         properties: annotation,
                         impl_: None,
                     },
-                );
+                ) {
+                    id_conflict(e, krate, diagnostics);
+                }
             }
             QueueItem::Impl { self_, id: impl_id } => {
                 // Enqueue other items for analysis.
@@ -129,7 +140,7 @@ pub(crate) fn process_queue(
                     }
                 };
 
-                items.insert(
+                if let Err(e) = items.insert(
                     id,
                     AnnotatedItem {
                         id,
@@ -139,7 +150,9 @@ pub(crate) fn process_queue(
                             impl_,
                         }),
                     },
-                );
+                ) {
+                    id_conflict(e, krate, diagnostics);
+                }
             }
         }
     }

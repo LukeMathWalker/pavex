@@ -4,7 +4,7 @@ Every [configuration entry](entries.md) becomes a field in `ApplicationConfig`,
 a code-generated struct in [the server SDK crate](/guide/project_structure/server_sdk.md) that represents
 the entire set of configuration options for your application.
 
---8<-- "doc_examples/guide/configuration/01-build_state.snap"
+--8<-- "docs/examples/configuration/build_state.snap"
 
 ## Usage
 

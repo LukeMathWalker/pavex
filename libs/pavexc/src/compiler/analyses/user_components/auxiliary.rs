@@ -7,11 +7,11 @@ use crate::{
         interner::Interner,
     },
     diagnostic::{Registration, TargetSpan},
-    rustdoc::GlobalItemId,
+    rustdoc::{AnnotationCoordinates, GlobalItemId},
 };
 use ahash::HashMap;
 use indexmap::IndexMap;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawIdentifiers};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting, Location};
 
 use super::{ScopeId, UserComponent, UserComponentId, imports::UnresolvedImport};
 
@@ -29,7 +29,7 @@ pub(super) struct AuxiliaryData {
     /// A list of imports to be resolved.
     pub(super) imports: Vec<UnresolvedImport>,
     pub(super) annotation_interner: Interner<GlobalItemId>,
-    pub(super) identifiers_interner: Interner<RawIdentifiers>,
+    pub(super) annotation_coordinates_interner: Interner<AnnotationCoordinates>,
     /// Associate each user-registered component with the location it was
     /// registered at.
     ///
@@ -45,7 +45,7 @@ pub(super) struct AuxiliaryData {
     /// Determine if a type can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor, configuration type and prebuilt type.
-    pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    pub(super) id2cloning_policy: HashMap<UserComponentId, CloningPolicy>,
     /// Assign to each fallible component the error handler that was registered for it,
     /// if any.
     pub(super) fallible_id2error_handler_id: HashMap<UserComponentId, UserComponentId>,
@@ -93,17 +93,18 @@ pub(super) struct AuxiliaryData {
 
 impl AuxiliaryData {
     /// A helper function to intern a component without forgetting to do the necessary
-    /// bookkeeping for the metadata (location and lifecycle) that are common to all
-    /// components.
+    /// bookkeeping for the metadata that are common to all components.
     pub(super) fn intern_component(
         &mut self,
         component: UserComponent,
         scope_id: ScopeId,
-        lifecycle: Lifecycle,
+        lifecycle: impl Into<Option<Lifecycle>>,
         registration: Registration,
     ) -> UserComponentId {
         let component_id = self.component_interner.alloc(component);
-        self.id2lifecycle.insert(component_id, lifecycle);
+        if let Some(lifecycle) = lifecycle.into() {
+            self.id2lifecycle.insert(component_id, lifecycle);
+        }
         self.id2registration.insert(component_id, registration);
         self.id2scope_id.insert(component_id, scope_id);
         component_id
@@ -143,55 +144,51 @@ impl AuxiliaryData {
             match component {
                 Constructor { .. } | PrebuiltType { .. } => {
                     assert!(
-                        self.id2cloning_strategy.contains_key(&id),
+                        self.id2cloning_policy.contains_key(&id),
                         "There is no cloning strategy registered for the user-registered {} #{id:?}",
                         component.kind(),
                     );
                 }
                 ConfigType { .. } => {
                     assert!(
-                        self.id2cloning_strategy.contains_key(&id),
-                        "There is no cloning strategy registered for the user-registered config-type {} #{id:?}",
-                        component.kind(),
+                        self.config_id2type.contains_key(&id),
+                        "The type is missing for the user-registered config #{id:?}"
                     );
                     assert!(
                         self.config_id2default_strategy.contains_key(&id),
-                        "There is no default strategy registered for the user-registered config-type {} #{id:?}",
-                        component.kind(),
+                        "The default strategy is missing for the user-registered config #{id:?}"
+                    );
+                    assert!(
+                        self.config_id2include_if_unused.contains_key(&id),
+                        "The include policy is missing for the user-registered config #{id:?}"
                     );
                 }
                 RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.contains_key(&id),
-                        "The middleware chain is missing for the user-registered request handler #{:?}",
-                        id
+                        "The middleware chain is missing for the user-registered request handler #{id:?}"
                     );
                     assert!(
                         self.handler_id2error_observer_ids.contains_key(&id),
-                        "The list of error observers is missing for the user-registered request handler #{:?}",
-                        id
+                        "The list of error observers is missing for the user-registered request handler #{id:?}"
                     );
                 }
                 Fallback { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.contains_key(&id),
-                        "The middleware chain is missing for the user-registered fallback #{:?}",
-                        id
+                        "The middleware chain is missing for the user-registered fallback #{id:?}"
                     );
                     assert!(
                         self.handler_id2error_observer_ids.contains_key(&id),
-                        "The list of error observers is missing for the user-registered fallback #{:?}",
-                        id
+                        "The list of error observers is missing for the user-registered fallback #{id:?}"
                     );
                     assert!(
                         self.fallback_id2path_prefix.contains_key(&id),
-                        "There is no path prefix associated with the user-registered fallback #{:?}",
-                        id
+                        "There is no path prefix associated with the user-registered fallback #{id:?}"
                     );
                     assert!(
                         self.fallback_id2domain_guard.contains_key(&id),
-                        "There is no domain guard associated with the user-registered fallback #{:?}",
-                        id
+                        "There is no domain guard associated with the user-registered fallback #{id:?}"
                     );
                 }
                 ErrorHandler { .. }

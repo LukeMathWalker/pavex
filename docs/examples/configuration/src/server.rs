@@ -1,0 +1,9 @@
+//! px:server_config
+use pavex::config;
+
+#[config(key = "server")]
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ServerConfig {
+    pub port: u16,
+    pub host: String,
+}

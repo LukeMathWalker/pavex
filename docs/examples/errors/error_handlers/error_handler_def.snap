@@ -1,0 +1,20 @@
+```rust hl_lines="9 11"
+use pavex::{http::StatusCode, methods};
+
+#[derive(Debug)]
+pub enum LoginError {
+    InvalidCredentials,
+    DatabaseError,
+}
+
+#[methods] // (1)!
+impl LoginError {
+    #[error_handler]
+    pub fn to_response(&self) -> StatusCode {
+        match self {
+            LoginError::InvalidCredentials => StatusCode::UNAUTHORIZED,
+            LoginError::DatabaseError => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+```

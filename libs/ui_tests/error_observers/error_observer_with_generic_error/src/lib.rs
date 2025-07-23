@@ -1,6 +1,5 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
 use pavex::response::Response;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct Generic<S>(S);
 
@@ -20,33 +19,30 @@ impl<S> std::fmt::Display for GenericError<S> {
 
 impl<S> std::error::Error for GenericError<S> {}
 
+#[pavex::request_scoped]
 pub fn constructor<S>() -> Result<Generic<S>, GenericError<S>> {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_b: Generic<String>) -> Response {
     todo!()
 }
 
+#[pavex::error_handler]
 pub fn error_handler<S>(_e: &GenericError<S>) -> Response {
     todo!()
 }
 
-pub fn error_observer(_err: &pavex::Error) {
-    todo!()
-}
-
 #[pavex::error_observer]
-pub fn error_observer1(_err: &pavex::Error) {
+pub fn error_observer(_err: &pavex::Error) {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::constructor), Lifecycle::RequestScoped)
-        .error_handler(f!(crate::error_handler));
-    bp.error_observer(f!(crate::error_observer));
-    bp.error_observer(ERROR_OBSERVER_1);
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.error_observer(ERROR_OBSERVER);
+    bp.routes(from![crate]);
     bp
 }

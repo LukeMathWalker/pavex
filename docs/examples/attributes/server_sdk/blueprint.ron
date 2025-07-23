@@ -1,0 +1,55 @@
+(
+    creation_location: (
+        line: 6,
+        column: 18,
+        file: "attributes/src/blueprint.rs",
+    ),
+    components: [
+        error_handler((
+            coordinates: (
+                id: "AUTH_ERROR_HANDLER",
+                created_at: (
+                    package_name: "attributes",
+                    package_version: "0.1.0",
+                ),
+                macro_name: "error_handler",
+            ),
+            registered_at: (
+                line: 7,
+                column: 8,
+                file: "attributes/src/blueprint.rs",
+            ),
+        )),
+        import((
+            sources: some([
+                "crate",
+                "pavex",
+            ]),
+            relative_to: "attributes::blueprint",
+            created_at: (
+                package_name: "attributes",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 9,
+                column: 8,
+                file: "attributes/src/blueprint.rs",
+            ),
+        )),
+        routes_import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "attributes::blueprint",
+            created_at: (
+                package_name: "attributes",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 10,
+                column: 8,
+                file: "attributes/src/blueprint.rs",
+            ),
+        )),
+    ],
+)

@@ -1,6 +1,6 @@
 # Configuration
 
-You can use configuration to change the behavior of your application without
+Configuration changes the behavior of your application without
 having to modify its source code.
 Configuration is a good fit for:
 

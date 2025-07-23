@@ -2,9 +2,8 @@ use std::fmt::{Display, Formatter};
 
 use syn::{ExprPath, GenericArgument, PathArguments, Type, TypePath};
 
-use pavex_bp_schema::RawIdentifiers;
-
 use super::Lifetime;
+use super::RawIdentifiers;
 
 /// A path that can be used in expression position (i.e. to refer to a function or a static method).
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -80,8 +79,8 @@ impl CallPathLifetime {
 impl CallPath {
     pub fn parse_type_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let callable_path: TypePath =
-            syn::parse_str(identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_path: identifiers.raw_path().to_owned(),
+            syn::parse_str(&identifiers.import_path).map_err(|e| InvalidCallPath {
+                raw_path: identifiers.import_path.to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(callable_path.path, None)
@@ -89,8 +88,8 @@ impl CallPath {
 
     pub fn parse_callable_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let expr =
-            syn::parse_str::<ExprPath>(identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_path: identifiers.raw_path().to_owned(),
+            syn::parse_str::<ExprPath>(&identifiers.import_path).map_err(|e| InvalidCallPath {
+                raw_path: identifiers.import_path.to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(expr.path, expr.qself)
@@ -202,16 +201,16 @@ impl Display for CallPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathType::ResolvedPath(p) => {
-                write!(f, "{}", p)?;
+                write!(f, "{p}")?;
             }
             CallPathType::Reference(r) => {
-                write!(f, "{}", r)?;
+                write!(f, "{r}")?;
             }
             CallPathType::Tuple(t) => {
-                write!(f, "{}", t)?;
+                write!(f, "{t}")?;
             }
             CallPathType::Slice(s) => {
-                write!(f, "{}", s)?;
+                write!(f, "{s}")?;
             }
         }
         Ok(())
@@ -229,7 +228,7 @@ impl Display for CallPathTuple {
         write!(f, "(")?;
         let last_argument_index = self.elements.len().saturating_sub(1);
         for (i, element) in self.elements.iter().enumerate() {
-            write!(f, "{}", element)?;
+            write!(f, "{element}")?;
             if i != last_argument_index {
                 write!(f, ", ")?;
             }
@@ -297,10 +296,10 @@ impl Display for CallPathGenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathGenericArgument::Type(t) => {
-                write!(f, "{}", t)?;
+                write!(f, "{t}")?;
             }
             CallPathGenericArgument::Lifetime(l) => {
-                write!(f, "{}", l)?;
+                write!(f, "{l}")?;
             }
         }
         Ok(())
@@ -311,7 +310,7 @@ impl Display for CallPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathLifetime::Static => write!(f, "'static"),
-            CallPathLifetime::Named(name) => write!(f, "'{}", name),
+            CallPathLifetime::Named(name) => write!(f, "'{name}"),
         }
     }
 }
