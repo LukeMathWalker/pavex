@@ -30,12 +30,6 @@ impl ApplicationState {
         }
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(

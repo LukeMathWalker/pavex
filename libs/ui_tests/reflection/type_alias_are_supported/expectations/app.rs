@@ -42,14 +42,6 @@ impl ApplicationState {
         }
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-    v0: alloc::string::String,
-    v1: dep_f8f62968::GenericType<bool, u8>,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config, v0, v1).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(

@@ -12,7 +12,7 @@ use quote::quote;
 use router::codegen_router;
 use state::{
     define_application_config, define_application_state, define_application_state_error,
-    get_application_state_new, get_application_state_private_new, get_build_application_state,
+    get_application_state_new, get_application_state_private_new,
 };
 use syn::{ItemFn, ItemStruct};
 
@@ -79,7 +79,6 @@ pub(crate) fn codegen_app(
         application_config,
         package_id2name,
     )?;
-    let application_state_init = get_build_application_state(&application_state_new)?;
 
     let define_server_state = define_server_state(&application_state_def);
 
@@ -138,7 +137,6 @@ pub(crate) fn codegen_app(
             #application_state_new
             #application_state_private_new
         }
-        #application_state_init
         #define_application_state_error
         #entrypoint
         #router
