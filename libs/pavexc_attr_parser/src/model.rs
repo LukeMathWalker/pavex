@@ -13,6 +13,7 @@ pub struct ConstructorProperties {
     pub lifecycle: Lifecycle,
     pub cloning_policy: Option<CloningPolicy>,
     pub allow_unused: Option<bool>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<ConstructorProperties> for AnnotationProperties {
@@ -22,6 +23,7 @@ impl From<ConstructorProperties> for AnnotationProperties {
             lifecycle: value.lifecycle.into(),
             cloning_policy: value.cloning_policy.map(Into::into),
             allow_unused: value.allow_unused,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -63,11 +65,15 @@ impl From<ErrorHandlerProperties> for AnnotationProperties {
 /// `pavex::diagnostic::wrap`.
 pub struct WrappingMiddlewareProperties {
     pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<WrappingMiddlewareProperties> for AnnotationProperties {
     fn from(value: WrappingMiddlewareProperties) -> Self {
-        AnnotationProperties::WrappingMiddleware { id: value.id }
+        AnnotationProperties::WrappingMiddleware {
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
+        }
     }
 }
 
@@ -76,11 +82,15 @@ impl From<WrappingMiddlewareProperties> for AnnotationProperties {
 /// `pavex::diagnostic::pre_process`.
 pub struct PreProcessingMiddlewareProperties {
     pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
     fn from(value: PreProcessingMiddlewareProperties) -> Self {
-        AnnotationProperties::PreProcessingMiddleware { id: value.id }
+        AnnotationProperties::PreProcessingMiddleware {
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
+        }
     }
 }
 
@@ -89,11 +99,15 @@ impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
 /// `pavex::diagnostic::post_process`.
 pub struct PostProcessingMiddlewareProperties {
     pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
     fn from(value: PostProcessingMiddlewareProperties) -> Self {
-        AnnotationProperties::PostProcessingMiddleware { id: value.id }
+        AnnotationProperties::PostProcessingMiddleware {
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
+        }
     }
 }
 
@@ -128,11 +142,15 @@ impl From<ConfigProperties> for AnnotationProperties {
 /// `pavex::diagnostic::fallback`.
 pub struct FallbackProperties {
     pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<FallbackProperties> for AnnotationProperties {
     fn from(value: FallbackProperties) -> Self {
-        AnnotationProperties::Fallback { id: value.id }
+        AnnotationProperties::Fallback {
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
+        }
     }
 }
 
@@ -145,6 +163,7 @@ pub struct RouteProperties {
     pub method: Option<MethodArgument>,
     pub allow_any_method: Option<bool>,
     pub allow_non_standard_methods: Option<bool>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<RouteProperties> for AnnotationProperties {
@@ -176,6 +195,7 @@ impl From<RouteProperties> for AnnotationProperties {
             id: value.id,
             path: value.path,
             method,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }

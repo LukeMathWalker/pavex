@@ -1,7 +1,7 @@
 # Dependency injection
 
 You just added a new input parameter to your request handler and, somehow, the framework was able to provide its value
-at runtime without you having to do anything.\
+at runtime without you having to do anything.
 How does that work?
 
 It's all thanks to [**dependency injection**](../../guide/dependency_injection/index.md).\

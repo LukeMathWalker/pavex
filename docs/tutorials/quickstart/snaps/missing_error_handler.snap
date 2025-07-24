@@ -1,16 +1,18 @@
-[31;1mERROR[0m:
-  [31m×[0m You registered a constructor that returns a `Result`, but you
-  [31m│[0m did not register an error handler for it. If I don't have an
-  [31m│[0m error handler, I don't know what to do with the error when the
-  [31m│[0m constructor fails!
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mquickstart/project/app/src/user_agent.rs[0m:13:1]
-  [31m│[0m  [2m13[0m │     impl UserAgent {
-  [31m│[0m  [2m14[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[request_scoped]
-  [31m│[0m  [2m15[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError> {
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe fallible constructor was registered here[0m
-  [31m│[0m  [2m16[0m │             let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Add an error handler via `.error_handler`
+[33;1mWARNING[0m:
+  [33m⚠[0m There is no specific error handler for
+  [33m│[0m `http::header::ToStrError`, the error returned by one of your
+  [33m│[0m constructors.
+  [33m│[0m It'll be converted to `pavex::Error` and handled by the fallback
+  [33m│[0m error handler.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mquickstart/project/app/src/user_agent.rs[0m:13:1]
+  [33m│[0m  [2m13[0m │     impl UserAgent {
+  [33m│[0m  [2m14[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[request_scoped]
+  [33m│[0m  [2m15[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError> {
+  [33m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe fallible constructor was registered here[0m
+  [33m│[0m  [2m16[0m │             let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Define an error handler for `http::header::ToStrError`
+  [33m│[0m   [36mhelp:[0m Add `allow(error_fallback)` to your component's attribute to
+  [33m│[0m         silence this warning
 
-note: Rerun with `PAVEX_DEBUG=true` to display more error details.

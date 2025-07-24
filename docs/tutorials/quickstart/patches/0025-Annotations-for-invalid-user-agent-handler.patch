@@ -1,7 +1,7 @@
-From 4b0270026285f2f89510eef7a26daa9b30f23ff9 Mon Sep 17 00:00:00 2001
+From 5240eace0655323f8bb47b80e0edb570f340cf1c Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:54:15 +0200
-Subject: [PATCH 23/32] Annotations for invalid user agent handler
+Subject: [PATCH 25/34] Annotations for invalid user agent handler
 
 ---
  app/src/user_agent.rs | 4 ++++

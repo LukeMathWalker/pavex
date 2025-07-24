@@ -1,0 +1,101 @@
+digraph "* * - 0" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| crate::route_0::Next0(&'a pavex::router::AllowedMethods) -> crate::route_0::Next0<'a>"]
+    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 -> 3 [ ]
+    1 -> 2 [ ]
+    3 -> 4 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "* * - 1" {
+    0 [ label = "0| app_1e65444f::pre() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_1e65444f::CustomError>"]
+    1 [ label = "1| `match`"]
+    2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
+    3 [ label = "3| pavex::Error::new(app_1e65444f::CustomError) -> pavex::Error"]
+    4 [ label = "4| pavex::Error::to_response(&pavex::Error) -> pavex::response::Response"]
+    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "6| pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
+    7 [ label = "7| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_1e65444f::CustomError> -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 -> 7 [ ]
+    1 -> 2 [ ]
+    2 -> 3 [ ]
+    3 -> 4 [ label = "&"]
+    4 -> 5 [ ]
+    5 -> 6 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "* * - 2" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "GET / - 0" {
+    0 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+    2 -> 3 [ ]
+}
+
+digraph "GET / - 1" {
+    0 [ label = "0| app_1e65444f::pre() -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_1e65444f::CustomError>"]
+    1 [ label = "1| `match`"]
+    2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
+    3 [ label = "3| pavex::Error::new(app_1e65444f::CustomError) -> pavex::Error"]
+    4 [ label = "4| pavex::Error::to_response(&pavex::Error) -> pavex::response::Response"]
+    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "6| pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
+    7 [ label = "7| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, app_1e65444f::CustomError> -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 -> 7 [ ]
+    1 -> 2 [ ]
+    2 -> 3 [ ]
+    3 -> 4 [ label = "&"]
+    4 -> 5 [ ]
+    5 -> 6 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "GET / - 2" {
+    0 [ label = "0| app_1e65444f::Dep::new() -> core::result::Result<app_1e65444f::Dep, app_1e65444f::CustomError>"]
+    1 [ label = "1| `match`"]
+    2 [ label = "2| core::result::Result<app_1e65444f::Dep, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
+    3 [ label = "3| pavex::Error::new(app_1e65444f::CustomError) -> pavex::Error"]
+    4 [ label = "4| pavex::Error::to_response(&pavex::Error) -> pavex::response::Response"]
+    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "6| core::result::Result<app_1e65444f::Dep, app_1e65444f::CustomError> -> app_1e65444f::Dep"]
+    7 [ label = "7| app_1e65444f::handler(app_1e65444f::Dep) -> core::result::Result<pavex::response::Response, app_1e65444f::CustomError>"]
+    8 [ label = "8| `match`"]
+    9 [ label = "9| core::result::Result<pavex::response::Response, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
+    10 [ label = "10| pavex::Error::new(app_1e65444f::CustomError) -> pavex::Error"]
+    11 [ label = "11| pavex::Error::to_response(&pavex::Error) -> pavex::response::Response"]
+    12 [ label = "12| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    13 [ label = "13| core::result::Result<pavex::response::Response, app_1e65444f::CustomError> -> pavex::response::Response"]
+    14 [ label = "14| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 -> 7 [ ]
+    1 -> 2 [ ]
+    1 -> 6 [ ]
+    8 -> 13 [ ]
+    8 -> 9 [ ]
+    2 -> 3 [ ]
+    9 -> 10 [ ]
+    13 -> 14 [ ]
+    3 -> 4 [ label = "&"]
+    10 -> 11 [ label = "&"]
+    4 -> 5 [ ]
+    11 -> 12 [ ]
+    7 -> 8 [ ]
+    0 -> 1 [ ]
+}
+
+digraph app_state {
+    0 [ label = "0| crate::ApplicationState() -> crate::ApplicationState"]
+}

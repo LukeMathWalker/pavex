@@ -1,7 +1,7 @@
-From 2da9e8cdd1ad50af8327e37f5eb4a70e294e080d Mon Sep 17 00:00:00 2001
+From 8d2d045afe464be544dff49e11f1acba584226b6 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 11:47:47 +0200
-Subject: [PATCH 01/32] Codegen
+Subject: [PATCH 01/34] Codegen
 
 ---
  server_sdk/Cargo.toml |  12 +-

@@ -11,4 +11,8 @@ pub enum Lint {
     /// You registered a component that's never used in the generated
     /// server SDK code.
     Unused,
+    /// Allow Pavex to [invoke a fallback error handler if no specific error handler is provided][1].
+    ///
+    /// [1]: https://pavex.dev/docs/guide/errors/error_handlers/#fallback-error-handler
+    ErrorFallback,
 }

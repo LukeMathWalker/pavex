@@ -31,6 +31,6 @@ responses.
 
 The `demo` project includes an example of such a test which you can use as a reference:
 
---8<-- "docs/tutorials/quickstart/snaps/ping_test.snap"
+--8<-- "docs/tutorials/quickstart/snaps/bare_ping_test.snap"
 
 [server SDK]: server_sdk.md

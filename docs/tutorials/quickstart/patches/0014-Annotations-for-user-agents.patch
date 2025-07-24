@@ -1,7 +1,7 @@
-From 325ba973aa56d33fb41ea7ccbd5228c8a75032ec Mon Sep 17 00:00:00 2001
+From 19ac40c596358520a0c8fdafae93b0de4f798945 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:42:36 +0200
-Subject: [PATCH 14/32] Annotations for user agents
+Subject: [PATCH 14/34] Annotations for user agents
 
 ---
  app/src/lib.rs          |  4 +++-

@@ -1,7 +1,7 @@
-From f49aece5166633a025e9b364f18575191b79423c Mon Sep 17 00:00:00 2001
+From 00b8257ec2ddf1173d8fc7818121856bda97894c Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:55:56 +0200
-Subject: [PATCH 27/32] Greet integration test
+Subject: [PATCH 29/34] Greet integration test
 
 ---
  server/tests/integration/greet.rs | 20 ++++++++++++++++++++

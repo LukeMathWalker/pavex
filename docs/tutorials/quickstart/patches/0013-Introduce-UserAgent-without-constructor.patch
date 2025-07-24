@@ -1,7 +1,7 @@
-From 86b8931fe552ca78917bb495fe3db301f0b4f069 Mon Sep 17 00:00:00 2001
+From a2ca7948687ce94cf117f9234d733725be139d01 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 14:49:50 +0200
-Subject: [PATCH 13/32] Introduce UserAgent without constructor
+Subject: [PATCH 13/34] Introduce UserAgent without constructor
 
 ---
  app/src/lib.rs          | 1 +

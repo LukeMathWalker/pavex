@@ -11,14 +11,21 @@ use crate::utils::{
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
+    pub allow: Option<FallbackAllows>,
+}
+
+#[derive(darling::FromMeta, Debug, Clone)]
+pub struct FallbackAllows {
+    error_fallback: darling::util::Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
     type Error = darling::Error;
 
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let InputSchema { id, pavex } = input;
-        Ok(Properties { id, pavex })
+        let InputSchema { id, pavex, allow } = input;
+        let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
+        Ok(Properties { id, pavex, allow_error_fallback })
     }
 }
 
@@ -26,6 +33,7 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 pub struct FallbackAnnotation;
@@ -52,13 +60,19 @@ impl CallableAnnotation for FallbackAnnotation {
 /// Decorate the input with a `#[diagnostic::pavex::fallback]` attribute
 /// that matches the provided properties.
 fn emit(impl_: Option<ImplContext>, item: Callable, properties: Properties) -> AnnotationCodegen {
-    let Properties { id, pavex } = properties;
+    let Properties { id, pavex, allow_error_fallback } = properties;
     let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
     let id_str = id.to_string();
 
-    let properties = quote! {
+    let mut properties = quote! {
         id = #id_str,
     };
+    
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
+        });
+    }
 
     AnnotationCodegen {
         id_def: Some(callable_id_def(

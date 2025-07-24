@@ -12,11 +12,6 @@ pub fn fallible_unit_constructor() -> Result<(), Error> {
     todo!()
 }
 
-#[pavex::request_scoped]
-pub fn fallible_constructor() -> Result<u64, Error> {
-    todo!()
-}
-
 #[derive(Debug)]
 pub struct Error;
 

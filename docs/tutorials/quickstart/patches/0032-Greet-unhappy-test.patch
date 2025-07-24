@@ -1,7 +1,7 @@
-From fcbadd0f44eeea7671a158827242bd4ffc707fc8 Mon Sep 17 00:00:00 2001
+From b520612be66eab6ff2c7910183f234a20f05774f Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:57:02 +0200
-Subject: [PATCH 30/32] Greet unhappy test
+Subject: [PATCH 32/34] Greet unhappy test
 
 ---
  server/tests/integration/greet.rs | 20 ++++++++++++++++++++

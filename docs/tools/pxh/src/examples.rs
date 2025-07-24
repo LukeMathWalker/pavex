@@ -108,9 +108,11 @@ impl Example {
         eprintln!("Compiling example...");
         let (stderr_reader, stderr_writer) = std::io::pipe()?;
         let mut stderr = String::new();
+        let save_stderr = self.manifest.compilation_output_filename.is_some()
+            || self.manifest.compilation == CompilationOutcome::Failure;
 
         let status = std::thread::scope(|scope| {
-            let _handle = scope.spawn(|| {
+            scope.spawn(|| {
                 use std::io::BufRead as _;
 
                 let mut reader = std::io::BufReader::new(stderr_reader);
@@ -134,7 +136,7 @@ impl Example {
             cmd.arg("px")
                 .arg(if verify { "verify-freshness" } else { "check" });
 
-            if matches!(self.manifest.compilation, CompilationOutcome::Failure) {
+            if save_stderr {
                 // Avoid stray output, otherwise it'll be captured in the snippet.
                 cmd.arg("--quiet")
                     .env("PAVEXC_COLOR", "always")
@@ -148,8 +150,6 @@ impl Example {
                 .stderr(stderr_writer)
                 .status()
                 .context("Failed to invoke `cargo px check`")?;
-
-            // handle.join().unwrap();
 
             Result::<ExitStatus, anyhow::Error>::Ok(status)
         })?;
@@ -167,7 +167,8 @@ impl Example {
                     anyhow::bail!("Unexpected success compiling example");
                 }
 
-                let stderr = stderr
+                // Denoise the output for documentation purposes.
+                stderr = stderr
                     .lines()
                     .filter(|l| {
                         l != &"The invocation of `pavex [...] generate [...]` exited with a non-zero status code: 1" &&
@@ -176,15 +177,19 @@ impl Example {
                     })
                     .collect::<Vec<_>>()
                     .join("\n");
-                let mut options = fs_err::OpenOptions::new();
-                options.write(true).create(true).truncate(true);
-                let mut file = options.open(
-                    self.snippets_base_dir()
-                        .join(format!("{}.snap", self.stderr_snippet_name())),
-                )?;
-                file.write_all(stderr.as_bytes())?;
             }
         }
+
+        if save_stderr {
+            let mut options = fs_err::OpenOptions::new();
+            options.write(true).create(true).truncate(true);
+            let mut file = options.open(
+                self.snippets_base_dir()
+                    .join(format!("{}.snap", self.stderr_snippet_name())),
+            )?;
+            file.write_all(stderr.as_bytes())?;
+        }
+
         Ok(())
     }
 
@@ -291,9 +296,10 @@ pub struct ExampleManifest {
     /// Whether the example is expected to compile successfully or not.
     compilation: CompilationOutcome,
     #[serde(default)]
-    /// If compilation fails, save the output to a file with the given name.
+    /// Save the `stderr` output coming from compilation to a file with the given name.
     ///
-    /// If unspecified, the output will be saved to `stderr.snap`.
+    /// If unspecified, the output will be saved to `stderr.snap` if the example is
+    /// expected to fail to compile.
     compilation_output_filename: Option<String>,
 }
 
@@ -301,7 +307,7 @@ fn default_prune_orphaned_snippets() -> bool {
     true
 }
 
-#[derive(serde::Deserialize, Default, Debug)]
+#[derive(serde::Deserialize, Default, Debug, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum CompilationOutcome {
     #[default]

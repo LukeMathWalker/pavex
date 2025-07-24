@@ -1,7 +1,7 @@
-From b80c8afd88657091441c6784a73d4ee5208f749a Mon Sep 17 00:00:00 2001
+From bba1dd8f18ce8f8d9e05bb9d9a29ca976efb31dc Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 13:04:38 +0200
-Subject: [PATCH 09/32] Remove annotations for greet scaffolding
+Subject: [PATCH 09/34] Remove annotations for greet scaffolding
 
 This reverts commit af792c229fac5bb966da699046962329f27e7150.
 ---

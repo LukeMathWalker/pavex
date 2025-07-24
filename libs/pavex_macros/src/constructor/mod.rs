@@ -10,6 +10,7 @@ mod lifecycle;
 #[derive(darling::FromMeta, Debug, Clone)]
 pub struct ConstructorAllows {
     unused: Flag,
+    error_fallback: Flag,
 }
 
 #[derive(darling::FromMeta, Debug, Clone)]
@@ -29,6 +30,7 @@ pub struct ShorthandProperties {
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
     pub allow_unused: Option<bool>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl TryFrom<ShorthandSchema> for ShorthandProperties {
@@ -52,12 +54,14 @@ impl TryFrom<ShorthandSchema> for ShorthandProperties {
             ));
         };
         let allow_unused = allow.as_ref().map(|a| a.unused.is_present());
+        let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
 
         Ok(Self {
             cloning_policy,
             id,
             pavex,
             allow_unused,
+            allow_error_fallback,
         })
     }
 }
@@ -127,6 +131,7 @@ fn shorthand(
         id,
         pavex,
         allow_unused,
+        allow_error_fallback,
     } = schema
         .try_into()
         .map_err(|e: darling::Error| e.write_errors())?;
@@ -145,6 +150,11 @@ fn shorthand(
     if let Some(allow_unused) = allow_unused {
         properties.extend(quote! {
             allow_unused = #allow_unused,
+        });
+    }
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
         });
     }
 

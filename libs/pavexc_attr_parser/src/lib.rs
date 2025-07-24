@@ -49,6 +49,7 @@ pub enum AnnotationProperties {
         lifecycle: Lifecycle,
         cloning_policy: Option<CloningPolicy>,
         allow_unused: Option<bool>,
+        allow_error_fallback: Option<bool>,
     },
     Prebuilt {
         id: String,
@@ -63,12 +64,15 @@ pub enum AnnotationProperties {
     },
     WrappingMiddleware {
         id: String,
+        allow_error_fallback: Option<bool>,
     },
     PreProcessingMiddleware {
         id: String,
+        allow_error_fallback: Option<bool>,
     },
     PostProcessingMiddleware {
         id: String,
+        allow_error_fallback: Option<bool>,
     },
     ErrorObserver {
         id: String,
@@ -82,9 +86,11 @@ pub enum AnnotationProperties {
         id: String,
         method: MethodGuard,
         path: String,
+        allow_error_fallback: Option<bool>,
     },
     Fallback {
         id: String,
+        allow_error_fallback: Option<bool>,
     },
     Methods,
 }
@@ -119,16 +125,16 @@ impl AnnotationProperties {
         use AnnotationProperties::*;
 
         match self {
-            WrappingMiddleware { id }
-            | PreProcessingMiddleware { id }
-            | PostProcessingMiddleware { id }
+            WrappingMiddleware { id, .. }
+            | PreProcessingMiddleware { id, .. }
+            | PostProcessingMiddleware { id, .. }
             | ErrorObserver { id }
             | ErrorHandler { id, .. }
             | Route { id, .. }
             | Config { id, .. }
             | Prebuilt { id, .. }
             | Constructor { id, .. }
-            | Fallback { id } => Some(id.as_str()),
+            | Fallback { id, .. } => Some(id.as_str()),
             Methods => None,
         }
     }

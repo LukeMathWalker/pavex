@@ -1,7 +1,7 @@
-From 63d944f04f650ff9f7187a3ca02f73fa846d4d83 Mon Sep 17 00:00:00 2001
+From 80cd23ce33bd7b984fabafe08983d77f862b33c9 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:44:33 +0200
-Subject: [PATCH 16/32] Constructor for user agent
+Subject: [PATCH 16/34] Constructor for user agent
 
 ---
  app/src/user_agent.rs | 19 +++++++++++++++++++

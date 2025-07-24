@@ -1,7 +1,7 @@
-From 802e92b5b3b34afb55c13604c4332a9aed525edc Mon Sep 17 00:00:00 2001
+From af0e2b40d0a7c350b1fd55089110249fcb97d891 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:55:08 +0200
-Subject: [PATCH 25/32] Annotations for ping test
+Subject: [PATCH 27/34] Annotations for ping test
 
 ---
  server/tests/integration/ping.rs | 7 ++++---

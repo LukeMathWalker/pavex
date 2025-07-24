@@ -1,7 +1,7 @@
-From c5e355f9d31be0968a6c5624e3adf4e5db154e08 Mon Sep 17 00:00:00 2001
+From 495876612b4974b7f4c28559d14c9f93016e0b37 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 13:04:05 +0200
-Subject: [PATCH 07/32] Add greet scaffolding
+Subject: [PATCH 07/34] Add greet scaffolding
 
 ---
  app/src/routes/greet.rs | 6 ++++++
