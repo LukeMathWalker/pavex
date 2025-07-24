@@ -1,9 +1,9 @@
 //! px:redirect_to_normalized
-use pavex::http::{header::LOCATION, HeaderValue};
+use pavex::Response;
+use pavex::http::{HeaderValue, header::LOCATION};
 use pavex::middleware::Processing;
 use pavex::pre_process;
 use pavex::request::RequestHead;
-use pavex::response::Response;
 
 /// If the request path ends with a `/`,
 /// redirect to the same path without the trailing `/`.

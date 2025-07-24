@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/home")]
-pub fn stream_file(_inner: PathBuf) -> pavex::response::Response {
+pub fn stream_file(_inner: PathBuf) -> pavex::Response {
     todo!()
 }
 

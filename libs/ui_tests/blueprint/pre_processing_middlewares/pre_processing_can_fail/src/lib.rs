@@ -1,5 +1,5 @@
 use pavex::middleware::Processing;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 #[pavex::pre_process(id = "EHANDLER_VIA_DEFAULT")]

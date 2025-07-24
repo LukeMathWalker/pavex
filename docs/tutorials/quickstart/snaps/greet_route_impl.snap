@@ -1,5 +1,5 @@
 ```rust title="app/src/routes/greet.rs" hl_lines="5 9 10 11 12"
-use pavex::{get, request::path::PathParams, response::Response};
+use pavex::{Response, get, request::path::PathParams};
 
 #[PathParams]
 pub struct GreetParams {

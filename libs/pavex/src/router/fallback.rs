@@ -1,7 +1,7 @@
 use pavex_macros::fallback;
 
+use crate::Response;
 use crate::http::header::ALLOW;
-use crate::response::Response;
 
 use super::AllowedMethods;
 

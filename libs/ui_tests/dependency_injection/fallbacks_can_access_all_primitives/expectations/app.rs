@@ -30,7 +30,7 @@ pub fn run(
         request: http::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
         server_state: std::sync::Arc<ServerState>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (router, state) = (&server_state.router, &server_state.application_state);
         router.route(request, connection_info, state).await
     }
@@ -62,7 +62,7 @@ impl Router {
         connection_info: Option<pavex::connection::ConnectionInfo>,
         #[allow(unused)]
         state: &ApplicationState,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (request_head, request_body) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let request_body = pavex::request::body::RawIncomingBody::from(request_body);
@@ -121,7 +121,7 @@ pub mod route_0 {
         s_3: &'d pavex::router::AllowedMethods,
         s_4: &'e pavex::request::path::MatchedPathPattern,
         s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
@@ -132,7 +132,7 @@ pub mod route_0 {
         s_3: &'d pavex::router::AllowedMethods,
         s_4: &'e pavex::request::path::MatchedPathPattern,
         s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
@@ -143,7 +143,7 @@ pub mod route_0 {
         v3: &pavex::router::AllowedMethods,
         v4: &pavex::request::path::MatchedPathPattern,
         v5: &pavex::request::path::RawPathParams<'_, '_>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v6 = crate::route_0::Next0 {
             s_0: v0,
             s_1: v1,
@@ -155,7 +155,7 @@ pub mod route_0 {
         };
         let v7 = pavex::middleware::Next::new(v6);
         let v8 = pavex::middleware::wrap_noop(v7).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
+        <pavex::Response as pavex::IntoResponse>::into_response(v8)
     }
     async fn handler(
         v0: &pavex::connection::ConnectionInfo,
@@ -164,13 +164,13 @@ pub mod route_0 {
         v3: &pavex::router::AllowedMethods,
         v4: &pavex::request::path::MatchedPathPattern,
         v5: &pavex::request::path::RawPathParams<'_, '_>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v6 = app::handler(v0, v1, v2, v3, v4, v5);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        <pavex::Response as pavex::IntoResponse>::into_response(v6)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: &'a pavex::connection::ConnectionInfo,
         s_1: &'b pavex::request::RequestHead,
@@ -190,9 +190,9 @@ pub mod route_0 {
     impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T> std::future::IntoFuture
     for Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4, self.s_5)
@@ -207,7 +207,7 @@ pub mod route_1 {
         s_3: &'d pavex::router::AllowedMethods,
         s_4: &'e pavex::request::path::MatchedPathPattern,
         s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
@@ -218,7 +218,7 @@ pub mod route_1 {
         s_3: &'d pavex::router::AllowedMethods,
         s_4: &'e pavex::request::path::MatchedPathPattern,
         s_5: &'h pavex::request::path::RawPathParams<'f, 'g>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
@@ -229,7 +229,7 @@ pub mod route_1 {
         v3: &pavex::router::AllowedMethods,
         v4: &pavex::request::path::MatchedPathPattern,
         v5: &pavex::request::path::RawPathParams<'_, '_>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v6 = crate::route_1::Next0 {
             s_0: v0,
             s_1: v1,
@@ -241,7 +241,7 @@ pub mod route_1 {
         };
         let v7 = pavex::middleware::Next::new(v6);
         let v8 = pavex::middleware::wrap_noop(v7).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
+        <pavex::Response as pavex::IntoResponse>::into_response(v8)
     }
     async fn handler(
         v0: &pavex::connection::ConnectionInfo,
@@ -250,13 +250,13 @@ pub mod route_1 {
         v3: &pavex::router::AllowedMethods,
         v4: &pavex::request::path::MatchedPathPattern,
         v5: &pavex::request::path::RawPathParams<'_, '_>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v6 = app::handler(v0, v1, v2, v3, v4, v5);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        <pavex::Response as pavex::IntoResponse>::into_response(v6)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: &'a pavex::connection::ConnectionInfo,
         s_1: &'b pavex::request::RequestHead,
@@ -276,9 +276,9 @@ pub mod route_1 {
     impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T> std::future::IntoFuture
     for Next0<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4, self.s_5)

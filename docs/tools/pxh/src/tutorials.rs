@@ -86,7 +86,7 @@ impl Tutorial {
         Ok(())
     }
 
-    pub fn patch_and_process(&mut self) -> Result<(), anyhow::Error> {
+    pub fn patch_and_process(&mut self, skip_compilation: bool) -> Result<(), anyhow::Error> {
         for patch in &self.patches {
             eprintln!("Applying patch: {}", patch);
             let status = std::process::Command::new("git")
@@ -102,9 +102,14 @@ impl Tutorial {
                 anyhow::bail!("Failed to apply patch: git am exited with status {status}",);
             }
             eprintln!("Extracting snapshots");
-            let status = std::process::Command::new("pxh")
-                .arg("example")
-                .arg("regenerate")
+            let mut example_cmd = std::process::Command::new("pxh");
+            example_cmd.arg("example").arg("regenerate");
+
+            if skip_compilation {
+                example_cmd.arg("--skip-compilation");
+            }
+
+            example_cmd
                 .current_dir(self.project_dir())
                 .stderr(std::process::Stdio::inherit())
                 .stdout(std::process::Stdio::inherit())
@@ -185,12 +190,12 @@ impl Tutorial {
     }
 }
 
-pub fn hydrate_tutorials(cwd: &Path) -> Result<(), anyhow::Error> {
+pub fn hydrate_tutorials(cwd: &Path, skip_compilation: bool) -> Result<(), anyhow::Error> {
     let mut tutorials = collect_tutorials_in_scope(cwd)?;
     for tutorial in &mut tutorials {
         eprintln!("Hydrating tutorial at {}", tutorial.root_dir);
         tutorial.git_init()?;
-        tutorial.patch_and_process()?;
+        tutorial.patch_and_process(skip_compilation)?;
     }
     Ok(())
 }

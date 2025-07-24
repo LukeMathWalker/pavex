@@ -10,7 +10,7 @@ pub fn alternative_logger() -> dep_55dca802::Logger {
 #[pavex::methods]
 impl Streamer {
     #[pavex::get(path = "/home")]
-    pub fn stream_file(_logger: dep_55dca802::Logger) -> pavex::response::Response {
+    pub fn stream_file(_logger: dep_55dca802::Logger) -> pavex::Response {
         todo!()
     }
 }

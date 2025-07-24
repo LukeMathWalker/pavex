@@ -1,6 +1,6 @@
 [31;1mERROR[0m:
   [31m×[0m Post-processing middlewares can't take more than one instance of
-  [31m│[0m `pavex::response::Response` as input parameter.
+  [31m│[0m `pavex::Response` as input parameter.
   [31m│[0m This middleware does.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/post_processing_middlewares/cannot_have_multiple_response_inputs/src/lib.rs[0m:15:1]

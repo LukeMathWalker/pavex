@@ -17,10 +17,10 @@
 //! The module doesn't cover the entirety of OpenTelemetry's semantic convention specification.\
 //! Feel free to open a PR if you need a **stable** field that isn't currently covered!
 
+use pavex::Response;
 use pavex::http::{Method, Version};
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
-use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
 use tracing::Value;
 

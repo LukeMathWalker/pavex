@@ -11,7 +11,7 @@ pub fn static_u8() -> &'static u8 {
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_x: &'static str, _y: &'static u8) -> pavex::response::Response {
+pub fn handler(_x: &'static str, _y: &'static u8) -> pavex::Response {
     todo!()
 }
 

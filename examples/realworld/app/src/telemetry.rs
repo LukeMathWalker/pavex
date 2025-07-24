@@ -1,7 +1,7 @@
 use pavex::Blueprint;
+use pavex::Response;
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
-use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
 use pavex::{error_observer, post_process, request_scoped};
 use pavex_tracing::fields::{

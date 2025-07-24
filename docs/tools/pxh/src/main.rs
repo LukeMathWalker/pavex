@@ -11,11 +11,15 @@ fn main() -> Result<(), anyhow::Error> {
 
     match cli.command {
         Command::Example(example) => match example.command {
-            ExampleSubcommand::Regenerate => process_examples(&cwd, false),
-            ExampleSubcommand::Verify => process_examples(&cwd, true),
+            ExampleSubcommand::Regenerate { skip_compilation } => {
+                process_examples(&cwd, false, skip_compilation)
+            }
+            ExampleSubcommand::Verify => process_examples(&cwd, true, false),
         },
         Command::Tutorial(tutorial) => match tutorial.command {
-            TutorialSubcommand::Hydrate => hydrate_tutorials(&cwd),
+            TutorialSubcommand::Hydrate { skip_compilation } => {
+                hydrate_tutorials(&cwd, skip_compilation)
+            }
             TutorialSubcommand::Extract => extract_patches(&cwd),
         },
     }

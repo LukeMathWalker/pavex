@@ -1,5 +1,5 @@
 //! Errors that can occur while extracting information from the request body.
-use crate::response::Response;
+use crate::Response;
 use pavex_macros::methods;
 use ubyte::ByteUnit;
 

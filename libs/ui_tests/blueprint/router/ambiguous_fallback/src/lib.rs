@@ -1,21 +1,21 @@
 use pavex::{blueprint::from, Blueprint};
 
 #[pavex::get(path = "/id")]
-pub fn handler() -> pavex::response::Response {
+pub fn handler() -> pavex::Response {
     todo!()
 }
 
 #[pavex::post(path = "/users/yo")]
-pub fn post_handler() -> pavex::response::Response {
+pub fn post_handler() -> pavex::Response {
     todo!()
 }
 
 #[pavex::fallback]
-pub fn fallback1() -> pavex::response::Response {
+pub fn fallback1() -> pavex::Response {
     todo!()
 }
 
-pub fn fallback2() -> pavex::response::Response {
+pub fn fallback2() -> pavex::Response {
     todo!()
 }
 

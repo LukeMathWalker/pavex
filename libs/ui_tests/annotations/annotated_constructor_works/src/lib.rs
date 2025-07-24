@@ -38,7 +38,7 @@ pub fn d<'a>(_c: &'a C, _a: &'a A) -> D<'a> {
 }
 
 #[error_handler]
-pub fn default_error_handler(_error: &pavex::Error) -> pavex::response::Response {
+pub fn default_error_handler(_error: &pavex::Error) -> pavex::Response {
     todo!()
 }
 
@@ -107,7 +107,7 @@ pub fn handler(
     _g: &G<A>,
     _h1: &H<A>,
     _h2: &H<E>,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 

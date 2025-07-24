@@ -1,5 +1,5 @@
 use pavex::{blueprint::from, Blueprint};
-use pavex::{connection::ConnectionInfo, response::Response};
+use pavex::{connection::ConnectionInfo, Response};
 
 #[pavex::get(path = "/route")]
 pub fn root() -> Response {

@@ -1,7 +1,7 @@
 //! px:insert
+use pavex::Response;
 use pavex::cookie::{ResponseCookie, ResponseCookies};
 use pavex::get;
-use pavex::response::Response;
 use pavex::time::Zoned;
 
 #[get(path = "/")]

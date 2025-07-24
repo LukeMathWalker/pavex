@@ -1,7 +1,7 @@
 ```rust
+use pavex::Response;
 use pavex::middleware::Processing;
 use pavex::pre_process;
-use pavex::response::Response;
 
 use crate::User;
 

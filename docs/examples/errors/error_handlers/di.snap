@@ -1,6 +1,6 @@
 ```rust hl_lines="9 10"
+use pavex::Response;
 use pavex::methods;
-use pavex::response::Response;
 // [...]
 
 #[methods]

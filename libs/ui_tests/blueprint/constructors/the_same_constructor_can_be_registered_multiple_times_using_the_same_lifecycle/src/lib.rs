@@ -15,7 +15,7 @@ pub struct Streamer;
 #[pavex::methods]
 impl Streamer {
     #[pavex::get(path = "/home")]
-    pub fn stream_file(_logger: Logger) -> pavex::response::Response {
+    pub fn stream_file(_logger: Logger) -> pavex::Response {
         todo!()
     }
 }

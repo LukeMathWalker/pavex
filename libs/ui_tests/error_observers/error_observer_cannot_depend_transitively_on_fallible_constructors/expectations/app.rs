@@ -29,7 +29,7 @@ fn build_router() -> matchit::Router<u32> {
 async fn route_request(
     request: http::Request<hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex::response::Response {
+) -> pavex::Response {
     let (request_head, request_body) = request.into_parts();
     #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
@@ -66,7 +66,7 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn handler() -> pavex::response::Response {
+    pub async fn handler() -> pavex::Response {
         let v0 = app::a();
         let v1 = app::b(&v0);
         let v2 = match v1 {
@@ -79,21 +79,21 @@ pub mod route_0 {
                         app::error_observer(v0, &v4);
                         app::error_observer2(&v4)
                     };
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    <pavex::Response as pavex::IntoResponse>::into_response(
                         v3,
                     )
                 };
             }
         };
         let v3 = app::handler(&v2);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+        <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
 }
 pub mod route_1 {
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+        <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
 }

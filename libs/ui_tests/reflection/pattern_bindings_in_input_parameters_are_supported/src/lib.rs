@@ -12,7 +12,7 @@ pub fn streamer() -> Streamer {
 }
 
 #[pavex::get(path = "/home")]
-pub fn route_handler(Streamer { a: _a, b: _b }: &Streamer) -> pavex::response::Response {
+pub fn route_handler(Streamer { a: _a, b: _b }: &Streamer) -> pavex::Response {
     todo!()
 }
 

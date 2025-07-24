@@ -92,8 +92,8 @@ in an infinite loop at runtime.
 
 [^unit]: Or, if you prefer, they return [the unit type](https://doc.rust-lang.org/std/primitive.unit.html), `()`.
 
-[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
-[Response]: /api_reference/pavex/response/struct.Response.html
+[IntoResponse]: /api_reference/pavex/trait.IntoResponse.html
+[Response]: /api_reference/pavex/struct.Response.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Blueprint::error_observer]: /api_reference/pavex/struct.Blueprint.html#method.error_observer

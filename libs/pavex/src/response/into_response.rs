@@ -30,9 +30,10 @@ use http_body_util::Empty;
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-use crate::response::ResponseBody;
-
-use super::{Response, ResponseHead};
+use crate::{
+    Response,
+    response::{ResponseBody, ResponseHead},
+};
 
 /// Convert a type into a [`Response`].
 ///

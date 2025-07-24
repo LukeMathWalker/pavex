@@ -36,7 +36,7 @@ pub fn stream_file(
     _s: &Singleton,
     _r: &RequestScoped,
     _t: &Transient,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 

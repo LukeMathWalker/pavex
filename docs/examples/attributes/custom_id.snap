@@ -1,6 +1,6 @@
 ```rust hl_lines="10"
+use pavex::Response;
 use pavex::methods;
-use pavex::response::Response;
 
 pub struct AuthError {
     // [...]

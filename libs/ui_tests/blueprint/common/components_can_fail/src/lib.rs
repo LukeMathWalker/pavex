@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 pub struct B;
@@ -14,7 +14,7 @@ pub struct ErrorB;
 #[pavex::methods]
 impl ErrorB {
     #[pavex::error_handler]
-    pub fn into_response(&self) -> pavex::response::Response {
+    pub fn into_response(&self) -> pavex::Response {
         todo!()
     }
 }

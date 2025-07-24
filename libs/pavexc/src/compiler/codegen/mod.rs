@@ -160,7 +160,7 @@ fn server_startup(sdk_deps: &ServerSdkDeps) -> ItemFn {
                 request: #http::Request<#hyper::body::Incoming>,
                 connection_info: Option<#pavex::connection::ConnectionInfo>,
                 server_state: std::sync::Arc<ServerState>
-            ) -> #pavex::response::Response {
+            ) -> #pavex::Response {
                 let (router, state) = (&server_state.router, &server_state.application_state);
                 router.route(request, connection_info, state).await
             }

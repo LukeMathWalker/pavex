@@ -61,8 +61,8 @@ on how the process works.\
 Check out the [request data guide](../request_data/index.md) for an overview of the data you can extract from the request
 using Pavex's first-party extractors.
 
-[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
-[Response]: /api_reference/pavex/response/struct.Response.html
+[IntoResponse]: /api_reference/pavex/trait.IntoResponse.html
+[Response]: /api_reference/pavex/struct.Response.html
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
 [post_process_attr]: /api_reference/pavex/attr.post_process.html

@@ -1,5 +1,5 @@
+use pavex::Response;
 use pavex::methods;
-use pavex::response::Response;
 
 #[derive(Debug)]
 pub struct CompressionError;

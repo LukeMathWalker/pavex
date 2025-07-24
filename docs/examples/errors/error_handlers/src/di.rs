@@ -1,6 +1,6 @@
 //! px:di
+use pavex::Response;
 use pavex::methods;
-use pavex::response::Response;
 // px::skip:start
 pub struct AuthError {
     details: String,

@@ -1,5 +1,5 @@
 use pavex::{blueprint::from, Blueprint};
-use pavex::{request::path::PathParams, response::Response};
+use pavex::{request::path::PathParams, Response};
 
 #[PathParams]
 pub struct HomePathParams {

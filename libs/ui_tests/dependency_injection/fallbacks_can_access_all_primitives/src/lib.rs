@@ -15,7 +15,7 @@ pub fn handler(
     _methods: &AllowedMethods,
     _pattern: &MatchedPathPattern,
     _params: &RawPathParams,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 

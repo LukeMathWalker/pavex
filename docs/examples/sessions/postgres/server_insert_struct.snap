@@ -1,6 +1,6 @@
 ```rust hl_lines="5 17"
 use anyhow::Error;
-use pavex::response::Response;
+use pavex::Response;
 use pavex_session::Session;
 
 #[derive(serde::Serialize, serde::Deserialize)] // (1)!

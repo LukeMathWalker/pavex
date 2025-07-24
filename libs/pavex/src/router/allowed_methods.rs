@@ -41,7 +41,7 @@ use crate::http::Method;
 ///
 /// ```rust
 /// use pavex::router::AllowedMethods;
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// use pavex::http::header::{ALLOW, HeaderValue};
 /// use itertools::Itertools;
 ///

@@ -31,7 +31,7 @@ Use the [`#[error_handler]`][error_handler_attr] attribute to define a new error
 The signature of this error handler satisfies all the requirements listed in [the previous section](#signature):
 
 1. It takes as input `&self`, a reference to the error type (`LoginError`).
-2. It returns a `StatusCode`, which [implements the `IntoResponse` trait](/api_reference/pavex/response/trait.IntoResponse.html#impl-IntoResponse-for-StatusCode).
+2. It returns a `StatusCode`, which [implements the `IntoResponse` trait](/api_reference/pavex/trait.IntoResponse.html#impl-IntoResponse-for-StatusCode).
 3. It is infallible, i.e. it doesn't return a `Result`.
 
 ## Registration
@@ -93,8 +93,8 @@ Check out the [dependency injection guide](../dependency_injection/index.md) for
     If that's not the case, rework the fallible component to add the missing details to the error type,
     so that the error handler can be infallible.
 
-[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
-[Response]: /api_reference/pavex/response/struct.Response.html
+[IntoResponse]: /api_reference/pavex/trait.IntoResponse.html
+[Response]: /api_reference/pavex/struct.Response.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Blueprint::error_handler]: /api_reference/pavex/struct.Blueprint.html#method.error_handler

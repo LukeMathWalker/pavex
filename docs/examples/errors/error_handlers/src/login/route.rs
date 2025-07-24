@@ -6,5 +6,5 @@ pub fn login(head: &RequestHead) -> Result<Response, LoginError /* px::ann:1 */>
 // px:fallible:end
 
 use crate::login::LoginError;
+use pavex::Response;
 use pavex::request::RequestHead;
-use pavex::response::Response;

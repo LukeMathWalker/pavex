@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 pub type RemoteAlias = dep::Surreal<dep::engine::Any>;

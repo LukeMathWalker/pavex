@@ -1,5 +1,5 @@
 use pavex::middleware::Next;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 pub struct GenericType<V>(V);
@@ -34,7 +34,7 @@ where
 }
 
 #[pavex::get(path = "/")]
-pub fn handler() -> pavex::response::Response {
+pub fn handler() -> pavex::Response {
     todo!()
 }
 

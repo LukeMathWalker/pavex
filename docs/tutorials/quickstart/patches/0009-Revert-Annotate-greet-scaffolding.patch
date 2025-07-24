@@ -1,21 +1,21 @@
-From bba1dd8f18ce8f8d9e05bb9d9a29ca976efb31dc Mon Sep 17 00:00:00 2001
+From 7d43736c6ac92225d45bd6b78c98c320abd775e7 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
-Date: Wed, 23 Jul 2025 13:04:38 +0200
-Subject: [PATCH 09/34] Remove annotations for greet scaffolding
+Date: Thu, 24 Jul 2025 19:16:07 +0200
+Subject: [PATCH 09/34] Revert "Annotate greet scaffolding"
 
-This reverts commit af792c229fac5bb966da699046962329f27e7150.
+This reverts commit 229a2066a7f8cfab0cbafca115892c95e1da288f.
 ---
  app/src/routes/greet.rs | 3 +--
  app/src/routes/mod.rs   | 3 +--
  2 files changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
-index 51e10c3..9a82e41 100644
+index 67e0d60..24ffedf 100644
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs
 @@ -1,7 +1,6 @@
 -//! px:greet_route_stub
- use pavex::{get, response::Response};
+ use pavex::{Response, get};
  
 -#[get(path = "/greet/{name}")] // px::ann:1
 +#[get(path = "/greet/{name}")]

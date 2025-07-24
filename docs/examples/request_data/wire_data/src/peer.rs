@@ -1,7 +1,7 @@
 //! px:peer
+use pavex::Response;
 use pavex::connection::ConnectionInfo;
 use pavex::get;
-use pavex::response::Response;
 
 #[get(path = "/peer")]
 pub fn connection_info(conn: ConnectionInfo) -> Response {

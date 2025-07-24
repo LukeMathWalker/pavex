@@ -11,12 +11,12 @@ impl A {
 }
 
 #[pavex::error_handler]
-pub fn error_handler(_err: &anyhow::Error) -> pavex::response::Response {
+pub fn error_handler(_err: &anyhow::Error) -> pavex::Response {
     todo!()
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_inner: A) -> pavex::response::Response {
+pub fn handler(_inner: A) -> pavex::Response {
     todo!()
 }
 

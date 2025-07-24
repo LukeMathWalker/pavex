@@ -4,8 +4,8 @@ use std::time::Duration;
 use http::Request;
 use hyper::body::Incoming;
 
+use pavex::Response;
 use pavex::connection::ConnectionInfo;
-use pavex::response::Response;
 use pavex::server::{IncomingStream, Server, ServerConfiguration, ShutdownMode};
 
 // A dummy handler for our server tests.

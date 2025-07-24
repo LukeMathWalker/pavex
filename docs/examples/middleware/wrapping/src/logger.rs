@@ -1,6 +1,6 @@
 //! px:logger
+use pavex::Response;
 use pavex::middleware::Next;
-use pavex::response::Response;
 use pavex::wrap;
 use tracing::Instrument;
 

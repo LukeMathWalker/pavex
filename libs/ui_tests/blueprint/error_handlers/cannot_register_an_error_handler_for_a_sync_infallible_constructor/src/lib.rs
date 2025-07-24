@@ -10,12 +10,12 @@ pub fn infallible_constructor() -> PathBuf {
 pub struct ExtractPathError;
 
 #[pavex::error_handler]
-pub fn error_handler(_e: &ExtractPathError) -> pavex::response::Response {
+pub fn error_handler(_e: &ExtractPathError) -> pavex::Response {
     todo!()
 }
 
 #[pavex::get(path = "/home")]
-pub fn request_handler(_inner: PathBuf) -> pavex::response::Response {
+pub fn request_handler(_inner: PathBuf) -> pavex::Response {
     todo!()
 }
 

@@ -50,7 +50,7 @@ impl RegisteredWrappingMiddleware<'_> {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::{error_handler, wrap, middleware::Next};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// use std::future::Future;
     /// # struct LogLevel;
     /// # struct Logger;

@@ -27,7 +27,7 @@
 /// ```rust
 /// use pavex::Blueprint;
 /// use pavex::middleware::Next;
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// use pavex_tracing::fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE};
 /// use pavex_tracing::RootSpan;
 /// use std::future::IntoFuture;

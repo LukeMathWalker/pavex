@@ -1,4 +1,4 @@
-use pavex::{cookie::ResponseCookies, post_process, response::Response};
+use pavex::{Response, cookie::ResponseCookies, post_process};
 use tracing::Span;
 
 use crate::{Session, errors::FinalizeError};

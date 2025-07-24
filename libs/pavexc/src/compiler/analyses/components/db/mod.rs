@@ -150,7 +150,7 @@ impl ComponentDb {
         // We only need to resolve these once.
         let pavex_error = resolve_type_path("pavex::Error", krate_collection);
         let pavex_processing = resolve_type_path("pavex::middleware::Processing", krate_collection);
-        let pavex_response = resolve_type_path("pavex::response::Response", krate_collection);
+        let pavex_response = resolve_type_path("pavex::Response", krate_collection);
         let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
@@ -1261,7 +1261,7 @@ impl ComponentDb {
 
     /// We need to make sure that all output nodes return the same output type.
     /// We do this by adding a "response transformer" node that converts the output type to a
-    /// common type—`pavex::response::Response`.
+    /// common type—`pavex::Response`.
     fn add_into_response_transformers(
         &mut self,
         computation_db: &mut ComputationDb,
@@ -1269,8 +1269,7 @@ impl ComponentDb {
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let into_response = {
-            let into_response =
-                resolve_type_path("pavex::response::IntoResponse", krate_collection);
+            let into_response = resolve_type_path("pavex::IntoResponse", krate_collection);
             let ResolvedType::ResolvedPath(into_response) = into_response else {
                 unreachable!()
             };

@@ -27,7 +27,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-use crate::{methods, response::Response};
+use crate::{methods, Response};
 use std::fmt;
 
 /// Pavex's error type: an opaque wrapper around the concrete error type

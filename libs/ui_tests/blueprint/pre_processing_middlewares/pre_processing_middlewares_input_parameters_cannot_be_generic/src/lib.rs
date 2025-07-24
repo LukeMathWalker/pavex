@@ -1,5 +1,5 @@
 use pavex::middleware::Processing;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 pub struct GenericType<V>(V);

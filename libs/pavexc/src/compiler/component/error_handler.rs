@@ -177,7 +177,7 @@ impl Display for ErrorHandlerValidationError {
             ErrorHandlerValidationError::CannotReturnTheUnitType(path) => {
                 write!(
                     f,
-                    "All error handlers must return a type that implements `pavex::response::IntoResponse`.\n`{path}` doesn't, it returns the unit type, `()`. I can't convert `()` into an HTTP response!"
+                    "All error handlers must return a type that implements `pavex::IntoResponse`.\n`{path}` doesn't, it returns the unit type, `()`. I can't convert `()` into an HTTP response!"
                 )
             }
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {

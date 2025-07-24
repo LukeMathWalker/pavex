@@ -13,12 +13,12 @@ pub fn fallible_naked<T>() -> Result<T, FallibleError> {
 pub struct FallibleError;
 
 #[pavex::error_handler]
-pub fn error_handler(_e: &FallibleError) -> pavex::response::Response {
+pub fn error_handler(_e: &FallibleError) -> pavex::Response {
     todo!()
 }
 
 #[pavex::get(path = "/home")]
-pub fn handler(_a: u8, _b: u16) -> pavex::response::Response {
+pub fn handler(_a: u8, _b: u16) -> pavex::Response {
     todo!()
 }
 

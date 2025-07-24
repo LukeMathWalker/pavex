@@ -626,7 +626,7 @@ impl ComponentDb {
         let path = &callable.path;
         let output = output.display_for_error();
         let error = anyhow::Error::from(e).context(format!(
-            "`{output}` doesn't implement `pavex::response::IntoResponse`.\n\
+            "`{output}` doesn't implement `pavex::IntoResponse`.\n\
             It is returned by `{path}`, one of your {kind}s.\n\
             `IntoResponse` is used by Pavex to convert `{output}` into the HTTP response that will be returned to the caller of your API.",
         ));
@@ -657,7 +657,7 @@ impl ComponentDb {
         );
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
-                `pavex::response::IntoResponse` for {output_type:?}, the type returned by \
+                `pavex::IntoResponse` for {output_type:?}, the type returned by \
                 one of your {kind}s.\n\
                 This is definitely a bug, I am sorry! Please file an issue on \
                 https://github.com/LukeMathWalker/pavex"

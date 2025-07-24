@@ -113,7 +113,7 @@ impl RegisteredConstructor<'_> {
     ///
     /// ```rust
     /// use pavex::Blueprint;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// use pavex::{methods, transient};
     /// # struct LogLevel;
     /// # struct Logger;

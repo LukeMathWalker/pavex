@@ -1,5 +1,5 @@
 use pavex::middleware::Next;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
@@ -28,7 +28,7 @@ where
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_s: Singleton) -> pavex::response::Response {
+pub fn handler(_s: Singleton) -> pavex::Response {
     todo!()
 }
 

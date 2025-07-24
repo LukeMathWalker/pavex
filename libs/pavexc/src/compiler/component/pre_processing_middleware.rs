@@ -16,9 +16,9 @@ use std::borrow::Cow;
 /// # Output type
 ///
 /// If infallible, the output type must be `pavex::middleware::Processing<T>`,
-/// where `T` implements `pavex::response::IntoResponse`.  
+/// where `T` implements `pavex::IntoResponse`.
 /// If fallible, the output type must be a `Result<pavex::middleware::Processing<T>, E>` where `T` implements
-/// `pavex::response::IntoResponse`.
+/// `pavex::IntoResponse`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct PreProcessingMiddleware<'a> {
     pub(crate) callable: Cow<'a, Callable>,

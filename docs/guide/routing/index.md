@@ -50,7 +50,7 @@ Be careful when registering routes: their position relative to [middlewares](/gu
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Blueprint::route]: /api_reference/pavex/struct.Blueprint.html#method.route
 [Blueprint::routes]: /api_reference/pavex/struct.Blueprint.html#method.routes
-[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
+[IntoResponse]: /api_reference/pavex/trait.IntoResponse.html
 [**Fallbacks**]: /api_reference/pavex/struct.Blueprint.html#method.fallback
 [get_attr]: /api_reference/pavex/attr.get.html
 [post_attr]: /api_reference/pavex/attr.post.html

@@ -1,26 +1,25 @@
-From fec513fb014b830cc23646af2ddeda0121e77255 Mon Sep 17 00:00:00 2001
+From 196f3a2314442b74f926f081284804289caaf26e Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:53:25 +0200
 Subject: [PATCH 24/34] Error handler for invalid user agent
 
 ---
- app/src/user_agent.rs | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ app/src/user_agent.rs | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
-index fd418a4..dcb954d 100644
+index fd418a4..c5405d6 100644
 --- a/app/src/user_agent.rs
 +++ b/app/src/user_agent.rs
-@@ -1,6 +1,7 @@
+@@ -1,6 +1,6 @@
  use pavex::http::header::{ToStrError, USER_AGENT};
 -use pavex::methods;
  use pavex::request::RequestHead;
-+use pavex::response::Response;
-+use pavex::{error_handler, methods};
++use pavex::{Response, error_handler, methods};
  
  pub enum UserAgent {
      /// No `User-Agent` header was provided.
-@@ -20,3 +21,9 @@ impl UserAgent {
+@@ -20,3 +20,9 @@ impl UserAgent {
          user_agent.to_str().map(|s| UserAgent::Known(s.into()))
      }
  }

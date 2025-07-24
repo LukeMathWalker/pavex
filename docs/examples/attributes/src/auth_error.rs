@@ -1,6 +1,6 @@
 //! px:custom_id
+use pavex::Response;
 use pavex::methods;
-use pavex::response::Response;
 
 pub struct AuthError {
     _data: String, // px::skip

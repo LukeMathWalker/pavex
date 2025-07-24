@@ -1,5 +1,5 @@
 use pavex::{blueprint::from, Blueprint};
-use pavex::response::Response;
+use pavex::Response;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -142,9 +142,9 @@ macro_rules! spy_mw {
         pub async fn $name<C>(
             spy: &$crate::Spy,
             next: pavex::middleware::Next<C>,
-        ) -> pavex::response::Response
+        ) -> pavex::Response
         where
-            C: std::future::IntoFuture<Output = pavex::response::Response>,
+            C: std::future::IntoFuture<Output = pavex::Response>,
         {
             spy.push(format!("{} - start", stringify!($name))).await;
             let response = next.await;
@@ -163,8 +163,8 @@ macro_rules! spy_post {
         #[pavex::post_process]
         pub async fn $name(
             spy: &$crate::Spy,
-            response: pavex::response::Response,
-        ) -> pavex::response::Response {
+            response: pavex::Response,
+        ) -> pavex::Response {
             spy.push(format!("{}", stringify!($name))).await;
             response
         }

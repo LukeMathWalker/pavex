@@ -47,7 +47,7 @@ impl AnotherTrait for B {
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_a: A, _c: C, _f: F) -> pavex::response::Response {
+pub fn handler(_a: A, _c: C, _f: F) -> pavex::Response {
     todo!()
 }
 

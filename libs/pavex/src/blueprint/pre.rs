@@ -51,7 +51,7 @@ impl RegisteredPreProcessingMiddleware<'_> {
     /// use pavex::Blueprint;
     /// use pavex::{error_handler, pre_process, middleware::Processing};
     /// use pavex::request::RequestHead;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// # struct LogLevel;
     /// # struct AuthError;
     ///

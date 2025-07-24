@@ -1,19 +1,19 @@
-From 61e036ee3154843eb9885e80e268245153d21172 Mon Sep 17 00:00:00 2001
+From 9e4cec1abf75a20ade65b11255d42ad7529c798f Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
-Date: Wed, 23 Jul 2025 13:15:18 +0200
+Date: Thu, 24 Jul 2025 19:19:53 +0200
 Subject: [PATCH 12/34] Revert "Annotate parameter extraction and import"
 
-This reverts commit c0fdeba53d6704eec8a05f543f76942acba9372f.
+This reverts commit a755c0804b9a7c9e463b7a97e090a8e8c2604933.
 ---
- app/src/blueprint.rs    |  6 ------
+ app/src/blueprint.rs    | 11 +++--------
  app/src/routes/greet.rs | 10 ++++------
- 2 files changed, 4 insertions(+), 12 deletions(-)
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
 diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
-index 7f8f415..5271657 100644
+index e2d8181..5271657 100644
 --- a/app/src/blueprint.rs
 +++ b/app/src/blueprint.rs
-@@ -1,14 +1,11 @@
+@@ -1,26 +1,21 @@
  use crate::telemetry;
 -// px:pavex_import:start
  use pavex::{Blueprint, blueprint::from};
@@ -28,9 +28,12 @@ index 7f8f415..5271657 100644
      bp.import(from![
          // Local components, defined in this crate
          crate,
-@@ -16,12 +13,9 @@ pub fn blueprint() -> Blueprint {
-         // by the framework itself.
-         pavex,
+-        // Components defined in the `pavex` crate, // px::hl
+-        // by the framework itself. // px::hl
+-        pavex, // px::hl
++        // Components defined in the `pavex` crate,
++        // by the framework itself.
++        pavex,
      ]);
 -    // px::skip:start
  
@@ -38,16 +41,15 @@ index 7f8f415..5271657 100644
  
      bp.prefix("/api").routes(from![crate]);
      bp
--    // px::skip:end
  }
--// px:pavex_import:end
+-// px::skip:end
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
-index d33b9f6..2e90f24 100644
+index 25ae956..5824a50 100644
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs
 @@ -1,14 +1,12 @@
 -//! px:greet_route_impl
- use pavex::{get, request::path::PathParams, response::Response};
+ use pavex::{Response, get, request::path::PathParams};
  
  #[PathParams]
  pub struct GreetParams {

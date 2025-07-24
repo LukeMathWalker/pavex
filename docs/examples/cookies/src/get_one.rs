@@ -1,7 +1,7 @@
 //! px:get_one
+use pavex::Response;
 use pavex::cookie::RequestCookies;
 use pavex::get;
-use pavex::response::Response;
 
 #[get(path = "/")]
 pub fn get_one(request_cookies: &RequestCookies) -> Response {

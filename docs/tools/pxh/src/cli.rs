@@ -26,7 +26,11 @@ pub enum ExampleSubcommand {
     /// Extract all snippets from the example code, including compilation output.
     ///
     /// Existing snippets are overwritten, if they are out of date.
-    Regenerate,
+    Regenerate {
+        /// Skip the compilation step when regenerating the example.
+        #[clap(long)]
+        skip_compilation: bool,
+    },
     /// Verify that all snippets extracted from the example code are up to date.
     Verify,
 }
@@ -39,6 +43,10 @@ pub struct TutorialCommand {
 
 #[derive(Subcommand)]
 pub enum TutorialSubcommand {
-    Hydrate,
+    Hydrate {
+        /// Skip the compilation step when hydrating the tutorial.
+        #[clap(long)]
+        skip_compilation: bool,
+    },
     Extract,
 }

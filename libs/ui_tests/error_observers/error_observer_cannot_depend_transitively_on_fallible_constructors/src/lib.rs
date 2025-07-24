@@ -1,5 +1,5 @@
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
-use pavex::response::Response;
 
 pub struct A;
 

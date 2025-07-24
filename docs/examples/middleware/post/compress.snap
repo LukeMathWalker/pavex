@@ -1,7 +1,7 @@
 ```rust
 use crate::errors::CompressionError;
+use pavex::Response;
 use pavex::post_process;
-use pavex::response::Response;
 
 #[post_process]
 pub fn compress(response: Response) -> Result<Response, CompressionError> {

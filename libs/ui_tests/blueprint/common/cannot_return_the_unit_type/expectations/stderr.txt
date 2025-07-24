@@ -1,6 +1,6 @@
 [31;1mERROR[0m:
   [31m×[0m All request handlers must return a type that can be converted into a
-  [31m│[0m `pavex::response::Response`.
+  [31m│[0m `pavex::Response`.
   [31m│[0m This request handler doesn't: it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response.
   [31m│[0m
@@ -13,7 +13,7 @@
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m All request handlers must return a type that can be converted into a
-  [31m│[0m `pavex::response::Response`.
+  [31m│[0m `pavex::Response`.
   [31m│[0m This request handler doesn't: it returns the unit type, `()`, when
   [31m│[0m successful. I can't convert `()` into an HTTP response.
   [31m│[0m
@@ -26,7 +26,7 @@
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Wrapping middlewares must return a type that can be converted into a
-  [31m│[0m `pavex::response::Response`.
+  [31m│[0m `pavex::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
   [31m│[0m `()` into an HTTP response.
   [31m│[0m
@@ -39,7 +39,7 @@
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Wrapping middlewares must return a type that can be converted into a
-  [31m│[0m `pavex::response::Response`.
+  [31m│[0m `pavex::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m I can't convert `()` into an HTTP response.
   [31m│[0m
@@ -75,7 +75,7 @@
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Post-processing middlewares must return a type that can be converted into
-  [31m│[0m a `pavex::response::Response`.
+  [31m│[0m a `pavex::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
   [31m│[0m `()` into an HTTP response.
   [31m│[0m
@@ -88,7 +88,7 @@
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Post-processing middlewares must return a type that can be converted into
-  [31m│[0m a `pavex::response::Response`.
+  [31m│[0m a `pavex::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m I can't convert `()` into an HTTP response.
   [31m│[0m

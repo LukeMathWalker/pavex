@@ -1,4 +1,4 @@
-From efb87d5ddc55dd138e06393ac1d32f1a8657fb19 Mon Sep 17 00:00:00 2001
+From 4cc15206b5613570b883313e411b6498b5366bef Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:50:16 +0200
 Subject: [PATCH 21/34] Revert "Annotations for fallible extract"

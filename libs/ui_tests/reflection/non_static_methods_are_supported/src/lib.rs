@@ -16,7 +16,7 @@ impl Streamer {
     }
 
     #[get(path = "/home")]
-    pub fn stream_file(&self, _logger: Logger) -> pavex::response::Response {
+    pub fn stream_file(&self, _logger: Logger) -> pavex::Response {
         todo!()
     }
 }

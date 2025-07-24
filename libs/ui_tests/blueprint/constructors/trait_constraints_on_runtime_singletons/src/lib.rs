@@ -47,7 +47,7 @@ impl NonSyncSingleton {
 }
 
 #[pavex::get(path = "/home")]
-pub fn handler(_s: &NonSendSingleton, _a: &NonSyncSingleton) -> pavex::response::Response {
+pub fn handler(_s: &NonSendSingleton, _a: &NonSyncSingleton) -> pavex::Response {
     todo!()
 }
 

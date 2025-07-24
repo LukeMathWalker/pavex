@@ -296,7 +296,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::get;
-    /// use pavex::{request::RequestHead, response::Response};
+    /// use pavex::{request::RequestHead, Response};
     ///
     /// #[get(path = "/")]
     /// pub fn get_root(request_head: &RequestHead) -> Response {
@@ -598,7 +598,7 @@ impl Blueprint {
     /// a wrapping middleware:
     ///
     /// ```rust
-    /// use pavex::{middleware::Next, response::Response, wrap};
+    /// use pavex::{middleware::Next, Response, wrap};
     /// use std::time::Duration;
     /// use tokio::time::{timeout, error::Elapsed};
     ///
@@ -629,7 +629,7 @@ impl Blueprint {
     /// You're not limited to free functions. Methods can be used as middlewares too:
     ///
     /// ```rust
-    /// use pavex::{middleware::Next, response::Response, methods};
+    /// use pavex::{middleware::Next, Response, methods};
     /// use std::time::Duration;
     /// use tokio::time::{timeout, error::Elapsed};
     ///
@@ -689,7 +689,7 @@ impl Blueprint {
     /// a post-processing middleware:
     ///
     /// ```rust
-    /// use pavex::{post_process, response::Response};
+    /// use pavex::{post_process, Response};
     /// use pavex_tracing::{
     ///     RootSpan,
     ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
@@ -724,7 +724,7 @@ impl Blueprint {
     /// You're not limited to free functions. Methods can be used as middlewares too:
     ///
     /// ```rust
-    /// use pavex::{methods, response::Response};
+    /// use pavex::{methods, Response};
     /// use pavex_tracing::{
     ///     RootSpan,
     ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
@@ -795,7 +795,7 @@ impl Blueprint {
     /// a pre-processing middleware:
     ///
     /// ```rust
-    /// use pavex::{Blueprint, pre_process, response::Response};
+    /// use pavex::{Blueprint, pre_process, Response};
     /// use pavex::middleware::Processing;
     /// use pavex::http::{HeaderValue, header::LOCATION};
     /// use pavex::request::RequestHead;
@@ -835,7 +835,7 @@ impl Blueprint {
     /// You're not limited to free functions. Methods can be used as middlewares too:
     ///
     /// ```rust
-    /// use pavex::{methods, response::Response};
+    /// use pavex::{methods, Response};
     /// use pavex::middleware::Processing;
     /// use pavex::http::{HeaderValue, header::LOCATION};
     /// use pavex::request::RequestHead;
@@ -902,7 +902,7 @@ impl Blueprint {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::get;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -931,7 +931,7 @@ impl Blueprint {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::get;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// fn app() -> Blueprint {
     ///    let mut bp = Blueprint::new();
@@ -971,7 +971,7 @@ impl Blueprint {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::get;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -1023,7 +1023,7 @@ impl Blueprint {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::get;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// fn app() -> Blueprint {
     ///    let mut bp = Blueprint::new();
@@ -1072,7 +1072,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::{get, fallback, Blueprint};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// #[get(path = "/path")]
     /// pub fn get_path() -> Response {
@@ -1121,7 +1121,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::{get, fallback, Blueprint};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// #[get(path = "/home")]
     /// pub fn get_home() -> Response {
@@ -1170,7 +1170,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::{get, fallback, Blueprint};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// #[get(path = "/home")]
     /// pub fn get_home() -> Response {
@@ -1207,7 +1207,7 @@ impl Blueprint {
     /// route registered against the nested blueprint (`GET /room/`), but it starts with the
     /// prefix of the nested blueprint (`/room`).
     ///
-    /// [`Response`]: crate::response::Response
+    /// [`Response`]: crate::Response
     pub fn fallback(&mut self, fallback: Fallback) -> RegisteredFallback {
         let registered = pavex_bp_schema::Fallback {
             coordinates: coordinates2coordinates(fallback.coordinates),
@@ -1312,7 +1312,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::error_handler;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// pub enum LoginError {
     ///     InvalidCredentials,
@@ -1347,7 +1347,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::methods;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// pub enum LoginError {
     ///     InvalidCredentials,

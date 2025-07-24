@@ -28,7 +28,7 @@ use super::{IncomingStream, ShutdownMode};
 /// use pavex::server::Server;
 ///
 /// # #[derive(Clone)] struct ApplicationState;
-/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::response::Response { todo!() }
+/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::Response { todo!() }
 /// # async fn t() -> std::io::Result<()> {
 /// # let application_state = ApplicationState;
 /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
@@ -59,7 +59,7 @@ impl ServerHandle {
         application_state: ApplicationState,
     ) -> Self
     where
-        HandlerFuture: Future<Output = crate::response::Response> + 'static,
+        HandlerFuture: Future<Output = crate::Response> + 'static,
         ApplicationState: Clone + Send + Sync + 'static,
     {
         let (command_outbox, command_inbox) = tokio::sync::mpsc::channel(32);
@@ -133,7 +133,7 @@ enum AcceptorInboxMessage {
 
 impl<HandlerFuture, ApplicationState> Acceptor<HandlerFuture, ApplicationState>
 where
-    HandlerFuture: Future<Output = crate::response::Response> + 'static,
+    HandlerFuture: Future<Output = crate::Response> + 'static,
     ApplicationState: Clone + Send + Sync + 'static,
 {
     fn new(

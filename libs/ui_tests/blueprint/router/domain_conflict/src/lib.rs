@@ -1,5 +1,5 @@
-use pavex::response::Response;
 use pavex::Blueprint;
+use pavex::Response;
 
 #[pavex::get(path = "/")]
 pub fn sub_root() -> Response {

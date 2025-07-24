@@ -1,6 +1,6 @@
 use pavex::blueprint::from;
-use pavex::response::Response;
 use pavex::Blueprint;
+use pavex::Response;
 
 #[pavex::singleton]
 pub fn constructor() {
