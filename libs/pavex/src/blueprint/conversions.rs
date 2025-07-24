@@ -39,6 +39,7 @@ pub(super) fn cloning2cloning(cloning: CloningPolicy) -> pavex_bp_schema::Clonin
 pub(super) fn lint2lint(lint: Lint) -> pavex_bp_schema::Lint {
     match lint {
         Lint::Unused => pavex_bp_schema::Lint::Unused,
+        Lint::ErrorFallback => pavex_bp_schema::Lint::ErrorFallback,
     }
 }
 

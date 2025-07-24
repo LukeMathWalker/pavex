@@ -1,0 +1,6 @@
+description = """If there is no specific error handler defined for a given error,
+Pavex will fallback to the default error handler."""
+
+[expectations]
+codegen = "pass"
+lints = "fail"

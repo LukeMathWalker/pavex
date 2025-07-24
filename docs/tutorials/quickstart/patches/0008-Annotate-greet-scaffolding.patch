@@ -1,7 +1,7 @@
-From 7af1d3780477c868af4b28474b282d1e500fa7dc Mon Sep 17 00:00:00 2001
+From a89f20239d2fe710783d69336d8b50cdc248d542 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 13:04:36 +0200
-Subject: [PATCH 08/32] Annotate greet scaffolding
+Subject: [PATCH 08/34] Annotate greet scaffolding
 
 ---
  app/src/routes/greet.rs | 3 ++-

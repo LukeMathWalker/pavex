@@ -10,6 +10,12 @@ pub struct InputSchema {
     pub path: String,
     pub id: Option<Ident>,
     pub error_handler: Option<String>,
+    pub allow: Option<ShorthandAllows>,
+}
+
+#[derive(darling::FromMeta, Debug, Clone)]
+pub struct ShorthandAllows {
+    error_fallback: darling::util::Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -20,11 +26,14 @@ impl TryFrom<InputSchema> for Properties {
             path,
             error_handler,
             id,
+            allow,
         } = input;
+        let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
         Ok(Properties {
             path,
             id,
             error_handler,
+            allow_error_fallback,
         })
     }
 }
@@ -34,6 +43,7 @@ struct Properties {
     pub path: String,
     pub error_handler: Option<String>,
     pub id: Option<Ident>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 #[derive(Clone, Copy)]
@@ -123,6 +133,7 @@ fn emit(
         path,
         error_handler,
         id,
+        allow_error_fallback,
     } = properties;
 
     let method_name = method.name();
@@ -138,6 +149,11 @@ fn emit(
     if let Some(error_handler) = error_handler {
         properties.extend(quote! {
             error_handler = #error_handler,
+        });
+    }
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
         });
     }
     AnnotationCodegen {

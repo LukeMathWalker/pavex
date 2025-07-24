@@ -4,12 +4,12 @@
   [31m│[0m This request handler doesn't: it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:57:1]
-  [31m│[0m  [2m57[0m │
-  [31m│[0m  [2m58[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/unit")]
-  [31m│[0m  [2m59[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn unit_handler() {
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:52:1]
+  [31m│[0m  [2m52[0m │
+  [31m│[0m  [2m53[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/unit")]
+  [31m│[0m  [2m54[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn unit_handler() {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler was registered here[0m
-  [31m│[0m  [2m60[0m │         todo!()
+  [31m│[0m  [2m55[0m │         todo!()
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m All request handlers must return a type that can be converted into a
@@ -17,12 +17,12 @@
   [31m│[0m This request handler doesn't: it returns the unit type, `()`, when
   [31m│[0m successful. I can't convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:62:1]
-  [31m│[0m  [2m62[0m │
-  [31m│[0m  [2m63[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/fallible_unit")]
-  [31m│[0m  [2m64[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn fallible_unit_handler() -> Result<(), Error> {
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:57:1]
+  [31m│[0m  [2m57[0m │
+  [31m│[0m  [2m58[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/fallible_unit")]
+  [31m│[0m  [2m59[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn fallible_unit_handler() -> Result<(), Error> {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler was registered here[0m
-  [31m│[0m  [2m65[0m │         todo!()
+  [31m│[0m  [2m60[0m │         todo!()
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Wrapping middlewares must return a type that can be converted into a
@@ -30,12 +30,12 @@
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
   [31m│[0m `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:74:1]
-  [31m│[0m  [2m74[0m │
-  [31m│[0m  [2m75[0m │     bp.wrap(UNIT_WRAPPING);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:69:1]
+  [31m│[0m  [2m69[0m │
+  [31m│[0m  [2m70[0m │     bp.wrap(UNIT_WRAPPING);
   [31m│[0m     · [35;1m            ──────┬──────[0m
   [31m│[0m     ·                   [35;1m╰── The wrapping middleware was registered here[0m
-  [31m│[0m  [2m76[0m │     bp.wrap(FALLIBLE_UNIT_WRAPPING);
+  [31m│[0m  [2m71[0m │     bp.wrap(FALLIBLE_UNIT_WRAPPING);
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Wrapping middlewares must return a type that can be converted into a
@@ -43,35 +43,35 @@
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m I can't convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:75:1]
-  [31m│[0m  [2m75[0m │     bp.wrap(UNIT_WRAPPING);
-  [31m│[0m  [2m76[0m │     bp.wrap(FALLIBLE_UNIT_WRAPPING);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:70:1]
+  [31m│[0m  [2m70[0m │     bp.wrap(UNIT_WRAPPING);
+  [31m│[0m  [2m71[0m │     bp.wrap(FALLIBLE_UNIT_WRAPPING);
   [31m│[0m     · [35;1m            ───────────┬──────────[0m
   [31m│[0m     ·                        [35;1m╰── The wrapping middleware was registered here[0m
-  [31m│[0m  [2m77[0m │
+  [31m│[0m  [2m72[0m │
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Pre-processing middlewares must return `pavex::middleware::Processing`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:71:1]
-  [31m│[0m  [2m71[0m │
-  [31m│[0m  [2m72[0m │     bp.pre_process(UNIT_PRE);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:66:1]
+  [31m│[0m  [2m66[0m │
+  [31m│[0m  [2m67[0m │     bp.pre_process(UNIT_PRE);
   [31m│[0m     · [35;1m                   ────┬───[0m
   [31m│[0m     ·             [35;1mThe pre-processing middleware was registered here[0m
-  [31m│[0m  [2m73[0m │     bp.pre_process(FALLIBLE_UNIT_PRE);
+  [31m│[0m  [2m68[0m │     bp.pre_process(FALLIBLE_UNIT_PRE);
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Pre-processing middlewares must return `pavex::middleware::Processing`
   [31m│[0m when successful.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:72:1]
-  [31m│[0m  [2m72[0m │     bp.pre_process(UNIT_PRE);
-  [31m│[0m  [2m73[0m │     bp.pre_process(FALLIBLE_UNIT_PRE);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:67:1]
+  [31m│[0m  [2m67[0m │     bp.pre_process(UNIT_PRE);
+  [31m│[0m  [2m68[0m │     bp.pre_process(FALLIBLE_UNIT_PRE);
   [31m│[0m     · [35;1m                   ────────┬────────[0m
   [31m│[0m     ·             [35;1mThe pre-processing middleware was registered here[0m
-  [31m│[0m  [2m74[0m │
+  [31m│[0m  [2m69[0m │
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Post-processing middlewares must return a type that can be converted into
@@ -79,12 +79,12 @@
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
   [31m│[0m `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:77:1]
-  [31m│[0m  [2m77[0m │
-  [31m│[0m  [2m78[0m │     bp.post_process(UNIT_POST);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:72:1]
+  [31m│[0m  [2m72[0m │
+  [31m│[0m  [2m73[0m │     bp.post_process(UNIT_POST);
   [31m│[0m     · [35;1m                    ────┬────[0m
   [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
-  [31m│[0m  [2m79[0m │     bp.post_process(FALLIBLE_UNIT_POST);
+  [31m│[0m  [2m74[0m │     bp.post_process(FALLIBLE_UNIT_POST);
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m Post-processing middlewares must return a type that can be converted into
@@ -92,12 +92,12 @@
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m I can't convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:78:1]
-  [31m│[0m  [2m78[0m │     bp.post_process(UNIT_POST);
-  [31m│[0m  [2m79[0m │     bp.post_process(FALLIBLE_UNIT_POST);
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:73:1]
+  [31m│[0m  [2m73[0m │     bp.post_process(UNIT_POST);
+  [31m│[0m  [2m74[0m │     bp.post_process(FALLIBLE_UNIT_POST);
   [31m│[0m     · [35;1m                    ─────────┬────────[0m
   [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
-  [31m│[0m  [2m80[0m │
+  [31m│[0m  [2m75[0m │
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m All constructors must return *something*.
@@ -122,16 +122,3 @@
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
   [31m│[0m  [2m12[0m │         todo!()
   [31m│[0m     ╰────
-[31;1mERROR[0m:
-  [31m×[0m You registered a constructor that returns a `Result`, but you did not
-  [31m│[0m register an error handler for it. If I don't have an error handler, I
-  [31m│[0m don't know what to do with the error when the constructor fails!
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:14:1]
-  [31m│[0m  [2m14[0m │
-  [31m│[0m  [2m15[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::request_scoped]
-  [31m│[0m  [2m16[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn fallible_constructor() -> Result<u64, Error> {
-  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe fallible constructor was registered here[0m
-  [31m│[0m  [2m17[0m │         todo!()
-  [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Add an error handler via `.error_handler`

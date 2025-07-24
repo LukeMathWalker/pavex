@@ -10,7 +10,7 @@ use super::{
     cannot_resolve_callable_path, invalid_config_type, rustdoc_free_fn2callable,
     rustdoc_method2callable, validate_route_path,
 };
-use crate::compiler::analyses::user_components::UserComponent;
+use crate::compiler::analyses::user_components::{UserComponent, UserComponentId};
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
 use pavex_bp_schema::{CloningPolicy, Lint, LintSetting};
 
@@ -52,6 +52,8 @@ pub(crate) fn resolve_annotation_coordinates(
         if let AnnotationProperties::Route {
             method,
             path,
+            // Handled below.
+            allow_error_fallback: _,
             id: _,
         } = &annotation.properties
         {
@@ -167,6 +169,8 @@ pub(crate) fn resolve_annotation_coordinates(
             lifecycle,
             cloning_policy,
             allow_unused,
+            // Handled below.
+            allow_error_fallback: _,
             id: _,
         } = &annotation.properties
         {
@@ -185,8 +189,8 @@ pub(crate) fn resolve_annotation_coordinates(
                 }
             }
 
+            let lints = aux.id2lints.entry(component_id).or_default();
             if let Some(true) = allow_unused {
-                let lints = aux.id2lints.entry(component_id).or_default();
                 lints.entry(Lint::Unused).or_insert(LintSetting::Ignore);
             }
 
@@ -196,6 +200,8 @@ pub(crate) fn resolve_annotation_coordinates(
                 .entry(component_id)
                 .or_insert_with(|| cloning_policy.unwrap_or(CloningPolicy::NeverClone));
         }
+
+        allow_error_fallback(&annotation.properties, component_id, aux);
 
         if matches!(
             annotation.properties,
@@ -224,5 +230,51 @@ pub(crate) fn resolve_annotation_coordinates(
             }
         };
         computation_db.get_or_intern_with_id(callable, component_id.into());
+    }
+}
+
+/// Register if the component is allowed to fallback to the default error handler on the error path.
+fn allow_error_fallback(
+    properties: &AnnotationProperties,
+    component_id: UserComponentId,
+    aux: &mut AuxiliaryData,
+) {
+    match properties {
+        AnnotationProperties::Constructor {
+            allow_error_fallback,
+            ..
+        }
+        | AnnotationProperties::WrappingMiddleware {
+            allow_error_fallback,
+            ..
+        }
+        | AnnotationProperties::PreProcessingMiddleware {
+            allow_error_fallback,
+            ..
+        }
+        | AnnotationProperties::PostProcessingMiddleware {
+            allow_error_fallback,
+            ..
+        }
+        | AnnotationProperties::Route {
+            allow_error_fallback,
+            ..
+        }
+        | AnnotationProperties::Fallback {
+            allow_error_fallback,
+            ..
+        } => {
+            let lints = aux.id2lints.entry(component_id).or_default();
+            if let Some(true) = allow_error_fallback {
+                lints
+                    .entry(Lint::ErrorFallback)
+                    .or_insert(LintSetting::Ignore);
+            }
+        }
+        AnnotationProperties::ErrorObserver { .. }
+        | AnnotationProperties::ErrorHandler { .. }
+        | AnnotationProperties::Config { .. }
+        | AnnotationProperties::Methods
+        | AnnotationProperties::Prebuilt { .. } => {}
     }
 }

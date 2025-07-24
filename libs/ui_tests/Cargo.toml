@@ -27,6 +27,8 @@ members = [
   "blueprint/common/cloning_strategy_is_observed_for_singletons_and_state_inputs/generated_app",
   "blueprint/common/components_can_fail",
   "blueprint/common/components_can_fail/generated_app",
+  "blueprint/common/errors_fallback_on_the_fallback_error_handler",
+  "blueprint/common/errors_fallback_on_the_fallback_error_handler/generated_app",
   "blueprint/common/output_type_must_implement_into_response",
   "blueprint/common/output_type_must_implement_into_response/generated_app",
   "blueprint/config/config_blueprint_overrides",
@@ -333,4 +335,5 @@ pavex_cli_client = { path = "../pavex_cli_client" }
 workspace_hack = { path = "workspace_hack" }
 reqwest = "0.12"
 tokio = "1"
+thiserror = "2"
 serde = { version = "1", features = ["derive"] }

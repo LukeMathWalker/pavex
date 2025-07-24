@@ -41,6 +41,7 @@ fn test_cloning_policy_can_be_omitted() {
             lifecycle: Lifecycle::Singleton,
             cloning_policy: None,
             allow_unused: None,
+            allow_error_fallback: None,
         }
     );
 }

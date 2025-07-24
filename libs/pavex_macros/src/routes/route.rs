@@ -22,6 +22,7 @@ pub struct InputSchema {
 pub struct RouteAllows {
     non_standard_methods: Flag,
     any_method: Flag,
+    error_fallback: Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -43,6 +44,9 @@ impl TryFrom<InputSchema> for Properties {
             .as_ref()
             .map(|a| a.any_method.is_present())
             .unwrap_or(false);
+        let allow_error_fallback = allow
+            .as_ref()
+            .map(|a| a.error_fallback.is_present());
 
         if let Some(method) = method.as_ref() {
             if allow_any_method {
@@ -110,6 +114,7 @@ impl TryFrom<InputSchema> for Properties {
             id,
             allow_non_standard_methods,
             allow_any_method,
+            allow_error_fallback,
         })
     }
 }
@@ -121,6 +126,7 @@ pub struct Properties {
     pub id: Option<syn::Ident>,
     pub allow_non_standard_methods: bool,
     pub allow_any_method: bool,
+    pub allow_error_fallback: Option<bool>,
 }
 
 pub struct RouteAnnotation;
@@ -152,6 +158,7 @@ fn emit(impl_: Option<ImplContext>, item: Callable, properties: Properties) -> A
         path,
         allow_non_standard_methods,
         allow_any_method,
+        allow_error_fallback,
         id,
     } = properties;
 
@@ -176,6 +183,11 @@ fn emit(impl_: Option<ImplContext>, item: Callable, properties: Properties) -> A
     if allow_any_method {
         properties.extend(quote! {
             allow_any_method = true,
+        });
+    }
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
         });
     }
     AnnotationCodegen {

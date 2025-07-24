@@ -252,6 +252,7 @@ fn intern_annotated(
             lifecycle,
             cloning_policy,
             allow_unused,
+            allow_error_fallback,
             id: _,
         } => {
             let constructor = UserComponent::Constructor { source };
@@ -276,11 +277,16 @@ fn intern_annotated(
                 lints.insert(Lint::Unused, LintSetting::Ignore);
             }
 
+            if let Some(true) = allow_error_fallback {
+                lints.insert(Lint::ErrorFallback, LintSetting::Ignore);
+            }
+
             Ok(constructor_id)
         }
         AnnotationProperties::Route {
             method,
             path,
+            allow_error_fallback,
             id: _,
         } => {
             let ImportKind::Routes {
@@ -317,6 +323,11 @@ fn intern_annotated(
                 .insert(request_handler_id, observer_chain.to_owned());
 
             validate_route_path(aux, request_handler_id, &path, diagnostics);
+
+            if let Some(true) = allow_error_fallback {
+                let lints = aux.id2lints.entry(request_handler_id).or_default();
+                lints.insert(Lint::ErrorFallback, LintSetting::Ignore);
+            }
 
             Ok(request_handler_id)
         }

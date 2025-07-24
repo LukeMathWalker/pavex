@@ -514,6 +514,7 @@ debug = "none""##
     .unwrap();
     writeln!(&mut cargo_toml, "reqwest = \"0.12\"").unwrap();
     writeln!(&mut cargo_toml, "tokio = \"1\"").unwrap();
+    writeln!(&mut cargo_toml, "thiserror = \"2\"").unwrap();
     writeln!(
         &mut cargo_toml,
         r#"serde = {{ version = "1", features = ["derive"] }}"#

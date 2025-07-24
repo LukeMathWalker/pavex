@@ -1,7 +1,7 @@
-From 4477218cdc870cddd433f9e54aff04130f9bd1a8 Mon Sep 17 00:00:00 2001
+From 54b2baf7c447c40adf05da04ea7398cbd1ff8bc9 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:42:38 +0200
-Subject: [PATCH 15/32] Revert "Annotations for user agents"
+Subject: [PATCH 15/34] Revert "Annotations for user agents"
 
 This reverts commit 66b65f7ba9f54a4d6a3b5b83b29687cb0e66ee06.
 ---

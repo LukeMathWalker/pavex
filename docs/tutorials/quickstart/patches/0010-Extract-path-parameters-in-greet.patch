@@ -1,7 +1,7 @@
-From a749c190ccd615620d4ebac2eb21f45ad9458fff Mon Sep 17 00:00:00 2001
+From 4f927bebfc3639aba2b735d6f12b8cad3e3289cf Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 13:06:21 +0200
-Subject: [PATCH 10/32] Extract path parameters in greet
+Subject: [PATCH 10/34] Extract path parameters in greet
 
 ---
  app/src/routes/greet.rs | 12 +++++++++---

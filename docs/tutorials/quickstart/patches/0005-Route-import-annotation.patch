@@ -1,7 +1,7 @@
-From 1df0ea96625207bdd321e2e6aa7ea51223fe10fb Mon Sep 17 00:00:00 2001
+From 20c646364fd7703f8c54a54b42e9a7659b361023 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 13:02:22 +0200
-Subject: [PATCH 05/32] Route import annotation
+Subject: [PATCH 05/34] Route import annotation
 
 ---
  app/src/blueprint.rs | 6 +++++-

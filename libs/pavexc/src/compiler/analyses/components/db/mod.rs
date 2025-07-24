@@ -158,15 +158,23 @@ impl ComponentDb {
                 is_mutable: false,
             })
         };
+        let pavex_error_fallback_id = {
+            let callable = resolve_framework_callable_path(
+                "pavex::Error::to_response",
+                package_graph,
+                krate_collection,
+            );
+            let computation = Computation::Callable(Cow::Owned(callable));
+            computation_db.get_or_intern(computation)
+        };
         let pavex_noop_wrap_id = {
-            let pavex_noop_wrap_callable = resolve_framework_callable_path(
+            let callable = resolve_framework_callable_path(
                 "pavex::middleware::wrap_noop",
                 package_graph,
                 krate_collection,
             );
-            let pavex_noop_wrap_computation =
-                Computation::Callable(Cow::Owned(pavex_noop_wrap_callable));
-            computation_db.get_or_intern(pavex_noop_wrap_computation)
+            let computation = Computation::Callable(Cow::Owned(callable));
+            computation_db.get_or_intern(computation)
         };
         let mut error_handlers_db = ErrorHandlersDb::default();
 
@@ -267,6 +275,7 @@ impl ComponentDb {
             self_.process_prebuilt_types(computation_db);
             self_.process_config_types(computation_db);
             self_.attach_missing_error_handlers(
+                pavex_error_fallback_id,
                 needs_error_handler,
                 computation_db,
                 &mut error_handlers_db,
@@ -563,11 +572,19 @@ impl ComponentDb {
 
     fn attach_missing_error_handlers(
         &mut self,
+        pavex_error_fallback_id: ComputationId,
         needs_error_handler: IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         error_handlers_db: &mut ErrorHandlersDb,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
+        let default_fallback_handler = {
+            let Computation::Callable(callable) = &computation_db[pavex_error_fallback_id] else {
+                unreachable!()
+            };
+            ErrorHandler::new(callable.clone().into_owned(), 0).unwrap()
+        };
+
         for fallible_user_id in needs_error_handler.into_iter() {
             let Some(&fallible_id) = self.user_component_id2component_id.get(&fallible_user_id)
             else {
@@ -578,11 +595,15 @@ impl ComponentDb {
                 .hydrated_component(fallible_id, computation_db)
                 .computation();
             let error_type = get_err_variant(fallible_computation.output_type().unwrap());
-            match error_handlers_db.get_or_try_bind(scope_id, error_type, self) {
-                Some(ErrorHandlerEntry::Valid {
+
+            if let Some(error_handler) =
+                error_handlers_db.get_or_try_bind(scope_id, error_type, self)
+            {
+                if let ErrorHandlerEntry::Valid {
                     error_handler,
                     component_id,
-                }) => {
+                } = error_handler
+                {
                     let error_matcher_id = self.fallible_id2match_ids.get(&fallible_id).unwrap().1;
                     self.get_or_intern(
                         UnregisteredComponent::ErrorHandler {
@@ -594,11 +615,80 @@ impl ComponentDb {
                         computation_db,
                     );
                 }
-                Some(ErrorHandlerEntry::Invalid) => {}
-                None => {
-                    Self::missing_error_handler(fallible_user_id, &self.user_db, diagnostics);
-                }
+                // In both cases (valid or invalid error handler), we're done.
+                continue;
             }
+
+            // There was no specific error handler for this error type.
+            // Let's look for a fallback error handler.
+
+            // But let's emit a warning first!
+            let skip_warning = if let Some(lints) = self.user_db.lints(fallible_user_id)
+                && lints.get(&Lint::ErrorFallback) == Some(&LintSetting::Ignore)
+            {
+                true
+            } else {
+                false
+            };
+            if !skip_warning {
+                Self::missing_error_handler(
+                    fallible_user_id,
+                    &self.user_db,
+                    computation_db,
+                    diagnostics,
+                );
+            }
+
+            if let Some(error_handler) =
+                error_handlers_db.get_or_try_bind(scope_id, &self.pavex_error, self)
+            {
+                if let ErrorHandlerEntry::Valid {
+                    error_handler,
+                    component_id,
+                } = error_handler
+                {
+                    let error_matcher_id = self.fallible_id2match_ids.get(&fallible_id).unwrap().1;
+                    // Upcast the concrete error type into a `pavex::Error`
+                    let pavex_error_transformer_id = register_error_new_transformer(
+                        error_matcher_id,
+                        self,
+                        computation_db,
+                        scope_id,
+                    )
+                    .unwrap();
+                    self.get_or_intern(
+                        UnregisteredComponent::ErrorHandler {
+                            source_id: component_id.into(),
+                            error_handler,
+                            error_matcher_id,
+                            error_source_id: pavex_error_transformer_id,
+                        },
+                        computation_db,
+                    );
+                }
+                // In both cases (valid or invalid fallback error handler), we're done.
+                continue;
+            }
+
+            // The user hasn't registered a fallback error handler.
+            // We default to Pavex's one.
+            let error_matcher_id = self.fallible_id2match_ids.get(&fallible_id).unwrap().1;
+            // Upcast the concrete error type into a `pavex::Error`
+            let pavex_error_transformer_id =
+                register_error_new_transformer(error_matcher_id, self, computation_db, scope_id)
+                    .unwrap();
+            self.get_or_intern(
+                UnregisteredComponent::ErrorHandler {
+                    source_id: SourceId::ComputationId(
+                        pavex_error_fallback_id,
+                        self.scope_graph().root_scope_id(),
+                    ),
+                    error_handler: default_fallback_handler.clone(),
+                    error_matcher_id,
+                    error_source_id: pavex_error_transformer_id,
+                },
+                computation_db,
+            );
         }
     }
 

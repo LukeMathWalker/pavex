@@ -10,14 +10,21 @@ use quote::{format_ident, quote};
 pub struct InputSchema {
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
+    pub allow: Option<MiddlewareAllows>,
+}
+
+#[derive(darling::FromMeta, Debug, Clone)]
+pub struct MiddlewareAllows {
+    error_fallback: darling::util::Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
     type Error = darling::Error;
 
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
-        let InputSchema { id, pavex } = input;
-        Ok(Properties { id, pavex })
+        let InputSchema { id, pavex, allow } = input;
+        let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
+        Ok(Properties { id, pavex, allow_error_fallback })
     }
 }
 
@@ -25,6 +32,7 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub id: Option<syn::Ident>,
     pub pavex: Option<syn::Ident>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 #[derive(Clone, Copy)]
@@ -72,13 +80,19 @@ fn emit(
     item: Callable,
     properties: Properties,
 ) -> AnnotationCodegen {
-    let Properties { id, pavex } = properties;
+    let Properties { id, pavex, allow_error_fallback } = properties;
     let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
     let id_str = id.to_string();
 
-    let properties = quote! {
+    let mut properties = quote! {
         id = #id_str,
     };
+    
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
+        });
+    }
 
     let adj = match kind {
         MiddlewareKind::Wrap => "wrapping",

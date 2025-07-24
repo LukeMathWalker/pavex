@@ -17,9 +17,11 @@ use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
+use miette::{NamedSource, Severity};
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
+
+use super::get_err_variant;
 
 /// Utility functions to produce diagnostics.
 impl ComponentDb {
@@ -888,6 +890,7 @@ impl ComponentDb {
     pub(super) fn missing_error_handler(
         fallible_id: UserComponentId,
         db: &UserComponentDb,
+        computation_db: &ComputationDb,
         diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let fallible_kind = db[fallible_id].kind();
@@ -895,15 +898,24 @@ impl ComponentDb {
             db.registration_target(fallible_id),
             format!("The fallible {fallible_kind} was registered here"),
         );
+        let fallible = &computation_db[fallible_id];
+        let err_ty = get_err_variant(fallible.output.as_ref().unwrap());
         let error = anyhow::anyhow!(
-            "You registered a {fallible_kind} that returns a `Result`, but you did not register an \
-                 error handler for it. \
-                 If I don't have an error handler, I don't know what to do with the error when the \
-                 {fallible_kind} fails!",
+            "There is no specific error handler for `{}`, the error returned by one of your {fallible_kind}s.\n\
+            It'll be converted to `pavex::Error` and handled by the fallback error handler.",
+            err_ty.display_for_error()
         );
         let diagnostic = CompilerDiagnostic::builder(error)
+            .severity(Severity::Warning)
             .optional_source(source)
-            .help("Add an error handler via `.error_handler`".to_string())
+            .help(format!(
+                "Define an error handler for `{}`",
+                err_ty.display_for_error()
+            ))
+            .help(
+                "Add `allow(error_fallback)` to your component's attribute to silence this warning"
+                    .into(),
+            )
             .build();
         diagnostics.push(diagnostic);
     }

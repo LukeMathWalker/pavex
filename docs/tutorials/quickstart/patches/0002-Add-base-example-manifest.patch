@@ -1,7 +1,7 @@
-From 6ada0ce605211bc0acce87921631ca6acd98f996 Mon Sep 17 00:00:00 2001
+From 54dcd7c8e0b10da7aa64d31826010059fee9daf7 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 10:40:47 +0200
-Subject: [PATCH 02/32] Add base example manifest
+Subject: [PATCH 02/34] Add base example manifest
 
 ---
  example.yml | 3 +++
