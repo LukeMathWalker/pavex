@@ -59,7 +59,7 @@ pub(crate) fn detect_unused<'a, I>(
         }
 
         if let Some(overrides) = component_db.lints(id) {
-            if overrides.get(&Lint::Unused) == Some(&LintSetting::Ignore) {
+            if overrides.get(&Lint::Unused) == Some(&LintSetting::Allow) {
                 // No warning!
                 continue;
             }

@@ -624,7 +624,7 @@ impl ComponentDb {
 
             // But let's emit a warning first!
             let skip_warning = if let Some(lints) = self.user_db.lints(fallible_user_id)
-                && lints.get(&Lint::ErrorFallback) == Some(&LintSetting::Ignore)
+                && lints.get(&Lint::ErrorFallback) == Some(&LintSetting::Allow)
             {
                 true
             } else {
