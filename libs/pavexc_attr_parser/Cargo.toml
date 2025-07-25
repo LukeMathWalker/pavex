@@ -1,10 +1,12 @@
 [package]
 name = "pavexc_attr_parser"
+description = "A parser to extract Pavex diagnostic attributes from the output of `rustdoc-json`."
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 version.workspace = true
+keywords = ["pavex"]
 
 [dependencies]
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.1" }
