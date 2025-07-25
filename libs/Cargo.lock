@@ -591,7 +591,6 @@ dependencies = [
  "encode_unicode",
  "libc",
  "once_cell",
- "unicode-width 0.2.1",
  "windows-sys 0.59.0",
 ]
 
@@ -1409,7 +1408,7 @@ dependencies = [
  "nested",
  "once_cell",
  "pathdiff",
- "petgraph 0.8.2",
+ "petgraph",
  "semver",
  "serde",
  "serde_json",
@@ -2860,7 +2859,7 @@ dependencies = [
  "pavex_reflection",
  "pavexc_attr_parser",
  "persist_if_changed",
- "petgraph 0.8.2",
+ "petgraph",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -3052,16 +3051,6 @@ dependencies = [
 
 [[package]]
 name = "petgraph"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3672b37090dbd86368a4145bc067582552b29c27377cad4e0a306c97f9bd7772"
-dependencies = [
- "fixedbitset",
- "indexmap",
-]
-
-[[package]]
-name = "petgraph"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54acf3a685220b533e437e264e4d932cfbdc4cc7ec0cd232ed73c08d03b8a7ca"
@@ -3214,10 +3203,10 @@ dependencies = [
  "byteorder",
  "clap",
  "clap_builder",
- "console 0.15.11",
+ "console 0.16.0",
  "crossbeam-utils",
  "crypto-common",
- "darling_core 0.20.11",
+ "darling_core 0.21.0",
  "digest",
  "either",
  "fixedbitset",
@@ -3242,11 +3231,13 @@ dependencies = [
  "memchr",
  "miette",
  "num-traits",
+ "once_cell",
  "percent-encoding",
- "petgraph 0.7.1",
+ "petgraph",
  "proc-macro2",
  "quote",
  "rand 0.8.5",
+ "rand_core 0.6.4",
  "regex",
  "regex-automata 0.4.9",
  "regex-syntax 0.8.5",
@@ -3254,6 +3245,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
+ "serde_spanned 1.0.0",
  "sha2",
  "smallvec",
  "sqlx",
@@ -3270,11 +3262,14 @@ dependencies = [
  "time",
  "tokio",
  "toml 0.8.23",
- "toml_edit 0.22.27",
+ "toml 0.9.2",
+ "toml_datetime 0.7.0",
+ "toml_parser",
  "tracing",
  "tracing-core",
  "tracing-log",
  "uuid",
+ "winnow",
  "zeroize",
 ]
 
