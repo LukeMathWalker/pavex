@@ -266,7 +266,7 @@ fn intern_annotated(
             let lints = aux.id2lints.entry(constructor_id).or_default();
 
             if let Some(true) = allow_unused {
-                lints.insert(Lint::Unused, LintSetting::Ignore);
+                lints.insert(Lint::Unused, LintSetting::Allow);
             } else if !krate_collection
                 .package_graph()
                 .metadata(&krate.core.package_id)
@@ -274,11 +274,11 @@ fn intern_annotated(
                 .in_workspace()
             {
                 // Ignore unused constructors imported from crates defined outside the current workspace
-                lints.insert(Lint::Unused, LintSetting::Ignore);
+                lints.insert(Lint::Unused, LintSetting::Allow);
             }
 
             if let Some(true) = allow_error_fallback {
-                lints.insert(Lint::ErrorFallback, LintSetting::Ignore);
+                lints.insert(Lint::ErrorFallback, LintSetting::Allow);
             }
 
             Ok(constructor_id)
@@ -326,7 +326,7 @@ fn intern_annotated(
 
             if let Some(true) = allow_error_fallback {
                 let lints = aux.id2lints.entry(request_handler_id).or_default();
-                lints.insert(Lint::ErrorFallback, LintSetting::Ignore);
+                lints.insert(Lint::ErrorFallback, LintSetting::Allow);
             }
 
             Ok(request_handler_id)
@@ -367,7 +367,7 @@ fn intern_annotated(
                 .in_workspace()
             {
                 // Ignore unused configuration types imported from crates defined outside the current workspace
-                lints.insert(Lint::Unused, LintSetting::Ignore);
+                lints.insert(Lint::Unused, LintSetting::Allow);
             }
 
             let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;

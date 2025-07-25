@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 
 pub mod clear;
 pub mod client;

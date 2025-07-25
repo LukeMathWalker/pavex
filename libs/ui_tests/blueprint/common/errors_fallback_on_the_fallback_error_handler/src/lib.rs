@@ -1,6 +1,6 @@
 use pavex::blueprint::from;
 use pavex::middleware::Processing;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::Blueprint;
 use pavex::{get, methods, pre_process};
 

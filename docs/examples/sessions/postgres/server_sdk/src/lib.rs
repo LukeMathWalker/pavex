@@ -58,7 +58,7 @@ pub fn run(
         request: http::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
         server_state: std::sync::Arc<ServerState>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (router, state) = (&server_state.router, &server_state.application_state);
         router.route(request, connection_info, state).await
     }
@@ -77,7 +77,9 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self { router: Self::router() }
+        Self {
+            router: Self::router(),
+        }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
@@ -98,323 +100,287 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)]
-        state: &ApplicationState,
-    ) -> pavex::response::Response {
+        #[allow(unused)] state: &ApplicationState,
+    ) -> pavex::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
-                    vec![],
-                )
-                .into();
+            let allowed_methods: pavex::router::AllowedMethods =
+                pavex::router::MethodAllowList::from_iter(vec![]).into();
             return route_0::entrypoint(
-                    &state.processor,
-                    &request_head,
-                    &state.session_config,
-                    &state.session_store,
-                    &allowed_methods,
-                )
-                .await;
+                &state.processor,
+                &request_head,
+                &state.session_config,
+                &state.session_store,
+                &allowed_methods,
+            )
+            .await;
         };
         match matched_route.value {
-            0u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_1::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
-                            .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+            0u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_1::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
                 }
-            }
-            1u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_2::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            2u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_3::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            1u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_2::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            3u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::DELETE => {
-                        route_4::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::DELETE,
-                            ])
+            },
+            2u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_3::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            4u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_5::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            3u32 => match &request_head.method {
+                &pavex::http::Method::DELETE => {
+                    route_4::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::DELETE])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            5u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_6::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            4u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_5::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            6u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_7::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            5u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_6::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            7u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_8::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            6u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_7::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            8u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_9::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            7u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_8::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            9u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_10::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            8u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_9::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
-            10u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::GET => {
-                        route_11::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                            )
-                            .await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::GET,
-                            ])
+            },
+            9u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_10::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
                             .into();
-                        route_0::entrypoint(
-                                &state.processor,
-                                &request_head,
-                                &state.session_config,
-                                &state.session_store,
-                                &allowed_methods,
-                            )
-                            .await
-                    }
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
                 }
-            }
+            },
+            10u32 => match &request_head.method {
+                &pavex::http::Method::GET => {
+                    route_11::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                    )
+                    .await
+                }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+                            .into();
+                    route_0::entrypoint(
+                        &state.processor,
+                        &request_head,
+                        &state.session_config,
+                        &state.session_store,
+                        &allowed_methods,
+                    )
+                    .await
+                }
+            },
             i => unreachable!("Unknown route id: {}", i),
         }
     }
@@ -426,7 +392,7 @@ pub mod route_0 {
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
         s_4: &'e pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3, s_4).await;
         response
     }
@@ -437,7 +403,7 @@ pub mod route_0 {
         s_3: &'c pavex_session::SessionConfig,
         s_4: &'d pavex_session::SessionStore,
         s_5: &'e pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(s_5).await;
         let response = post_processing_0(s_2, s_1, response, s_3, s_4, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -449,7 +415,7 @@ pub mod route_0 {
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
         v4: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v5 = pavex::cookie::ResponseCookies::new();
         let v6 = crate::route_0::Next0 {
             s_0: v5,
@@ -462,31 +428,27 @@ pub mod route_0 {
         };
         let v7 = pavex::middleware::Next::new(v6);
         let v8 = pavex::middleware::wrap_noop(v7).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
+        <pavex::Response as pavex::IntoResponse>::into_response(v8)
     }
-    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::Response {
         let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+        <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
         v0: &pavex::request::RequestHead,
         v1: &biscotti::Processor,
-        v2: pavex::response::Response,
+        v2: pavex::Response,
         v3: &pavex_session::SessionConfig,
         v4: &pavex_session::SessionStore,
         v5: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v6 = pavex::cookie::extract_request_cookies(v0, v1);
         let v7 = match v6 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v7,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
+                    let v8 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v7);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v8)
                 };
             }
         };
@@ -499,38 +461,32 @@ pub mod route_0 {
             Err(v12) => {
                 return {
                     let v13 = pavex_session::errors::FinalizeError::into_response(&v12);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v13,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v13)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -549,9 +505,9 @@ pub mod route_0 {
     }
     impl<'a, 'b, 'c, 'd, 'e, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, 'e, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4, self.s_5)
@@ -564,7 +520,7 @@ pub mod route_1 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -572,7 +528,7 @@ pub mod route_1 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -583,18 +539,14 @@ pub mod route_1 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -610,66 +562,58 @@ pub mod route_1 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::clear::clear_session(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -682,9 +626,9 @@ pub mod route_1 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -697,7 +641,7 @@ pub mod route_2 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -705,7 +649,7 @@ pub mod route_2 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -716,18 +660,14 @@ pub mod route_2 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -743,66 +683,58 @@ pub mod route_2 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::client::client_ops(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -815,9 +747,9 @@ pub mod route_2 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -830,7 +762,7 @@ pub mod route_3 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -838,7 +770,7 @@ pub mod route_3 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -849,18 +781,14 @@ pub mod route_3 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -876,66 +804,58 @@ pub mod route_3 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::cycle_id::cycle_id(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -948,9 +868,9 @@ pub mod route_3 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -963,7 +883,7 @@ pub mod route_4 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -971,7 +891,7 @@ pub mod route_4 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -982,18 +902,14 @@ pub mod route_4 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1009,66 +925,58 @@ pub mod route_4 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::delete::delete_session(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1081,9 +989,9 @@ pub mod route_4 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1096,7 +1004,7 @@ pub mod route_5 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1104,7 +1012,7 @@ pub mod route_5 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1115,18 +1023,14 @@ pub mod route_5 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1142,66 +1046,58 @@ pub mod route_5 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::get::get_plain(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1214,9 +1110,9 @@ pub mod route_5 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1229,7 +1125,7 @@ pub mod route_6 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1237,7 +1133,7 @@ pub mod route_6 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1248,18 +1144,14 @@ pub mod route_6 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1275,66 +1167,58 @@ pub mod route_6 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::get_struct::get_struct(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1347,9 +1231,9 @@ pub mod route_6 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1362,7 +1246,7 @@ pub mod route_7 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1370,7 +1254,7 @@ pub mod route_7 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1381,18 +1265,14 @@ pub mod route_7 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1408,66 +1288,58 @@ pub mod route_7 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::insert::insert(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1480,9 +1352,9 @@ pub mod route_7 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1495,7 +1367,7 @@ pub mod route_8 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1503,7 +1375,7 @@ pub mod route_8 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1514,18 +1386,14 @@ pub mod route_8 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1541,66 +1409,58 @@ pub mod route_8 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::insert_struct::insert_struct(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1613,9 +1473,9 @@ pub mod route_8 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1628,7 +1488,7 @@ pub mod route_9 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1636,7 +1496,7 @@ pub mod route_9 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1647,18 +1507,14 @@ pub mod route_9 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1674,66 +1530,58 @@ pub mod route_9 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::invalidate::invalidate(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1746,9 +1594,9 @@ pub mod route_9 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1761,7 +1609,7 @@ pub mod route_10 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1769,7 +1617,7 @@ pub mod route_10 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1780,18 +1628,14 @@ pub mod route_10 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1807,66 +1651,58 @@ pub mod route_10 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::remove::remove(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -1879,9 +1715,9 @@ pub mod route_10 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)
@@ -1894,7 +1730,7 @@ pub mod route_11 {
         s_1: &'b pavex::request::RequestHead,
         s_2: &'c pavex_session::SessionConfig,
         s_3: &'d pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1, s_2, s_3).await;
         response
     }
@@ -1902,7 +1738,7 @@ pub mod route_11 {
         mut s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
         mut s_2: pavex_session::Session<'b>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(&mut s_2).await;
         let response = post_processing_0(response, s_2, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
@@ -1913,18 +1749,14 @@ pub mod route_11 {
         v1: &pavex::request::RequestHead,
         v2: &pavex_session::SessionConfig,
         v3: &pavex_session::SessionStore,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v4 = pavex::cookie::extract_request_cookies(v1, v0);
         let v5 = match v4 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v5,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
-                    )
+                    let v6 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v5);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v6)
                 };
             }
         };
@@ -1940,66 +1772,58 @@ pub mod route_11 {
         };
         let v11 = pavex::middleware::Next::new(v10);
         let v12 = pavex::middleware::wrap_noop(v11).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::Response as pavex::IntoResponse>::into_response(v12)
     }
-    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::response::Response {
+    async fn handler(v0: &mut pavex_session::Session<'_>) -> pavex::Response {
         let v1 = postgres_sessions::ops::remove_raw::remove_raw(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
                     let v3 = postgres_sessions::ops::e500(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn post_processing_0(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex_session::Session<'_>,
         v2: &mut pavex::cookie::ResponseCookies,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex_session::finalize_session(v0, v2, v1).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
                     let v5 = pavex_session::errors::FinalizeError::into_response(&v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn post_processing_1(
-        v0: pavex::response::Response,
+        v0: pavex::Response,
         v1: pavex::cookie::ResponseCookies,
         v2: &biscotti::Processor,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v3 = pavex::cookie::inject_response_cookies(v0, v1, v2);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::cookie::ResponseCookies,
         s_1: &'a biscotti::Processor,
@@ -2012,9 +1836,9 @@ pub mod route_11 {
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1, self.s_2)

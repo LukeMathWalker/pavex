@@ -132,7 +132,7 @@ impl ApplicationConfig {
 
             // Should the issue be reported?
             if let Some(lints) = db.lints(id) {
-                if let Some(LintSetting::Ignore) = lints.get(&Lint::Unused) {
+                if let Some(LintSetting::Allow) = lints.get(&Lint::Unused) {
                     continue;
                 }
             }

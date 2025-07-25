@@ -1,6 +1,6 @@
 ```rust hl_lines="11"
+use pavex::Response;
 use pavex::middleware::Next;
-use pavex::response::Response;
 use pavex::wrap;
 
 #[wrap]

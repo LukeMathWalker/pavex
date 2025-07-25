@@ -5,7 +5,7 @@ pub struct Streamer;
 #[pavex::methods]
 impl Streamer {
     #[get(path = "/")]
-    pub fn stream_file() -> pavex::response::Response {
+    pub fn stream_file() -> pavex::Response {
         todo!()
     }
 }

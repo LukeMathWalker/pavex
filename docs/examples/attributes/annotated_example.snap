@@ -1,6 +1,6 @@
 ```rust hl_lines="4"
+use pavex::Response;
 use pavex::get;
-use pavex::response::Response;
 
 #[get(path = "/")] // (1)!
 pub fn landing_page() -> Response {

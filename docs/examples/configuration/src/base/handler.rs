@@ -1,4 +1,4 @@
-use pavex::{get, response::Response};
+use pavex::{Response, get};
 
 use crate::{postgres::PostgresConfig, server::ServerConfig};
 

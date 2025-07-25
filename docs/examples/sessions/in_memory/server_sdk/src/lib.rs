@@ -74,7 +74,9 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self { router: Self::router() }
+        Self {
+            router: Self::router(),
+        }
     }
     fn router() -> matchit::Router<u32> {
         let router = matchit::Router::new();
@@ -84,24 +86,21 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)]
-        state: &ApplicationState,
+        #[allow(unused)] state: &ApplicationState,
     ) -> pavex::response::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
-                    vec![],
-                )
-                .into();
+            let allowed_methods: pavex::router::AllowedMethods =
+                pavex::router::MethodAllowList::from_iter(vec![]).into();
             return route_0::entrypoint(
-                    &state.processor,
-                    &request_head,
-                    &state.session_config,
-                    &state.session_store,
-                    &allowed_methods,
-                )
-                .await;
+                &state.processor,
+                &request_head,
+                &state.session_config,
+                &state.session_store,
+                &allowed_methods,
+            )
+            .await;
         };
         match matched_route.value {
             i => unreachable!("Unknown route id: {}", i),
@@ -151,11 +150,11 @@ pub mod route_0 {
         };
         let v7 = pavex::middleware::Next::new(v6);
         let v8 = pavex::middleware::wrap_noop(v7).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v8)
+        <pavex::response::Response as pavex::IntoResponse>::into_response(v8)
     }
     async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+        <pavex::response::Response as pavex::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
         v0: &pavex::request::RequestHead,
@@ -170,12 +169,8 @@ pub mod route_0 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(
-                        &v7,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
-                    )
+                    let v8 = pavex::cookie::errors::ExtractRequestCookiesError::into_response(&v7);
+                    <pavex::response::Response as pavex::IntoResponse>::into_response(v8)
                 };
             }
         };
@@ -188,13 +183,11 @@ pub mod route_0 {
             Err(v12) => {
                 return {
                     let v13 = pavex_session::errors::FinalizeError::into_response(&v12);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v13,
-                    )
+                    <pavex::response::Response as pavex::IntoResponse>::into_response(v13)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v12)
+        <pavex::response::Response as pavex::IntoResponse>::into_response(v12)
     }
     async fn post_processing_1(
         v0: pavex::response::Response,
@@ -206,16 +199,12 @@ pub mod route_0 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = pavex::cookie::errors::InjectResponseCookiesError::into_response(&v4);
+                    <pavex::response::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::response::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, 'b, 'c, 'd, 'e, T>
     where

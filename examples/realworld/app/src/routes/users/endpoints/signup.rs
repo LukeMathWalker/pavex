@@ -3,11 +3,7 @@ use crate::{
 };
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
-use pavex::{
-    methods, post,
-    request::body::JsonBody,
-    response::{Response, body::Json},
-};
+use pavex::{Response, methods, post, request::body::JsonBody, response::body::Json};
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 

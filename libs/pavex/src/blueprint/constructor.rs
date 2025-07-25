@@ -113,7 +113,7 @@ impl RegisteredConstructor<'_> {
     ///
     /// ```rust
     /// use pavex::Blueprint;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// use pavex::{methods, transient};
     /// # struct LogLevel;
     /// # struct Logger;
@@ -187,7 +187,15 @@ impl RegisteredConstructor<'_> {
     pub fn allow(mut self, lint: Lint) -> Self {
         self.constructor()
             .lints
-            .insert(lint2lint(lint), LintSetting::Ignore);
+            .insert(lint2lint(lint), LintSetting::Allow);
+        self
+    }
+
+    /// Emit a warning if a specific [`Lint`] triggers for this constructor.
+    pub fn warn(mut self, lint: Lint) -> Self {
+        self.constructor()
+            .lints
+            .insert(lint2lint(lint), LintSetting::Warn);
         self
     }
 
@@ -196,7 +204,7 @@ impl RegisteredConstructor<'_> {
     pub fn deny(mut self, lint: Lint) -> Self {
         self.constructor()
             .lints
-            .insert(lint2lint(lint), LintSetting::Enforce);
+            .insert(lint2lint(lint), LintSetting::Deny);
         self
     }
 

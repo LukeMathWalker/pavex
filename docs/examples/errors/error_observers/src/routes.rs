@@ -1,4 +1,4 @@
-use pavex::{get, response::Response};
+use pavex::{get, Response};
 
 #[get(path = "/")]
 pub fn index() -> Response {

@@ -1,6 +1,6 @@
 use pavex::middleware::Next;
 use pavex::request::path::RawPathParams;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 #[pavex::wrap]

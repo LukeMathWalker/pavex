@@ -1,6 +1,6 @@
 use crate::RootSpan;
+use pavex::Response;
 use pavex::middleware::Next;
-use pavex::response::Response;
 use std::future::IntoFuture;
 use tracing::Instrument;
 

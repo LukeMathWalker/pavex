@@ -1,7 +1,7 @@
 //! px:delete
+use pavex::Response;
 use pavex::cookie::{RemovalCookie, ResponseCookies};
 use pavex::get;
-use pavex::response::Response;
 
 #[get(path = "/")]
 pub fn delete_cookie(response_cookies: &mut ResponseCookies) -> Response {

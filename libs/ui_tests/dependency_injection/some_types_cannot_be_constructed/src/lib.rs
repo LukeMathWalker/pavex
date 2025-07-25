@@ -15,7 +15,7 @@ pub mod owned {
     }
 
     #[pavex::request_scoped]
-    pub fn response() -> pavex::response::Response {
+    pub fn response() -> pavex::Response {
         todo!()
     }
 
@@ -64,7 +64,7 @@ pub mod ref_ {
     }
 
     #[pavex::request_scoped]
-    pub fn response_ref(_v: &RequestHead) -> &pavex::response::Response {
+    pub fn response_ref(_v: &RequestHead) -> &pavex::Response {
         todo!()
     }
 

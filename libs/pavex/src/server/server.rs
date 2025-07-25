@@ -17,7 +17,7 @@ use super::IncomingStream;
 /// use pavex::server::Server;
 ///
 /// # #[derive(Clone)] struct ApplicationState;
-/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::response::Response { todo!() }
+/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::Response { todo!() }
 /// # async fn t() -> std::io::Result<()> {
 /// # let application_state = ApplicationState;
 /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
@@ -261,7 +261,7 @@ impl Server {
         application_state: ApplicationState,
     ) -> ServerHandle
     where
-        HandlerFuture: Future<Output = crate::response::Response> + 'static,
+        HandlerFuture: Future<Output = crate::Response> + 'static,
         ApplicationState: Clone + Send + Sync + 'static,
     {
         self.try_serve(handler, application_state).unwrap()
@@ -282,7 +282,7 @@ impl Server {
         application_state: ApplicationState,
     ) -> Result<ServerHandle, std::io::Error>
     where
-        HandlerFuture: Future<Output = crate::response::Response> + 'static,
+        HandlerFuture: Future<Output = crate::Response> + 'static,
         ApplicationState: Clone + Send + Sync + 'static,
     {
         if self.incoming.is_empty() {

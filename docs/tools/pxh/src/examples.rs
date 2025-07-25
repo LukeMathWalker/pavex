@@ -335,7 +335,11 @@ pub struct ExternalSnippet {
     hl_lines: Vec<usize>,
 }
 
-pub fn process_examples(cwd: &Path, verify: bool) -> Result<(), anyhow::Error> {
+pub fn process_examples(
+    cwd: &Path,
+    verify: bool,
+    skip_compilation: bool,
+) -> Result<(), anyhow::Error> {
     let mut examples = collect_examples_in_scope(cwd)?;
 
     // First we extract embedded snippets.
@@ -353,6 +357,10 @@ pub fn process_examples(cwd: &Path, verify: bool) -> Result<(), anyhow::Error> {
         if has_errors {
             anyhow::bail!("Errors occurred while processing embedded snippets")
         }
+    }
+
+    if skip_compilation {
+        return Ok(());
     }
 
     // Then try to compile.

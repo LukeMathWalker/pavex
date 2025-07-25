@@ -9,7 +9,7 @@ pub fn conflict() -> A {
 }
 
 pub mod routes {
-    use pavex::response::Response;
+    use pavex::Response;
 
     #[pavex::get(path = "/", id = "CONFLICT")]
     pub fn handler() -> Response {

@@ -1,7 +1,7 @@
 use dep_1::A;
 use pavex::blueprint::from;
-use pavex::response::Response;
 use pavex::Blueprint;
+use pavex::Response;
 
 #[pavex::get(path = "/", id = "CONFLICT")]
 pub fn handler(_a: &A) -> Response {

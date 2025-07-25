@@ -6,13 +6,13 @@ use crate::http::HeaderValue;
 
 use super::TypedBody;
 
-/// A [`Response`](crate::response::Response) body with `Content-Type` set to
+/// A [`Response`](crate::Response) body with `Content-Type` set to
 /// `application/json`.
 ///
 /// # Example
 ///
 /// ```rust
-/// use pavex::response::{Response, body::Json};
+/// use pavex::{Response, response::body::Json};
 /// use pavex::http::header::CONTENT_TYPE;
 ///
 /// #[derive(serde::Serialize)]

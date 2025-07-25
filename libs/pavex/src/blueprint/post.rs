@@ -51,7 +51,7 @@ impl RegisteredPostProcessingMiddleware<'_> {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::{error_handler, post_process};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// # struct SizeError;
     ///
     /// // 👇 a fallible post-processing middleware

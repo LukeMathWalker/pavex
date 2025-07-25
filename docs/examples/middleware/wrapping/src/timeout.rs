@@ -1,6 +1,6 @@
 //! px:timeout
+use pavex::Response;
 use pavex::middleware::Next;
-use pavex::response::Response;
 use pavex::wrap;
 use tokio::time::error::Elapsed;
 

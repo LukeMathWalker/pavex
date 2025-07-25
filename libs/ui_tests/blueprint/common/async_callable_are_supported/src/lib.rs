@@ -19,7 +19,7 @@ pub async fn stream_file(
     _inner: PathBuf,
     _logger: Logger,
     _http_client: &HttpClient,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 

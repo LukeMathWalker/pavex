@@ -1,6 +1,6 @@
 use pavex::request::RequestHead;
-use pavex::response::Response;
 use pavex::Blueprint;
+use pavex::Response;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
@@ -37,42 +37,42 @@ pub fn blueprint() -> Blueprint {
 }
 
 #[pavex::get(path = "/")]
-pub fn admin_root() -> pavex::response::Response {
+pub fn admin_root() -> pavex::Response {
     Response::ok().set_typed_body("admin.company.com /")
 }
 
 #[pavex::fallback]
-pub fn admin_fallback() -> pavex::response::Response {
+pub fn admin_fallback() -> pavex::Response {
     Response::ok().set_typed_body("admin.company.com fallback")
 }
 
 #[pavex::fallback]
-pub fn ops_fallback() -> pavex::response::Response {
+pub fn ops_fallback() -> pavex::Response {
     Response::ok().set_typed_body("ops.company.com fallback")
 }
 
 #[pavex::get(path = "/")]
-pub fn base_root() -> pavex::response::Response {
+pub fn base_root() -> pavex::Response {
     Response::ok().set_typed_body("company.com /")
 }
 
 #[pavex::get(path = "/login")]
-pub fn base_login() -> pavex::response::Response {
+pub fn base_login() -> pavex::Response {
     Response::ok().set_typed_body("company.com /login")
 }
 
 #[pavex::get(path = "/")]
-pub fn base_sub() -> pavex::response::Response {
+pub fn base_sub() -> pavex::Response {
     Response::ok().set_typed_body("{sub}.company.com /")
 }
 
 #[pavex::get(path = "/")]
-pub fn base_any() -> pavex::response::Response {
+pub fn base_any() -> pavex::Response {
     Response::ok().set_typed_body("{*any}.{sub}.company.com /")
 }
 
 #[pavex::fallback]
-pub fn root_fallback(head: &RequestHead) -> pavex::response::Response {
+pub fn root_fallback(head: &RequestHead) -> pavex::Response {
     let host = head
         .headers
         .get(pavex::http::header::HOST)

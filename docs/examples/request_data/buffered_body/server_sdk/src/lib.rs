@@ -36,7 +36,7 @@ pub fn run(
         request: http::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
         server_state: std::sync::Arc<ServerState>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (router, state) = (&server_state.router, &server_state.application_state);
         router.route(request, connection_info, state).await
     }
@@ -55,7 +55,9 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self { router: Self::router() }
+        Self {
+            router: Self::router(),
+        }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
@@ -66,78 +68,66 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)]
-        state: &ApplicationState,
-    ) -> pavex::response::Response {
+        #[allow(unused)] state: &ApplicationState,
+    ) -> pavex::Response {
         let (request_head, request_body) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let request_body = pavex::request::body::RawIncomingBody::from(request_body);
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
-                    vec![],
-                )
-                .into();
+            let allowed_methods: pavex::router::AllowedMethods =
+                pavex::router::MethodAllowList::from_iter(vec![]).into();
             return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
-            0u32 => {
-                match &request_head.method {
-                    &pavex::http::Method::POST => {
-                        route_1::entrypoint(request_body, &request_head).await
-                    }
-                    _ => {
-                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                                pavex::http::Method::POST,
-                            ])
-                            .into();
-                        route_0::entrypoint(&allowed_methods).await
-                    }
+            0u32 => match &request_head.method {
+                &pavex::http::Method::POST => {
+                    route_1::entrypoint(request_body, &request_head).await
                 }
-            }
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods =
+                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::POST])
+                            .into();
+                    route_0::entrypoint(&allowed_methods).await
+                }
+            },
             i => unreachable!("Unknown route id: {}", i),
         }
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    async fn stage_1<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
-    async fn wrapping_0(
-        v0: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    async fn wrapping_0(v0: &pavex::router::AllowedMethods) -> pavex::Response {
         let v1 = crate::route_0::Next0 {
             s_0: v0,
             next: stage_1,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = pavex::middleware::wrap_noop(v2).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+        <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::Response {
         let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+        <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     struct Next0<'a, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: &'a pavex::router::AllowedMethods,
         next: fn(&'a pavex::router::AllowedMethods) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0)
@@ -148,21 +138,21 @@ pub mod route_1 {
     pub async fn entrypoint<'a>(
         s_0: pavex::request::body::RawIncomingBody,
         s_1: &'a pavex::request::RequestHead,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1).await;
         response
     }
     async fn stage_1<'a>(
         s_0: pavex::request::body::RawIncomingBody,
         s_1: &'a pavex::request::RequestHead,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(s_0, s_1).await;
         response
     }
     async fn wrapping_0(
         v0: pavex::request::body::RawIncomingBody,
         v1: &pavex::request::RequestHead,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v2 = crate::route_1::Next0 {
             s_0: v0,
             s_1: v1,
@@ -170,46 +160,40 @@ pub mod route_1 {
         };
         let v3 = pavex::middleware::Next::new(v2);
         let v4 = pavex::middleware::wrap_noop(v3).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn handler(
         v0: pavex::request::body::RawIncomingBody,
         v1: &pavex::request::RequestHead,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v2 = buffered_body::upload_size_limit();
         let v3 = pavex::request::body::BufferedBody::extract(v1, v0, v2).await;
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v4,
-                    );
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 =
+                        pavex::request::body::errors::ExtractBufferedBodyError::into_response(&v4);
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
         let v5 = buffered_body::upload(v4);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v5)
+        <http::StatusCode as pavex::IntoResponse>::into_response(v5)
     }
     struct Next0<'a, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::request::body::RawIncomingBody,
         s_1: &'a pavex::request::RequestHead,
-        next: fn(
-            pavex::request::body::RawIncomingBody,
-            &'a pavex::request::RequestHead,
-        ) -> T,
+        next: fn(pavex::request::body::RawIncomingBody, &'a pavex::request::RequestHead) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1)

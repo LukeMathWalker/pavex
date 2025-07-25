@@ -205,7 +205,7 @@ impl RequestHandlerPipeline {
                     }
                 });
                 quote! {
-                    #visibility #asyncness fn #fn_name #generics(#(#input_parameters),*) -> #pavex::response::Response {
+                    #visibility #asyncness fn #fn_name #generics(#(#input_parameters),*) -> #pavex::Response {
                         #incoming_invocations
                         #(#post_invocations)*
                         #response_ident
@@ -273,7 +273,7 @@ impl RequestHandlerPipeline {
                 let generics = quote! { <#(#state_generics),*> };
                 let def = syn::parse2(quote! {
                     struct #struct_name #generics
-                    where T: std::future::Future<Output = pavex::response::Response> {
+                    where T: std::future::Future<Output = pavex::Response> {
                         #(#fields),*
                     }
                 })
@@ -295,9 +295,9 @@ impl RequestHandlerPipeline {
                 let into_future_impl = syn::parse2(quote! {
                     impl #generics std::future::IntoFuture for #struct_name #generics
                     where
-                        T: std::future::Future<Output = pavex::response::Response>,
+                        T: std::future::Future<Output = pavex::Response>,
                     {
-                        type Output = pavex::response::Response;
+                        type Output = pavex::Response;
                         type IntoFuture = T;
 
                         fn into_future(self) -> Self::IntoFuture {

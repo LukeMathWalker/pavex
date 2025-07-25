@@ -89,7 +89,7 @@ pub(super) struct Worker<HandlerFuture, ApplicationState> {
 
 impl<HandlerFuture, ApplicationState> Worker<HandlerFuture, ApplicationState>
 where
-    HandlerFuture: Future<Output = crate::response::Response> + 'static,
+    HandlerFuture: Future<Output = crate::Response> + 'static,
     ApplicationState: Clone + Send + Sync + 'static,
 {
     /// Configure a new worker without spawning it.

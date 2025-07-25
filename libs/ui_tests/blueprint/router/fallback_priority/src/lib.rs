@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 use pavex::Blueprint;
 
 #[pavex::get(path = "/")]

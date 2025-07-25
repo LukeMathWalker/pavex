@@ -1,4 +1,4 @@
-use pavex::{blueprint::from, Blueprint};
+use pavex::{Blueprint, blueprint::from};
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

@@ -1,7 +1,7 @@
 //! px:named_parameter
+use pavex::Response;
 use pavex::get;
 use pavex::request::path::PathParams;
-use pavex::response::Response;
 
 #[PathParams]
 pub struct Info {

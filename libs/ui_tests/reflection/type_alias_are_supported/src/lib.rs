@@ -37,7 +37,7 @@ pub fn handler_with_input_tuple<'a>(
     // Type aliases are resolved and Pavex can see they desugar to the same type.
     _e: &RemoteGenericAlias<u8>,
     _f: &dep::GenericType<bool, u8>,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 

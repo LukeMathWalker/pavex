@@ -1,28 +1,26 @@
-From 1f43278de280813b29ebbbe91e3ffdc92b321032 Mon Sep 17 00:00:00 2001
+From 56e384b67e6f44e06625436d07f24a7859b6b918 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
-Date: Wed, 23 Jul 2025 15:54:17 +0200
+Date: Thu, 24 Jul 2025 19:32:06 +0200
 Subject: [PATCH 26/34] Revert "Annotations for invalid user agent handler"
 
-This reverts commit d1938c5d6c7482dc670eba1708cc265c5e0cca8c.
 ---
  app/src/user_agent.rs | 4 ----
  1 file changed, 4 deletions(-)
 
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
-index 9aa6c5d..dcb954d 100644
+index c061a62..c5405d6 100644
 --- a/app/src/user_agent.rs
 +++ b/app/src/user_agent.rs
-@@ -1,9 +1,7 @@
+@@ -1,8 +1,6 @@
  use pavex::http::header::{ToStrError, USER_AGENT};
  use pavex::request::RequestHead;
 -// px:invalid_user_agent:start
- use pavex::response::Response;
- use pavex::{error_handler, methods};
+ use pavex::{Response, error_handler, methods};
 -// px:invalid_user_agent:end
  
  pub enum UserAgent {
      /// No `User-Agent` header was provided.
-@@ -23,11 +21,9 @@ impl UserAgent {
+@@ -22,11 +20,9 @@ impl UserAgent {
          user_agent.to_str().map(|s| UserAgent::Known(s.into()))
      }
  }

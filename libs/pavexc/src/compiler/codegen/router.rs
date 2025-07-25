@@ -323,7 +323,7 @@ fn domain_router(
             #request: #http::Request<#hyper::body::Incoming>,
             #connection_info: Option<#pavex::connection::ConnectionInfo>,
             #state: &ApplicationState
-        ) -> #pavex::response::Response {
+        ) -> #pavex::Response {
             let host: Option<String> = #request
                 .headers()
                 .get(#pavex::http::header::HOST)
@@ -575,7 +575,7 @@ fn path_router(
             #connection_info_ident: Option<#pavex::connection::ConnectionInfo>,
             #[allow(unused)]
             #server_state_ident: &ApplicationState
-        ) -> #pavex::response::Response {
+        ) -> #pavex::Response {
             #request_transformation
             let Ok(#matched_route_ident) = self.#router_field_name.at(&#request_head_ident.target.path()) else {
                 #root_fallback_invocation

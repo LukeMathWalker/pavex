@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 pub struct GenericType<V>(V);
@@ -28,7 +28,7 @@ pub fn triply_generic<T, S, U>(
 }
 
 #[pavex::get(path = "/")]
-pub fn handler() -> pavex::response::Response {
+pub fn handler() -> pavex::Response {
     todo!()
 }
 

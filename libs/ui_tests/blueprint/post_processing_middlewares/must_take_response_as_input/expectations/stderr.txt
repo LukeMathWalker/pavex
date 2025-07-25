@@ -1,6 +1,6 @@
 [31;1mERROR[0m:
-  [31m×[0m Post-processing middlewares must take an instance of
-  [31m│[0m `pavex::response::Response` as one of their input parameters.
+  [31m×[0m Post-processing middlewares must take an instance of `pavex::Response` as
+  [31m│[0m one of their input parameters.
   [31m│[0m This middleware doesn't.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/post_processing_middlewares/must_take_response_as_input/src/lib.rs[0m:15:1]

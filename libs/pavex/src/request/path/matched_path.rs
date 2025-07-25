@@ -8,7 +8,7 @@ use std::fmt::Formatter;
 /// If you configure your [`Blueprint`] like this:
 ///
 /// ```rust
-/// use pavex::{get, response::Response};
+/// use pavex::{get, Response};
 /// #[get(path = "/home/{home_id}")]
 /// pub fn get_home(/* [...] */) -> Response {
 ///     // [...]

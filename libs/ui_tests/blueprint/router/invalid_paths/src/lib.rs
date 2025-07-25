@@ -1,5 +1,5 @@
 use pavex::{blueprint::from, Blueprint};
-use pavex::response::Response;
+use pavex::Response;
 
 #[pavex::get(path = "/{how}{many}{params}{can}{i}{chain}")]
 pub fn too_many_params() -> Response {

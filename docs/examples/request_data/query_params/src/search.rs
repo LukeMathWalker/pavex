@@ -5,7 +5,7 @@ use pavex::request::query::QueryParams;
 
 // px:struct_def:start
 #[derive(serde::Deserialize)] // px:struct_def:hl
-                              // px:struct_def_without_attr:start
+// px:struct_def_without_attr:start
 pub struct SearchParams {
     pub sorted: bool, // px:struct_def_without_attr:hl
 }

@@ -12,6 +12,7 @@
 pub use error::error_::Error;
 
 pub use blueprint::blueprint::Blueprint;
+pub use response::{into_response::IntoResponse, response_::Response};
 
 pub mod blueprint;
 #[cfg(feature = "config")]
@@ -1008,7 +1009,7 @@ pub use pavex_macros::transient;
 /// A middleware that applies a timeout to all incoming requests:
 ///
 /// ```rust
-/// use pavex::{wrap, middleware::Next, response::Response};
+/// use pavex::{wrap, middleware::Next, Response};
 /// use tokio::time::error::Elapsed;
 ///
 /// #[wrap]
@@ -1054,7 +1055,7 @@ pub use pavex_macros::transient;
 /// Using the default generated identifier:
 ///
 /// ```rust
-/// use pavex::{wrap, Blueprint, middleware::Next, response::Response};
+/// use pavex::{wrap, Blueprint, middleware::Next, Response};
 /// use tokio::time::error::Elapsed;
 ///
 /// #[wrap]
@@ -1075,7 +1076,7 @@ pub use pavex_macros::transient;
 /// Using a custom identifier:
 ///
 /// ```rust
-/// use pavex::{wrap, Blueprint, middleware::Next, response::Response};
+/// use pavex::{wrap, Blueprint, middleware::Next, Response};
 /// use tokio::time::error::Elapsed;
 ///
 /// #[wrap(id = "MY_TIMEOUT")]
@@ -1111,7 +1112,7 @@ pub use pavex_macros::wrap;
 /// use pavex::{pre_process, http::{HeaderValue, header::LOCATION}};
 /// use pavex::middleware::Processing;
 /// use pavex::request::RequestHead;
-/// use pavex::response::Response;
+/// use pavex::Response;
 ///
 /// #[pre_process]
 /// pub fn redirect_to_normalized(head: &RequestHead) -> Processing {
@@ -1203,7 +1204,7 @@ pub use pavex_macros::pre_process;
 /// Log the status code of the HTTP response returned to the caller:
 ///
 /// ```rust
-/// use pavex::{post_process, response::Response};
+/// use pavex::{post_process, Response};
 /// use pavex_tracing::{
 ///     RootSpan,
 ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
@@ -1253,7 +1254,7 @@ pub use pavex_macros::pre_process;
 /// Using the default generated identifier:
 ///
 /// ```rust
-/// use pavex::{post_process, Blueprint, response::Response};
+/// use pavex::{post_process, Blueprint, Response};
 /// use pavex_tracing::RootSpan;
 ///
 /// #[post_process]
@@ -1273,7 +1274,7 @@ pub use pavex_macros::pre_process;
 /// Using a custom identifier:
 ///
 /// ```rust
-/// use pavex::{post_process, Blueprint, response::Response};
+/// use pavex::{post_process, Blueprint, Response};
 /// use pavex_tracing::RootSpan;
 ///
 /// #[post_process(id = "LOG_RESPONSE")]
@@ -1305,7 +1306,7 @@ pub use pavex_macros::post_process;
 ///
 /// ```rust
 /// use pavex::error_handler;
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// # struct AuthError;
 ///
 /// #[error_handler]
@@ -1351,7 +1352,7 @@ pub use pavex_macros::post_process;
 ///
 /// ```rust
 /// use pavex::methods;
-/// use pavex::response::Response;
+/// use pavex::Response;
 ///
 /// pub struct AuthError { /* */ };
 ///
@@ -1371,7 +1372,7 @@ pub use pavex_macros::post_process;
 ///
 /// ```rust
 /// use pavex::methods;
-/// use pavex::response::Response;
+/// use pavex::Response;
 ///
 /// pub struct AuthError { /* */ };
 /// # pub struct OrgId;
@@ -1405,7 +1406,7 @@ pub use pavex_macros::post_process;
 ///
 /// ```rust
 /// use pavex::{error_handler, Blueprint};
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// # struct AuthError;
 ///
 /// #[error_handler]
@@ -1422,7 +1423,7 @@ pub use pavex_macros::post_process;
 ///
 /// ```rust
 /// use pavex::{error_handler, Blueprint};
-/// use pavex::response::Response;
+/// use pavex::Response;
 ///
 /// #[error_handler(id = "AUTH_HANDLER")]
 /// //              👆 Custom identifier
@@ -1447,7 +1448,7 @@ pub use pavex_macros::post_process;
 ///
 /// ```rust
 /// use pavex::{error_handler, get, Blueprint};
-/// use pavex::response::Response;
+/// use pavex::Response;
 ///
 /// #[error_handler]
 /// // This is the default handler for `AuthError`s
@@ -1574,7 +1575,7 @@ macro_rules! http_method_macro_doc {
         /// # Example
         ///
         /// ```rust
-        #[doc = concat!("use pavex::{", stringify!($macro_name), ", response::Response};")]
+        #[doc = concat!("use pavex::{", stringify!($macro_name), ", Response};")]
         ///
         #[doc = concat!("#[", stringify!($macro_name), "(path = \"", $example_path, "\")]")]
         #[doc = concat!("pub async fn ", stringify!($example_fn), "(/* */) -> Response {")]
@@ -1619,7 +1620,7 @@ macro_rules! http_method_macro_doc {
         /// ### Example
         ///
         /// ```rust
-        #[doc = concat!("use pavex::{", stringify!($macro_name), ", response::Response};")]
+        #[doc = concat!("use pavex::{", stringify!($macro_name), ", Response};")]
         ///
         #[doc = concat!("#[", stringify!($macro_name), "(path = \"", $example_path, "\")]")]
         /// //           👆 Path with parameter
@@ -1641,7 +1642,7 @@ macro_rules! http_method_macro_doc {
         /// Using the default generated identifier:
         ///
         /// ```rust
-        #[doc = concat!("use pavex::{", stringify!($macro_name), ", response::Response, Blueprint};")]
+        #[doc = concat!("use pavex::{", stringify!($macro_name), ", Response, Blueprint};")]
         ///
         #[doc = concat!("#[", stringify!($macro_name), "(path = \"", $example_path, "\")]")]
         #[doc = concat!("pub async fn ", stringify!($example_fn), "(/* */) -> Response {")]
@@ -1659,7 +1660,7 @@ macro_rules! http_method_macro_doc {
         /// Using a custom identifier:
         ///
         /// ```rust
-        #[doc = concat!("use pavex::{", stringify!($macro_name), ", response::Response, Blueprint};")]
+        #[doc = concat!("use pavex::{", stringify!($macro_name), ", Response, Blueprint};")]
         ///
         #[doc = concat!("#[", stringify!($macro_name), "(path = \"", $example_path, "\", id = \"CUSTOM_ROUTE\")]")]
         /// //                           👆 Custom identifier
@@ -1748,7 +1749,7 @@ http_method_macro_doc!(
 /// # Example
 ///
 /// ```rust
-/// use pavex::{fallback, response::Response};
+/// use pavex::{fallback, Response};
 ///
 /// #[fallback]
 /// pub async fn not_found() -> Response {
@@ -1790,7 +1791,7 @@ http_method_macro_doc!(
 /// Using the default generated identifier:
 ///
 /// ```rust
-/// use pavex::{fallback, Blueprint, response::Response};
+/// use pavex::{fallback, Blueprint, Response};
 ///
 /// #[fallback]
 /// pub async fn not_found() -> Response {
@@ -1807,7 +1808,7 @@ http_method_macro_doc!(
 /// Using a custom identifier:
 ///
 /// ```rust
-/// use pavex::{fallback, Blueprint, response::Response};
+/// use pavex::{fallback, Blueprint, Response};
 ///
 /// #[fallback(id = "CUSTOM_404")]
 /// //         👆 Custom identifier
@@ -1837,7 +1838,7 @@ pub use pavex_macros::fallback;
 /// # Example: Multiple methods
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(method = ["GET", "HEAD"], path = "/users/{id}")]
 /// //      👆 Multiple methods
@@ -1888,7 +1889,7 @@ pub use pavex_macros::fallback;
 /// Single method:
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(method = "POST", path = "/users/{id}")]
 /// //       👆 Single method
@@ -1901,7 +1902,7 @@ pub use pavex_macros::fallback;
 /// Multiple methods:
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(method = ["GET", "HEAD"], path = "/users/{id}")]
 /// //       👆 Multiple methods
@@ -1921,7 +1922,7 @@ pub use pavex_macros::fallback;
 /// ### Example
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(method = "GET", path = "/users/{id}/posts/{post_id}")]
 /// //                            👆 Path with multiple parameters
@@ -1943,7 +1944,7 @@ pub use pavex_macros::fallback;
 /// Using the default generated identifier:
 ///
 /// ```rust
-/// use pavex::{route, response::Response, Blueprint};
+/// use pavex::{route, Response, Blueprint};
 ///
 /// #[route(method = "GET", path = "/users/{id}")]
 /// pub async fn get_user(/* */) -> Response {
@@ -1961,7 +1962,7 @@ pub use pavex_macros::fallback;
 /// Using a custom identifier:
 ///
 /// ```rust
-/// use pavex::{route, response::Response, Blueprint};
+/// use pavex::{route, Response, Blueprint};
 ///
 /// #[route(method = "GET", path = "/users/{id}", id = "USER_ROUTE")]
 /// //                                            👆 Custom identifier
@@ -1991,7 +1992,7 @@ pub use pavex_macros::fallback;
 /// Allow non-standard methods:
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(method = "QUERY", path = "/users", allow(non_standard_methods))]
 /// //                                         👆 Allow non-standard methods
@@ -2006,7 +2007,7 @@ pub use pavex_macros::fallback;
 /// Allow any method (no need to specify `method`):
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(path = "/webhook", allow(any_method))]
 /// //                         👆 Allow any HTTP method
@@ -2021,7 +2022,7 @@ pub use pavex_macros::fallback;
 /// Allow any method, including non-standard ones:
 ///
 /// ```rust
-/// use pavex::{route, response::Response};
+/// use pavex::{route, Response};
 ///
 /// #[route(path = "/webhook", allow(any_method, non_standard_methods))]
 /// //                         👆 Allow any HTTP method, including non-standard ones
@@ -2046,7 +2047,7 @@ pub use pavex_macros::route;
 ///
 /// ```rust
 /// use pavex::methods;
-/// use pavex::response::Response;
+/// use pavex::Response;
 ///
 /// pub struct UserService {
 ///     // [...]

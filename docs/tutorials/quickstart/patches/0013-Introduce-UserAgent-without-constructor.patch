@@ -1,6 +1,6 @@
-From a2ca7948687ce94cf117f9234d733725be139d01 Mon Sep 17 00:00:00 2001
+From fb40833b1bb440fd6396fd9d4e9f38e1d663d9f8 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
-Date: Wed, 23 Jul 2025 14:49:50 +0200
+Date: Thu, 24 Jul 2025 19:25:03 +0200
 Subject: [PATCH 13/34] Introduce UserAgent without constructor
 
 ---
@@ -23,11 +23,11 @@ index 0cfdb53..a86ceef 100644
  
  pub use blueprint::blueprint;
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
-index 2e90f24..76b3724 100644
+index 5824a50..5a5b187 100644
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs
 @@ -1,12 +1,19 @@
- use pavex::{get, request::path::PathParams, response::Response};
+ use pavex::{Response, get, request::path::PathParams};
  
 +use crate::user_agent::UserAgent;
 +

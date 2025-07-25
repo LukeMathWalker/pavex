@@ -52,13 +52,13 @@ fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertE
 async fn route_request(
     request: http::Request<pavex::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex::response::Response {
+) -> pavex::Response {
     #[allow(unused)]
     let (request_head, request_body) = request.into_parts();
     let request_head: pavex::request::RequestHead = request_head.into();
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
-        Err(_) => return pavex::response::Response::not_found(),
+        Err(_) => return pavex::Response::not_found(),
     };
     let route_id = matched_route.value;
     #[allow(unused)]
@@ -68,20 +68,20 @@ async fn route_request(
             &pavex::http::Method::GET => route_0::handler().await,
             _ => {
                 let header_value = pavex::http::HeaderValue::from_static("GET");
-                pavex::response::Response::method_not_allowed()
+                pavex::Response::method_not_allowed()
                     .insert_header(pavex::http::header::ALLOW, header_value)
             }
         },
-        _ => pavex::response::Response::not_found(),
+        _ => pavex::Response::not_found(),
     }
 }
 
 pub mod route_0 {
-    pub async fn handler() -> pavex::response::Response {
+    pub async fn handler() -> pavex::Response {
         let v0 = app::a();
         let v1 = app::c(&v0);
         let v2 = app::b(v0);
         let v3 = app::handler(v1, v2);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+        <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
 }

@@ -1,5 +1,5 @@
 use pavex::middleware::Next;
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 use std::future::IntoFuture;
 
@@ -38,7 +38,7 @@ pub fn post(_r: Response, _x: &RequestScoped) -> Response {
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_r: &RequestScoped) -> pavex::response::Response {
+pub fn handler(_r: &RequestScoped) -> pavex::Response {
     todo!()
 }
 

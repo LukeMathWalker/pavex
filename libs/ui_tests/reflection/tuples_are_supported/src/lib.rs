@@ -6,7 +6,7 @@ pub fn constructor_with_output_tuple() -> (usize, isize) {
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_input: (usize, isize)) -> pavex::response::Response {
+pub fn handler(_input: (usize, isize)) -> pavex::Response {
     todo!()
 }
 

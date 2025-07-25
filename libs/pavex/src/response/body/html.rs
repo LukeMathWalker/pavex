@@ -8,13 +8,13 @@ use crate::http::HeaderValue;
 
 use super::TypedBody;
 
-/// A [`Response`](crate::response::Response) body with `Content-Type` set to
+/// A [`Response`](crate::Response) body with `Content-Type` set to
 /// `text/html; charset=utf-8`.
 ///
 /// # Example
 ///
 /// ```rust
-/// use pavex::response::{Response, body::Html};
+/// use pavex::{Response, response::body::Html};
 /// use pavex::http::header::CONTENT_TYPE;
 ///
 /// let html: Html = r#"<body>

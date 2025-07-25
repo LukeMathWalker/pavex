@@ -18,7 +18,7 @@ pub fn thrice<T, S, U>(_i1: Generic<T>, _i2: Generic<S>, _i3: Generic<U>) -> boo
 }
 
 #[pavex::get(path = "/")]
-pub fn handler(_l: u64, _m: u128, _n: bool) -> pavex::response::Response {
+pub fn handler(_l: u64, _m: u128, _n: bool) -> pavex::Response {
     todo!()
 }
 

@@ -1,4 +1,4 @@
-From 35c5b13764d437a4a2787d9249eb5902a6c21828 Mon Sep 17 00:00:00 2001
+From d15433a391bad5478740561fbb78df949a443034 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:48:22 +0200
 Subject: [PATCH 18/34] Revert "Annotations for user agent constructor"

@@ -347,8 +347,9 @@ pub enum Lint {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum LintSetting {
-    Ignore,
-    Enforce,
+    Allow,
+    Warn,
+    Deny,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]

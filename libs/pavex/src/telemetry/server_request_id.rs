@@ -21,7 +21,7 @@ use uuid::Uuid;
 ///
 /// ```rust
 /// use http::{HeaderName, HeaderValue};
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// use pavex::telemetry::ServerRequestId;
 ///
 /// pub async fn request_handler(request_id: ServerRequestId) -> Response {

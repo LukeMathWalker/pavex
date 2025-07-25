@@ -1,6 +1,6 @@
-From a89f20239d2fe710783d69336d8b50cdc248d542 Mon Sep 17 00:00:00 2001
+From 157372ddbd14d38b085727134ddb86039815c77b Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
-Date: Wed, 23 Jul 2025 13:04:36 +0200
+Date: Thu, 24 Jul 2025 19:16:04 +0200
 Subject: [PATCH 08/34] Annotate greet scaffolding
 
 ---
@@ -9,12 +9,12 @@ Subject: [PATCH 08/34] Annotate greet scaffolding
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
-index 9a82e41..51e10c3 100644
+index 24ffedf..67e0d60 100644
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs
 @@ -1,6 +1,7 @@
 +//! px:greet_route_stub
- use pavex::{get, response::Response};
+ use pavex::{Response, get};
  
 -#[get(path = "/greet/{name}")]
 +#[get(path = "/greet/{name}")] // px::ann:1

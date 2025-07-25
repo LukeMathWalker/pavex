@@ -40,7 +40,7 @@ fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertE
 async fn route_request(
     request: pavex::request::RequestHead,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex::response::Response {
+) -> pavex::Response {
     let route_id = server_state
         .router
         .at(request.uri().path())
@@ -48,13 +48,13 @@ async fn route_request(
     match route_id.value {
         0u32 => match request.method() {
             &pavex::http::Method::GET => route_handler_0().await,
-            _ => pavex::response::Response::builder()
+            _ => pavex::Response::builder()
                 .status(pavex::http::StatusCode::METHOD_NOT_ALLOWED)
                 .header(pavex::http::header::ALLOW, "GET")
                 .body(pavex::body::boxed(hyper::body::Body::empty()))
                 .unwrap(),
         },
-        _ => pavex::response::Response::builder()
+        _ => pavex::Response::builder()
             .status(pavex::http::StatusCode::NOT_FOUND)
             .body(pavex::body::boxed(hyper::body::Body::empty()))
             .unwrap(),
@@ -67,5 +67,5 @@ pub async fn route_handler_0(
     let v2 = app::handler(v1, v0);
     <http::Response::<
         http_body::combinators::BoxBody::<bytes::Bytes, pavex::Error>,
-    > as pavex::response::IntoResponse>::into_response(v2)
+    > as pavex::IntoResponse>::into_response(v2)
 }

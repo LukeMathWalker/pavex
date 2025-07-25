@@ -71,7 +71,7 @@ pub fn handler(
     _g2: &Generic<u64>,
     _s1: &Singleton,
     _s2: &a::Singleton,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 

@@ -52,7 +52,7 @@ impl RegisteredRoute<'_> {
     /// ```rust
     /// use pavex::{get, error_handler};
     /// use pavex::Blueprint;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// # struct ConfigError;
     ///
     /// // 👇 a fallible request handler

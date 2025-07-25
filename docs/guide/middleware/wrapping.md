@@ -113,8 +113,8 @@ The scenario we explored above is why Pavex doesn't let you mutate request-scope
 a restriction that doesn't apply to request handlers, pre-processing and post-processing middlewares.\
 It's so easy to shoot yourself in the foot that it's better to avoid `&mut` references altogether in wrapping middlewares.
 
-[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
-[Response]: /api_reference/pavex/response/struct.Response.html
+[IntoResponse]: /api_reference/pavex/trait.IntoResponse.html
+[Response]: /api_reference/pavex/struct.Response.html
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Next]: /api_reference/pavex/middleware/struct.Next.html
 [instrument]: https://docs.rs/tracing/0.1.40/tracing/trait.Instrument.html#method.instrument

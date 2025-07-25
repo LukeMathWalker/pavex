@@ -1,7 +1,6 @@
 ```rust title="app/src/user_agent.rs"
 // [...]
-use pavex::response::Response;
-use pavex::{error_handler, methods};
+use pavex::{Response, error_handler, methods};
 // [...]
 
 #[error_handler]

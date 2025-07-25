@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 use pavex::{blueprint::from, Blueprint};
 
 #[pavex::route(path = "/", allow(any_method))]

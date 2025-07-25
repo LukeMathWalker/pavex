@@ -1,8 +1,8 @@
 use std::future::IntoFuture;
 
-use pavex::{blueprint::from, Blueprint};
 use pavex::middleware::Next;
-use pavex::response::Response;
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct A;
 

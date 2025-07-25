@@ -18,9 +18,9 @@ use std::borrow::Cow;
 ///
 /// # Output type
 ///
-/// If infallible, the output type must implement `pavex::response::IntoResponse`.
+/// If infallible, the output type must implement `pavex::IntoResponse`.
 /// If fallible, the output type must be a `Result<T, E>` where `T` implements
-/// `pavex::response::IntoResponse`.
+/// `pavex::IntoResponse`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct WrappingMiddleware<'a> {
     pub(crate) callable: Cow<'a, Callable>,
@@ -131,13 +131,13 @@ fn is_next(t: &ResolvedType) -> bool {
 pub(crate) enum WrappingMiddlewareValidationError {
     #[error(
         "Wrapping middlewares must return a type that can be converted into a \
-        `pavex::response::Response`.\n\
+        `pavex::Response`.\n\
         This middleware doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response."
     )]
     CannotReturnTheUnitType,
     #[error(
         "Wrapping middlewares must return a type that can be converted into a \
-        `pavex::response::Response`.\n\
+        `pavex::Response`.\n\
         This middleware doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
     )]
     CannotFalliblyReturnTheUnitType,

@@ -46,7 +46,7 @@ impl RegisteredFallback<'_> {
     /// ```rust
     /// use pavex::Blueprint;
     /// use pavex::{error_handler, fallback};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// # struct LogLevel;
     /// # struct RuntimeError;
     ///

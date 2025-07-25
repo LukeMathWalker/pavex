@@ -1,6 +1,5 @@
 [31;1mERROR[0m:
-  [31m×[0m `app::BrokenOutput` doesn't implement
-  [31m│[0m `pavex::response::IntoResponse`.
+  [31m×[0m `app::BrokenOutput` doesn't implement `pavex::IntoResponse`.
   [31m│[0m It is returned by `app::handler`, one of your request handlers.
   [31m│[0m `IntoResponse` is used by Pavex to convert `app::BrokenOutput`
   [31m│[0m into the HTTP response that will be returned to the caller of your API.
@@ -21,8 +20,7 @@
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
-  [31m×[0m `app::BrokenOutput` doesn't implement
-  [31m│[0m `pavex::response::IntoResponse`.
+  [31m×[0m `app::BrokenOutput` doesn't implement `pavex::IntoResponse`.
   [31m│[0m It is returned by `app::wrap`, one of your wrapping middlewares.
   [31m│[0m `IntoResponse` is used by Pavex to convert `app::BrokenOutput`
   [31m│[0m into the HTTP response that will be returned to the caller of your API.
@@ -43,8 +41,7 @@
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
-  [31m×[0m `app::BrokenOutput` doesn't implement
-  [31m│[0m `pavex::response::IntoResponse`.
+  [31m×[0m `app::BrokenOutput` doesn't implement `pavex::IntoResponse`.
   [31m│[0m It is returned by `app::pp`, one of your post-processing
   [31m│[0m middlewares.
   [31m│[0m `IntoResponse` is used by Pavex to convert `app::BrokenOutput`
@@ -66,8 +63,7 @@
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Implement `IntoResponse` for `app::BrokenOutput`.
 [31;1mERROR[0m:
-  [31m×[0m `app::BrokenOutput` doesn't implement
-  [31m│[0m `pavex::response::IntoResponse`.
+  [31m×[0m `app::BrokenOutput` doesn't implement `pavex::IntoResponse`.
   [31m│[0m It is returned by `app::error_handler`, one of your error
   [31m│[0m handlers.
   [31m│[0m `IntoResponse` is used by Pavex to convert `app::BrokenOutput`

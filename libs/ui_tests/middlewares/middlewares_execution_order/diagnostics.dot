@@ -2,8 +2,8 @@ digraph "* * - 0" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
     1 [ label = "1| crate::route_0::Next0(&'a pavex::router::AllowedMethods) -> crate::route_0::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -12,8 +12,8 @@ digraph "* * - 0" {
 
 digraph "* * - 1" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
@@ -22,8 +22,8 @@ digraph "GET /nested - 0" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_1::Next0(&'a app_e628417e::Spy) -> crate::route_1::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -34,8 +34,8 @@ digraph "GET /nested - 1" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_1::Next1(&'a app_e628417e::Spy) -> crate::route_1::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
-    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_1::Next1<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_1::Next1<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -45,7 +45,7 @@ digraph "GET /nested - 1" {
 
 digraph "GET /nested - 2" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::first_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::first_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
@@ -53,8 +53,8 @@ digraph "GET /nested - 3" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_1::Next2(&'a app_e628417e::Spy) -> crate::route_1::Next2<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next2<'a>) -> pavex::middleware::Next<crate::route_1::Next2<'a>>"]
-    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_1::Next2<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_1::Next2<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -64,33 +64,33 @@ digraph "GET /nested - 3" {
 
 digraph "GET /nested - 4" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
 digraph "GET /nested - 5" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::nested_handler(&app_e628417e::Spy) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| app_e628417e::nested_handler(&app_e628417e::Spy) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
 
 digraph "GET /nested - 6" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
 }
 
 digraph "GET /nested - 7" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
@@ -100,8 +100,8 @@ digraph "GET /failing_pre - 0" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_2::Next0(&'a app_e628417e::Spy) -> crate::route_2::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_2::Next0<'a>) -> pavex::middleware::Next<crate::route_2::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -112,8 +112,8 @@ digraph "GET /failing_pre - 1" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_2::Next1(&'a app_e628417e::Spy) -> crate::route_2::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_2::Next1<'a>) -> pavex::middleware::Next<crate::route_2::Next1<'a>>"]
-    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_2::Next1<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_2::Next1<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -123,13 +123,13 @@ digraph "GET /failing_pre - 1" {
 
 digraph "GET /failing_pre - 2" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::failing_pre_(&app_e628417e::Spy) -> core::result::Result<pavex::middleware::Processing<pavex::response::Response>, pavex::Error>"]
+    1 [ label = "1| app_e628417e::failing_pre_(&app_e628417e::Spy) -> core::result::Result<pavex::middleware::Processing<pavex::Response>, pavex::Error>"]
     2 [ label = "2| `match`"]
-    3 [ label = "3| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, pavex::Error> -> pavex::Error"]
-    4 [ label = "4| app_e628417e::e500(&pavex::Error) -> pavex::response::Response"]
-    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    6 [ label = "6| pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
-    7 [ label = "7| core::result::Result<pavex::middleware::Processing<pavex::response::Response>, pavex::Error> -> pavex::middleware::Processing<pavex::response::Response>"]
+    3 [ label = "3| core::result::Result<pavex::middleware::Processing<pavex::Response>, pavex::Error> -> pavex::Error"]
+    4 [ label = "4| app_e628417e::e500(&pavex::Error) -> pavex::Response"]
+    5 [ label = "5| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
+    6 [ label = "6| pavex::middleware::Processing::EarlyReturn(pavex::Response) -> pavex::middleware::Processing<pavex::Response>"]
+    7 [ label = "7| core::result::Result<pavex::middleware::Processing<pavex::Response>, pavex::Error> -> pavex::middleware::Processing<pavex::Response>"]
     2 -> 7 [ ]
     2 -> 3 [ ]
     3 -> 4 [ label = "&"]
@@ -143,8 +143,8 @@ digraph "GET /failing_pre - 3" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_2::Next2(&'a app_e628417e::Spy) -> crate::route_2::Next2<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_2::Next2<'a>) -> pavex::middleware::Next<crate::route_2::Next2<'a>>"]
-    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_2::Next2<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_2::Next2<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -154,33 +154,33 @@ digraph "GET /failing_pre - 3" {
 
 digraph "GET /failing_pre - 4" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
 digraph "GET /failing_pre - 5" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::failing_pre_handler(&app_e628417e::Spy) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| app_e628417e::failing_pre_handler(&app_e628417e::Spy) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
 
 digraph "GET /failing_pre - 6" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
 }
 
 digraph "GET /failing_pre - 7" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
@@ -190,8 +190,8 @@ digraph "GET /early_return - 0" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_3::Next0(&'a app_e628417e::Spy) -> crate::route_3::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_3::Next0<'a>) -> pavex::middleware::Next<crate::route_3::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -202,8 +202,8 @@ digraph "GET /early_return - 1" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_3::Next1(&'a app_e628417e::Spy) -> crate::route_3::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_3::Next1<'a>) -> pavex::middleware::Next<crate::route_3::Next1<'a>>"]
-    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_3::Next1<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_3::Next1<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -213,7 +213,7 @@ digraph "GET /early_return - 1" {
 
 digraph "GET /early_return - 2" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::early_return_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::early_return_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
@@ -221,8 +221,8 @@ digraph "GET /early_return - 3" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_3::Next2(&'a app_e628417e::Spy) -> crate::route_3::Next2<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_3::Next2<'a>) -> pavex::middleware::Next<crate::route_3::Next2<'a>>"]
-    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_3::Next2<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_3::Next2<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -232,33 +232,33 @@ digraph "GET /early_return - 3" {
 
 digraph "GET /early_return - 4" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
 digraph "GET /early_return - 5" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::early_return_handler(&app_e628417e::Spy) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| app_e628417e::early_return_handler(&app_e628417e::Spy) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
 
 digraph "GET /early_return - 6" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
 }
 
 digraph "GET /early_return - 7" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
@@ -268,8 +268,8 @@ digraph "GET /after_handler - 0" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_4::Next0(&'a app_e628417e::Spy) -> crate::route_4::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_4::Next0<'a>) -> pavex::middleware::Next<crate::route_4::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_4::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_4::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -280,8 +280,8 @@ digraph "GET /after_handler - 1" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_4::Next1(&'a app_e628417e::Spy) -> crate::route_4::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_4::Next1<'a>) -> pavex::middleware::Next<crate::route_4::Next1<'a>>"]
-    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_4::Next1<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_4::Next1<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -291,23 +291,23 @@ digraph "GET /after_handler - 1" {
 
 digraph "GET /after_handler - 2" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::first_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::first_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
 digraph "GET /after_handler - 3" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::after_handler_handler(&app_e628417e::Spy) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| app_e628417e::after_handler_handler(&app_e628417e::Spy) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
 
 digraph "GET /after_handler - 4" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
@@ -317,8 +317,8 @@ digraph "GET /top_level - 0" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_5::Next0(&'a app_e628417e::Spy) -> crate::route_5::Next0<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_5::Next0<'a>) -> pavex::middleware::Next<crate::route_5::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_5::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_5::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -329,8 +329,8 @@ digraph "GET /top_level - 1" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_5::Next1(&'a app_e628417e::Spy) -> crate::route_5::Next1<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_5::Next1<'a>) -> pavex::middleware::Next<crate::route_5::Next1<'a>>"]
-    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_5::Next1<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::first(&app_e628417e::Spy, pavex::middleware::Next<crate::route_5::Next1<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -342,8 +342,8 @@ digraph "GET /top_level - 2" {
     0 [ label = "0| &app_e628417e::Spy"]
     1 [ label = "1| crate::route_5::Next2(&'a app_e628417e::Spy) -> crate::route_5::Next2<'a>"]
     2 [ label = "2| pavex::middleware::Next::new(crate::route_5::Next2<'a>) -> pavex::middleware::Next<crate::route_5::Next2<'a>>"]
-    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_5::Next2<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "3| app_e628417e::second(&app_e628417e::Spy, pavex::middleware::Next<crate::route_5::Next2<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     3 -> 4 [ ]
@@ -353,39 +353,39 @@ digraph "GET /top_level - 2" {
 
 digraph "GET /top_level - 3" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::first_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::first_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
 digraph "GET /top_level - 4" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    1 [ label = "1| app_e628417e::second_pre(&app_e628417e::Spy) -> pavex::middleware::Processing<pavex::Response>"]
     0 -> 1 [ ]
 }
 
 digraph "GET /top_level - 5" {
     0 [ label = "0| &app_e628417e::Spy"]
-    1 [ label = "1| app_e628417e::top_level_handler(&app_e628417e::Spy) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| app_e628417e::top_level_handler(&app_e628417e::Spy) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     1 -> 2 [ ]
     0 -> 1 [ ]
 }
 
 digraph "GET /top_level - 6" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::first_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]
 }
 
 digraph "GET /top_level - 7" {
-    0 [ label = "0| pavex::response::Response"]
+    0 [ label = "0| pavex::Response"]
     1 [ label = "1| &app_e628417e::Spy"]
-    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "2| app_e628417e::second_post(&app_e628417e::Spy, pavex::Response) -> pavex::Response"]
+    3 [ label = "3| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     0 -> 2 [ ]
     2 -> 3 [ ]
     1 -> 2 [ ]

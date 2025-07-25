@@ -1,6 +1,6 @@
 //! px:annotated_example
+use pavex::Response;
 use pavex::get;
-use pavex::response::Response;
 
 #[get(path = "/")] // px::ann:1
 pub fn landing_page() -> Response {

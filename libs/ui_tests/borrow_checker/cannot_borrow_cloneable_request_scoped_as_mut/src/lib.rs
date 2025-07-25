@@ -1,5 +1,5 @@
 use pavex::{blueprint::from, Blueprint};
-use pavex::response::Response;
+use pavex::Response;
 
 #[derive(Clone)]
 pub struct A;

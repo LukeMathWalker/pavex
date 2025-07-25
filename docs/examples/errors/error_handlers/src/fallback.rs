@@ -1,8 +1,7 @@
 //! px:custom_fallback
 use pavex::{
-    error_handler,
+    Response, error_handler,
     http::{HeaderValue, header::LOCATION},
-    response::Response,
 };
 
 #[error_handler]

@@ -1,6 +1,6 @@
 //! px:bearer_error
+use pavex::Response;
 use pavex::methods;
-use pavex::response::Response;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum BearerExtractionError {

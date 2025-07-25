@@ -40,7 +40,7 @@ Define a new `invalid_user_agent` function in `app/src/user_agent.rs`:
 The application should compile successfully now.
 
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
-[Response]: /api_reference/pavex/response/struct.Response.html
+[Response]: /api_reference/pavex/struct.Response.html
 [error_handler]: /guide/errors/error_handlers.md
 
 [^dependency_injection]: Error handlers, just like routes and constructors, can take advantage of dependency injection!

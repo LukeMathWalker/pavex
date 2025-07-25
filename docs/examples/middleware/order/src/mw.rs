@@ -1,5 +1,5 @@
+use pavex::Response;
 use pavex::middleware::{Next, Processing};
-use pavex::response::Response;
 use pavex::{post_process, pre_process, wrap};
 
 #[wrap]

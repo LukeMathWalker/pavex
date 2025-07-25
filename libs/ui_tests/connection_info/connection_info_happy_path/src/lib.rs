@@ -1,5 +1,5 @@
 use pavex::{blueprint::from, Blueprint};
-use pavex::{connection::ConnectionInfo, response::Response};
+use pavex::{connection::ConnectionInfo, Response};
 
 #[pavex::get(path = "/")]
 pub fn get_connection_info(conn_info: &ConnectionInfo) -> Response {

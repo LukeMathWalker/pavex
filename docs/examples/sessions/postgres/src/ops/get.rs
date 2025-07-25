@@ -1,6 +1,6 @@
 //! px:server_get
 use anyhow::Error;
-use pavex::response::Response;
+use pavex::Response;
 use pavex_session::Session;
 
 #[pavex::get(path = "/get")]

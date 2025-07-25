@@ -7,7 +7,7 @@
 //! in Pavex applications.
 use std::future::IntoFuture;
 
-use crate::response::{IntoResponse, Response};
+use crate::{IntoResponse, Response};
 
 /// A handle to trigger the execution of the rest of the request processing pipeline.
 ///

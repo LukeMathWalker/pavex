@@ -191,7 +191,7 @@ pub(crate) fn resolve_annotation_coordinates(
 
             let lints = aux.id2lints.entry(component_id).or_default();
             if let Some(true) = allow_unused {
-                lints.entry(Lint::Unused).or_insert(LintSetting::Ignore);
+                lints.entry(Lint::Unused).or_insert(LintSetting::Allow);
             }
 
             // Use the behaviour specified in the annotation, unless the user has overridden
@@ -268,7 +268,7 @@ fn allow_error_fallback(
             if let Some(true) = allow_error_fallback {
                 lints
                     .entry(Lint::ErrorFallback)
-                    .or_insert(LintSetting::Ignore);
+                    .or_insert(LintSetting::Allow);
             }
         }
         AnnotationProperties::ErrorObserver { .. }

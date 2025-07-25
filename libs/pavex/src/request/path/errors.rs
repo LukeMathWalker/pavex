@@ -3,7 +3,7 @@ use std::str::Utf8Error;
 
 use pavex_macros::methods;
 
-use crate::response::Response;
+use crate::Response;
 
 /// The error returned by [`PathParams::extract`] when the extraction fails.
 ///

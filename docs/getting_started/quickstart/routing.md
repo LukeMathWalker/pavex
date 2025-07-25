@@ -72,9 +72,9 @@ You should see `Hello, Ursula!` in your terminal if everything went well.
 [path_parameters]: /guide/routing/path_patterns.md#path-parameters
 [Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [StatusCode]: /api_reference/pavex/http/struct.StatusCode.html
-[Response]: /api_reference/pavex/response/struct.Response.html
-[IntoResponse]: /api_reference/pavex/response/trait.IntoResponse.html
+[Response]: /api_reference/pavex/struct.Response.html
+[IntoResponse]: /api_reference/pavex/trait.IntoResponse.html
 [PathParams]: /api_reference/pavex/request/path/struct.PathParams.html
-[Response::ok]: /api_reference/pavex/response/struct.Response.html#method.ok
-[set_typed_body]: /api_reference/pavex/response/struct.Response.html#method.set_typed_body
+[Response::ok]: /api_reference/pavex/struct.Response.html#method.ok
+[set_typed_body]: /api_reference/pavex/struct.Response.html#method.set_typed_body
 [f!]: /api_reference/pavex/macro.f!.html

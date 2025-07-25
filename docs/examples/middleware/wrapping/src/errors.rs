@@ -1,4 +1,4 @@
-use pavex::response::Response;
+use pavex::Response;
 use tokio::time::error::Elapsed;
 
 #[pavex::error_handler]

@@ -2627,6 +2627,16 @@ dependencies = [
 [[package]]
 name = "server_sdk"
 version = "0.1.0"
+dependencies = [
+ "app",
+ "http",
+ "hyper",
+ "matchit",
+ "pavex",
+ "pavex_tracing",
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "sha1"

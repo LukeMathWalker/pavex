@@ -1,4 +1,4 @@
-From 54b2baf7c447c40adf05da04ea7398cbd1ff8bc9 Mon Sep 17 00:00:00 2001
+From 667eaf0fddf7912ed0c68fa53fea9b8125959dbb Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:42:38 +0200
 Subject: [PATCH 15/34] Revert "Annotations for user agents"
@@ -29,7 +29,7 @@ index 187973a..a86ceef 100644
  
  pub use blueprint::blueprint;
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
-index 44dec49..76b3724 100644
+index adfc6a6..5a5b187 100644
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs
 @@ -7,19 +7,13 @@ pub struct GreetParams {

@@ -1,7 +1,7 @@
 use crate::configuration::GreetConfig;
+use pavex::Response;
 use pavex::get;
 use pavex::request::path::PathParams;
-use pavex::response::Response;
 
 #[PathParams]
 pub struct GreetParams {

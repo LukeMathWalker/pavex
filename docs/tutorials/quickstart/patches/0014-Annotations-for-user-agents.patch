@@ -1,4 +1,4 @@
-From 19ac40c596358520a0c8fdafae93b0de4f798945 Mon Sep 17 00:00:00 2001
+From 355d36fee15438d4665352576f91f47681b1a2b8 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:42:36 +0200
 Subject: [PATCH 14/34] Annotations for user agents
@@ -28,7 +28,7 @@ index a86ceef..187973a 100644
  
  pub use blueprint::blueprint;
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
-index 76b3724..44dec49 100644
+index 5a5b187..adfc6a6 100644
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs
 @@ -7,13 +7,19 @@ pub struct GreetParams {

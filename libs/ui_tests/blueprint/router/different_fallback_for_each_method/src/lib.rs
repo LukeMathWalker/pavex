@@ -1,22 +1,22 @@
 use pavex::Blueprint;
 
 #[pavex::get(path = "/id")]
-pub fn get_id() -> pavex::response::Response {
+pub fn get_id() -> pavex::Response {
     todo!()
 }
 
 #[pavex::post(path = "/id")]
-pub fn post_id() -> pavex::response::Response {
+pub fn post_id() -> pavex::Response {
     todo!()
 }
 
 #[pavex::fallback]
-pub fn get_fallback() -> pavex::response::Response {
+pub fn get_fallback() -> pavex::Response {
     todo!()
 }
 
 #[pavex::fallback]
-pub fn post_fallback() -> pavex::response::Response {
+pub fn post_fallback() -> pavex::Response {
     todo!()
 }
 

@@ -1,4 +1,4 @@
-From d331b177410561e791a7d7288aa2fa3a6542d9a8 Mon Sep 17 00:00:00 2001
+From 6463bfca9c4c08c06ee15e1d7ffa35921e722de4 Mon Sep 17 00:00:00 2001
 From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 15:46:03 +0200
 Subject: [PATCH 17/34] Annotations for user agent constructor

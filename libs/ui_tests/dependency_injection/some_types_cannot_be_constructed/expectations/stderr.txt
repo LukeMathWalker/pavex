@@ -18,7 +18,7 @@
   [31m│[0m     ╭─[[36;1;4mdependency_injection/some_types_cannot_be_constructed/src/lib.rs[0m:65:1]
   [31m│[0m  [2m65[0m │
   [31m│[0m  [2m66[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::request_scoped]
-  [31m│[0m  [2m67[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn response_ref(_v: &RequestHead) -> &pavex::response::Response {
+  [31m│[0m  [2m67[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn response_ref(_v: &RequestHead) -> &pavex::Response {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
   [31m│[0m  [2m68[0m │             todo!()
   [31m│[0m     ╰────
@@ -105,7 +105,7 @@
   [31m│[0m     ╭─[[36;1;4mdependency_injection/some_types_cannot_be_constructed/src/lib.rs[0m:16:1]
   [31m│[0m  [2m16[0m │
   [31m│[0m  [2m17[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m     #[pavex::request_scoped]
-  [31m│[0m  [2m18[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn response() -> pavex::response::Response {
+  [31m│[0m  [2m18[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m     pub fn response() -> pavex::Response {
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
   [31m│[0m  [2m19[0m │             todo!()
   [31m│[0m     ╰────

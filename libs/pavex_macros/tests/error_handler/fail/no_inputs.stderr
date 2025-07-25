@@ -1,5 +1,5 @@
 error: Error handlers must have at least one input parameter, a reference to the error type.
  --> tests/error_handler/fail/no_inputs.rs:4:15
   |
-4 | pub fn handler() -> pavex::response::Response {
+4 | pub fn handler() -> pavex::Response {
   |               ^^

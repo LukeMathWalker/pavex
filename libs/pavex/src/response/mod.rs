@@ -2,9 +2,8 @@
 //!
 //! Check out the [`Response`] type for more details.
 pub use body::body_::ResponseBody;
-pub use into_response::IntoResponse;
-pub use response_::{Response, ResponseHead};
+pub use response_::ResponseHead;
 
 pub mod body;
-mod into_response;
-mod response_;
+pub(crate) mod into_response;
+pub(crate) mod response_;
