@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::body::JsonBody};
+use pavex::{http::StatusCode, put, request::body::JsonBody};
 use secrecy::Secret;
 
 use crate::schemas::User;
@@ -23,6 +23,7 @@ pub struct UpdateUserResponse {
     pub user: User,
 }
 
+#[put(path = "/user")]
 pub fn update_user(_body: JsonBody<UpdateUser>) -> StatusCode {
     StatusCode::OK
 }

@@ -1,0 +1,67 @@
+From 6463bfca9c4c08c06ee15e1d7ffa35921e722de4 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:46:03 +0200
+Subject: [PATCH 17/34] Annotations for user agent constructor
+
+---
+ app/src/blueprint.rs  | 10 +++++++---
+ app/src/user_agent.rs |  3 +++
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
+index 5271657..460913d 100644
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
+@@ -1,21 +1,25 @@
++//! px:import_crate
+ use crate::telemetry;
+ use pavex::{Blueprint, blueprint::from};
+ 
+ /// The main blueprint, defining all the components used in this API.
+ pub fn blueprint() -> Blueprint {
++    // px::skip:start
+     let mut bp = Blueprint::new();
+     // Bring into scope constructors, error handlers, configuration
+     // and prebuilt types defined in the following crates
++    // px::skip:end
+     bp.import(from![
+-        // Local components, defined in this crate
+-        crate,
++        // Local components, defined in this crate // px::hl
++        crate, // px::hl
+         // Components defined in the `pavex` crate,
+         // by the framework itself.
+         pavex,
+     ]);
+-
++    // px::skip:start
+     telemetry::instrument(&mut bp);
+ 
+     bp.prefix("/api").routes(from![crate]);
+     bp
++    // px::skip:end
+ }
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
+index 2ed7734..9130472 100644
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
+@@ -1,6 +1,8 @@
++//! px:user_agent_extract
+ use pavex::http::header::USER_AGENT;
+ use pavex::methods;
+ use pavex::request::RequestHead;
++// px::skip:start
+ 
+ pub enum UserAgent {
+     /// No `User-Agent` header was provided.
+@@ -8,6 +10,7 @@ pub enum UserAgent {
+     /// The value of the `User-Agent` header for the incoming request.
+     Known(String),
+ }
++// px::skip:end
+ 
+ #[methods]
+ impl UserAgent {
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,6 +1,6 @@
 //! Errors that can occur when working with cookies.
+use crate::Response;
 use crate::error::UnexpectedError;
-use crate::response::Response;
 pub use biscotti::errors::*;
 use http::header::ToStrError;
 use pavex_macros::methods;

@@ -39,10 +39,10 @@ pub fn naked_output<T>(/* ... */) -> T {
 ```
 
 From Pavex's perspective, `naked_output` is a universal constructor: it can build any type.
-It will therefore reject the constructor with an error message at compile time.
+It will therefore reject the constructor with an error message at compile-time.
 
 You can have a naked generic input parameter,
-but only if it's also an [output-driven generic parameter](cookbook.md#output-driven-generics).\
+but only if it's also an [output-driven generic parameter](generics.md#output-driven).\
 There is no ambiguity in that case:
 Pavex determines the concrete type of the input parameter from the output type of the constructor.
 

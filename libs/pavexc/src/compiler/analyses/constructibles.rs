@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::NamedSource;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{ConsumptionMode, HydratedComponent};
@@ -36,7 +36,7 @@ impl std::fmt::Debug for ConstructibleDb {
                 f,
                 "- {scope_id}:\n{}",
                 // TODO: Use a PadAdapter down here to avoid allocating an intermediate string
-                textwrap::indent(&format!("{:?}", constructibles), "    ")
+                textwrap::indent(&format!("{constructibles:?}"), "    ")
             )?;
         }
         Ok(())
@@ -152,6 +152,13 @@ impl ConstructibleDb {
         // add them to set of components to check and iterate until we no longer have any new
         // components to check.
         while let Some(component_id) = queue.pop() {
+            for derived_id in component_db.derived_component_ids(component_id) {
+                queue.enqueue(derived_id);
+            }
+            if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
+                queue.enqueue(*error_handler_id);
+            }
+
             let scope_id = component_db.scope_id(component_id);
             let resolved_component = component_db.hydrated_component(component_id, computation_db);
             let input_types = {
@@ -240,11 +247,7 @@ impl ConstructibleDb {
                     continue;
                 };
 
-                if queue.enqueue(input_component_id) {
-                    for derived_id in component_db.derived_component_ids(input_component_id) {
-                        queue.enqueue(derived_id);
-                    }
-                }
+                queue.enqueue(input_component_id);
 
                 if ConsumptionMode::ExclusiveBorrow == mode {
                     let lifecycle = component_db.lifecycle(input_component_id);
@@ -271,9 +274,8 @@ impl ConstructibleDb {
                             };
                         }
                         Lifecycle::RequestScoped => {
-                            let cloning_strategy =
-                                component_db.cloning_strategy(input_component_id);
-                            if cloning_strategy == CloningStrategy::CloneIfNecessary {
+                            let cloning_policy = component_db.cloning_policy(input_component_id);
+                            if cloning_policy == CloningPolicy::CloneIfNecessary {
                                 if let Some(user_component_id) =
                                     component_db.user_component_id(component_id)
                                 {

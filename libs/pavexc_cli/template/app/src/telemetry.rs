@@ -1,9 +1,9 @@
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
+use pavex::Response;
 use pavex::request::RequestHead;
 use pavex::request::path::MatchedPathPattern;
-use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
-use pavex::{f, request_scoped};
+use pavex::{error_observer, post_process, request_scoped};
 use pavex_tracing::fields::{
     ERROR_DETAILS, ERROR_MESSAGE, ERROR_SOURCE_CHAIN, HTTP_REQUEST_METHOD, HTTP_REQUEST_SERVER_ID,
     HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_VERSION, URL_PATH, URL_QUERY,
@@ -15,10 +15,10 @@ use pavex_tracing::{LOGGER, RootSpan};
 use tracing_log_error::log_error;
 
 /// Register telemetry middlewares and an error observer with the application blueprint.
-pub(crate) fn register(bp: &mut Blueprint) {
+pub(crate) fn instrument(bp: &mut Blueprint) {
     bp.wrap(LOGGER);
-    bp.post_process(f!(self::response_logger));
-    bp.error_observer(f!(self::error_logger));
+    bp.post_process(RESPONSE_LOGGER);
+    bp.error_observer(ERROR_LOGGER);
 }
 
 /// Construct a new root span for the given request.
@@ -55,6 +55,7 @@ pub fn root_span(
 }
 
 /// Enrich [`RootSpan`] with information extracted from the outgoing response.
+#[post_process]
 pub async fn response_logger(response: Response, root_span: &RootSpan) -> Response {
     root_span.record(
         HTTP_RESPONSE_STATUS_CODE,
@@ -68,6 +69,7 @@ pub async fn response_logger(response: Response, root_span: &RootSpan) -> Respon
 /// It emits an error event and attaches information about the error to the root span.
 /// If multiple errors are observed for the same request, it will emit multiple error events
 /// but only the details of the last error will be attached to the root span.
+#[error_observer]
 pub async fn error_logger(e: &pavex::Error, root_span: &RootSpan) {
     log_error!(e, "An error occurred during request handling");
     root_span.record(ERROR_MESSAGE, error_message(e));

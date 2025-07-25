@@ -11,7 +11,7 @@ out of the raw query.
 
 Inject [`RequestHead`][RequestHead] to access the raw query via its [`target`][RequestHead::target] field:
 
---8<-- "doc_examples/guide/request_data/query/project-raw_query.snap"
+--8<-- "docs/examples/request_data/wire_data/raw_query.snap"
 
 1. The query string is an optional component of the request target. It may not be there!
 

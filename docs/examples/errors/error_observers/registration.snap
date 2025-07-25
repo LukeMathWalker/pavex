@@ -1,0 +1,10 @@
+```rust hl_lines="6"
+use crate::logger::EMIT_ERROR_LOG;
+use pavex::Blueprint;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.error_observer(EMIT_ERROR_LOG); // (1)!
+    // [...]
+}
+```

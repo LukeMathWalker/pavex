@@ -12,7 +12,7 @@ use super::body::raw::RawBody;
 /// Represents an HTTP response.
 ///
 /// ```rust
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// use pavex::http::{HeaderValue, header::SERVER};
 ///
 /// // Create a new response with:
@@ -64,7 +64,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::StatusCode;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let response = Response::new(StatusCode::OK);
     /// ```
@@ -76,7 +76,7 @@ impl Response {
     /// example above:
     ///
     /// ```rust
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let response = Response::ok();
     /// ```
@@ -96,7 +96,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::StatusCode;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let mut response = Response::ok();
     /// assert_eq!(response.status(), StatusCode::OK);
@@ -116,7 +116,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::StatusCode;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// use pavex::http::header::CONTENT_TYPE;
     ///
     /// let mut response = Response::ok();
@@ -141,7 +141,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::Version;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let mut response = Response::ok();
     /// // By default, the HTTP version is HTTP/1.1.
@@ -166,7 +166,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::{header::HOST, HeaderValue};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let mut response = Response::ok();
     /// assert!(response.headers().get("host").is_none());
@@ -211,7 +211,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::{header::HOST, HeaderValue};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let mut response = Response::ok();
     /// assert!(response.headers().get("host").is_none());
@@ -257,7 +257,7 @@ impl Response {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::response::{Response, body::Html};
+    /// use pavex::{Response, response::body::Html};
     /// use pavex::http::header::CONTENT_TYPE;
     ///
     /// let typed_body = "Hello, world!";
@@ -307,7 +307,7 @@ impl Response {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// use pavex::response::body::raw::{Bytes, Full};
     /// use pavex::http::header::CONTENT_TYPE;
     ///
@@ -337,7 +337,7 @@ impl Response {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     /// use pavex::http::{header::CONTENT_TYPE, HeaderValue};
     /// use mime::TEXT_PLAIN_UTF_8;
     ///
@@ -368,7 +368,7 @@ impl Response {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::{http::StatusCode, response::Response};
+    /// use pavex::{http::StatusCode, Response};
     ///
     /// let response = Response::bad_request();
     /// assert_eq!(response.status(), StatusCode::BAD_REQUEST);
@@ -388,7 +388,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::Version;
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let mut response = Response::ok();
     /// // By default, the HTTP version is HTTP/1.1.
@@ -409,7 +409,7 @@ impl Response {
     ///
     /// ```rust
     /// use pavex::http::{header::{HOST, SERVER}, HeaderValue};
-    /// use pavex::response::Response;
+    /// use pavex::Response;
     ///
     /// let response = Response::ok()
     ///     .append_header(HOST, HeaderValue::from_static("world"))

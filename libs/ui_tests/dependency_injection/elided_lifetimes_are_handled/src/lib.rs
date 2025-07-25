@@ -1,6 +1,5 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::http::StatusCode;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct A;
 
@@ -10,7 +9,9 @@ impl Default for A {
     }
 }
 
+#[pavex::methods]
 impl A {
+    #[singleton]
     pub fn new() -> A {
         todo!()
     }
@@ -18,20 +19,22 @@ impl A {
 
 pub struct Generic<'a>(pub &'a A);
 
+#[pavex::methods]
 impl<'a> Generic<'a> {
+    #[transient]
     pub fn new(_config: &'a A) -> Generic<'a> {
         todo!()
     }
 }
 
-pub fn handler<T>(_generic: T) -> StatusCode {
+#[pavex::get(path = "/")]
+pub fn handler(_generic: Generic<'_>) -> StatusCode {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(self::A::new));
-    bp.transient(f!(self::Generic::new));
-    bp.route(GET, "/", f!(self::handler::<self::Generic>));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

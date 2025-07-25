@@ -323,7 +323,7 @@ fn domain_router(
             #request: #http::Request<#hyper::body::Incoming>,
             #connection_info: Option<#pavex::connection::ConnectionInfo>,
             #state: &ApplicationState
-        ) -> #pavex::response::Response {
+        ) -> #pavex::Response {
             let host: Option<String> = #request
                 .headers()
                 .get(#pavex::http::header::HOST)
@@ -416,7 +416,7 @@ fn path_router(
                             #pavex::http::Method::#i
                         }
                     } else {
-                        let expect_msg = format!("{} is not a valid (custom) HTTP method", m);
+                        let expect_msg = format!("{m} is not a valid (custom) HTTP method");
                         quote! {
                             #pavex::http::Method::try_from(#m).expect(#expect_msg)
                         }
@@ -575,7 +575,7 @@ fn path_router(
             #connection_info_ident: Option<#pavex::connection::ConnectionInfo>,
             #[allow(unused)]
             #server_state_ident: &ApplicationState
-        ) -> #pavex::response::Response {
+        ) -> #pavex::Response {
             #request_transformation
             let Ok(#matched_route_ident) = self.#router_field_name.at(&#request_head_ident.target.path()) else {
                 #root_fallback_invocation

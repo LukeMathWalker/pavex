@@ -1,8 +1,0 @@
-```rust title="src/functions/constructor.rs"
-use crate::User;
-
-pub async fn extract() -> User {
-    // The constructor logic goes here
-    // [...]
-}
-```

@@ -17,11 +17,11 @@ Configuration profiles are conventionally defined in the [`server` crate](/guide
 They must implement the [`ConfigProfile`][ConfigProfileT] trait, and they
 are often modelled as enums:
 
---8<-- "doc_examples/guide/configuration/project-profile.snap"
+--8<-- "docs/examples/configuration/profile.snap"
 
 1. The [`ConfigProfile`][ConfigProfileT] trait can be derived using the [`ConfigProfile`][ConfigProfileD] derive macro.
    By default, the name of the profile is the snake_case representation of the enum variant name, but
-   it can be customized via the `#[pavex(profile = "...")]` attribute.
+   it can be customized via the `#[px(profile = "...")]` helper attribute.
 
 ### Customize your profiles
 
@@ -52,17 +52,12 @@ environment variable that's been set on the underlying system.
 
 The naming convention for environment variables is `PX_{CONFIGURATION_KEY}__{FIELD_NAME}`, where:
 
-- `{CONFIGURATION_KEY}` is the key you passed to [`Blueprint::config`](/api_reference/pavex/blueprint/struct.Blueprint.html#method.config)
-  when you registered the config option.
+- `{CONFIGURATION_KEY}` is [the key][config_key] you specified via [`#[pavex::config]`][config_attr].
 - `{FIELD_NAME}` is the name of the field you are trying to set within that configuration entry.
 
 As an example, consider this configuration type:
 
---8<-- "doc_examples/guide/configuration/project-server_def.snap"
-
-registered via:
-
---8<-- "doc_examples/guide/configuration/project-server_reg.snap"
+--8<-- "docs/examples/configuration/server_config.snap"
 
 You would have to set `PX_SERVER__PORT` to configure its `port` field via environment variables.
 
@@ -73,11 +68,7 @@ every time you access a nested field.
 
 As an example, consider this configuration type:
 
---8<-- "doc_examples/guide/configuration/project-nested_def.snap"
-
-registered via:
-
---8<-- "doc_examples/guide/configuration/project-nested_reg.snap"
+--8<-- "docs/examples/configuration/postgres_config.snap"
 
 You would have to set `PX_POSTGRES__POOL__MAX_SIZE` to configure the `max_size` field via environment variables.
 
@@ -95,3 +86,5 @@ if needed.
 [ConfigLoader]: /api_reference/pavex/config/struct.ConfigLoader.html
 [ConfigProfileT]: /api_reference/pavex/config/trait.ConfigProfile.html
 [ConfigProfileD]: /api_reference/pavex/config/derive.ConfigProfile.html
+[config_key]: /guide/configuration/entries.md#configuration-key
+[config_attr]: /api_reference/pavex/attr.config.html

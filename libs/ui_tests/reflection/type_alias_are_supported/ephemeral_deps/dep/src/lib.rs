@@ -1,15 +1,15 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
-use pavex::f;
-
 pub type IntermediateAlias = ActualType;
 pub type IntermediateGenericAlias<A, B> = GenericType<A, B>;
+pub type IntermediateAssignedGenericAlias = GenericType<bool, u8>;
 
 pub struct DoubleLifetimeType<'a, 'b> {
     _a: &'a str,
     _b: &'b str,
 }
 
+#[pavex::methods]
 impl<'a, 'b> DoubleLifetimeType<'a, 'b> {
+    #[request_scoped]
     pub fn new(_t1: &'a ActualType, _t2: &'b String) -> DoubleLifetimeType<'a, 'b> {
         todo!()
     }
@@ -24,7 +24,9 @@ impl Default for ActualType {
     }
 }
 
+#[pavex::methods]
 impl ActualType {
+    #[singleton]
     pub fn new() -> Self {
         todo!()
     }
@@ -45,7 +47,9 @@ impl<C, D> Default for GenericType<C, D> {
 // The naming of the generic parameters on this `impl` block is intentionally
 // chosen to be different from the generic parameters on the struct definition
 // to test Pavex's ability to handle this case.
+#[pavex::methods]
 impl<C, D> GenericType<C, D> {
+    #[singleton]
     pub fn new() -> GenericType<C, D> {
         todo!()
     }

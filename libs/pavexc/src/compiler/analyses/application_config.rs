@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use bimap::{BiBTreeMap, BiHashMap};
 use indexmap::IndexMap;
 use miette::Severity;
+use pavex_bp_schema::{Lint, LintSetting};
 use pavex_cli_diagnostic::CompilerDiagnostic;
 
 use crate::{
@@ -128,6 +129,14 @@ impl ApplicationConfig {
                 continue;
             }
             let (_, id, ty) = self.remove(*config_id);
+
+            // Should the issue be reported?
+            if let Some(lints) = db.lints(id) {
+                if let Some(LintSetting::Allow) = lints.get(&Lint::Unused) {
+                    continue;
+                }
+            }
+
             unused_configuration_type(id, &ty, db, diagnostics);
         }
     }
@@ -242,7 +251,7 @@ fn same_type_different_key(
     comma_separated_list(
         &mut msg,
         key2component_id.keys(),
-        |k| format!("`{}`", k),
+        |k| format!("`{k}`"),
         "and",
     )
     .unwrap();

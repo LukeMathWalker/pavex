@@ -1,5 +1,6 @@
 use pavex::{
     http::StatusCode,
+    put,
     request::{body::JsonBody, path::PathParams},
 };
 
@@ -25,6 +26,7 @@ pub struct UpdateArticleResponse {
     pub article: Article,
 }
 
+#[put(path = "/{slug}")]
 pub fn update_article(
     _params: PathParams<UpdateArticleRoute>,
     _body: JsonBody<UpdateArticleBody>,

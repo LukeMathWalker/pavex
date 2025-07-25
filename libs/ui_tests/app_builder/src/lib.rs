@@ -1,14 +1,11 @@
 use std::path::PathBuf;
 
-use pavex::blueprint::{
-    router::GET,
-    Blueprint,
-};
-use pavex::response::Response;
-use pavex::{f, t};
+use pavex::{blueprint::from, Blueprint};
+use pavex::Response;
 
 pub struct Logger;
 
+#[pavex::request_scoped]
 pub async fn extract_path(
     _inner: pavex::request::RequestHead,
 ) -> Result<PathBuf, ExtractPathError<String>> {
@@ -17,35 +14,36 @@ pub async fn extract_path(
 
 pub struct ExtractPathError<T>(T);
 
-pub fn handle_extract_path_error(_e: &ExtractPathError<String>, _logger: Logger) -> Response {
+#[pavex::error_handler]
+pub fn handle_extract_path_error(#[px(error_ref)] _e: &ExtractPathError<String>, _logger: Logger) -> Response {
     todo!()
 }
 
+#[pavex::transient]
 pub fn logger() -> Logger {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn stream_file(_inner: PathBuf, _logger: Logger, _http_client: HttpClient) -> Response {
     todo!()
 }
 
 #[derive(Clone)]
+#[pavex::prebuilt(clone_if_necessary)]
 pub struct Config;
 
 #[derive(Clone)]
 pub struct HttpClient;
 
+#[pavex::singleton(clone_if_necessary)]
 pub fn http_client(_config: Config) -> HttpClient {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.prebuilt(t!(crate::Config)).clone_if_necessary();
-    bp.singleton(f!(crate::http_client)).clone_if_necessary();
-    bp.request_scoped(f!(crate::extract_path))
-        .error_handler(f!(crate::handle_extract_path_error));
-    bp.transient(f!(crate::logger));
-    bp.route(GET, "/home", f!(crate::stream_file));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

@@ -1,0 +1,10 @@
+```rust hl_lines="6"
+use crate::auth_error::AUTH_ERROR_HANDLER;
+use pavex::{Blueprint, blueprint::from};
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.error_handler(AUTH_ERROR_HANDLER);
+    // [...]
+}
+```

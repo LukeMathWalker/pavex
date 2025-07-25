@@ -1,29 +1,30 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
+#[pavex::request_scoped]
 pub fn naked<T>() -> T {
     todo!()
 }
 
+#[pavex::request_scoped]
 pub fn fallible_naked<T>() -> Result<T, FallibleError> {
     todo!()
 }
 
 pub struct FallibleError;
 
-pub fn error_handler(_e: &FallibleError) -> pavex::response::Response {
+#[pavex::error_handler]
+pub fn error_handler(_e: &FallibleError) -> pavex::Response {
     todo!()
 }
 
-pub fn handler(_a: u8, _b: u16) -> pavex::response::Response {
+#[pavex::get(path = "/home")]
+pub fn handler(_a: u8, _b: u16) -> pavex::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::naked));
-    bp.request_scoped(f!(crate::fallible_naked))
-        .error_handler(f!(crate::error_handler));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

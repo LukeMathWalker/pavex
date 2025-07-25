@@ -1,8 +1,8 @@
+use crate::Response;
 use crate::cookie::ResponseCookies;
 use crate::cookie::errors::{ExtractRequestCookiesError, InjectResponseCookiesError};
 use crate::error::UnexpectedError;
 use crate::request::RequestHead;
-use crate::response::Response;
 use biscotti::{Processor, RequestCookies};
 use http::HeaderValue;
 use http::header::{COOKIE, SET_COOKIE};
@@ -11,7 +11,7 @@ use pavex_macros::{post_process, request_scoped};
 /// Parse cookies out of the incoming request.
 ///
 /// It's the default constructor for [`RequestCookies`].
-#[request_scoped]
+#[request_scoped(pavex = crate)]
 pub fn extract_request_cookies<'request>(
     request_head: &'request RequestHead,
     processor: &Processor,

@@ -1,0 +1,239 @@
+(
+    creation_location: (
+        line: 5,
+        column: 18,
+        file: "request_data/buffered_body/src/blueprint.rs",
+    ),
+    components: [
+        import((
+            sources: some([
+                "pavex",
+            ]),
+            relative_to: "buffered_body::blueprint",
+            created_at: (
+                package_name: "buffered_body",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 6,
+                column: 8,
+                file: "request_data/buffered_body/src/blueprint.rs",
+            ),
+        )),
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 4,
+                    column: 18,
+                    file: "request_data/buffered_body/src/buffered_body/blueprint.rs",
+                ),
+                components: [
+                    import((
+                        sources: some([
+                            "self",
+                        ]),
+                        relative_to: "buffered_body::buffered_body::blueprint",
+                        created_at: (
+                            package_name: "buffered_body",
+                            package_version: "0.1.0",
+                        ),
+                        registered_at: (
+                            line: 5,
+                            column: 8,
+                            file: "request_data/buffered_body/src/buffered_body/blueprint.rs",
+                        ),
+                    )),
+                    routes_import((
+                        sources: some([
+                            "self",
+                        ]),
+                        relative_to: "buffered_body::buffered_body::blueprint",
+                        created_at: (
+                            package_name: "buffered_body",
+                            package_version: "0.1.0",
+                        ),
+                        registered_at: (
+                            line: 6,
+                            column: 8,
+                            file: "request_data/buffered_body/src/buffered_body/blueprint.rs",
+                        ),
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            domain: None,
+            nested_at: (
+                line: 8,
+                column: 8,
+                file: "request_data/buffered_body/src/blueprint.rs",
+            ),
+        )),
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 4,
+                    column: 18,
+                    file: "request_data/buffered_body/src/custom_limit/blueprint.rs",
+                ),
+                components: [
+                    import((
+                        sources: some([
+                            "self",
+                        ]),
+                        relative_to: "buffered_body::custom_limit::blueprint",
+                        created_at: (
+                            package_name: "buffered_body",
+                            package_version: "0.1.0",
+                        ),
+                        registered_at: (
+                            line: 5,
+                            column: 8,
+                            file: "request_data/buffered_body/src/custom_limit/blueprint.rs",
+                        ),
+                    )),
+                    routes_import((
+                        sources: some([
+                            "self",
+                        ]),
+                        relative_to: "buffered_body::custom_limit::blueprint",
+                        created_at: (
+                            package_name: "buffered_body",
+                            package_version: "0.1.0",
+                        ),
+                        registered_at: (
+                            line: 6,
+                            column: 8,
+                            file: "request_data/buffered_body/src/custom_limit/blueprint.rs",
+                        ),
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            domain: None,
+            nested_at: (
+                line: 9,
+                column: 8,
+                file: "request_data/buffered_body/src/blueprint.rs",
+            ),
+        )),
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 9,
+                    column: 18,
+                    file: "request_data/buffered_body/src/granular_limits/blueprint.rs",
+                ),
+                components: [
+                    nested_blueprint((
+                        blueprint: (
+                            creation_location: (
+                                line: 16,
+                                column: 18,
+                                file: "request_data/buffered_body/src/granular_limits/blueprint.rs",
+                            ),
+                            components: [
+                                constructor((
+                                    coordinates: (
+                                        id: "UPLOAD_SIZE_LIMIT",
+                                        created_at: (
+                                            package_name: "buffered_body",
+                                            package_version: "0.1.0",
+                                        ),
+                                        macro_name: "constructor",
+                                    ),
+                                    lifecycle: None,
+                                    cloning_policy: None,
+                                    error_handler: None,
+                                    lints: {},
+                                    registered_at: (
+                                        line: 19,
+                                        column: 8,
+                                        file: "request_data/buffered_body/src/granular_limits/blueprint.rs",
+                                    ),
+                                )),
+                                route((
+                                    coordinates: (
+                                        id: "UPLOAD",
+                                        created_at: (
+                                            package_name: "buffered_body",
+                                            package_version: "0.1.0",
+                                        ),
+                                        macro_name: "route",
+                                    ),
+                                    registered_at: (
+                                        line: 20,
+                                        column: 8,
+                                        file: "request_data/buffered_body/src/granular_limits/blueprint.rs",
+                                    ),
+                                    error_handler: None,
+                                )),
+                            ],
+                        ),
+                        path_prefix: None,
+                        domain: None,
+                        nested_at: (
+                            line: 10,
+                            column: 8,
+                            file: "request_data/buffered_body/src/granular_limits/blueprint.rs",
+                        ),
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            domain: None,
+            nested_at: (
+                line: 10,
+                column: 8,
+                file: "request_data/buffered_body/src/blueprint.rs",
+            ),
+        )),
+        nested_blueprint((
+            blueprint: (
+                creation_location: (
+                    line: 4,
+                    column: 18,
+                    file: "request_data/buffered_body/src/no_limit/blueprint.rs",
+                ),
+                components: [
+                    import((
+                        sources: some([
+                            "self",
+                        ]),
+                        relative_to: "buffered_body::no_limit::blueprint",
+                        created_at: (
+                            package_name: "buffered_body",
+                            package_version: "0.1.0",
+                        ),
+                        registered_at: (
+                            line: 5,
+                            column: 8,
+                            file: "request_data/buffered_body/src/no_limit/blueprint.rs",
+                        ),
+                    )),
+                    routes_import((
+                        sources: some([
+                            "self",
+                        ]),
+                        relative_to: "buffered_body::no_limit::blueprint",
+                        created_at: (
+                            package_name: "buffered_body",
+                            package_version: "0.1.0",
+                        ),
+                        registered_at: (
+                            line: 6,
+                            column: 8,
+                            file: "request_data/buffered_body/src/no_limit/blueprint.rs",
+                        ),
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            domain: None,
+            nested_at: (
+                line: 11,
+                column: 8,
+                file: "request_data/buffered_body/src/blueprint.rs",
+            ),
+        )),
+    ],
+)

@@ -1,7 +1,0 @@
-```rust title="src/route_params/routes.rs" hl_lines="4"
-// [...]
-#[PathParams]
-pub struct GetUserParams {
-    pub id: u64,
-}
-```

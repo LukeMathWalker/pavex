@@ -1,5 +1,4 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
 pub struct Singleton;
@@ -10,7 +9,9 @@ impl Default for Singleton {
     }
 }
 
+#[pavex::methods]
 impl Singleton {
+    #[singleton]
     pub fn new() -> Singleton {
         todo!()
     }
@@ -18,29 +19,30 @@ impl Singleton {
 
 pub struct RequestScoped;
 
+#[pavex::request_scoped]
 pub fn request_scoped() -> RequestScoped {
     todo!()
 }
 
 pub struct Transient;
 
+#[pavex::transient]
 pub fn transient() -> Transient {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn stream_file(
     _s: &Singleton,
     _r: &RequestScoped,
     _t: &Transient,
-) -> pavex::response::Response {
+) -> pavex::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(crate::Singleton::new));
-    bp.request_scoped(f!(crate::request_scoped));
-    bp.transient(f!(crate::transient));
-    bp.route(GET, "/home", f!(crate::stream_file));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

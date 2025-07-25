@@ -11,7 +11,7 @@ name = "api"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 server_sdk = { path = "../server_sdk" }
-pavex = "0.1"
+pavex = "0.2"
 app = { path = "../app" }
 
 # Configuration
@@ -29,7 +29,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
 tracing-bunyan-formatter = "0.3"
 tracing_log_error = "0.1"
 tracing-panic = "0.1"
-pavex_tracing = "0.1"
+pavex_tracing = "0.2"
 workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]

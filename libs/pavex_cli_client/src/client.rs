@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::Command};
 
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 
 use crate::commands::generate::GenerateBuilder;
 use crate::commands::new::NewBuilder;
@@ -111,7 +111,7 @@ impl Client {
 
     /// Disable debug mode.
     ///
-    /// `pavex` will not print additional debug information when running commands.  
+    /// `pavex` will not print additional debug information when running commands.
     /// This is the default behaviour.
     pub fn no_debug(mut self) -> Self {
         self.debug = false;

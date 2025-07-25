@@ -1036,7 +1036,7 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
 pub mod errors {
     use std::borrow::Cow;
 
-    use pavex::{methods, response::Response};
+    use pavex::{Response, methods};
 
     use crate::store::errors::{
         ChangeIdError, CreateError, DeleteError, LoadError, UpdateError, UpdateTtlError,

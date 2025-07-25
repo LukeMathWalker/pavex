@@ -116,8 +116,7 @@ impl Display for ErrorObserverValidationError {
                 write!(
                     f,
                     "Error observers must take a reference to Pavex's common error type as input (`{error_type:?}`).\n\
-                    `{}` doesn't.",
-                    observer_path,
+                    `{observer_path}` doesn't.",
                 )
             }
             ErrorObserverValidationError::UnassignedGenericParameters {

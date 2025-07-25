@@ -2,12 +2,14 @@ use crate::{jwt_auth, routes::users::password, schemas::User};
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::response::body::Json;
-use pavex::{request::body::JsonBody, response::Response};
+use pavex::{Response, request::body::JsonBody};
+use pavex::{methods, post};
 use secrecy::Secret;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 /// Login for an existing user.
+#[post(path = "/users/login")]
 pub async fn login(
     body: JsonBody<LoginBody>,
     db_pool: &PgPool,
@@ -69,7 +71,9 @@ pub enum LoginError {
     UnexpectedError(#[source] anyhow::Error),
 }
 
+#[methods]
 impl LoginError {
+    #[error_handler]
     pub fn into_response(&self) -> Response {
         match self {
             LoginError::InvalidCredentials(_) => Response::unauthorized(),
@@ -93,7 +97,7 @@ struct GetUserRecord {
 async fn get_user_by_id(user_id: &Uuid, pool: &PgPool) -> Result<GetUserRecord, anyhow::Error> {
     let row = sqlx::query!(
         r#"
-        SELECT email, username, bio, image 
+        SELECT email, username, bio, image
         FROM users
         WHERE id = $1
         "#,

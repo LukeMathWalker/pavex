@@ -2,7 +2,7 @@
 //!
 //! This module re-exports all the items from the [`http`] crate
 //! that are needed to work with Pavex's [`RequestHead`](crate::request::RequestHead)s and
-//! [`Response`](crate::response::Response)s.
+//! [`Response`](crate::Response)s.
 pub use ::http::header;
 pub use ::http::method;
 pub use ::http::status;

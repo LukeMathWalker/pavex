@@ -1,28 +1,19 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::response::Response;
-use pavex::{f, t};
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
 #[derive(Clone)]
+#[pavex::config(key = "2numbersfirst", id = "A_")]
 pub struct A;
 
 #[derive(Clone)]
+#[pavex::config(key = "", id = "B_")]
 pub struct B;
 
 #[derive(Clone)]
+#[pavex::config(key = "with-a-dash", id = "C_")]
 pub struct C;
 
-#[derive(Clone)]
-#[pavex::config(key = "2numbersfirst")]
-pub struct A1;
-
-#[derive(Clone)]
-#[pavex::config(key = "")]
-pub struct B1;
-
-#[derive(Clone)]
-#[pavex::config(key = "with-a-dash")]
-pub struct C1;
-
+#[pavex::get(path = "/")]
 pub fn handler(_a: A, _b: B, _c: C) -> Response {
     todo!()
 }
@@ -30,9 +21,6 @@ pub fn handler(_a: A, _b: B, _c: C) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.config("12a", t!(crate::A));
-    bp.config("", t!(crate::B));
-    bp.config("my-key", t!(crate::C));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

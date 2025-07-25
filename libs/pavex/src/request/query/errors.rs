@@ -2,7 +2,7 @@
 
 use pavex_macros::methods;
 
-use crate::response::Response;
+use crate::Response;
 
 /// The error returned by [`QueryParams::extract`] when the extraction fails.
 ///
@@ -28,8 +28,9 @@ impl ExtractQueryParamsError {
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
         match self {
-            Self::QueryDeserializationError(e) => Response::bad_request()
-                .set_typed_body(format!("Invalid query parameters.\n{:?}", e)),
+            Self::QueryDeserializationError(e) => {
+                Response::bad_request().set_typed_body(format!("Invalid query parameters.\n{e:?}"))
+            }
         }
     }
 }

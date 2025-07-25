@@ -11,37 +11,36 @@ pub struct ApplicationConfig {}
 pub struct ApplicationState {
     pub actual_type: dep_f8f62968::ActualType,
     pub bool__char__u8_: (bool, char, u8),
-    pub generic_type: dep_f8f62968::GenericType<bool, bool>,
+    pub generic_type_bool__bool_: dep_f8f62968::GenericType<bool, bool>,
+    pub generic_type_bool__u8_: dep_f8f62968::GenericType<bool, u8>,
+    pub generic_type_u8__u8_: dep_f8f62968::GenericType<u8, u8>,
     pub string: alloc::string::String,
 }
 impl ApplicationState {
     pub async fn new(
         _app_config: crate::ApplicationConfig,
         v0: alloc::string::String,
+        v1: dep_f8f62968::GenericType<bool, u8>,
     ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-        Ok(Self::_new(v0).await)
+        Ok(Self::_new(v0, v1).await)
     }
-    async fn _new(v0: alloc::string::String) -> crate::ApplicationState {
-        let v1 = dep_f8f62968::GenericType::<
-            std::primitive::bool,
-            std::primitive::bool,
-        >::new();
-        let v2 = app::constructor_with_output_tuple();
-        let v3 = dep_f8f62968::ActualType::new();
+    async fn _new(
+        v0: alloc::string::String,
+        v1: dep_f8f62968::GenericType<bool, u8>,
+    ) -> crate::ApplicationState {
+        let v2 = dep_f8f62968::GenericType::new();
+        let v3 = dep_f8f62968::GenericType::new();
+        let v4 = app::constructor_with_output_tuple();
+        let v5 = dep_f8f62968::ActualType::new();
         crate::ApplicationState {
-            actual_type: v3,
-            bool__char__u8_: v2,
-            generic_type: v1,
+            actual_type: v5,
+            bool__char__u8_: v4,
+            generic_type_bool__bool_: v3,
+            generic_type_bool__u8_: v1,
+            generic_type_u8__u8_: v2,
             string: v0,
         }
     }
-}
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-    v0: alloc::string::String,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config, v0).await
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
@@ -53,7 +52,7 @@ pub fn run(
         request: http::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
         server_state: std::sync::Arc<ServerState>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (router, state) = (&server_state.router, &server_state.application_state);
         router.route(request, connection_info, state).await
     }
@@ -85,7 +84,7 @@ impl Router {
         _connection_info: Option<pavex::connection::ConnectionInfo>,
         #[allow(unused)]
         state: &ApplicationState,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
@@ -93,17 +92,19 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_1::entrypoint(&allowed_methods).await;
+            return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(
+                        route_1::entrypoint(
                                 state.bool__char__u8_.clone(),
                                 &state.string,
                                 &state.actual_type,
-                                &state.generic_type,
+                                &state.generic_type_bool__bool_,
+                                &state.generic_type_u8__u8_,
+                                &state.generic_type_bool__u8_,
                             )
                             .await
                     }
@@ -112,7 +113,7 @@ impl Router {
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_1::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
@@ -121,22 +122,68 @@ impl Router {
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a, 'b, 'c>(
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::Response {
+        let response = wrapping_0(s_0).await;
+        response
+    }
+    async fn stage_1<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    async fn wrapping_0(v0: &pavex::router::AllowedMethods) -> pavex::Response {
+        let v1 = crate::route_0::Next0 {
+            s_0: v0,
+            next: stage_1,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::Response as pavex::IntoResponse>::into_response(v3)
+    }
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::Response as pavex::IntoResponse>::into_response(v1)
+    }
+    struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::Response>,
+    {
+        s_0: &'a pavex::router::AllowedMethods,
+        next: fn(&'a pavex::router::AllowedMethods) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::Response>,
+    {
+        type Output = pavex::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+}
+pub mod route_1 {
+    pub async fn entrypoint<'a, 'b, 'c, 'd, 'e>(
         s_0: (bool, char, u8),
         s_1: &'a alloc::string::String,
         s_2: &'b dep_f8f62968::ActualType,
         s_3: &'c dep_f8f62968::GenericType<bool, bool>,
-    ) -> pavex::response::Response {
-        let response = wrapping_0(s_0, s_1, s_2, s_3).await;
+        s_4: &'d dep_f8f62968::GenericType<u8, u8>,
+        s_5: &'e dep_f8f62968::GenericType<bool, u8>,
+    ) -> pavex::Response {
+        let response = wrapping_0(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
-    async fn stage_1<'a, 'b, 'c>(
+    async fn stage_1<'a, 'b, 'c, 'd, 'e>(
         s_0: &'a alloc::string::String,
         s_1: &'b dep_f8f62968::ActualType,
         s_2: (bool, char, u8),
         s_3: &'c dep_f8f62968::GenericType<bool, bool>,
-    ) -> pavex::response::Response {
-        let response = handler(s_0, s_1, s_2, s_3).await;
+        s_4: &'d dep_f8f62968::GenericType<u8, u8>,
+        s_5: &'e dep_f8f62968::GenericType<bool, u8>,
+    ) -> pavex::Response {
+        let response = handler(s_0, s_1, s_2, s_3, s_4, s_5).await;
         response
     }
     async fn wrapping_0(
@@ -144,98 +191,62 @@ pub mod route_0 {
         v1: &alloc::string::String,
         v2: &dep_f8f62968::ActualType,
         v3: &dep_f8f62968::GenericType<bool, bool>,
-    ) -> pavex::response::Response {
-        let v4 = crate::route_0::Next0 {
+        v4: &dep_f8f62968::GenericType<u8, u8>,
+        v5: &dep_f8f62968::GenericType<bool, u8>,
+    ) -> pavex::Response {
+        let v6 = crate::route_1::Next0 {
             s_0: v1,
             s_1: v2,
             s_2: v0,
             s_3: v3,
+            s_4: v4,
+            s_5: v5,
             next: stage_1,
         };
-        let v5 = pavex::middleware::Next::new(v4);
-        let v6 = pavex::middleware::wrap_noop(v5).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        let v7 = pavex::middleware::Next::new(v6);
+        let v8 = pavex::middleware::wrap_noop(v7).await;
+        <pavex::Response as pavex::IntoResponse>::into_response(v8)
     }
     async fn handler(
         v0: &alloc::string::String,
         v1: &dep_f8f62968::ActualType,
         v2: (bool, char, u8),
         v3: &dep_f8f62968::GenericType<bool, bool>,
-    ) -> pavex::response::Response {
-        let v4 = app::mixed_generics(v0);
-        let v5 = dep_f8f62968::DoubleLifetimeType::<'_, '_>::new(v1, v0);
-        let v6 = app::handler_with_input_tuple(v2, v1, v3, &v5, v4);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        v4: &dep_f8f62968::GenericType<u8, u8>,
+        v5: &dep_f8f62968::GenericType<bool, u8>,
+    ) -> pavex::Response {
+        let v6 = app::mixed_generics(v0);
+        let v7 = dep_f8f62968::DoubleLifetimeType::new(v1, v0);
+        let v8 = app::handler_with_input_tuple(v2, v1, v3, &v7, v6, v4, v5);
+        <pavex::Response as pavex::IntoResponse>::into_response(v8)
     }
-    struct Next0<'a, 'b, 'c, T>
+    struct Next0<'a, 'b, 'c, 'd, 'e, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: &'a alloc::string::String,
         s_1: &'b dep_f8f62968::ActualType,
         s_2: (bool, char, u8),
         s_3: &'c dep_f8f62968::GenericType<bool, bool>,
+        s_4: &'d dep_f8f62968::GenericType<u8, u8>,
+        s_5: &'e dep_f8f62968::GenericType<bool, u8>,
         next: fn(
             &'a alloc::string::String,
             &'b dep_f8f62968::ActualType,
             (bool, char, u8),
             &'c dep_f8f62968::GenericType<bool, bool>,
+            &'d dep_f8f62968::GenericType<u8, u8>,
+            &'e dep_f8f62968::GenericType<bool, u8>,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+    impl<'a, 'b, 'c, 'd, 'e, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, 'e, T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
-        }
-    }
-}
-pub mod route_1 {
-    pub async fn entrypoint<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
-        let response = wrapping_0(s_0).await;
-        response
-    }
-    async fn stage_1<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
-        let response = handler(s_0).await;
-        response
-    }
-    async fn wrapping_0(
-        v0: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
-        let v1 = crate::route_1::Next0 {
-            s_0: v0,
-            next: stage_1,
-        };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = pavex::middleware::wrap_noop(v2).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
-    }
-    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
-        let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    struct Next0<'a, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: &'a pavex::router::AllowedMethods,
-        next: fn(&'a pavex::router::AllowedMethods) -> T,
-    }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4, self.s_5)
         }
     }
 }

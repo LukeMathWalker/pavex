@@ -1,7 +1,6 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::middleware::Next;
-use pavex::response::Response;
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 use std::future::IntoFuture;
 
 #[derive(Clone)]
@@ -13,7 +12,9 @@ impl Default for Singleton {
     }
 }
 
+#[pavex::methods]
 impl Singleton {
+    #[singleton]
     pub fn new() -> Singleton {
         todo!()
     }
@@ -21,28 +22,31 @@ impl Singleton {
 
 pub struct RequestScoped;
 
+#[pavex::request_scoped]
 pub fn request_scoped(_s: &Singleton) -> RequestScoped {
     todo!()
 }
 
+#[pavex::wrap]
 pub fn wrap<T: IntoFuture<Output = Response>>(_next: Next<T>) -> Response {
     todo!()
 }
 
+#[pavex::post_process]
 pub fn post(_r: Response, _x: &RequestScoped) -> Response {
     todo!()
 }
 
-pub fn handler(_r: &RequestScoped) -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn handler(_r: &RequestScoped) -> pavex::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.singleton(f!(crate::Singleton::new));
-    bp.request_scoped(f!(crate::request_scoped));
-    bp.wrap(f!(crate::wrap));
-    bp.post_process(f!(crate::post));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.wrap(WRAP);
+    bp.post_process(POST);
+    bp.routes(from![crate]);
     bp
 }

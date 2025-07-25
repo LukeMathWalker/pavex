@@ -1,9 +1,29 @@
+digraph "* * - 0" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| crate::route_0::Next0(&'a pavex::router::AllowedMethods) -> crate::route_0::Next0<'a>"]
+    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
+    2 -> 3 [ ]
+    1 -> 2 [ ]
+    3 -> 4 [ ]
+    0 -> 1 [ ]
+}
+
+digraph "* * - 1" {
+    0 [ label = "0| &pavex::router::AllowedMethods"]
+    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::Response"]
+    2 [ label = "2| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
+    1 -> 2 [ ]
+    0 -> 1 [ ]
+}
+
 digraph "GET /home - 0" {
     0 [ label = "0| pavex::request::path::RawPathParams<'server, 'request>"]
-    1 [ label = "1| crate::route_0::Next0(pavex::request::path::RawPathParams<'a, 'b>) -> crate::route_0::Next0<'a, 'b>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 [ label = "1| crate::route_1::Next0(pavex::request::path::RawPathParams<'a, 'b>) -> crate::route_1::Next0<'a, 'b>"]
+    2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_1::Next0<'a, 'b>>"]
+    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a, 'b>>) -> pavex::Response"]
+    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     2 -> 3 [ ]
     1 -> 2 [ ]
     0 -> 1 [ ]
@@ -15,34 +35,14 @@ digraph "GET /home - 1" {
     1 [ label = "1| <pavex::request::path::RawPathParams::<server, request> as core::clone::Clone>::clone(&pavex::request::path::RawPathParams<'server, 'request>) -> pavex::request::path::RawPathParams<'server, 'request>"]
     2 [ label = "2| app_bc5c8029::b(pavex::request::path::RawPathParams<'_, '_>) -> app_bc5c8029::B"]
     3 [ label = "3| app_bc5c8029::c(pavex::request::path::RawPathParams<'_, '_>) -> app_bc5c8029::C"]
-    4 [ label = "4| app_bc5c8029::handler(app_bc5c8029::B, app_bc5c8029::C) -> pavex::response::Response"]
-    5 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    4 [ label = "4| app_bc5c8029::handler(app_bc5c8029::B, app_bc5c8029::C) -> pavex::Response"]
+    5 [ label = "5| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     3 -> 4 [ ]
     0 -> 3 [ ]
     2 -> 4 [ ]
     4 -> 5 [ ]
     0 -> 1 [ label = "&"]
     1 -> 2 [ ]
-}
-
-digraph "* * - 0" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
-    2 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
-    3 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    2 -> 3 [ ]
-    1 -> 2 [ ]
-    3 -> 4 [ ]
-    0 -> 1 [ ]
-}
-
-digraph "* * - 1" {
-    0 [ label = "0| &pavex::router::AllowedMethods"]
-    1 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 2 [ ]
-    0 -> 1 [ ]
 }
 
 digraph app_state {

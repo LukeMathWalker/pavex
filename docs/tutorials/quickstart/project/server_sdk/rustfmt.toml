@@ -1,0 +1,2 @@
+# We don't care about the formatting of the generated code
+disable_all_formatting = true

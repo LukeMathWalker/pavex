@@ -1,84 +1,42 @@
 [31;1mERROR[0m:
   [31m×[0m You can only register one path parameter for each path segment.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:43:1]
-  [31m│[0m  [2m43[0m │         let mut bp = Blueprint::new();
-  [31m│[0m  [2m44[0m │         bp.route(ANY, "/{too}{many}{params}", f!(crate::handler));
-  [31m│[0m     · [35;1m                      ───────────┬──────────[0m
-  [31m│[0m     ·                                  [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m45[0m │         bp.route(GET, "/{*invalid_catch_all}/hey", f!(crate::handler));
-  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:3:1]
+  [31m│[0m  [2m3[0m │
+  [31m│[0m  [2m4[0m │ #[pavex::get(path = "/{how}{many}{params}{can}{i}{chain}")]
+  [31m│[0m    · [35;1m                    ──────────────────┬──────────────────[0m
+  [31m│[0m    ·                                       [35;1m╰── The problematic path[0m
+  [31m│[0m  [2m5[0m │ pub fn too_many_params() -> Response {
+  [31m│[0m    ╰────
 [31;1mERROR[0m:
   [31m×[0m You can only use catch-all parameters at the end of a route path.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:44:1]
-  [31m│[0m  [2m44[0m │         bp.route(ANY, "/{too}{many}{params}", f!(crate::handler));
-  [31m│[0m  [2m45[0m │         bp.route(GET, "/{*invalid_catch_all}/hey", f!(crate::handler));
-  [31m│[0m     · [35;1m                      ─────────────┬─────────────[0m
-  [31m│[0m     ·                                    [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m46[0m │         bp.route(GET, "/home/{id}", f!(crate::handler));
-  [31m│[0m     ╰────
-[31;1mERROR[0m:
-  [31m×[0m This route path, `/bp/home/{home_id}`, conflicts with the path of another
-  [31m│[0m route you already registered, `/bp/home/{id}`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:47:1]
-  [31m│[0m  [2m47[0m │         // Route conflict with the previous one
-  [31m│[0m  [2m48[0m │         bp.route(GET, "/home/{home_id}", f!(crate::handler));
-  [31m│[0m     · [35;1m                      ────────┬────────[0m
-  [31m│[0m     ·                               [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m49[0m │         // Unnamed parameter
-  [31m│[0m     ╰────
-[31;1mERROR[0m:
-  [31m×[0m You can only use path parameters in the form of `{name}` or `{*name}`. You
-  [31m│[0m can use `{{` and `}}` if you need to escape curly braces.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:49:1]
-  [31m│[0m  [2m49[0m │         // Unnamed parameter
-  [31m│[0m  [2m50[0m │         bp.route(GET, "/room/{}", f!(crate::handler));
-  [31m│[0m     · [35;1m                      ─────┬────[0m
-  [31m│[0m     ·                            [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m51[0m │         bp
-  [31m│[0m     ╰────
-[31;1mERROR[0m:
-  [31m×[0m You can only register one path parameter for each path segment.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:12:1]
-  [31m│[0m  [2m12[0m │
-  [31m│[0m  [2m13[0m │ #[pavex::get(path = "/{how}{many}{params}{can}{i}{chain}")]
-  [31m│[0m     · [35;1m                    ──────────────────┬──────────────────[0m
-  [31m│[0m     ·                                       [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m14[0m │ pub fn too_many_params() -> Response {
-  [31m│[0m     ╰────
-[31;1mERROR[0m:
-  [31m×[0m You can only use catch-all parameters at the end of a route path.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:17:1]
-  [31m│[0m  [2m17[0m │
-  [31m│[0m  [2m18[0m │ #[pavex::get(path = "/{*invalid_catch_all}/hey")]
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:8:1]
+  [31m│[0m  [2m 8[0m │
+  [31m│[0m  [2m 9[0m │ #[pavex::get(path = "/{*invalid_catch_all}/hey")]
   [31m│[0m     · [35;1m                    ─────────────┬─────────────[0m
   [31m│[0m     ·                                  [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m19[0m │ pub fn invalid_catch_all() -> Response {
+  [31m│[0m  [2m10[0m │ pub fn invalid_catch_all() -> Response {
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m This route path, `/room/{room_id}`, conflicts with the path of another
   [31m│[0m route you already registered, `/room/{id}`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │
-  [31m│[0m  [2m28[0m │ #[pavex::get(path = "/room/{room_id}")]
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:18:1]
+  [31m│[0m  [2m18[0m │
+  [31m│[0m  [2m19[0m │ #[pavex::get(path = "/room/{room_id}")]
   [31m│[0m     · [35;1m                    ────────┬────────[0m
   [31m│[0m     ·                             [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m29[0m │ pub fn conflicting_room_id() -> Response {
+  [31m│[0m  [2m20[0m │ pub fn conflicting_room_id() -> Response {
   [31m│[0m     ╰────
 [31;1mERROR[0m:
   [31m×[0m You can only use path parameters in the form of `{name}` or `{*name}`. You
   [31m│[0m can use `{{` and `}}` if you need to escape curly braces.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:32:1]
-  [31m│[0m  [2m32[0m │
-  [31m│[0m  [2m33[0m │ #[pavex::get(path = "/room/{}")]
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/invalid_paths/src/lib.rs[0m:23:1]
+  [31m│[0m  [2m23[0m │
+  [31m│[0m  [2m24[0m │ #[pavex::get(path = "/room/{}")]
   [31m│[0m     · [35;1m                    ─────┬────[0m
   [31m│[0m     ·                          [35;1m╰── The problematic path[0m
-  [31m│[0m  [2m34[0m │ pub fn unnamed() -> Response {
+  [31m│[0m  [2m25[0m │ pub fn unnamed() -> Response {
   [31m│[0m     ╰────

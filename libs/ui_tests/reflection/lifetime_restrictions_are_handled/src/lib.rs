@@ -1,9 +1,9 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::middleware::Next;
 use pavex::request::path::RawPathParams;
-use pavex::response::Response;
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
+#[pavex::wrap]
 pub fn mw<T>(_next: Next<T>) -> Response
 where
     T: std::future::IntoFuture<Output = Response>,
@@ -11,13 +11,15 @@ where
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_s: &RawPathParams) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::mw));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.wrap(MW);
+    bp.routes(from![crate]);
     bp
 }

@@ -6,19 +6,19 @@
   [31m│[0m that unique instance!
   [31m│[0m I have found 2 different constructors for `u64`:
   [31m│[0m
-  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_parent_singleton_is_overridden/src/lib.rs[0m:7:1]
-  [31m│[0m  [2m7[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m8[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
-  [31m│[0m    · [35;1m                   ──────────┬─────────[0m
-  [31m│[0m    ·                              [35;1m╰── A constructor was registered here[0m
-  [31m│[0m  [2m9[0m │     bp.route(GET, "/parent", f!(crate::handler));
+  [31m│[0m    ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_parent_singleton_is_overridden/src/lib.rs[0m:5:1]
+  [31m│[0m  [2m5[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m6[0m │     bp.constructor(SINGLETON);
+  [31m│[0m    · [35;1m                   ────┬────[0m
+  [31m│[0m    ·                        [35;1m╰── A constructor was registered here[0m
+  [31m│[0m  [2m7[0m │     bp.route(PARENT_HANDLER);
   [31m│[0m    ╰────
-  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_parent_singleton_is_overridden/src/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m28[0m │     bp.constructor(f!(crate::overridden_singleton), Lifecycle::Singleton);
-  [31m│[0m     · [35;1m                   ───────────────┬───────────────[0m
-  [31m│[0m     ·                                   [35;1m╰── A constructor was registered here[0m
-  [31m│[0m  [2m29[0m │     bp.route(GET, "/child", f!(crate::handler));
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_parent_singleton_is_overridden/src/lib.rs[0m:33:1]
+  [31m│[0m  [2m33[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m34[0m │     bp.constructor(OVERRIDDEN_SINGLETON);
+  [31m│[0m     · [35;1m                   ──────────┬─────────[0m
+  [31m│[0m     ·                              [35;1m╰── A constructor was registered here[0m
+  [31m│[0m  [2m35[0m │     bp.route(CHILD_HANDLER);
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m If you want a single instance of `u64`, remove constructors for `u64`
   [31m│[0m         until there is only one left.

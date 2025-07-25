@@ -462,7 +462,8 @@ where
             assert_eq!(children.len(), 1);
             children[0]
         };
-        let ok_matcher_node_index = {
+
+        {
             let children: Vec<_> = call_graph
                 .neighbors_directed(match_node_index, Direction::Outgoing)
                 .collect();
@@ -483,8 +484,7 @@ where
                     false
                 })
                 .unwrap()
-        };
-        ok_matcher_node_index
+        }
     } else {
         root_node_index
     };
@@ -533,8 +533,12 @@ fn enforce_invariants(
     }
     let expected_error_observers = n_errors * n_unique_error_observers;
     assert_eq!(
-        expected_error_observers, n_error_observers,
-        "There should be {expected_error_observers} error observers in the graph, but we found {n_error_observers}."
+        expected_error_observers,
+        n_error_observers,
+        "There are {n_unique_error_observers} unique error observers and {n_errors} error nodes in the graph, therefore \
+        we expected to find {expected_error_observers} error observer nodes in the graph, but we only found {n_error_observers}.\n\
+        Call graph:\n\n{}",
+        call_graph.debug_dot(component_db, computation_db)
     )
 }
 

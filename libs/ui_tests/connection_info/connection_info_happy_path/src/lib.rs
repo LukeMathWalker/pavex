@@ -1,7 +1,7 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
-use pavex::{connection::ConnectionInfo, response::Response};
+use pavex::{blueprint::from, Blueprint};
+use pavex::{connection::ConnectionInfo, Response};
 
+#[pavex::get(path = "/")]
 pub fn get_connection_info(conn_info: &ConnectionInfo) -> Response {
     let _peer_addr = conn_info.peer_addr();
     Response::ok().set_typed_body("Success".to_string())
@@ -9,6 +9,6 @@ pub fn get_connection_info(conn_info: &ConnectionInfo) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/", f!(crate::get_connection_info));
+    bp.routes(from![crate]);
     bp
 }

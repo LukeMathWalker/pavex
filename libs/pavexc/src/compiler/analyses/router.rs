@@ -56,7 +56,7 @@ impl std::fmt::Display for RouteInfo {
         let domain = self
             .domain
             .as_ref()
-            .map(|d| format!(" [for {}]", d))
+            .map(|d| format!(" [for {d}]"))
             .unwrap_or_else(|| String::from(""));
 
         let methods = if self.methods.is_empty() {

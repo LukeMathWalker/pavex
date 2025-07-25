@@ -1,5 +1,5 @@
-use pavex::response::IntoResponse;
-use pavex::response::Response;
+use pavex::IntoResponse;
+use pavex::Response;
 
 pub struct Custom<T>(T);
 

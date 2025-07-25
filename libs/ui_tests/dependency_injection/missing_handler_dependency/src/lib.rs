@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
-pub fn stream_file(_inner: PathBuf) -> pavex::response::Response {
+#[pavex::get(path = "/home")]
+pub fn stream_file(_inner: PathBuf) -> pavex::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/home", f!(crate::stream_file));
+    bp.routes(from![crate]);
     bp
 }

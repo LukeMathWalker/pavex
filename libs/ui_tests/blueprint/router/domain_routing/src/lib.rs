@@ -1,21 +1,20 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::request::RequestHead;
-use pavex::response::Response;
+use pavex::Blueprint;
+use pavex::Response;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.domain("admin.company.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::admin_root));
+        bp.route(ADMIN_ROOT);
         bp.fallback(ADMIN_FALLBACK);
         bp
     });
     bp.domain("company.com").nest({
         let mut bp = Blueprint::new();
         // Same path, different domain.
-        bp.route(GET, "/", f!(crate::base_root));
-        bp.route(GET, "/login", f!(crate::base_login));
+        bp.route(BASE_ROOT);
+        bp.route(BASE_LOGIN);
         bp
     });
     bp.domain("ops.company.com").nest({
@@ -25,50 +24,55 @@ pub fn blueprint() -> Blueprint {
     });
     bp.domain("{sub}.company.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::base_sub));
+        bp.route(BASE_SUB);
         bp
     });
     bp.domain("{*any}.{sub}.company.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::base_any));
+        bp.route(BASE_ANY);
         bp
     });
     bp.fallback(ROOT_FALLBACK);
     bp
 }
 
-pub fn admin_root() -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn admin_root() -> pavex::Response {
     Response::ok().set_typed_body("admin.company.com /")
 }
 
 #[pavex::fallback]
-pub fn admin_fallback() -> pavex::response::Response {
+pub fn admin_fallback() -> pavex::Response {
     Response::ok().set_typed_body("admin.company.com fallback")
 }
 
 #[pavex::fallback]
-pub fn ops_fallback() -> pavex::response::Response {
+pub fn ops_fallback() -> pavex::Response {
     Response::ok().set_typed_body("ops.company.com fallback")
 }
 
-pub fn base_root() -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn base_root() -> pavex::Response {
     Response::ok().set_typed_body("company.com /")
 }
 
-pub fn base_login() -> pavex::response::Response {
+#[pavex::get(path = "/login")]
+pub fn base_login() -> pavex::Response {
     Response::ok().set_typed_body("company.com /login")
 }
 
-pub fn base_sub() -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn base_sub() -> pavex::Response {
     Response::ok().set_typed_body("{sub}.company.com /")
 }
 
-pub fn base_any() -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn base_any() -> pavex::Response {
     Response::ok().set_typed_body("{*any}.{sub}.company.com /")
 }
 
 #[pavex::fallback]
-pub fn root_fallback(head: &RequestHead) -> pavex::response::Response {
+pub fn root_fallback(head: &RequestHead) -> pavex::Response {
     let host = head
         .headers
         .get(pavex::http::header::HOST)

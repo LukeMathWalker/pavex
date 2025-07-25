@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "quickstart/project/app",
+    "quickstart/project/server",
+    "quickstart/project/server_sdk",
+]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"

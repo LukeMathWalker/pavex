@@ -1,4 +1,8 @@
-use pavex::{cookie::ResponseCookies, post_process, response::Response};
+use pavex::{
+    Response,
+    cookie::{Processor, ResponseCookies},
+    post_process,
+};
 use tracing::Span;
 
 use crate::{Session, errors::FinalizeError};
@@ -15,6 +19,12 @@ use crate::{Session, errors::FinalizeError};
 pub async fn finalize_session<'store>(
     response: Response,
     response_cookies: &mut ResponseCookies,
+    // TODO: we'll use the processor to make sure that the outgoing
+    //  session cookie is:
+    //  - encrypted, if the client state is not empty
+    //  - signed, otherwise
+    //  But adding it now to avoid breaking changes later.
+    _processor: &Processor,
     mut session: Session<'store>,
 ) -> Result<Response, FinalizeError> {
     let cookie = session.finalize().await?;

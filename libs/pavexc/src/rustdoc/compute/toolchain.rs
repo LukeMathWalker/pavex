@@ -16,9 +16,9 @@ pub(crate) fn get_toolchain_crate_docs(
     toolchain_name: &str,
 ) -> Result<rustdoc_types::Crate, anyhow::Error> {
     let root_folder = get_json_docs_root_folder_via_rustup(toolchain_name)?;
-    let json_path = root_folder.join(format!("{}.json", name));
+    let json_path = root_folder.join(format!("{name}.json"));
     let json = fs_err::read_to_string(json_path)
-        .with_context(|| format!("Failed to retrieve the JSON docs for {}", name))?;
+        .with_context(|| format!("Failed to retrieve the JSON docs for {name}"))?;
     let mut krate = match serde_json::from_str::<rustdoc_types::Crate>(&json) {
         Ok(krate) => krate,
         Err(e) => {
@@ -30,7 +30,7 @@ pub(crate) fn get_toolchain_crate_docs(
                     )
                 })
             } _ => {
-                Err(e).with_context(|| format!("Failed to deserialize the JSON docs for {}", name))
+                Err(e).with_context(|| format!("Failed to deserialize the JSON docs for {name}"))
             }};
         }
     };

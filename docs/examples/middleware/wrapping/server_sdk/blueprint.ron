@@ -1,0 +1,87 @@
+(
+    creation_location: (
+        line: 6,
+        column: 18,
+        file: "middleware/wrapping/src/blueprint.rs",
+    ),
+    components: [
+        wrapping_middleware((
+            coordinates: (
+                id: "TIMEOUT",
+                created_at: (
+                    package_name: "wrapping",
+                    package_version: "0.1.0",
+                ),
+                macro_name: "wrap",
+            ),
+            registered_at: (
+                line: 7,
+                column: 8,
+                file: "middleware/wrapping/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+        wrapping_middleware((
+            coordinates: (
+                id: "LOGGER",
+                created_at: (
+                    package_name: "wrapping",
+                    package_version: "0.1.0",
+                ),
+                macro_name: "wrap",
+            ),
+            registered_at: (
+                line: 9,
+                column: 8,
+                file: "middleware/wrapping/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+        wrapping_middleware((
+            coordinates: (
+                id: "DEBUG_WRAPPER",
+                created_at: (
+                    package_name: "wrapping",
+                    package_version: "0.1.0",
+                ),
+                macro_name: "wrap",
+            ),
+            registered_at: (
+                line: 10,
+                column: 8,
+                file: "middleware/wrapping/src/blueprint.rs",
+            ),
+            error_handler: None,
+        )),
+        import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "wrapping::blueprint",
+            created_at: (
+                package_name: "wrapping",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 11,
+                column: 8,
+                file: "middleware/wrapping/src/blueprint.rs",
+            ),
+        )),
+        routes_import((
+            sources: some([
+                "crate",
+            ]),
+            relative_to: "wrapping::blueprint",
+            created_at: (
+                package_name: "wrapping",
+                package_version: "0.1.0",
+            ),
+            registered_at: (
+                line: 12,
+                column: 8,
+                file: "middleware/wrapping/src/blueprint.rs",
+            ),
+        )),
+    ],
+)

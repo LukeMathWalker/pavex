@@ -21,7 +21,7 @@ use uuid::Uuid;
 ///
 /// ```rust
 /// use http::{HeaderName, HeaderValue};
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// use pavex::telemetry::ServerRequestId;
 ///
 /// pub async fn request_handler(request_id: ServerRequestId) -> Response {
@@ -55,7 +55,7 @@ impl ServerRequestId {
     ///
     /// It generates a new request id using a [UUID v7](https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format-04#name-uuid-version-7),
     /// with a random number and the current (UNIX) timestamp.
-    #[request_scoped]
+    #[request_scoped(pavex = crate, clone_if_necessary)]
     pub fn generate() -> Self {
         Self(TypeSafeId::from_uuid(Uuid::now_v7()))
     }

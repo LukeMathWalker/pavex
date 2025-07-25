@@ -1,0 +1,34 @@
+name: Workspace hack
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      # Check https://docs.rs/cargo-hakari/0.9.29/cargo_hakari/#installation
+      # to learn how to install cargo-hakari locally
+      - name: Install cargo-hakari
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hakari
+      - name: Verify workspace-hack
+        run: |
+          # Check that workspace_hack's Cargo.toml is up-to-date
+          # If this fails, run `cargo hakari generate` to fix it
+          cargo hakari generate --diff  
+          # Check that all workspace crates depend on workspace_hack
+          # If this fails, run `cargo hakari manage-deps` to fix it
+          cargo hakari manage-deps --dry-run

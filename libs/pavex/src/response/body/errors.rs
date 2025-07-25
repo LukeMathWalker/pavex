@@ -1,2 +1,2 @@
-//! Errors that can arise when building a [`Response`](crate::response::Response) body.
+//! Errors that can arise when building a [`Response`](crate::Response) body.
 pub use super::json::JsonSerializationError;

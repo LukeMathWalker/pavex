@@ -1,8 +1,0 @@
-starter_project_folder: "project"
-commands:
-  - command: "cargo px c"
-    expected_outcome: "success"
-snippets:
-  - name: "handler"
-    source_path: "src/base/handler.rs"
-    ranges: [ "0..5", "6..8" ]

@@ -3,7 +3,7 @@ use pavexc_attr_parser::{AnnotationProperties, errors};
 
 // Convenience function to parse a single attribute string.
 fn parse(attrs: &str) -> Result<Option<AnnotationProperties>, errors::AttributeParserError> {
-    pavexc_attr_parser::parse(&[attrs.to_owned()])
+    pavexc_attr_parser::parse(std::iter::once(attrs))
 }
 
 #[test]
@@ -24,28 +24,32 @@ fn test_unknown_pavex_attribute() {
 
 #[test]
 fn test_invalid_constructor_lifecycle() {
-    let err = parse(r#"#[diagnostic::pavex::constructor(lifecycle = "worker")]"#).unwrap_err();
+    let err =
+        parse(r#"#[diagnostic::pavex::constructor(id = "B", lifecycle = "worker")]"#).unwrap_err();
     insta::assert_snapshot!(err, @"Unknown literal value `worker` at lifecycle for `pavex::diagnostic::constructor` attribute");
 }
 
 #[test]
-fn test_cloning_strategy_can_be_omitted() {
-    let c = parse(r#"#[diagnostic::pavex::constructor(lifecycle = "singleton")]"#)
+fn test_cloning_policy_can_be_omitted() {
+    let c = parse(r#"#[diagnostic::pavex::constructor(id = "B", lifecycle = "singleton")]"#)
         .unwrap()
         .unwrap();
     assert_eq!(
         c,
         AnnotationProperties::Constructor {
+            id: "B".into(),
             lifecycle: Lifecycle::Singleton,
-            cloning_strategy: None,
-            error_handler: None
+            cloning_policy: None,
+            allow_unused: None,
+            allow_error_fallback: None,
         }
     );
 }
 
 #[test]
 fn test_unknown_property_for_constructor() {
-    let err = parse(r#"#[diagnostic::pavex::constructor(lifecycle = "singleton", beautiful)]"#)
-        .unwrap_err();
+    let err =
+        parse(r#"#[diagnostic::pavex::constructor(id = "B", lifecycle = "singleton", beautiful)]"#)
+            .unwrap_err();
     insta::assert_snapshot!(err, @"Unknown field: `beautiful` for `pavex::diagnostic::constructor` attribute");
 }

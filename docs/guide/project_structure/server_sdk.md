@@ -52,5 +52,5 @@ the number of worker threads to be used, etc.\
 
 But who is in charge of invoking `run`? The `main` function in the [server crate](server.md)!
 
-[Blueprint]: /api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint]: /api_reference/pavex/struct.Blueprint.html
 [Server]: /api_reference/pavex/server/struct.Server.html

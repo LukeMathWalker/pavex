@@ -1,0 +1,9 @@
+```rust hl_lines="4"
+use pavex::Response;
+use pavex::get;
+
+#[get(path = "/greet")]
+pub fn anonymous_greet() -> Response {
+    Response::ok().set_typed_body("Hello world!")
+}
+```

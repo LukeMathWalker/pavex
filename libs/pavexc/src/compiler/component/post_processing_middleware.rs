@@ -15,9 +15,9 @@ use std::borrow::Cow;
 ///
 /// # Output type
 ///
-/// If infallible, the output type must implement `pavex::response::IntoResponse`.
+/// If infallible, the output type must implement `pavex::IntoResponse`.
 /// If fallible, the output type must be a `Result<T, E>` where `T` implements
-/// `pavex::response::IntoResponse`.
+/// `pavex::IntoResponse`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct PostProcessingMiddleware<'a> {
     pub(crate) callable: Cow<'a, Callable>,
@@ -99,23 +99,23 @@ impl<'a> PostProcessingMiddleware<'a> {
 pub(crate) enum PostProcessingMiddlewareValidationError {
     #[error(
         "Post-processing middlewares must return a type that can be converted into a \
-        `pavex::response::Response`.\n\
+        `pavex::Response`.\n\
         This middleware doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response."
     )]
     CannotReturnTheUnitType,
     #[error(
         "Post-processing middlewares must return a type that can be converted into a \
-        `pavex::response::Response`.\n\
+        `pavex::Response`.\n\
         This middleware doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
     )]
     CannotFalliblyReturnTheUnitType,
     #[error(
-        "Post-processing middlewares must take an instance of `pavex::response::Response` as one of their input parameters.\n\
+        "Post-processing middlewares must take an instance of `pavex::Response` as one of their input parameters.\n\
         This middleware doesn't."
     )]
     MustTakeResponseAsInputParameter,
     #[error(
-        "Post-processing middlewares can't take more than one instance of `pavex::response::Response` as input parameter.\n\
+        "Post-processing middlewares can't take more than one instance of `pavex::Response` as input parameter.\n\
         This middleware does."
     )]
     CannotTakeMoreThanOneResponseAsInputParameter,

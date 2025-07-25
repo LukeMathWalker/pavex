@@ -1,4 +1,0 @@
-description = "Verify the quality of the compiler error when an invalid path is provided to f!"
-
-[expectations]
-codegen = "fail"

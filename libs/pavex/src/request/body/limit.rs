@@ -19,7 +19,7 @@ pub enum BodySizeLimit {
 #[methods]
 impl BodySizeLimit {
     /// Create a new [`BodySizeLimit`] using the default limit (2 MBs).
-    #[request_scoped]
+    #[request_scoped(pavex = crate)]
     pub fn new() -> BodySizeLimit {
         Self::default()
     }

@@ -1,5 +1,5 @@
 //! Errors that can occur while extracting information from the request body.
-use crate::response::Response;
+use crate::Response;
 use pavex_macros::methods;
 use ubyte::ByteUnit;
 
@@ -30,7 +30,7 @@ impl ExtractJsonBodyError {
             | ExtractJsonBodyError::ContentTypeMismatch(_) => Response::unsupported_media_type(),
             ExtractJsonBodyError::DeserializationError(_) => Response::bad_request(),
         }
-        .set_typed_body(format!("{}", self))
+        .set_typed_body(format!("{self}"))
     }
 }
 
@@ -57,7 +57,7 @@ impl ExtractBufferedBodyError {
             ExtractBufferedBodyError::SizeLimitExceeded(_) => Response::payload_too_large(),
             ExtractBufferedBodyError::UnexpectedBufferError(_) => Response::internal_server_error(),
         }
-        .set_typed_body(format!("{}", self))
+        .set_typed_body(format!("{self}"))
     }
 }
 
@@ -90,7 +90,7 @@ impl ExtractUrlEncodedBodyError {
             }
             ExtractUrlEncodedBodyError::DeserializationError(_) => Response::bad_request(),
         }
-        .set_typed_body(format!("{}", self))
+        .set_typed_body(format!("{self}"))
     }
 }
 

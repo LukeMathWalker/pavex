@@ -1,0 +1,4 @@
+description = """Identifiers must be unique within a given package"""
+
+[expectations]
+codegen = "fail"

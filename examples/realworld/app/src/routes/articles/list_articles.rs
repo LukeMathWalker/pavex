@@ -1,3 +1,4 @@
+use pavex::get;
 use pavex::{http::StatusCode, request::query::QueryParams};
 
 use crate::schemas::Article;
@@ -29,6 +30,7 @@ pub struct ListArticlesResponse {
     pub articles_count: u64,
 }
 
+#[get(path = "")]
 pub fn list_articles(_params: QueryParams<ListArticles>) -> StatusCode {
     StatusCode::OK
 }

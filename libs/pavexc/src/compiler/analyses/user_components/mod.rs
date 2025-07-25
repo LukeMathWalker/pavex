@@ -11,7 +11,6 @@ mod blueprint;
 mod component;
 mod db;
 mod imports;
-mod paths;
 mod router;
 mod router_key;
 mod scope_graph;

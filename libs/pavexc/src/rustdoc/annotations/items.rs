@@ -1,34 +1,59 @@
 use std::collections::BTreeMap;
 
-use guppy::graph::PackageGraph;
-use itertools::Itertools as _;
-use pavex_bp_schema::{CreatedAt, CreatedBy};
+use pavex_bp_schema::CreatedBy;
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
-use rustdoc_types::ItemEnum;
-
-use super::super::{Crate, SortableId};
 
 /// All the annotated items for a given package.
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnnotatedItems {
-    item_id2details: BTreeMap<SortableId, AnnotatedItem>,
+    item_id2details: BTreeMap<rustdoc_types::Id, AnnotatedItem>,
+    annotation_id2item_id: BTreeMap<String, rustdoc_types::Id>,
 }
 
 impl AnnotatedItems {
     /// Iterate over the annotated items in this package.
     pub fn iter(&self) -> impl Iterator<Item = (rustdoc_types::Id, &AnnotatedItem)> {
-        self.item_id2details.iter().map(|(id, item)| (id.0, item))
+        self.item_id2details.iter().map(|(id, item)| (*id, item))
     }
 
     /// Get the annotation for a specific item, if any.
-    pub fn get(&self, id: rustdoc_types::Id) -> Option<&AnnotatedItem> {
-        self.item_id2details.get(&id.into())
+    pub fn get_by_item_id(&self, id: rustdoc_types::Id) -> Option<&AnnotatedItem> {
+        self.item_id2details.get(&id)
+    }
+
+    /// Get the annotation with a specific id, if any.
+    pub fn get_by_annotation_id(&self, id: &str) -> Option<&AnnotatedItem> {
+        let item_id = self.annotation_id2item_id.get(id)?;
+        self.get_by_item_id(*item_id)
     }
 
     /// Insert an annotated item.
-    pub fn insert(&mut self, id: rustdoc_types::Id, item: AnnotatedItem) {
-        self.item_id2details.insert(id.into(), item);
+    pub fn insert(&mut self, id: rustdoc_types::Id, item: AnnotatedItem) -> Result<(), IdConflict> {
+        let annotation_id = item.properties.id().map(|s| s.to_owned());
+        self.item_id2details.insert(id, item);
+        let Some(annotation_id) = annotation_id else {
+            return Ok(());
+        };
+        let previous = self.annotation_id2item_id.insert(annotation_id.clone(), id);
+        if let Some(previous) = previous
+            && previous != id
+        // ^ This can happen for trait methods, when both the trait and `Self` are defined in the same crate.
+        {
+            Err(IdConflict {
+                first: id,
+                second: previous,
+                annotation_id,
+            })
+        } else {
+            Ok(())
+        }
     }
+}
+
+pub struct IdConflict {
+    pub first: rustdoc_types::Id,
+    pub second: rustdoc_types::Id,
+    pub annotation_id: String,
 }
 
 /// An item decorated with a Pavex annotation.
@@ -43,49 +68,6 @@ pub struct AnnotatedItem {
 }
 
 impl AnnotatedItem {
-    /// Returns the annotation location metadata.
-    pub fn created_at(&self, krate: &Crate, graph: &PackageGraph) -> Option<CreatedAt> {
-        let id = match &self.impl_ {
-            None => self.id,
-            Some(impl_info) => {
-                // FIXME: The `impl` where this method is defined may not be within the same module
-                // where `Self` is defined.
-                // See https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/Module.20items.20don't.20link.20to.20impls.20.5Brustdoc-json.5D
-                // for a discussion on this issue.
-                impl_info.attached_to
-            }
-        };
-        let item = krate.get_item_by_local_type_id(&id);
-        match &item.inner {
-            ItemEnum::Struct(..)
-            | ItemEnum::Enum(..)
-            | ItemEnum::Function(..)
-            | ItemEnum::Trait(..) => {
-                let module_path = {
-                    let fn_path = krate.import_index.items[&item.id]
-                        .defined_at
-                        .as_ref()
-                        .expect("No `defined_at` in the import index for a struct/enum/function/method item.");
-                    fn_path.iter().take(fn_path.len() - 1).join("::")
-                };
-                Some(CreatedAt {
-                    package_name: krate.crate_name(),
-                    package_version: krate.crate_version(graph).to_string(),
-                    module_path,
-                })
-            }
-            ItemEnum::Use(..) => {
-                let module_path = "[missing]".to_owned();
-                Some(CreatedAt {
-                    package_name: krate.crate_name(),
-                    package_version: krate.crate_version(graph).to_string(),
-                    module_path,
-                })
-            }
-            _ => None,
-        }
-    }
-
     /// The name of the macro that was used to attach this annotation.
     pub fn created_by(&self) -> CreatedBy {
         let name = match self.properties.kind() {

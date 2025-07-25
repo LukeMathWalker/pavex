@@ -1,18 +1,19 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
-use pavex::response::Response;
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
+#[pavex::error_handler]
 pub fn error_handler(_e: &pavex::Error) -> Result<Response, String> {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler() -> Result<Response, pavex::Error> {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/home", f!(crate::handler))
-        .error_handler(f!(crate::error_handler));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

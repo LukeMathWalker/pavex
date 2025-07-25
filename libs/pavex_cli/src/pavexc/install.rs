@@ -117,7 +117,7 @@ pub(super) fn install(
         InstallSource::External(ExternalSource::Registry { url }) => {
             if url != guppy::graph::ExternalSource::CRATES_IO_URL {
                 return Err(InstallError::UnsupportedSource(UnsupportedSourceError {
-                    package_source: format!("a private registry ({})", url),
+                    package_source: format!("a private registry ({url})"),
                 }));
             }
             (

@@ -1,18 +1,24 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct Streamer;
 
+#[pavex::request_scoped]
+pub fn alternative_logger() -> dep_55dca802::Logger {
+    todo!()
+}
+
+#[pavex::methods]
 impl Streamer {
-    pub fn stream_file(_logger: dep_55dca802::Logger) -> pavex::response::Response {
+    #[pavex::get(path = "/home")]
+    pub fn stream_file(_logger: dep_55dca802::Logger) -> pavex::Response {
         todo!()
     }
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(dep_55dca802::new_logger), Lifecycle::Singleton);
-    bp.constructor(f!(::dep_55dca802::new_logger), Lifecycle::RequestScoped);
-    bp.route(GET, "/home", f!(crate::Streamer::stream_file));
+    bp.constructor(dep_55dca802::NEW_LOGGER);
+    bp.constructor(ALTERNATIVE_LOGGER);
+    bp.routes(from![crate]);
     bp
 }

@@ -1,10 +1,12 @@
 use darling::util::Flag;
 use pavexc_attr_parser::atoms::MethodArgument;
 use quote::quote;
+use syn::Ident;
 
-use crate::{
+use crate::utils::{
+    AnnotationCodegen,
     fn_like::{Callable, CallableAnnotation, ImplContext},
-    utils::AnnotationCodegen,
+    id::{callable_id_def, default_id},
 };
 
 #[derive(darling::FromMeta, Debug, Clone)]
@@ -12,7 +14,7 @@ use crate::{
 pub struct InputSchema {
     pub method: Option<MethodArgument>,
     pub path: String,
-    pub error_handler: Option<String>,
+    pub id: Option<Ident>,
     pub allow: Option<RouteAllows>,
 }
 
@@ -20,6 +22,7 @@ pub struct InputSchema {
 pub struct RouteAllows {
     non_standard_methods: Flag,
     any_method: Flag,
+    error_fallback: Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -28,9 +31,9 @@ impl TryFrom<InputSchema> for Properties {
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
         let InputSchema {
             path,
-            error_handler,
             method,
             allow,
+            id,
         } = input;
 
         let allow_non_standard_methods = allow
@@ -41,6 +44,9 @@ impl TryFrom<InputSchema> for Properties {
             .as_ref()
             .map(|a| a.any_method.is_present())
             .unwrap_or(false);
+        let allow_error_fallback = allow
+            .as_ref()
+            .map(|a| a.error_fallback.is_present());
 
         if let Some(method) = method.as_ref() {
             if allow_any_method {
@@ -104,10 +110,11 @@ impl TryFrom<InputSchema> for Properties {
 
         Ok(Properties {
             path,
-            error_handler,
             method,
+            id,
             allow_non_standard_methods,
             allow_any_method,
+            allow_error_fallback,
         })
     }
 }
@@ -116,9 +123,10 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub method: Option<MethodArgument>,
     pub path: String,
-    pub error_handler: Option<String>,
+    pub id: Option<syn::Ident>,
     pub allow_non_standard_methods: bool,
     pub allow_any_method: bool,
+    pub allow_error_fallback: Option<bool>,
 }
 
 pub struct RouteAnnotation;
@@ -131,40 +139,40 @@ impl CallableAnnotation for RouteAnnotation {
     type InputSchema = InputSchema;
 
     fn codegen(
-        _impl_: Option<ImplContext>,
+        impl_: Option<ImplContext>,
         metadata: Self::InputSchema,
-        _item: Callable,
+        item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
         let properties = metadata
             .try_into()
             .map_err(|e: darling::Error| e.write_errors())?;
-        Ok(emit(properties))
+        Ok(emit(impl_, item, properties))
     }
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::route]` attribute
 /// that matches the provided properties.
-fn emit(properties: Properties) -> AnnotationCodegen {
+fn emit(impl_: Option<ImplContext>, item: Callable, properties: Properties) -> AnnotationCodegen {
     let Properties {
         method,
         path,
-        error_handler,
         allow_non_standard_methods,
         allow_any_method,
+        allow_error_fallback,
+        id,
     } = properties;
 
+    let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
+    let id_str = id.to_string();
+
     let mut properties = quote! {
+        id = #id_str,
         path = #path,
     };
 
     if let Some(method) = method {
         properties.extend(quote! {
             method = #method,
-        });
-    }
-    if let Some(error_handler) = error_handler {
-        properties.extend(quote! {
-            error_handler = #error_handler,
         });
     }
     if allow_non_standard_methods {
@@ -177,9 +185,23 @@ fn emit(properties: Properties) -> AnnotationCodegen {
             allow_any_method = true,
         });
     }
-
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
+        });
+    }
     AnnotationCodegen {
-        id_def: None,
+        id_def: Some(callable_id_def(
+            &id,
+            None,
+            "route",
+            "Route",
+            "a route",
+            "route",
+            true,
+            impl_.as_ref(),
+            &item,
+        )),
         new_attributes: vec![syn::parse_quote! {
             #[diagnostic::pavex::route(#properties)]
         }],

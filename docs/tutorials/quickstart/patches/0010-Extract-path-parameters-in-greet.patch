@@ -1,0 +1,32 @@
+From 3a71730658378263e203b4b0bb79c2ff5429b32b Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 13:06:21 +0200
+Subject: [PATCH 10/34] Extract path parameters in greet
+
+---
+ app/src/routes/greet.rs | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
+index 24ffedf..5824a50 100644
+--- a/app/src/routes/greet.rs
++++ b/app/src/routes/greet.rs
+@@ -1,6 +1,12 @@
+-use pavex::{Response, get};
++use pavex::{Response, get, request::path::PathParams};
++
++#[PathParams]
++pub struct GreetParams {
++    pub name: String,
++}
+ 
+ #[get(path = "/greet/{name}")]
+-pub fn greet() -> Response {
+-    todo!()
++pub fn greet(params: PathParams<GreetParams>) -> Response {
++    let GreetParams { name } = params.0;
++    Response::ok().set_typed_body(format!("Hello, {name}!"))
+ }
+-- 
+2.39.5 (Apple Git-154)
+

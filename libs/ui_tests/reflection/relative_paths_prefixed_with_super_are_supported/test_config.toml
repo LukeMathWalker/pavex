@@ -1,4 +1,0 @@
-description = "Pavex can resolve paths that use `super` as their beginning"
-
-[expectations]
-codegen = "pass"

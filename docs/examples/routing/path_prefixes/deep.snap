@@ -1,0 +1,26 @@
+```rust hl_lines="5 11 17"
+use pavex::{Blueprint, get, http::StatusCode};
+
+pub fn bp() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.prefix("/home").nest(home_bp());
+    // [...]
+}
+
+pub fn home_bp() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.prefix("/{home_id}").nest(room_bp());
+    // [...]
+}
+
+pub fn room_bp() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.route(GET_ROOM);
+    // [...]
+}
+
+#[get(path = "/room/{room_id}")]
+pub fn get_room() -> StatusCode {
+    StatusCode::OK
+}
+```

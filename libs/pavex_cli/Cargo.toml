@@ -20,12 +20,12 @@ vergen-gitcl = { workspace = true }
 anyhow = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.80" }
-pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.80" }
-pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.1.80" }
-pavex_cli_flock = { path = "../pavex_cli_flock", version = "0.1.80" }
-pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.1.80" }
-pavex_miette = { path = "../pavex_miette", version = "0.1.80" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.2.1" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.2.1" }
+pavex_cli_shell = { path = "../pavex_cli_shell", version = "0.2.1" }
+pavex_cli_flock = { path = "../pavex_cli_flock", version = "0.2.1" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "0.2.1" }
+pavex_miette = { path = "../pavex_miette", version = "0.2.1" }
 tracing_log_error = { workspace = true }
 async-trait = { workspace = true }
 http = { workspace = true }
@@ -71,7 +71,6 @@ jsonwebtoken = { workspace = true }
 ring = { workspace = true }
 pem = { workspace = true }
 jiff = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }

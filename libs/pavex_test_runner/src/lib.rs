@@ -198,7 +198,7 @@ pub fn run_tests(
         println!("Running integration tests for {n_integration_cases} test cases");
         let timer = std::time::Instant::now();
         for (name, data) in test_name2test_data {
-            let trial_name = format!("{}::app_integration_tests", name);
+            let trial_name = format!("{name}::app_integration_tests");
             match application_integration_test(&data) {
                 Ok(_) => {
                     let trial = Trial::test(trial_name, || Ok(()));
@@ -243,6 +243,9 @@ fn compile_generated_apps(
         .map(|data| data.generated_crate_name())
         .collect::<BTreeSet<_>>();
     let timer = std::time::Instant::now();
+    if generated_crate_names.is_empty() {
+        return Ok((Vec::new(), BTreeMap::new()));
+    }
     println!("Compiling {} generated crates", generated_crate_names.len());
     let mut cmd = Command::new("cargo");
     cmd.arg("check").arg("--message-format").arg("json");
@@ -511,6 +514,7 @@ debug = "none""##
     .unwrap();
     writeln!(&mut cargo_toml, "reqwest = \"0.12\"").unwrap();
     writeln!(&mut cargo_toml, "tokio = \"1\"").unwrap();
+    writeln!(&mut cargo_toml, "thiserror = \"2\"").unwrap();
     writeln!(
         &mut cargo_toml,
         r#"serde = {{ version = "1", features = ["derive"] }}"#
@@ -603,7 +607,7 @@ impl TestData {
             // Get the first 8 hex characters of the hash, they should be enough to identify the test
             let mut hash = String::new();
             for byte in full_hash.iter().take(4) {
-                write!(&mut hash, "{:02x}", byte).unwrap();
+                write!(&mut hash, "{byte:02x}").unwrap();
             }
             hash
         };
@@ -795,14 +799,14 @@ fn code_generation_test(
     {
         Ok(o) => o,
         Err(e) => {
-            let msg = format!("Failed to invoke the code generator.\n{:?}", e);
+            let msg = format!("Failed to invoke the code generator.\n{e:?}");
             return (None, CodegenTestOutcome::Failure { msg });
         }
     };
     let codegen_output = match CommandOutput::try_from(&output) {
         Ok(o) => o,
         Err(e) => {
-            let msg = format!("Failed to convert the code generator output.\n{:?}", e);
+            let msg = format!("Failed to convert the code generator output.\n{e:?}");
             return (None, CodegenTestOutcome::Failure { msg });
         }
     };
@@ -895,8 +899,7 @@ fn code_generation_diagnostics_test(test_name: &str, test: &TestData) -> Trial {
         Ok(d) => d,
         Err(e) => {
             let msg = format!(
-                "Code generation didn't produce a diagnostic file in the expected location.\n{:?}",
-                e
+                "Code generation didn't produce a diagnostic file in the expected location.\n{e:?}"
             );
             return Trial::test(test_name, move || Err(Failed::from(msg)));
         }
@@ -922,8 +925,7 @@ fn application_code_test(test_name: &str, test: &TestData) -> Trial {
         Ok(d) => d,
         Err(e) => {
             let msg = format!(
-                "Code generation didn't produce a `lib.rs` file in the expected location.\n{:?}",
-                e
+                "Code generation didn't produce a `lib.rs` file in the expected location.\n{e:?}"
             );
             return Trial::test(test_name, move || Err(Failed::from(msg)));
         }

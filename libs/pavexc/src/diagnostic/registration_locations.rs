@@ -70,6 +70,7 @@ pub(crate) fn attribute_error_handler_span(
     };
 
     #[derive(darling::FromMeta)]
+    #[darling(allow_unknown_fields)]
     struct Property {
         error_handler: darling::util::SpannedValue<String>,
     }
@@ -105,6 +106,7 @@ pub(crate) fn route_path_attr_span(
     };
 
     #[derive(darling::FromMeta)]
+    #[darling(allow_unknown_fields)]
     struct Property {
         path: darling::util::SpannedValue<String>,
     }
@@ -166,9 +168,8 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
             let argument_index = match node.method.to_string().as_str() {
                 "error_handler" | "error_observer" | "constructor" | "wrap" | "pre_process"
                 | "post_process" | "fallback" | "singleton" | "request_scoped" | "transient"
-                | "prebuilt" => 0,
+                | "prebuilt" | "route" => 0,
                 "config" => 1,
-                "route" => 2,
                 s => {
                     tracing::trace!(
                         "Unknown method name when looking for component registration: {}",
@@ -198,6 +199,7 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
                         | ("Blueprint", "post_process")
                         | ("Blueprint", "prebuilt")
                         | ("Blueprint", "fallback")
+                        | ("Blueprint", "route")
                         | ("ConfigType", "new") => {
                             // Blueprint::error_handler(bp, handler)
                             // Blueprint::error_observer(bp, observer)
@@ -211,36 +213,22 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
                             // Blueprint::fallback(bp, fallback)
                             // Blueprint::prebuilt(bp, prebuilt)
                             // ConfigType::new(key, config)
+                            // Blueprint::route(bp, handler)
                             1
                         }
-                        ("Blueprint", "route") => {
-                            // Blueprint::route(bp, method, path_pattern, handler)
-                            3
-                        }
-                        ("Route", "new") | ("Blueprint", "config") => {
+                        ("Blueprint", "config") => {
                             // Blueprint::config(bp, key, config)
-                            // Route::new(method, path_pattern, handler)
                             2
                         }
                         ("Constructor", "new")
                         | ("Constructor", "request_scoped")
                         | ("Constructor", "transient")
                         | ("Constructor", "singleton")
-                        | ("WrappingMiddleware", "new")
-                        | ("PreProcessingMiddleware", "new")
-                        | ("PostProcessingMiddleware", "new")
-                        | ("ErrorObserver", "new")
-                        | ("PrebuiltType", "new")
-                        | ("Fallback", "new") => {
+                        | ("PrebuiltType", "new") => {
                             // Constructor::new(constructor, lifecycle)
                             // Constructor::request_scoped(constructor)
                             // Constructor::transient(constructor)
                             // Constructor::singleton(constructor)
-                            // WrappingMiddleware::new(mw)
-                            // PreProcessingMiddleware::new(mw)
-                            // PostProcessingMiddleware::new(mw)
-                            // ErrorObserver::new(observer)
-                            // Fallback::new(fallback)
                             // PrebuiltType::new(prebuilt)
                             0
                         }
@@ -355,6 +343,7 @@ pub(crate) fn attribute_config_key_span(
     };
 
     #[derive(darling::FromMeta)]
+    #[darling(allow_unknown_fields)]
     struct Property {
         key: darling::util::SpannedValue<String>,
     }

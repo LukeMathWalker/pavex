@@ -7,6 +7,9 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[lints]
+clippy = { large_enum_variant = "allow", result_large_err = "allow" }
+
 [build-dependencies]
 vergen-gitcl = { workspace = true }
 anyhow = { workspace = true }
@@ -19,12 +22,13 @@ anyhow = { workspace = true }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.80" }
-pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.1.80" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.80" }
-pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.80" }
-pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.80" }
-rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.80", package = "pavexc_rustdoc_types" }
+pavex = { path = "../pavex", version = "0.2.1" }
+pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.2.1" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.1" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.2.1" }
+pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.2.1" }
+pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.2.1" }
+rustdoc-types = { workspace = true }
 cargo-like-utils = { workspace = true }
 tracing_log_error = { workspace = true }
 darling = { workspace = true }
@@ -35,7 +39,7 @@ serde_stacker = { workspace = true }
 anyhow = { workspace = true }
 fs-err = { workspace = true }
 indexmap = { workspace = true, features = ["serde"] }
-petgraph = { workspace = true, features = ["graphmap", "stable_graph"] }
+petgraph = { workspace = true, features = ["graphmap", "stable_graph", "std"] }
 bimap = { workspace = true }
 prettyplease = { workspace = true }
 quote = { workspace = true }
@@ -56,7 +60,7 @@ once_cell = { workspace = true }
 toml = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.80" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.2.1" }
 matchit = { workspace = true }
 relative-path = { workspace = true }
 camino = { workspace = true }
@@ -72,7 +76,6 @@ r2d2 = { workspace = true }
 bincode = { workspace = true, features = ["serde"] }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 insta = { workspace = true }

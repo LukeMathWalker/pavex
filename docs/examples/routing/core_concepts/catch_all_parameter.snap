@@ -1,0 +1,17 @@
+```rust hl_lines="11"
+use pavex::Response;
+use pavex::get;
+use pavex::request::path::PathParams;
+
+#[PathParams]
+pub struct Info {
+    pub name: String,
+    pub details: Vec<String>,
+}
+
+#[get(path = "/info/{name}/{*details}")]
+pub fn detailed_info(info: PathParams<Info>) -> Response {
+    let body = format!("Hello, {}!", info.0.name);
+    Response::ok().set_typed_body(body)
+}
+```

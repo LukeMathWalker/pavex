@@ -1,12 +1,12 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
-use pavex::f;
+use pavex::Blueprint;
 
 pub struct Logger;
 
+#[pavex::transient]
 pub fn new_logger() -> Logger {
     todo!()
 }
 
 pub fn add_logger(bp: &mut Blueprint) {
-    bp.constructor(f!(crate::new_logger), Lifecycle::Transient);
+    bp.constructor(NEW_LOGGER);
 }

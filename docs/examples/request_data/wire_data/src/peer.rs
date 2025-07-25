@@ -1,0 +1,10 @@
+//! px:peer
+use pavex::Response;
+use pavex::connection::ConnectionInfo;
+use pavex::get;
+
+#[get(path = "/peer")]
+pub fn connection_info(conn: ConnectionInfo) -> Response {
+    let addr = conn.peer_addr();
+    Response::ok().set_typed_body(format!("Your address is {addr}"))
+}

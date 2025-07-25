@@ -1,16 +1,16 @@
-use constructor::{
-    ConstructorAnnotataion, RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation,
-};
+use config::ConfigAnnotation;
+use constructor::{RequestScopedAnnotation, SingletonAnnotation, TransientAnnotation};
 use error_handler::ErrorHandlerAnnotation;
 use error_observer::ErrorObserverAnnotation;
 use fallback::FallbackAnnotation;
-use fn_like::direct_entrypoint;
 use middlewares::{PostProcessAnnotation, PreProcessAnnotation, WrapAnnotation};
+use prebuilt::PrebuiltAnnotation;
 use proc_macro::TokenStream;
 use routes::{
     DeleteAnnotation, GetAnnotation, HeadAnnotation, OptionsAnnotation, PatchAnnotation,
     PostAnnotation, PutAnnotation, RouteAnnotation,
 };
+use utils::{fn_like::direct_entrypoint, type_like};
 
 mod config;
 mod config_profile;
@@ -18,7 +18,6 @@ mod constructor;
 mod error_handler;
 mod error_observer;
 mod fallback;
-mod fn_like;
 mod from;
 mod methods;
 mod middlewares;
@@ -27,7 +26,7 @@ mod prebuilt;
 mod routes;
 pub(crate) mod utils;
 
-#[proc_macro_derive(ConfigProfile, attributes(pavex))]
+#[proc_macro_derive(ConfigProfile, attributes(px))]
 pub fn derive_config_profile(input: TokenStream) -> TokenStream {
     config_profile::derive_config_profile(input)
 }
@@ -52,12 +51,12 @@ pub fn methods(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn config(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    config::config(metadata, input)
+    type_like::entrypoint::<ConfigAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
 pub fn prebuilt(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    prebuilt::prebuilt(metadata, input)
+    type_like::entrypoint::<PrebuiltAnnotation>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]
@@ -83,11 +82,6 @@ pub fn pre_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn post_process(metadata: TokenStream, input: TokenStream) -> TokenStream {
     direct_entrypoint::<PostProcessAnnotation>(metadata.into(), input.into())
-}
-
-#[proc_macro_attribute]
-pub fn constructor(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    direct_entrypoint::<ConstructorAnnotataion>(metadata.into(), input.into())
 }
 
 #[proc_macro_attribute]

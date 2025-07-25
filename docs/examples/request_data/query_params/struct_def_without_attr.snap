@@ -1,0 +1,6 @@
+```rust hl_lines="3"
+// [...]
+pub struct SearchParams {
+    pub sorted: bool,
+}
+```

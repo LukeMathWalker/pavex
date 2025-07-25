@@ -9,20 +9,20 @@ use crate::response::body::raw::RawBody;
 
 use super::raw::Bytes;
 
-/// The body type used in Pavex's [`Response`](crate::response::Response)s.
+/// The body type used in Pavex's [`Response`](crate::Response)s.
 ///
 /// # Low-level
 ///
-/// You'll rarely have to work with `ResponseBody` directly.  
+/// You'll rarely have to work with `ResponseBody` directly.
 /// Rely on [`Response::set_typed_body`] and [`Response::set_raw_body`] to
-/// build the body of your responses.  
+/// build the body of your responses.
 /// `ResponseBody` is part of the public API to give a name to the type returned by
 /// [`Response::body`] and [`Response::body_mut`].
 ///
-/// [`Response::set_typed_body`]: crate::response::Response::set_typed_body
-/// [`Response::set_raw_body`]: crate::response::Response::set_raw_body
-/// [`Response::body`]: crate::response::Response::body
-/// [`Response::body_mut`]: crate::response::Response::body_mut
+/// [`Response::set_typed_body`]: crate::Response::set_typed_body
+/// [`Response::set_raw_body`]: crate::Response::set_raw_body
+/// [`Response::body`]: crate::Response::body
+/// [`Response::body_mut`]: crate::Response::body_mut
 #[derive(Debug)]
 pub struct ResponseBody(UnsyncBoxBody<Bytes, crate::Error>);
 

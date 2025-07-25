@@ -1,0 +1,4 @@
+[env]
+# Most examples don't change between runs, so we can cache them
+# with a high hit rate.
+PAVEXC_CACHE_WORKSPACE_PACKAGES = "true"

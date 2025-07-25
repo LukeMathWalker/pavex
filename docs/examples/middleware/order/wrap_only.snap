@@ -1,0 +1,13 @@
+```rust
+// [...]
+use pavex::Blueprint;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+
+    bp.wrap(WRAP_1);
+    bp.wrap(WRAP_2);
+    bp.route(GET_INDEX);
+    // [...]
+}
+```

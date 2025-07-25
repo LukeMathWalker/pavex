@@ -40,10 +40,7 @@ fn main() {
         ("build_clis_steps", "job_steps/build_clis.jinja"),
         ("starter_steps", "job_steps/starter_example.jinja"),
         ("example_steps", "job_steps/example.jinja"),
-        (
-            "build_tutorial_generator_steps",
-            "job_steps/build_tutorial_generator.jinja",
-        ),
+        ("build_pxh_steps", "job_steps/build_pxh.jinja"),
         ("is_up_to_date_steps", "job_steps/is_up_to_date.jinja"),
         ("tests_steps", "job_steps/tests.jinja"),
         ("macro_tests_steps", "job_steps/macro_tests.jinja"),

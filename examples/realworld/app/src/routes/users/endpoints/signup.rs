@@ -3,14 +3,12 @@ use crate::{
 };
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
-use pavex::{
-    request::body::JsonBody,
-    response::{Response, body::Json},
-};
+use pavex::{Response, methods, post, request::body::JsonBody, response::body::Json};
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 
 /// Create a new user.
+#[post(path = "/users")]
 pub async fn signup(
     body: JsonBody<Signup>,
     db_pool: &PgPool,
@@ -66,7 +64,9 @@ pub enum SignupError {
     UnexpectedError(#[source] anyhow::Error),
 }
 
+#[methods]
 impl SignupError {
+    #[error_handler]
     pub fn into_response(&self) -> Response {
         match self {
             SignupError::UnexpectedError(_) => Response::internal_server_error(),

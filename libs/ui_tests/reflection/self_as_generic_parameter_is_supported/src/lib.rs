@@ -1,26 +1,28 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct A {}
 
+#[pavex::methods]
 impl A {
+    #[request_scoped]
     pub fn new() -> anyhow::Result<Self> {
         todo!()
     }
 }
 
-pub fn error_handler(_err: &anyhow::Error) -> pavex::response::Response {
+#[pavex::error_handler]
+pub fn error_handler(_err: &anyhow::Error) -> pavex::Response {
     todo!()
 }
 
-pub fn handler(_inner: A) -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn handler(_inner: A) -> pavex::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::A::new))
-        .error_handler(f!(crate::error_handler));
-    bp.route(GET, "/home", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.routes(from![crate]);
     bp
 }

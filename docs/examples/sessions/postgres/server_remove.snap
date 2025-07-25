@@ -1,0 +1,11 @@
+```rust hl_lines="7"
+use anyhow::Error;
+use pavex::Response;
+use pavex_session::Session;
+
+#[pavex::get(path = "/remove")]
+pub async fn remove(session: &mut Session<'_>) -> Result<Response, Error> {
+    let user_id: Option<String> /* (1)! */ = session.remove("user.id").await?;
+    // [...]
+}
+```

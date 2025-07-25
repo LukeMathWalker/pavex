@@ -22,8 +22,8 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 
 [dependencies]
 jiff-sqlx = { workspace = true }
-pavex_session = { version = "0.1.80", path = "../pavex_session" }
-pavex = { version = "0.1.80", path = "../pavex" }
+pavex_session = { version = "0.2.1", path = "../pavex_session" }
+pavex = { version = "0.2.1", path = "../pavex" }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
@@ -31,11 +31,9 @@ tracing = { workspace = true }
 anyhow = { workspace = true }
 sqlx = { workspace = true, default-features = true, features = ["uuid"] }
 
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
-
 [dev-dependencies]
 pavex_session_sqlx = { path = ".", features = ["postgres", "sqlite"] }
 pavex_tracing = { path = "../pavex_tracing" }
-tokio = { workspace = true, features = ["rt-multi-thread", "time"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "time", "macros"] }
 tempfile = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }

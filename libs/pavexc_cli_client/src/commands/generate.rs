@@ -1,7 +1,7 @@
 use std::{path::PathBuf, process::Command};
 
 use crate::commands::errors::{InvocationError, NonZeroExitCode, SignalTermination};
-use pavex::blueprint::Blueprint;
+use pavex::Blueprint;
 
 /// The configuration for `pavexc`'s `generate` command.
 ///
@@ -75,7 +75,7 @@ impl GenerateBuilder {
     /// but do not run it.
     /// It **will** persist the blueprint to a file, though.
     ///
-    /// This method can be useful if you need to customize the command before running it.  
+    /// This method can be useful if you need to customize the command before running it.
     /// If that's not your usecase, consider using [`GenerateBuilder::execute`] instead.
     pub fn command(mut self) -> Result<std::process::Command, BlueprintPersistenceError> {
         let bp_path = match self.blueprint {
@@ -120,7 +120,7 @@ impl GenerateBuilder {
 
     /// Enable check mode.
     ///
-    /// In check mode, `pavexc generate` verifies that the generated server SDK is up-to-date.  
+    /// In check mode, `pavexc generate` verifies that the generated server SDK is up-to-date.
     /// If it isn't, it returns an error without updating the SDK.
     pub fn check(mut self) -> Self {
         self.check = true;

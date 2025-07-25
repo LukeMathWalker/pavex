@@ -1,0 +1,52 @@
+# This file contains settings for `cargo hakari`.
+# See https://docs.rs/cargo-hakari/latest/cargo_hakari/config for a full list of options.
+
+hakari-package = "workspace_hack"
+
+# Format version for hakari's output. Version 4 requires cargo-hakari 0.9.22 or above.
+dep-format-version = "4"
+
+# Setting workspace.resolver = "2" in the root Cargo.toml is HIGHLY recommended.
+# Hakari works much better with the new feature resolver.
+# For more about the new feature resolver, see:
+# https://blog.rust-lang.org/2021/03/25/Rust-1.51.0.html#cargos-new-feature-resolver
+resolver = "2"
+
+# Add triples corresponding to platforms commonly used by developers here.
+# https://doc.rust-lang.org/rustc/platform-support.html
+platforms = [
+    # "x86_64-unknown-linux-gnu",
+    # "x86_64-apple-darwin",
+    # "aarch64-apple-darwin",
+    # "x86_64-pc-windows-msvc",
+]
+
+# Write out exact versions rather than a semver range. (Defaults to false.)
+# exact-versions = true
+
+[traversal-excludes]
+workspace-members = [
+    "attributes_server_sdk",
+    "configuration_server_sdk",
+    "cookies_server_sdk",
+    "user_middleware_server_sdk",
+    "core_concepts_server_sdk",
+    "di_core_concepts_server_sdk",
+    "di_prebuilt_server_sdk",
+    "in_memory_sessions_server_sdk",
+    "postgres_sessions_server_sdk",
+    "error_handlers_server_sdk",
+    "error_observers_server_sdk",
+    "order_server_sdk",
+    "pre_server_sdk",
+    "post_server_sdk",
+    "wrapping_server_sdk",
+    "buffered_body_server_sdk",
+    "json_server_sdk",
+    "query_params_server_sdk",
+    "route_params_server_sdk",
+    "urlencoded_server_sdk",
+    "wire_data_server_sdk",
+    "domain_guards_server_sdk",
+    "path_prefixes_server_sdk",
+]

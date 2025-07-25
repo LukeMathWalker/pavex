@@ -1,15 +1,8 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::f;
 use pavex::methods;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
-use pavex::response::Response;
-
-pub struct B;
-
-pub fn constructor(_r: &mut RequestHead) -> B {
-    todo!()
-}
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct A;
 
@@ -21,21 +14,25 @@ impl A {
     }
 }
 
-pub fn error_handler(_e: &pavex::Error, _s: &mut B) -> Response {
+#[pavex::error_handler]
+pub fn error_handler(#[px(error_ref)] _e: &pavex::Error, _s: &mut A) -> Response {
     todo!()
 }
 
-pub fn wrapping<C>(_next: Next<C>, _s: &mut B) -> Response
+#[pavex::wrap]
+pub fn wrapping<C>(_next: Next<C>, _s: &mut A) -> Response
 where
     C: std::future::IntoFuture<Output = Response>,
 {
     todo!()
 }
 
+#[pavex::error_observer]
 pub fn observer(_e: &pavex::Error, _s: &mut A) {
     todo!()
 }
 
+#[pavex::get(path = "/home")]
 pub fn handler(_s: &A) -> Result<Response, pavex::Error> {
     todo!()
 }
@@ -43,10 +40,8 @@ pub fn handler(_s: &A) -> Result<Response, pavex::Error> {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.import(from![crate]);
-    bp.request_scoped(f!(crate::constructor));
-    bp.wrap(f!(crate::wrapping));
-    bp.error_observer(f!(crate::observer));
-    bp.route(GET, "/home", f!(crate::handler))
-        .error_handler(f!(crate::error_handler));
+    bp.wrap(WRAPPING);
+    bp.error_observer(OBSERVER);
+    bp.routes(from![crate]);
     bp
 }

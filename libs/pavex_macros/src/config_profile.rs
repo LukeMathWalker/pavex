@@ -32,10 +32,10 @@ pub(super) fn derive_config_profile(input: TokenStream) -> TokenStream {
         let mut profile_name = variant_name.to_string().to_case(Case::Snake);
 
         for attr in &variant.attrs {
-            if !attr.meta.path().is_ident("pavex") {
+            if !attr.meta.path().is_ident("px") {
                 continue;
             }
-            let error_msg = "Invalid `pavex` attribute. Expected `#[pavex(profile = \"name\")]`";
+            let error_msg = "Invalid `px` attribute. Expected `#[px(profile = \"name\")]`";
             let Ok(args) = attr.parse_args::<syn::MetaNameValue>() else {
                 return syn::Error::new_spanned(attr, error_msg)
                     .to_compile_error()
@@ -84,7 +84,7 @@ pub(super) fn derive_config_profile(input: TokenStream) -> TokenStream {
     let error_name = format_ident!("{}ParseError", name);
     let valid_profiles_str = valid_profiles
         .iter()
-        .map(|s| format!("`{}`", s))
+        .map(|s| format!("`{s}`"))
         .collect::<Vec<_>>()
         .join(", ");
 

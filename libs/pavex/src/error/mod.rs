@@ -12,7 +12,7 @@ pub(crate) mod error_;
 ///
 /// ```rust
 /// use pavex::error::UnexpectedError;
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// # #[derive(Debug)] struct AuthorizationError;
 /// # #[derive(Debug)] struct DatabaseError;
 /// # impl std::fmt::Display for AuthorizationError {

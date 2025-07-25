@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::path::PathParams};
+use pavex::{get, http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Profile;
 
@@ -14,6 +14,7 @@ pub struct GetProfileResponse {
     pub profile: Profile,
 }
 
+#[get(path = "/{username}")]
 pub fn get_profile(_params: PathParams<GetProfile>) -> StatusCode {
     StatusCode::OK
 }

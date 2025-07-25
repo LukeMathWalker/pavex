@@ -123,7 +123,7 @@ pub enum Command {
         #[clap(short, long, value_parser)]
         output: PathBuf,
     },
-    /// Scaffold a new Pavex project at <PATH>.
+    /// Scaffold a new Pavex project at the given path.
     New {
         /// The directory that will contain the project files.
         ///

@@ -1,6 +1,6 @@
 use darling::FromMeta;
 use errors::InvalidAttributeParams;
-use pavex_bp_schema::{CloningStrategy, Lifecycle, MethodGuard};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, MethodGuard};
 
 pub mod atoms;
 pub mod errors;
@@ -11,12 +11,12 @@ pub mod model;
 /// It returns `None` for:
 /// - attributes that don't belong to the `diagnostic::pavex` namespace (e.g. `#[inline]`)
 /// - attributes that don't parse successfully into `syn::Attribute`
-pub fn parse(
-    attrs: &[String],
-) -> Result<Option<AnnotationProperties>, errors::AttributeParserError> {
+pub fn parse<'a, I>(attrs: I) -> Result<Option<AnnotationProperties>, errors::AttributeParserError>
+where
+    I: Iterator<Item = &'a str>,
+{
     let mut component = None;
     let attrs = attrs
-        .iter()
         .filter_map(|a| match parse_outer_attrs(a) {
             Ok(attrs) => Some(attrs.into_iter()),
             Err(_) => None,
@@ -45,39 +45,52 @@ pub fn parse(
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum AnnotationProperties {
     Constructor {
+        id: String,
         lifecycle: Lifecycle,
-        cloning_strategy: Option<CloningStrategy>,
-        error_handler: Option<String>,
+        cloning_policy: Option<CloningPolicy>,
+        allow_unused: Option<bool>,
+        allow_error_fallback: Option<bool>,
     },
     Prebuilt {
-        cloning_strategy: Option<CloningStrategy>,
+        id: String,
+        cloning_policy: Option<CloningPolicy>,
     },
     Config {
+        id: String,
         key: String,
-        cloning_strategy: Option<CloningStrategy>,
+        cloning_policy: Option<CloningPolicy>,
         default_if_missing: Option<bool>,
         include_if_unused: Option<bool>,
     },
     WrappingMiddleware {
-        error_handler: Option<String>,
+        id: String,
+        allow_error_fallback: Option<bool>,
     },
     PreProcessingMiddleware {
-        error_handler: Option<String>,
+        id: String,
+        allow_error_fallback: Option<bool>,
     },
     PostProcessingMiddleware {
-        error_handler: Option<String>,
+        id: String,
+        allow_error_fallback: Option<bool>,
     },
-    ErrorObserver,
+    ErrorObserver {
+        id: String,
+    },
     ErrorHandler {
+        id: String,
         error_ref_input_index: usize,
+        default: Option<bool>,
     },
     Route {
+        id: String,
         method: MethodGuard,
         path: String,
-        error_handler: Option<String>,
+        allow_error_fallback: Option<bool>,
     },
     Fallback {
-        error_handler: Option<String>,
+        id: String,
+        allow_error_fallback: Option<bool>,
     },
     Methods,
 }
@@ -105,6 +118,25 @@ impl AnnotationProperties {
             Methods => Ok(AnnotationProperties::Methods),
         }
         .map_err(|e| InvalidAttributeParams::new(e, kind))
+    }
+
+    /// Return the id of this component, if one was set.
+    pub fn id(&self) -> Option<&str> {
+        use AnnotationProperties::*;
+
+        match self {
+            WrappingMiddleware { id, .. }
+            | PreProcessingMiddleware { id, .. }
+            | PostProcessingMiddleware { id, .. }
+            | ErrorObserver { id }
+            | ErrorHandler { id, .. }
+            | Route { id, .. }
+            | Config { id, .. }
+            | Prebuilt { id, .. }
+            | Constructor { id, .. }
+            | Fallback { id, .. } => Some(id.as_str()),
+            Methods => None,
+        }
     }
 }
 
@@ -194,7 +226,7 @@ impl AnnotationProperties {
             AnnotationProperties::PostProcessingMiddleware { .. } => {
                 AnnotationKind::PostProcessingMiddleware
             }
-            AnnotationProperties::ErrorObserver => AnnotationKind::ErrorObserver,
+            AnnotationProperties::ErrorObserver { .. } => AnnotationKind::ErrorObserver,
             AnnotationProperties::Prebuilt { .. } => AnnotationKind::Prebuilt,
             AnnotationProperties::Route { .. } => AnnotationKind::Route,
             AnnotationProperties::Fallback { .. } => AnnotationKind::Fallback,

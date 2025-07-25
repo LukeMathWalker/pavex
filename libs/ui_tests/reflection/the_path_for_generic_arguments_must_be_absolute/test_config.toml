@@ -1,6 +1,0 @@
-description = "pavex cannot resolve concrete generic parameters if they are not using an absolute path (yet)"
-
-[expectations]
-codegen = "fail"
-
-

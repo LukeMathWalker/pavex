@@ -18,7 +18,7 @@ configuration, etc.
 
 ??? info "The `main` function in `server`"
 
-    --8<-- "doc_examples/quickstart/demo-bp_server_binary.snap"
+    --8<-- "docs/tutorials/quickstart/snaps/server_entrypoint.snap"
 
 Most of this ceremony is taken care for you by the `pavex new` command, but it's good to know
 that it's happening (and where it's happening) in case you need to customize it.
@@ -31,6 +31,6 @@ responses.
 
 The `demo` project includes an example of such a test which you can use as a reference:
 
---8<-- "doc_examples/quickstart/demo-ping_test.snap"
+--8<-- "docs/tutorials/quickstart/snaps/bare_ping_test.snap"
 
 [server SDK]: server_sdk.md

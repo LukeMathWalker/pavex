@@ -1,12 +1,21 @@
-use crate::fn_like::{Callable, CallableAnnotation, ImplContext};
 use crate::utils::AnnotationCodegen;
+use crate::utils::fn_like::{Callable, CallableAnnotation, ImplContext};
+use crate::utils::id::{callable_id_def, default_id};
 use quote::quote;
+use syn::Ident;
 
 #[derive(darling::FromMeta, Debug, Clone)]
 /// The available options for route macros.
 pub struct InputSchema {
     pub path: String,
+    pub id: Option<Ident>,
     pub error_handler: Option<String>,
+    pub allow: Option<ShorthandAllows>,
+}
+
+#[derive(darling::FromMeta, Debug, Clone)]
+pub struct ShorthandAllows {
+    error_fallback: darling::util::Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -16,10 +25,15 @@ impl TryFrom<InputSchema> for Properties {
         let InputSchema {
             path,
             error_handler,
+            id,
+            allow,
         } = input;
+        let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
         Ok(Properties {
             path,
+            id,
             error_handler,
+            allow_error_fallback,
         })
     }
 }
@@ -28,6 +42,8 @@ impl TryFrom<InputSchema> for Properties {
 struct Properties {
     pub path: String,
     pub error_handler: Option<String>,
+    pub id: Option<Ident>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 #[derive(Clone, Copy)]
@@ -74,11 +90,11 @@ macro_rules! method_annotation {
                 type InputSchema = InputSchema;
 
                 fn codegen(
-                    _impl_: Option<ImplContext>,
+                    impl_: Option<ImplContext>,
                     metadata: Self::InputSchema,
-                    _item: Callable,
+                    item: Callable,
                 ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-                    method_shorthand(Method::$method, metadata)
+                    method_shorthand(impl_, item, Method::$method, metadata)
                 }
             }
         }
@@ -94,25 +110,38 @@ method_annotation!(Head);
 method_annotation!(Options);
 
 fn method_shorthand(
+    impl_: Option<ImplContext>,
+    item: Callable,
     method: Method,
     schema: InputSchema,
 ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
     let properties = schema
         .try_into()
         .map_err(|e: darling::Error| e.write_errors())?;
-    Ok(emit(method, properties))
+    Ok(emit(impl_, item, method, properties))
 }
 
 /// Decorate the input with a `#[diagnostic::pavex::route]` attribute
 /// that matches the provided properties.
-fn emit(method: Method, properties: Properties) -> AnnotationCodegen {
+fn emit(
+    impl_: Option<ImplContext>,
+    item: Callable,
+    method: Method,
+    properties: Properties,
+) -> AnnotationCodegen {
     let Properties {
         path,
         error_handler,
+        id,
+        allow_error_fallback,
     } = properties;
 
     let method_name = method.name();
+    let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
+    let id_str = id.to_string();
+
     let mut properties = quote! {
+        id = #id_str,
         method = #method_name,
         path = #path,
     };
@@ -122,9 +151,23 @@ fn emit(method: Method, properties: Properties) -> AnnotationCodegen {
             error_handler = #error_handler,
         });
     }
-
+    if let Some(allow_error_fallback) = allow_error_fallback {
+        properties.extend(quote! {
+            allow_error_fallback = #allow_error_fallback,
+        });
+    }
     AnnotationCodegen {
-        id_def: None,
+        id_def: Some(callable_id_def(
+            &id,
+            None,
+            "route",
+            "Route",
+            "a route",
+            "route",
+            true,
+            impl_.as_ref(),
+            &item,
+        )),
         new_attributes: vec![syn::parse_quote! {
             #[diagnostic::pavex::route(#properties)]
         }],

@@ -8,6 +8,8 @@ use itertools::Itertools;
 use matchit::InsertError;
 use pavex_bp_schema::MethodGuard;
 
+use crate::DiagnosticSink;
+use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::domain::DomainGuard;
 use crate::compiler::analyses::route_path::RoutePath;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId, UserComponentId};
@@ -30,6 +32,7 @@ pub(crate) enum Router {
 impl Router {
     pub(super) fn new(
         aux: &AuxiliaryData,
+        computation_db: &ComputationDb,
         scope_graph: &ScopeGraph,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<Self, ()> {
@@ -66,6 +69,7 @@ impl Router {
         if is_domain_based {
             Ok(Router::DomainBased(DomainRouter::new(
                 aux,
+                computation_db,
                 scope_graph,
                 &scope_based_fallback_tree,
                 diagnostics,
@@ -87,6 +91,7 @@ impl Router {
             Ok(Router::DomainAgnostic(PathRouter::new(
                 &component_ids,
                 aux,
+                computation_db,
                 scope_graph,
                 &scope_based_fallback_tree,
                 diagnostics,
@@ -210,6 +215,7 @@ pub(crate) struct LeafRouter {
 impl DomainRouter {
     fn new(
         db: &AuxiliaryData,
+        computation_db: &ComputationDb,
         scope_graph: &ScopeGraph,
         scope_based_fallback_tree: &ScopeBasedFallbackTree,
         diagnostics: &crate::diagnostic::DiagnosticSink,
@@ -255,6 +261,7 @@ impl DomainRouter {
             let path_router = PathRouter::new(
                 &components,
                 db,
+                computation_db,
                 scope_graph,
                 scope_based_fallback_tree,
                 diagnostics,
@@ -353,9 +360,10 @@ impl PathRouter {
     fn new(
         component_ids: &[UserComponentId],
         aux: &AuxiliaryData,
+        computation_db: &ComputationDb,
         scope_graph: &ScopeGraph,
         scope_based_fallback_router: &ScopeBasedFallbackTree,
-        diagnostics: &crate::diagnostic::DiagnosticSink,
+        diagnostics: &DiagnosticSink,
     ) -> Result<Self, ()> {
         let root_scope_id = scope_graph.find_common_ancestor(
             component_ids
@@ -373,6 +381,7 @@ impl PathRouter {
             scope_based_fallback_router,
             component_ids,
             aux,
+            computation_db,
             scope_graph,
             diagnostics,
         )?;
@@ -380,6 +389,7 @@ impl PathRouter {
             &route_id2fallback_id,
             component_ids,
             aux,
+            computation_db,
             diagnostics,
         )?;
 
@@ -520,6 +530,7 @@ impl PathRouter {
         scope_based_fallback_router: &ScopeBasedFallbackTree,
         component_ids: &[UserComponentId],
         db: &AuxiliaryData,
+        computation_db: &ComputationDb,
         scope_graph: &ScopeGraph,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Result<
@@ -647,6 +658,7 @@ impl PathRouter {
 
                         push_fallback_ambiguity_diagnostic(
                             db,
+                            computation_db,
                             scope_fallback_id,
                             path_fallback_id,
                             *id,
@@ -678,7 +690,8 @@ impl PathRouter {
         route_id2fallback_id: &BTreeMap<UserComponentId, UserComponentId>,
         component_ids: &[UserComponentId],
         db: &AuxiliaryData,
-        diagnostics: &crate::diagnostic::DiagnosticSink,
+        computation_db: &ComputationDb,
+        diagnostics: &DiagnosticSink,
     ) -> Result<(), ()> {
         let n_diagnostics = diagnostics.len();
 
@@ -743,6 +756,7 @@ impl PathRouter {
                 methods_without_handler,
                 fallback_id2handler_id,
                 db,
+                computation_db,
                 diagnostics,
             );
         }
@@ -855,6 +869,7 @@ static METHODS: [&str; 9] = [
 
 fn push_fallback_ambiguity_diagnostic(
     db: &AuxiliaryData,
+    computation_db: &ComputationDb,
     scope_fallback_id: UserComponentId,
     path_fallback_id: UserComponentId,
     route_id: UserComponentId,
@@ -869,23 +884,18 @@ fn push_fallback_ambiguity_diagnostic(
     );
     let route_repr = router_key.diagnostic_repr();
     let scope_fallback = {
-        let UserComponent::Fallback { source, .. } = &db[scope_fallback_id] else {
-            unreachable!()
-        };
-        format!(
-            "`{}`",
-            db.identifiers_interner[*source]
-                .fully_qualified_path()
-                .join("::")
-        )
+        let mut s = String::new();
+        computation_db[scope_fallback_id]
+            .path
+            .render_for_error(&mut s);
+        s
     };
     let path_fallback = {
-        let UserComponent::Fallback { source, .. } = &db[path_fallback_id] else {
-            unreachable!()
-        };
-        db.identifiers_interner[*source]
-            .fully_qualified_path()
-            .join("::")
+        let mut s = String::new();
+        computation_db[path_fallback_id]
+            .path
+            .render_for_error(&mut s);
+        s
     };
     let path_prefix = db.fallback_id2path_prefix[&path_fallback_id]
         .as_ref()
@@ -895,7 +905,7 @@ fn push_fallback_ambiguity_diagnostic(
         You registered `{path_fallback}` as the fallback handler for all unmatched incoming requests \
         with a path that begins in `{path_prefix}`.\n\
         But `{route_repr}` wasn't registered against that blueprint!\n\
-        It was registered under a different blueprint, with a different fallback handler: {scope_fallback}.\n\
+        It was registered under a different blueprint, with a different fallback handler: `{scope_fallback}`.\n\
         I can't determine which fallback is the most appropriate one for incoming `{}` requests \
         with a method that doesn't match the ones you registered a handler for.",
         router_key.path
@@ -914,6 +924,7 @@ fn push_fallback_method_ambiguity_diagnostic(
     methods_without_handler: BTreeSet<String>,
     fallback_id2handler_id: &BTreeMap<UserComponentId, BTreeMap<UserComponentId, BTreeSet<String>>>,
     db: &AuxiliaryData,
+    computation_db: &ComputationDb,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     use std::fmt::Write;
@@ -935,9 +946,6 @@ fn push_fallback_method_ambiguity_diagnostic(
     let mut annotated_snippets = Vec::with_capacity(fallback_id2handler_id.len());
     for (i, (fallback_id, handler_id2methods)) in fallback_id2handler_id.iter().enumerate() {
         let fallback_path = {
-            let UserComponent::Fallback { source, .. } = &db[*fallback_id] else {
-                unreachable!()
-            };
             let snippet = diagnostics.annotated(
                 db.registration_target(fallback_id),
                 format!("The {} fallback", ZeroBasedOrdinal::from(i)),
@@ -945,16 +953,18 @@ fn push_fallback_method_ambiguity_diagnostic(
             if let Some(snippet) = snippet {
                 annotated_snippets.push(snippet);
             }
-            let fallback_path = db.identifiers_interner[*source]
-                .fully_qualified_path()
-                .join("::");
-            format!("`{fallback_path}`")
+
+            let mut path = String::new();
+            computation_db[*fallback_id]
+                .path
+                .render_for_error(&mut path);
+            path
         };
 
         let handler_methods: Vec<_> = handler_id2methods.values().flat_map(|s| s.iter()).collect();
         write!(
             &mut err_msg,
-            "- {fallback_path} as the fallback handler for your",
+            "- `{fallback_path}` as the fallback handler for your",
         )
         .unwrap();
         if handler_methods.len() == 1 {

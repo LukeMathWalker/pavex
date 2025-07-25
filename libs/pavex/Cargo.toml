@@ -34,15 +34,15 @@ futures-util = { workspace = true }
 mime = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "0.1.80" }
+pavex_macros = { path = "../pavex_macros", version = "0.2.1" }
 paste = { workspace = true }
 tracing = { workspace = true }
 http-body-util = { workspace = true }
 pin-project-lite = { workspace = true }
 ubyte = { workspace = true, features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.80" }
-pavex_reflection = { path = "../pavex_reflection", version = "=0.1.80" }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.80" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.1" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.2.1" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.2.1" }
 
 # Configuration
 figment = { workspace = true, features = ["env", "yaml"], optional = true }
@@ -85,7 +85,6 @@ hyper-util = { workspace = true, features = [
 socket2 = { workspace = true, optional = true }
 smallvec = { workspace = true }
 tracing_log_error = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros"] }
@@ -98,4 +97,4 @@ pavex_tracing = { path = "../pavex_tracing" }
 
 pavex_macros = { path = "../pavex_macros", features = [
     "allow_unreachable_pub",
-], version = "0.1.80" }
+], version = "0.2.1" }

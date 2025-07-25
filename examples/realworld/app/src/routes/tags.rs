@@ -1,3 +1,4 @@
+use pavex::get;
 use pavex::http::StatusCode;
 
 #[derive(Debug, serde::Serialize)]
@@ -6,6 +7,7 @@ pub struct GetTagsResponse {
     tags: Vec<String>,
 }
 
-pub fn get_tags() -> StatusCode {
+#[get(path = "/tags")]
+pub fn list_tags() -> StatusCode {
     StatusCode::OK
 }

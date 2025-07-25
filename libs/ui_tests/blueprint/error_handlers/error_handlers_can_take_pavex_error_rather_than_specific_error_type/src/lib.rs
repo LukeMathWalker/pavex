@@ -1,6 +1,5 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
-use pavex::response::Response;
+use pavex::Response;
+use pavex::Blueprint;
 
 #[derive(Debug)]
 pub struct CustomError;
@@ -17,40 +16,50 @@ impl std::fmt::Display for CustomError {
 
 impl std::error::Error for CustomError {}
 
+#[pavex::request_scoped]
 pub fn fallible_constructor() -> Result<String, CustomError> {
     todo!()
 }
 
+#[pavex::request_scoped]
 pub fn generic_fallible_constructor<T>() -> Result<Generic<T>, CustomError> {
     todo!()
 }
 
+#[pavex::error_handler(default = false)]
 pub fn error_handler(_e: &pavex::Error) -> Response {
     todo!()
 }
 
+#[pavex::error_observer]
 pub fn error_observer(_e: &pavex::Error) {
     todo!()
 }
 
-pub fn handler(_s: String, _t: Generic<String>) -> Response {
+#[pavex::get(path = "/without_observer")]
+pub fn without_observer(_s: String, _t: Generic<String>) -> Response {
+    todo!()
+}
+
+#[pavex::get(path = "/with_observer")]
+pub fn with_observer(_s: String, _t: Generic<String>) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::fallible_constructor))
-        .error_handler(f!(crate::error_handler));
-    bp.request_scoped(f!(crate::generic_fallible_constructor))
-        .error_handler(f!(crate::error_handler));
+    bp.constructor(FALLIBLE_CONSTRUCTOR)
+        .error_handler(ERROR_HANDLER);
+    bp.constructor(GENERIC_FALLIBLE_CONSTRUCTOR)
+        .error_handler(ERROR_HANDLER);
 
     // We test the behaviour with and without error observers.
-    bp.route(GET, "/without_observer", f!(crate::handler));
+    bp.route(WITHOUT_OBSERVER);
 
     bp.nest({
         let mut bp = Blueprint::new();
-        bp.error_observer(f!(crate::error_observer));
-        bp.route(GET, "/with_observer", f!(crate::handler));
+        bp.error_observer(ERROR_OBSERVER);
+        bp.route(WITH_OBSERVER);
         bp
     });
     bp

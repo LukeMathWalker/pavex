@@ -1,4 +1,3 @@
-use darling::util::Ignored;
 use pavex_bp_schema::MethodGuard;
 
 use crate::{AnnotationProperties, atoms::MethodArgument};
@@ -10,17 +9,21 @@ use crate::{AnnotationProperties, atoms::MethodArgument};
 /// It is a more verbose (but easier to parse) representation than
 /// what is used by `pavex::constructor`.
 pub struct ConstructorProperties {
+    pub id: String,
     pub lifecycle: Lifecycle,
-    pub cloning_strategy: Option<CloningStrategy>,
-    pub error_handler: Option<String>,
+    pub cloning_policy: Option<CloningPolicy>,
+    pub allow_unused: Option<bool>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<ConstructorProperties> for AnnotationProperties {
     fn from(value: ConstructorProperties) -> Self {
         AnnotationProperties::Constructor {
+            id: value.id,
             lifecycle: value.lifecycle.into(),
-            cloning_strategy: value.cloning_strategy.map(Into::into),
-            error_handler: value.error_handler,
+            cloning_policy: value.cloning_policy.map(Into::into),
+            allow_unused: value.allow_unused,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -29,12 +32,12 @@ impl From<ConstructorProperties> for AnnotationProperties {
 /// The way we expect error observer properties to be represented in
 /// `pavex::diagnostic::error_observer`.
 pub struct ErrorObserverProperties {
-    pub id: Ignored,
+    pub id: String,
 }
 
 impl From<ErrorObserverProperties> for AnnotationProperties {
-    fn from(_value: ErrorObserverProperties) -> Self {
-        AnnotationProperties::ErrorObserver {}
+    fn from(value: ErrorObserverProperties) -> Self {
+        AnnotationProperties::ErrorObserver { id: value.id }
     }
 }
 
@@ -42,14 +45,17 @@ impl From<ErrorObserverProperties> for AnnotationProperties {
 /// The way we expect error handler properties to be represented in
 /// `pavex::diagnostic::error_handler`.
 pub struct ErrorHandlerProperties {
-    pub id: Ignored,
+    pub id: String,
     pub error_ref_input_index: usize,
+    pub default: Option<bool>,
 }
 
 impl From<ErrorHandlerProperties> for AnnotationProperties {
     fn from(value: ErrorHandlerProperties) -> Self {
         AnnotationProperties::ErrorHandler {
             error_ref_input_index: value.error_ref_input_index,
+            default: value.default,
+            id: value.id,
         }
     }
 }
@@ -58,14 +64,15 @@ impl From<ErrorHandlerProperties> for AnnotationProperties {
 /// The way we expect wrapping middleware properties to be represented in
 /// `pavex::diagnostic::wrap`.
 pub struct WrappingMiddlewareProperties {
-    pub error_handler: Option<String>,
-    pub id: Ignored,
+    pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<WrappingMiddlewareProperties> for AnnotationProperties {
     fn from(value: WrappingMiddlewareProperties) -> Self {
         AnnotationProperties::WrappingMiddleware {
-            error_handler: value.error_handler,
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -74,14 +81,15 @@ impl From<WrappingMiddlewareProperties> for AnnotationProperties {
 /// The way we expect pre-processing middleware properties to be represented in
 /// `pavex::diagnostic::pre_process`.
 pub struct PreProcessingMiddlewareProperties {
-    pub error_handler: Option<String>,
-    pub id: Ignored,
+    pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
     fn from(value: PreProcessingMiddlewareProperties) -> Self {
         AnnotationProperties::PreProcessingMiddleware {
-            error_handler: value.error_handler,
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -90,14 +98,15 @@ impl From<PreProcessingMiddlewareProperties> for AnnotationProperties {
 /// The way we expect post-processing middleware properties to be represented in
 /// `pavex::diagnostic::post_process`.
 pub struct PostProcessingMiddlewareProperties {
-    pub error_handler: Option<String>,
-    pub id: Ignored,
+    pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
     fn from(value: PostProcessingMiddlewareProperties) -> Self {
         AnnotationProperties::PostProcessingMiddleware {
-            error_handler: value.error_handler,
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -109,8 +118,9 @@ impl From<PostProcessingMiddlewareProperties> for AnnotationProperties {
 /// It is a more verbose (but easier to parse) representation than
 /// what is used by `pavex::config`.
 pub struct ConfigProperties {
+    pub id: String,
     pub key: String,
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub cloning_policy: Option<CloningPolicy>,
     pub default_if_missing: Option<bool>,
     pub include_if_unused: Option<bool>,
 }
@@ -118,8 +128,9 @@ pub struct ConfigProperties {
 impl From<ConfigProperties> for AnnotationProperties {
     fn from(value: ConfigProperties) -> Self {
         AnnotationProperties::Config {
+            id: value.id,
             key: value.key,
-            cloning_strategy: value.cloning_strategy.map(Into::into),
+            cloning_policy: value.cloning_policy.map(Into::into),
             default_if_missing: value.default_if_missing,
             include_if_unused: value.include_if_unused,
         }
@@ -130,14 +141,15 @@ impl From<ConfigProperties> for AnnotationProperties {
 /// The way we expect fallback properties to be represented in
 /// `pavex::diagnostic::fallback`.
 pub struct FallbackProperties {
-    pub error_handler: Option<String>,
-    pub id: Ignored,
+    pub id: String,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<FallbackProperties> for AnnotationProperties {
     fn from(value: FallbackProperties) -> Self {
         AnnotationProperties::Fallback {
-            error_handler: value.error_handler,
+            id: value.id,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -146,11 +158,12 @@ impl From<FallbackProperties> for AnnotationProperties {
 /// The way we expect route properties to be represented in
 /// `pavex::diagnostic::route`.
 pub struct RouteProperties {
+    pub id: String,
     pub path: String,
     pub method: Option<MethodArgument>,
-    pub error_handler: Option<String>,
     pub allow_any_method: Option<bool>,
     pub allow_non_standard_methods: Option<bool>,
+    pub allow_error_fallback: Option<bool>,
 }
 
 impl From<RouteProperties> for AnnotationProperties {
@@ -179,9 +192,10 @@ impl From<RouteProperties> for AnnotationProperties {
             }
         };
         AnnotationProperties::Route {
+            id: value.id,
             path: value.path,
             method,
-            error_handler: value.error_handler,
+            allow_error_fallback: value.allow_error_fallback,
         }
     }
 }
@@ -190,13 +204,15 @@ impl From<RouteProperties> for AnnotationProperties {
 /// The way we expect prebuilt properties to be represented in
 /// `pavex::diagnostic::prebuilt`.
 pub struct PrebuiltProperties {
-    pub cloning_strategy: Option<CloningStrategy>,
+    pub id: String,
+    pub cloning_policy: Option<CloningPolicy>,
 }
 
 impl From<PrebuiltProperties> for AnnotationProperties {
     fn from(value: PrebuiltProperties) -> Self {
         AnnotationProperties::Prebuilt {
-            cloning_strategy: value.cloning_strategy.map(Into::into),
+            id: value.id,
+            cloning_policy: value.cloning_policy.map(Into::into),
         }
     }
 }
@@ -221,16 +237,16 @@ impl From<Lifecycle> for pavex_bp_schema::Lifecycle {
 
 #[derive(darling::FromMeta, Debug, Clone, PartialEq, Eq)]
 #[darling(rename_all = "snake_case")]
-pub enum CloningStrategy {
+pub enum CloningPolicy {
     CloneIfNecessary,
     NeverClone,
 }
 
-impl From<CloningStrategy> for pavex_bp_schema::CloningStrategy {
-    fn from(value: CloningStrategy) -> Self {
+impl From<CloningPolicy> for pavex_bp_schema::CloningPolicy {
+    fn from(value: CloningPolicy) -> Self {
         match value {
-            CloningStrategy::CloneIfNecessary => pavex_bp_schema::CloningStrategy::CloneIfNecessary,
-            CloningStrategy::NeverClone => pavex_bp_schema::CloningStrategy::NeverClone,
+            CloningPolicy::CloneIfNecessary => pavex_bp_schema::CloningPolicy::CloneIfNecessary,
+            CloningPolicy::NeverClone => pavex_bp_schema::CloningPolicy::NeverClone,
         }
     }
 }

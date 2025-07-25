@@ -1,16 +1,17 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::{blueprint::from, Blueprint};
 
 pub struct Streamer;
 
+#[pavex::methods]
 impl Streamer {
-    pub fn stream_file() -> pavex::response::Response {
+    #[get(path = "/")]
+    pub fn stream_file() -> pavex::Response {
         todo!()
     }
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/home", f!(crate::Streamer::stream_file));
+    bp.routes(from![crate]);
     bp
 }

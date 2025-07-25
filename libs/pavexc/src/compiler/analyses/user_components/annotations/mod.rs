@@ -1,20 +1,21 @@
-use std::{borrow::Cow, collections::BTreeMap, ops::Deref, sync::Arc};
+use std::{borrow::Cow, ops::Deref, sync::Arc};
 
+mod coordinates;
 mod diagnostic;
-mod overlay;
+
+pub(super) use coordinates::resolve_annotation_coordinates;
 
 use diagnostic::{
-    const_generics_are_not_supported, not_a_module, not_a_type_reexport, unknown_module_path,
-    unresolved_external_reexport,
+    cannot_resolve_callable_path, const_generics_are_not_supported, invalid_config_type,
+    invalid_prebuilt_type, not_a_module, not_a_type_reexport, type_resolution_error,
+    unknown_module_path, unresolved_external_reexport,
 };
-pub use overlay::augment_from_annotation;
 
 use super::{
     ErrorHandlerTarget, ScopeId, UserComponent, UserComponentId, UserComponentSource,
     auxiliary::AuxiliaryData,
     blueprint::validate_route_path,
     imports::{ImportKind, ResolvedImport},
-    paths::{cannot_resolve_callable_path, invalid_config_type, invalid_prebuilt_type},
     router_key::RouterKey,
     scope_graph::ScopeGraphBuilder,
 };
@@ -24,7 +25,8 @@ use crate::{
         component::{ConfigType, DefaultStrategy, PrebuiltType},
         resolvers::{
             CallableResolutionError, GenericBindings, InputParameterResolutionError,
-            OutputTypeResolutionError, SelfResolutionError, resolve_type,
+            OutputTypeResolutionError, SelfResolutionError, TypeResolutionError,
+            UnsupportedConstGeneric, resolve_type,
         },
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
@@ -33,16 +35,19 @@ use crate::{
         GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
         ResolvedType,
     },
-    rustdoc::{Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt},
+    rustdoc::{
+        AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo, RustdocKindExt,
+    },
 };
-use pavex_bp_schema::{
-    CloningStrategy, CreatedAt, CreatedBy, Lifecycle, Lint, LintSetting, RawIdentifiers,
-};
+use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
 /// An id pointing at the coordinates of an annotated component.
 pub type AnnotatedItemId = la_arena::Idx<GlobalItemId>;
+
+/// An id pointing at the coordinates of an annotated component.
+pub type AnnotationCoordinatesId = la_arena::Idx<AnnotationCoordinates>;
 
 /// Process all imported annotated components.
 pub(super) fn register_imported_components(
@@ -149,14 +154,22 @@ pub(super) fn register_imported_components(
                 }
             }
 
+            // If an error handler is marked as "default = false", it should only be
+            // used when explicitly set by the user as the desired error handler for
+            // a given component via the `error_handler = ...` macro argument.
+            if let AnnotationProperties::ErrorHandler {
+                default: Some(false),
+                ..
+            } = annotation.properties
+            {
+                continue;
+            }
+
             let item = krate.get_item_by_local_type_id(&id);
             let Ok(user_component_id) = intern_annotated(
                 annotation.properties.clone(),
                 &item,
                 krate,
-                &annotation
-                    .created_at(krate, krate_collection.package_graph())
-                    .expect("Failed to determine created at for an annotated item"),
                 import_kind,
                 *scope_id,
                 aux,
@@ -202,7 +215,6 @@ fn intern_annotated(
     annotation: AnnotationProperties,
     item: &rustdoc_types::Item,
     krate: &Crate,
-    created_at: &CreatedAt,
     import_kind: &ImportKind,
     scope_id: ScopeId,
     aux: &mut AuxiliaryData,
@@ -220,11 +232,13 @@ fn intern_annotated(
     match annotation {
         AnnotationProperties::ErrorHandler {
             error_ref_input_index,
+            default: _,
+            id: _,
         } => {
             let error_handler = UserComponent::ErrorHandler {
                 source,
                 target: ErrorHandlerTarget::ErrorType {
-                    error_ref_input_index,
+                    error_ref_input_index: Some(error_ref_input_index),
                 },
             };
             Ok(aux.intern_component(
@@ -236,50 +250,44 @@ fn intern_annotated(
         }
         AnnotationProperties::Constructor {
             lifecycle,
-            cloning_strategy,
-            error_handler,
+            cloning_policy,
+            allow_unused,
+            allow_error_fallback,
+            id: _,
         } => {
             let constructor = UserComponent::Constructor { source };
             let constructor_id =
                 aux.intern_component(constructor, scope_id, lifecycle, registration.clone());
-            aux.id2cloning_strategy.insert(
+            aux.id2cloning_policy.insert(
                 constructor_id,
-                cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
+                cloning_policy.unwrap_or(CloningPolicy::NeverClone),
             );
 
-            // Ignore unused constructors imported from crates defined outside the current workspace
-            if !krate_collection
+            let lints = aux.id2lints.entry(constructor_id).or_default();
+
+            if let Some(true) = allow_unused {
+                lints.insert(Lint::Unused, LintSetting::Allow);
+            } else if !krate_collection
                 .package_graph()
                 .metadata(&krate.core.package_id)
                 .unwrap()
                 .in_workspace()
             {
-                let mut lints = BTreeMap::new();
-                lints.insert(Lint::Unused, LintSetting::Ignore);
-                aux.id2lints.insert(constructor_id, lints);
+                // Ignore unused constructors imported from crates defined outside the current workspace
+                lints.insert(Lint::Unused, LintSetting::Allow);
             }
 
-            if let Some(error_handler) = error_handler {
-                let identifiers = RawIdentifiers {
-                    created_at: created_at.clone(),
-                    created_by: CreatedBy::macro_name("constructor"),
-                    import_path: error_handler,
-                };
-                let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
-                let component = UserComponent::ErrorHandler {
-                    source: identifiers_id.into(),
-                    target: ErrorHandlerTarget::FallibleComponent {
-                        fallible_id: constructor_id,
-                    },
-                };
-                aux.intern_component(component, scope_id, lifecycle, registration);
+            if let Some(true) = allow_error_fallback {
+                lints.insert(Lint::ErrorFallback, LintSetting::Allow);
             }
+
             Ok(constructor_id)
         }
         AnnotationProperties::Route {
             method,
             path,
-            error_handler,
+            allow_error_fallback,
+            id: _,
         } => {
             let ImportKind::Routes {
                 path_prefix,
@@ -316,28 +324,19 @@ fn intern_annotated(
 
             validate_route_path(aux, request_handler_id, &path, diagnostics);
 
-            if let Some(error_handler) = error_handler {
-                let identifiers = RawIdentifiers {
-                    created_at: created_at.clone(),
-                    created_by: CreatedBy::macro_name("route"),
-                    import_path: error_handler,
-                };
-                let identifiers_id = aux.identifiers_interner.get_or_intern(identifiers);
-                let component = UserComponent::ErrorHandler {
-                    source: identifiers_id.into(),
-                    target: ErrorHandlerTarget::FallibleComponent {
-                        fallible_id: request_handler_id,
-                    },
-                };
-                aux.intern_component(component, scope_id, Lifecycle::RequestScoped, registration);
+            if let Some(true) = allow_error_fallback {
+                let lints = aux.id2lints.entry(request_handler_id).or_default();
+                lints.insert(Lint::ErrorFallback, LintSetting::Allow);
             }
+
             Ok(request_handler_id)
         }
         AnnotationProperties::Config {
             key,
-            cloning_strategy,
+            cloning_policy,
             default_if_missing,
             include_if_unused,
+            id: _,
         } => {
             let config = UserComponent::ConfigType {
                 key: key.clone(),
@@ -345,9 +344,9 @@ fn intern_annotated(
             };
             let config_id =
                 aux.intern_component(config, scope_id, Lifecycle::Singleton, registration);
-            aux.id2cloning_strategy.insert(
+            aux.id2cloning_policy.insert(
                 config_id,
-                cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary),
+                cloning_policy.unwrap_or(CloningPolicy::CloneIfNecessary),
             );
             let default_strategy = match default_if_missing {
                 Some(true) => DefaultStrategy::DefaultIfMissing,
@@ -358,6 +357,18 @@ fn intern_annotated(
                 .insert(config_id, default_strategy);
             aux.config_id2include_if_unused
                 .insert(config_id, include_if_unused.unwrap_or(false));
+
+            let lints = aux.id2lints.entry(config_id).or_default();
+
+            if !krate_collection
+                .package_graph()
+                .metadata(&krate.core.package_id)
+                .unwrap()
+                .in_workspace()
+            {
+                // Ignore unused configuration types imported from crates defined outside the current workspace
+                lints.insert(Lint::Unused, LintSetting::Allow);
+            }
 
             let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;
             match ConfigType::new(ty, key) {
@@ -381,22 +392,19 @@ fn intern_annotated(
 
             Ok(config_id)
         }
-        AnnotationProperties::Prebuilt { cloning_strategy } => {
+        AnnotationProperties::Prebuilt {
+            cloning_policy,
+            id: _,
+        } => {
             let prebuilt = UserComponent::PrebuiltType { source };
             let prebuilt_id =
                 aux.intern_component(prebuilt, scope_id, Lifecycle::Singleton, registration);
-            aux.id2cloning_strategy.insert(
+            aux.id2cloning_policy.insert(
                 prebuilt_id,
-                cloning_strategy.unwrap_or(CloningStrategy::CloneIfNecessary),
+                cloning_policy.unwrap_or(CloningPolicy::NeverClone),
             );
 
-            let ty = match rustdoc_item_def2type(item, krate) {
-                Ok(t) => t,
-                Err(e) => {
-                    const_generics_are_not_supported(e, item, diagnostics);
-                    return Err(());
-                }
-            };
+            let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;
             match PrebuiltType::new(ty) {
                 Ok(prebuilt) => {
                     prebuilt_type_db.get_or_intern(prebuilt, prebuilt_id);
@@ -420,7 +428,7 @@ fn intern_annotated(
         }
         AnnotationProperties::PreProcessingMiddleware { .. }
         | AnnotationProperties::PostProcessingMiddleware { .. }
-        | AnnotationProperties::ErrorObserver
+        | AnnotationProperties::ErrorObserver { .. }
         | AnnotationProperties::Methods
         | AnnotationProperties::Fallback { .. }
         | AnnotationProperties::WrappingMiddleware { .. } => {
@@ -486,7 +494,7 @@ fn annotated_item2type(
                 )
             };
         match &imported_item.inner {
-            ItemEnum::Enum(_) | ItemEnum::Struct(_) => {}
+            ItemEnum::Enum(_) | ItemEnum::Struct(_) | ItemEnum::TypeAlias(_) => {}
             other => {
                 not_a_type_reexport(item, other.kind(), ComponentKind::ConfigType, diagnostics);
                 return Err(());
@@ -496,31 +504,84 @@ fn annotated_item2type(
     }
 
     let (item, krate) = annotated_item2def(item, krate, krate_collection, diagnostics)?;
-    match rustdoc_item_def2type(&item, krate) {
-        Ok(t) => Ok(t),
-        Err(e) => {
-            const_generics_are_not_supported(e, &item, diagnostics);
-            Err(())
-        }
-    }
+    rustdoc_item_def2type(&item, krate, krate_collection, diagnostics)
 }
 
-/// Convert an `enum` or a `struct` definition from the JSON documentation
+/// Convert an enum, a struct or a type alias definition from the JSON documentation
 /// for a crate into our own representation for types.
 ///
 /// # Panics
 ///
-/// Panics if the item isn't of kind `enum` or `struct`.
+/// Panics if the item isn't of kind enum, struct or type alias.
 fn rustdoc_item_def2type(
     item: &Item,
     krate: &Crate,
-) -> Result<ResolvedType, ConstGenericsAreNotSupported> {
+    krate_collection: &CrateCollection,
+    diagnostics: &DiagnosticSink,
+) -> Result<ResolvedType, ()> {
+    match item.inner {
+        ItemEnum::Struct(_) | ItemEnum::Enum(_) => match rustdoc_new_type_def2type(item, krate) {
+            Ok(t) => Ok(t),
+            Err(e) => {
+                const_generics_are_not_supported(e, item, diagnostics);
+                Err(())
+            }
+        },
+        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(item, krate, krate_collection) {
+            Ok(t) => Ok(t),
+            Err(e) => {
+                type_resolution_error(e, item, diagnostics);
+                Err(())
+            }
+        },
+        _ => unreachable!(
+            "Unexpected item type, `{}`. Expected a struct, an enum or a type alias.",
+            item.inner.kind()
+        ),
+    }
+}
+
+/// Convert a type alias definition from the JSON documentation
+/// for a crate into our own representation for types.
+///
+/// # Panics
+///
+/// Panics if the item isn't a type alias.
+fn rustdoc_type_alias2type(
+    item: &Item,
+    krate: &Crate,
+    krate_collection: &CrateCollection,
+) -> Result<ResolvedType, TypeResolutionError> {
+    let ItemEnum::TypeAlias(inner) = &item.inner else {
+        unreachable!(
+            "Unexpected item type, `{}`. Expected a a type alias.",
+            item.inner.kind()
+        )
+    };
+    let resolved = resolve_type(
+        &inner.type_,
+        &krate.core.package_id,
+        krate_collection,
+        &GenericBindings::default(),
+    )?;
+    Ok(resolved)
+}
+
+/// Convert an enum or a struct definition from the JSON documentation
+/// for a crate into our own representation for types.
+///
+/// # Panics
+///
+/// Panics if the item isn't of kind enum or struct.
+fn rustdoc_new_type_def2type(
+    item: &Item,
+    krate: &Crate,
+) -> Result<ResolvedType, UnsupportedConstGeneric> {
     assert!(
         matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_)),
-        "Unexpected item type, `{}`. Expected a struct or enum.",
+        "Unexpected item type, `{}`. Expected a struct or an enum.",
         item.inner.kind()
     );
-
     let path = krate.import_index.items[&item.id].canonical_path();
 
     let mut generic_arguments = vec![];
@@ -552,11 +613,6 @@ fn rustdoc_item_def2type(
         base_type: path.into(),
         generic_arguments,
     }))
-}
-
-#[derive(Debug)]
-struct ConstGenericsAreNotSupported {
-    pub name: String,
 }
 
 /// Convert a free function from `rustdoc_types` into a `Callable`.
@@ -596,7 +652,7 @@ fn rustdoc_free_fn2callable(
                     callable_item: item.clone(),
                     parameter_type: input_ty.clone(),
                     parameter_index,
-                    source: Arc::new(e),
+                    source: Arc::new(e.into()),
                 }
                 .into());
             }
@@ -617,7 +673,7 @@ fn rustdoc_free_fn2callable(
                         callable_path: path,
                         callable_item: item.clone(),
                         output_type: output_ty.clone(),
-                        source: Arc::new(e),
+                        source: Arc::new(e.into()),
                     }
                     .into());
                 }
@@ -692,7 +748,7 @@ fn rustdoc_method2callable(
                     qualified_self: None,
                     package_id: krate.core.package_id.clone(),
                 },
-                source: Arc::new(e),
+                source: Arc::new(e.into()),
             }
             .into());
         }
@@ -814,7 +870,7 @@ fn rustdoc_method2callable(
                     callable_item: method_item.clone(),
                     parameter_type: parameter_type.clone(),
                     parameter_index,
-                    source: Arc::new(e),
+                    source: Arc::new(e.into()),
                 }
                 .into());
             }
@@ -835,7 +891,7 @@ fn rustdoc_method2callable(
                         callable_path: method_path,
                         callable_item: method_item.clone(),
                         output_type: output_ty.clone(),
-                        source: Arc::new(e),
+                        source: Arc::new(e.into()),
                     }
                     .into());
                 }

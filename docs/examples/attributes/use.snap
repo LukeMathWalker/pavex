@@ -1,0 +1,6 @@
+```rust hl_lines="3"
+use pavex::prebuilt;
+
+#[prebuilt] // (1)!
+pub use reqwest::Client;
+```

@@ -76,7 +76,7 @@ impl GitToolchainsLocator {
     pub fn toolchain_dir(&self, repository: &str, revision_sha: &str) -> ToolchainLocator {
         let repository_hash = sha2::Sha256::digest(repository.as_bytes());
         // Take the first 7 hex digits of the hash
-        let repository_hash = format!("{:x}", repository_hash)
+        let repository_hash = format!("{repository_hash:x}")
             .chars()
             .take(7)
             .collect::<String>();
@@ -105,7 +105,7 @@ impl RegistryToolchainsLocator {
     pub fn toolchain_dir(&self, registry: &str, version: &Version) -> ToolchainLocator {
         let registry_hash = sha2::Sha256::digest(registry.as_bytes());
         // Take the first 7 hex digits of the hash
-        let registry_hash = format!("{:x}", registry_hash)
+        let registry_hash = format!("{registry_hash:x}")
             .chars()
             .take(7)
             .collect::<String>();

@@ -1,7 +1,13 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use pavex::Blueprint;
+use pavex::Response;
 
-pub fn handler() -> pavex::response::Response {
+#[pavex::get(path = "/")]
+pub fn sub_root() -> Response {
+    todo!()
+}
+
+#[pavex::get(path = "/")]
+pub fn any_root() -> Response {
     todo!()
 }
 
@@ -9,12 +15,12 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.domain("{*any}.company.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::handler));
+        bp.route(ANY_ROOT);
         bp
     });
     bp.domain("{sub}.company.com").nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/", f!(crate::handler));
+        bp.route(SUB_ROOT);
         bp
     });
     bp

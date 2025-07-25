@@ -17,9 +17,11 @@ use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
+use miette::{NamedSource, Severity};
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
+
+use super::get_err_variant;
 
 /// Utility functions to produce diagnostics.
 impl ComponentDb {
@@ -92,7 +94,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -301,7 +303,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -409,7 +411,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -487,7 +489,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -576,7 +578,7 @@ impl ComponentDb {
                     comma_separated_list(
                         &mut buffer,
                         parameters.iter(),
-                        |p| format!("`{}`", p),
+                        |p| format!("`{p}`"),
                         "and",
                     )
                     .unwrap();
@@ -624,7 +626,7 @@ impl ComponentDb {
         let path = &callable.path;
         let output = output.display_for_error();
         let error = anyhow::Error::from(e).context(format!(
-            "`{output}` doesn't implement `pavex::response::IntoResponse`.\n\
+            "`{output}` doesn't implement `pavex::IntoResponse`.\n\
             It is returned by `{path}`, one of your {kind}s.\n\
             `IntoResponse` is used by Pavex to convert `{output}` into the HTTP response that will be returned to the caller of your API.",
         ));
@@ -655,7 +657,7 @@ impl ComponentDb {
         );
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
-                `pavex::response::IntoResponse` for {output_type:?}, the type returned by \
+                `pavex::IntoResponse` for {output_type:?}, the type returned by \
                 one of your {kind}s.\n\
                 This is definitely a bug, I am sorry! Please file an issue on \
                 https://github.com/LukeMathWalker/pavex"
@@ -810,7 +812,7 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p), "and").unwrap();
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{p}`"), "and").unwrap();
                     buffer
                 };
                 let error = anyhow::anyhow!(e)
@@ -888,6 +890,7 @@ impl ComponentDb {
     pub(super) fn missing_error_handler(
         fallible_id: UserComponentId,
         db: &UserComponentDb,
+        computation_db: &ComputationDb,
         diagnostics: &diagnostic::DiagnosticSink,
     ) {
         let fallible_kind = db[fallible_id].kind();
@@ -895,15 +898,24 @@ impl ComponentDb {
             db.registration_target(fallible_id),
             format!("The fallible {fallible_kind} was registered here"),
         );
+        let fallible = &computation_db[fallible_id];
+        let err_ty = get_err_variant(fallible.output.as_ref().unwrap());
         let error = anyhow::anyhow!(
-            "You registered a {fallible_kind} that returns a `Result`, but you did not register an \
-                 error handler for it. \
-                 If I don't have an error handler, I don't know what to do with the error when the \
-                 {fallible_kind} fails!",
+            "There is no specific error handler for `{}`, the error returned by one of your {fallible_kind}s.\n\
+            It'll be converted to `pavex::Error` and handled by the fallback error handler.",
+            err_ty.display_for_error()
         );
         let diagnostic = CompilerDiagnostic::builder(error)
+            .severity(Severity::Warning)
             .optional_source(source)
-            .help("Add an error handler via `.error_handler`".to_string())
+            .help(format!(
+                "Define an error handler for `{}`",
+                err_ty.display_for_error()
+            ))
+            .help(
+                "Add `allow(error_fallback)` to your component's attribute to silence this warning"
+                    .into(),
+            )
             .build();
         diagnostics.push(diagnostic);
     }

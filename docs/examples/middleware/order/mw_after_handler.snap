@@ -1,0 +1,12 @@
+```rust hl_lines="8"
+// [...]
+use pavex::Blueprint;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.wrap(WRAP_1);
+    bp.route(GET_INDEX);
+    bp.wrap(WRAP_2);
+    // [...]
+}
+```

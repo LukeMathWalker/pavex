@@ -1,4 +1,4 @@
-error: #[pavex::constructor] can only be applied to functions and methods.
+error: #[pavex::request_scoped] can only be applied to functions and methods.
  --> tests/constructor/fail/not_a_function.rs:7:5
   |
 7 |     const A: usize = 42;

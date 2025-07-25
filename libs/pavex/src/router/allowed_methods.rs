@@ -41,7 +41,7 @@ use crate::http::Method;
 ///
 /// ```rust
 /// use pavex::router::AllowedMethods;
-/// use pavex::response::Response;
+/// use pavex::Response;
 /// use pavex::http::header::{ALLOW, HeaderValue};
 /// use itertools::Itertools;
 ///
@@ -70,8 +70,8 @@ use crate::http::Method;
 /// to set the `Allow` header to the correct value when returning a `405 Method Not Allowed`
 /// response after a routing failure.
 ///
-/// [`Blueprint`]: crate::blueprint::Blueprint
-/// [fallback handlers]: crate::blueprint::Blueprint::fallback
+/// [`Blueprint`]: crate::Blueprint
+/// [fallback handlers]: crate::Blueprint::fallback
 #[derive(Debug, Clone)]
 pub enum AllowedMethods {
     /// Only a finite set of HTTP methods are allowed for a given path.
@@ -160,10 +160,10 @@ where
         None => String::new(),
         Some(first_elt) => {
             let mut result = String::with_capacity(separator.len() * iter.size_hint().0);
-            write!(&mut result, "{}", first_elt).unwrap();
+            write!(&mut result, "{first_elt}").unwrap();
             iter.for_each(|element| {
                 result.push_str(separator);
-                write!(&mut result, "{}", element).unwrap();
+                write!(&mut result, "{element}").unwrap();
             });
             result
         }

@@ -6,11 +6,11 @@ the query is `sorted=true` and it's used to encode a `sorted` variable set to `t
 
 Those variables are called **query parameters**. You can extract them using [`QueryParams<T>`][QueryParams].
 
-## Registration
+## Imports
 
 To use [`QueryParams<T>`][QueryParams] in your application you need to import its constructor from `pavex`:
 
---8<-- "doc_examples/guide/request_data/query_params/project-installation.snap"
+--8<-- "docs/examples/request_data/query_params/registration.snap"
 
 ## Overview
 
@@ -18,7 +18,7 @@ Let's keep using `/search?sorted=true` as an example.
 
 You can parse the value for `sorted` by injecting [`QueryParams<T>`][QueryParams] in your handler:
 
---8<-- "doc_examples/guide/request_data/query_params/project-extraction.snap"
+--8<-- "docs/examples/request_data/query_params/extraction.snap"
 
 There are a few moving parts here. Let's break them down!
 
@@ -30,14 +30,14 @@ All struct fields must be named after the query parameters you want to extract.
 In our example, the query parameter is named `sorted`.\
 Our extraction type, `SearchParams`, must have a matching field named `sorted`.
 
---8<-- "doc_examples/guide/request_data/query_params/project-struct.snap"
+--8<-- "docs/examples/request_data/query_params/struct_def_without_attr.snap"
 
 ### Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.\
 You can derive [`serde::Deserialize`][serde::Deserialize] in most cases.
 
---8<-- "doc_examples/guide/request_data/query_params/project-struct_with_attr.snap"
+--8<-- "docs/examples/request_data/query_params/struct_def.snap"
 
 ### Parsing
 
@@ -49,7 +49,7 @@ We could set the field type for `sorted` to `String` and then parse it into a bo
 to get tedious if we need to do it every single time we want to work with a boolean query parameter.\
 We can skip all that boilerplate by setting the field type to `bool` directly, and let Pavex do the parsing for us:
 
---8<-- "doc_examples/guide/request_data/query_params/project-typed_field.snap"
+--8<-- "docs/examples/request_data/query_params/struct_def_without_attr.snap"
 
 Everything works as expected because `bool` implements the [`serde::Deserialize`][serde::Deserialize] trait.
 

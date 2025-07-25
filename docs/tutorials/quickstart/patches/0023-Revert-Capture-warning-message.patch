@@ -1,0 +1,22 @@
+From 0ace253727271ab8877e16791f0cf70b77dd92df Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Thu, 24 Jul 2025 16:35:33 +0200
+Subject: [PATCH 23/34] Revert "Capture warning message"
+
+This reverts commit 3abf293304916646866cfe7dc31ad2a9fe58ddf7.
+---
+ example.yml | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/example.yml b/example.yml
+index f12d465..6b6a345 100644
+--- a/example.yml
++++ b/example.yml
+@@ -1,4 +1,3 @@
+ snippets_base_dir: "../snaps"
+ prune_orphaned_snippets: false
+ use_path_as_title: true
+-compilation_output_filename: "missing_error_handler"
+-- 
+2.39.5 (Apple Git-154)
+

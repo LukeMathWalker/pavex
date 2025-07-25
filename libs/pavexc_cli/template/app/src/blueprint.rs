@@ -1,12 +1,11 @@
-use crate::{routes, telemetry};
-use pavex::blueprint::{Blueprint, from};
+use crate::telemetry;
+use pavex::{Blueprint, blueprint::from};
 
-/// The main blueprint, containing all the routes, middlewares, constructors and error handlers
-/// required by our API.
+/// The main blueprint, defining all the components used in this API.
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    // Bring into scope all macro-annotated components
-    // defined in the crates listed via `from!`.
+    // Bring into scope constructors, error handlers, configuration
+    // and prebuilt types defined in the following crates
     bp.import(from![
         // Local components, defined in this crate
         crate,
@@ -15,7 +14,8 @@ pub fn blueprint() -> Blueprint {
         pavex,
     ]);
 
-    telemetry::register(&mut bp);
-    routes::register(&mut bp);
+    telemetry::instrument(&mut bp);
+
+    bp.prefix("/api").routes(from![crate]);
     bp
 }

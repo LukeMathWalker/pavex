@@ -1,0 +1,32 @@
+From 1e00699ca82a579a9ce915c66c3a0a6948185b84 Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:56:23 +0200
+Subject: [PATCH 30/34] Greet test module annotations
+
+---
+ server/tests/integration/greet.rs | 1 +
+ server/tests/integration/main.rs  | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/server/tests/integration/greet.rs b/server/tests/integration/greet.rs
+index 43ec02b..72f98aa 100644
+--- a/server/tests/integration/greet.rs
++++ b/server/tests/integration/greet.rs
+@@ -1,3 +1,4 @@
++//! px:greet_test
+ use pavex::http::StatusCode;
+ 
+ use crate::helpers::TestApi;
+diff --git a/server/tests/integration/main.rs b/server/tests/integration/main.rs
+index 9f0a3cc..4d478e1 100644
+--- a/server/tests/integration/main.rs
++++ b/server/tests/integration/main.rs
+@@ -1,3 +1,4 @@
+-mod greet;
++//! px:greet_test_mod
++mod greet; // px::hl
+ mod helpers;
+ mod ping;
+-- 
+2.39.5 (Apple Git-154)
+

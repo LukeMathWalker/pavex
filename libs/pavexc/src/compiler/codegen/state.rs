@@ -97,38 +97,6 @@ pub(super) fn define_application_state_error(
     })?)
 }
 
-#[tracing::instrument("Codegen application state initialization function", skip_all)]
-pub(super) fn get_build_application_state(
-    application_state_new: &ItemFn,
-) -> Result<ItemFn, anyhow::Error> {
-    let mut signature = application_state_new.sig.clone();
-    signature.ident = format_ident!("build_application_state");
-    let params = application_state_new
-        .sig
-        .inputs
-        .iter()
-        .map(|param| match param {
-            syn::FnArg::Typed(pat_type) => &pat_type.pat,
-            _ => unreachable!(),
-        });
-    let mut invocation = quote! {
-        crate::ApplicationState::new(
-            #(#params),*
-        )
-    };
-    if application_state_new.sig.asyncness.is_some() {
-        invocation = quote! {
-            #invocation.await
-        };
-    }
-    Ok(syn::parse2(quote! {
-        #[deprecated(note = "Use `ApplicationState::new` instead.")]
-        pub #signature {
-            #invocation
-        }
-    })?)
-}
-
 /// Get the `ApplicationState::new` function.
 ///
 /// To minimise friction for users:

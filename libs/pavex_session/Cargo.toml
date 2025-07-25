@@ -11,10 +11,10 @@ license.workspace = true
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 
 [dependencies]
-pavex = { version = "0.1.80", path = "../pavex", default-features = false, features = [
+pavex = { version = "0.2.1", path = "../pavex", default-features = false, features = [
     "cookie",
 ] }
-pavex_tracing = { version = "0.1.80", path = "../pavex_tracing" }
+pavex_tracing = { version = "0.2.1", path = "../pavex_tracing" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -23,10 +23,9 @@ tracing = { workspace = true }
 tokio = { workspace = true, features = ["rt"] }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 static_assertions = { workspace = true }
 pavex_session_memory_store = { path = "../pavex_session_memory_store" }
-googletest = "0.13.0"
+googletest = "0.14.2"
 itertools = { workspace = true }

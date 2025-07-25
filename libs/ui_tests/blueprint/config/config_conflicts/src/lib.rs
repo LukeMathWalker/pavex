@@ -1,52 +1,31 @@
-use pavex::blueprint::{from, router::GET, Blueprint};
-use pavex::response::Response;
-use pavex::{f, t};
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
-pub fn handler(_a: &A, _b: &B, _c: &C) -> Response {
+#[pavex::get(path = "/")]
+pub fn handler(_a: &A, _b: &B, _c: &C, _d: &D) -> Response {
     todo!()
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[pavex::config(key = "a", id = "CONFIG_A")]
 pub struct A;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
+// Same key as A, but different type.
+#[pavex::config(key = "a", id = "CONFIG_B")]
 pub struct B;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[pavex::config(key = "c", id = "CONFIG_C")]
 pub struct C;
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-#[pavex::config(key = "a1")]
-pub struct A1;
-
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-// Same key, different type. The only type of conflict
-// you can have with annotation-only config types.
-#[pavex::config(key = "a1")]
-pub struct B1;
-
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-// Key conflict *and* type conflict with a blueprint-provided
-// config type.
-#[pavex::config(key = "c")]
-pub struct C1;
+#[pavex::config(key = "d", id = "CONFIG_D")]
+// Different key, same type as C.
+pub use C as D;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-
     bp.import(from![crate]);
-
-    // Same key, different types.
-    bp.config("a", t!(self::C));
-    bp.config("a", t!(self::B));
-
-    // Different key, same type.
-    bp.config("b", t!(self::A));
-    bp.config("c", t!(self::A));
-
-    // Key conflict *and* type conflict
-    bp.config("c", t!(self::B));
-
-    bp.route(GET, "/", f!(crate::handler));
+    bp.routes(from![crate]);
     bp
 }

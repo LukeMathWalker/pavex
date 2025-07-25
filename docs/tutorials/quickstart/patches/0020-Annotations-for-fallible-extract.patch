@@ -1,0 +1,37 @@
+From 796ecf16843addffe52845ae64415c9d319c36dd Mon Sep 17 00:00:00 2001
+From: Luca Palmieri <20745048+LukeMathWalker@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 15:50:14 +0200
+Subject: [PATCH 20/34] Annotations for fallible extract
+
+---
+ app/src/user_agent.rs | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
+index fd418a4..816f188 100644
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
+@@ -1,4 +1,6 @@
++//! px:user_agent_fallible_extract
+ use pavex::http::header::{ToStrError, USER_AGENT};
++// px::skip:start
+ use pavex::methods;
+ use pavex::request::RequestHead;
+ 
+@@ -8,11 +10,12 @@ pub enum UserAgent {
+     /// The value of the `User-Agent` header for the incoming request.
+     Known(String),
+ }
++// px::skip:end
+ 
+ #[methods]
+ impl UserAgent {
+     #[request_scoped]
+-    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError> {
++    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* px::ann:1 */> {
+         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+             return Ok(Self::Unknown);
+         };
+-- 
+2.39.5 (Apple Git-154)
+

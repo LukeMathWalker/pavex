@@ -197,7 +197,7 @@ impl Filesystem {
     /// This function will create a file at `path` if it doesn't already exist
     /// (including intermediate directories), and then it will acquire an
     /// exclusive lock on `path`. If the process must block waiting for the
-    /// lock, the `msg` is printed to the [`Shell`].
+    /// lock, the `msg` is printed to the [`SHELL`].
     ///
     /// The returned file can be accessed to look at the path and also has
     /// read/write access to the underlying file.
@@ -236,7 +236,7 @@ impl Filesystem {
     ///
     /// This function will fail if `path` doesn't already exist, but if it does
     /// then it will acquire a shared lock on `path`. If the process must block
-    /// waiting for the lock, the `msg` is printed to [`Shell`].
+    /// waiting for the lock, the `msg` is printed to [`SHELL`].
     ///
     /// The returned file can be accessed to look at the path and also has read
     /// access to the underlying file. Any writes to the file will return an
@@ -367,7 +367,7 @@ fn try_acquire(path: &Path, lock_try: &dyn Fn() -> io::Result<()>) -> anyhow::Re
 /// This function will acquire the lock on a `path`, printing out a nice message
 /// to the console if we have to wait for it. It will first attempt to use `try`
 /// to acquire a lock on the crate, and in the case of contention it will emit a
-/// status message based on `msg` to [`Shell`], and then use `block` to
+/// status message based on `msg` to [`SHELL`], and then use `block` to
 /// block waiting to acquire a lock.
 ///
 /// Returns an error if the lock could not be acquired or if any error other
@@ -381,7 +381,7 @@ fn acquire(
     if try_acquire(path, lock_try)? {
         return Ok(());
     }
-    let msg = format!("waiting for file lock on {}", msg);
+    let msg = format!("waiting for file lock on {msg}");
     SHELL.status_with_color("Blocking", &msg, &pavex_cli_shell::style::NOTE);
 
     lock_block().with_context(|| format!("failed to lock file: {}", path.display()))?;

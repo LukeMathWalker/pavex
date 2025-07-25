@@ -89,7 +89,7 @@ pub(super) struct Worker<HandlerFuture, ApplicationState> {
 
 impl<HandlerFuture, ApplicationState> Worker<HandlerFuture, ApplicationState>
 where
-    HandlerFuture: Future<Output = crate::response::Response> + 'static,
+    HandlerFuture: Future<Output = crate::Response> + 'static,
     ApplicationState: Clone + Send + Sync + 'static,
 {
     /// Configure a new worker without spawning it.
@@ -128,7 +128,7 @@ where
     /// handle !Send futures.
     pub(super) fn spawn(self) -> Result<thread::JoinHandle<()>, anyhow::Error> {
         let id = self.id;
-        let name = || format!("pavex-worker-{}", id);
+        let name = || format!("pavex-worker-{id}");
         thread::Builder::new()
             .name(name())
             .spawn(move || {

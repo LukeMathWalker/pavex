@@ -45,7 +45,7 @@ fn create_test_record(
 #[tokio::test]
 async fn test_migration_idempotency() {
     let database_url = "sqlite::memory:";
-    let pool = SqlitePool::connect(&database_url).await.unwrap();
+    let pool = SqlitePool::connect(database_url).await.unwrap();
     let store = SqliteSessionStore::new(pool);
 
     // Run migration multiple times - should not fail
@@ -90,8 +90,7 @@ async fn test_create_and_load_roundtrip() {
         assert_eq!(
             loaded_record.state.get(key).unwrap(),
             expected_value,
-            "Mismatch for key: {}",
-            key
+            "Mismatch for key: {key}"
         );
     }
 
@@ -154,8 +153,7 @@ async fn test_update_roundtrip() {
         assert_eq!(
             loaded.state.get(key).unwrap(),
             expected_value,
-            "Mismatch for updated key: {}",
-            key
+            "Mismatch for updated key: {key}"
         );
     }
 
@@ -218,8 +216,7 @@ async fn test_update_ttl_roundtrip() {
         assert_eq!(
             loaded.state.get(key).unwrap(),
             expected_value,
-            "Mismatch for key after TTL update: {}",
-            key
+            "Mismatch for key after TTL update: {key}"
         );
     }
     assert!(loaded.ttl.as_secs() > 3600);
@@ -285,8 +282,7 @@ async fn test_change_id_roundtrip() {
         assert_eq!(
             new_record.state.get(key).unwrap(),
             expected_value,
-            "Mismatch for key after ID change: {}",
-            key
+            "Mismatch for key after ID change: {key}"
         );
     }
 }
@@ -410,8 +406,7 @@ async fn test_large_jsonb_data() {
         assert_eq!(
             loaded.state.get(key).unwrap(),
             expected_value,
-            "Mismatch for large data key: {}",
-            key
+            "Mismatch for large data key: {key}"
         );
     }
 
@@ -458,8 +453,7 @@ async fn test_unicode_and_special_characters() {
         assert_eq!(
             loaded.state.get(key).unwrap(),
             expected_value,
-            "Mismatch for unicode/special char key: {}",
-            key
+            "Mismatch for unicode/special char key: {key}"
         );
     }
 
@@ -504,9 +498,7 @@ async fn test_concurrent_operations() {
                 assert_eq!(
                     loaded.state.get(key).unwrap(),
                     expected_value,
-                    "Mismatch for key {} in concurrent operation {}",
-                    key,
-                    i
+                    "Mismatch for key {key} in concurrent operation {i}"
                 );
             }
 
@@ -602,7 +594,7 @@ async fn test_update_unknown_id_error() {
         pavex_session::store::errors::UpdateError::UnknownIdError(err) => {
             assert!(err.id == non_existent_id);
         }
-        other => panic!("Expected UnknownId error, got: {:?}", other),
+        other => panic!("Expected UnknownId error, got: {other:?}"),
     }
 }
 
@@ -621,7 +613,7 @@ async fn test_update_ttl_unknown_id_error() {
         pavex_session::store::errors::UpdateTtlError::UnknownId(err) => {
             assert!(err.id == non_existent_id);
         }
-        other => panic!("Expected UnknownId error, got: {:?}", other),
+        other => panic!("Expected UnknownId error, got: {other:?}"),
     }
 }
 
@@ -638,7 +630,7 @@ async fn test_delete_unknown_id_error() {
         pavex_session::store::errors::DeleteError::UnknownId(err) => {
             assert!(err.id == non_existent_id);
         }
-        other => panic!("Expected UnknownId error, got: {:?}", other),
+        other => panic!("Expected UnknownId error, got: {other:?}"),
     }
 }
 
@@ -656,7 +648,7 @@ async fn test_change_id_unknown_old_id_error() {
         pavex_session::store::errors::ChangeIdError::UnknownId(err) => {
             assert!(err.id == non_existent_old_id);
         }
-        other => panic!("Expected UnknownId error, got: {:?}", other),
+        other => panic!("Expected UnknownId error, got: {other:?}"),
     }
 }
 
@@ -687,7 +679,7 @@ async fn test_change_id_duplicate_new_id_error() {
         pavex_session::store::errors::ChangeIdError::DuplicateId(err) => {
             assert!(err.id == session_id_2);
         }
-        other => panic!("Expected DuplicateId error, got: {:?}", other),
+        other => panic!("Expected DuplicateId error, got: {other:?}"),
     }
 
     // Verify both original sessions still exist
@@ -724,10 +716,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::UpdateError::UnknownIdError(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session update, got: {:?}",
-            other
-        ),
+        other => panic!("Expected UnknownId error for expired session update, got: {other:?}"),
     }
 
     // Try to update TTL of expired session - should return UnknownId error
@@ -739,10 +728,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::UpdateTtlError::UnknownId(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session TTL update, got: {:?}",
-            other
-        ),
+        other => panic!("Expected UnknownId error for expired session TTL update, got: {other:?}"),
     }
 
     // Try to delete expired session - should return UnknownId error
@@ -752,10 +738,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::DeleteError::UnknownId(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session delete, got: {:?}",
-            other
-        ),
+        other => panic!("Expected UnknownId error for expired session delete, got: {other:?}"),
     }
 
     // Try to change ID of expired session - should return UnknownId error
@@ -766,10 +749,7 @@ async fn test_operations_on_expired_session() {
         pavex_session::store::errors::ChangeIdError::UnknownId(err) => {
             assert!(err.id == session_id);
         }
-        other => panic!(
-            "Expected UnknownId error for expired session ID change, got: {:?}",
-            other
-        ),
+        other => panic!("Expected UnknownId error for expired session ID change, got: {other:?}"),
     }
 }
 
@@ -803,7 +783,7 @@ async fn test_serialization_error() {
         Err(pavex_session::store::errors::CreateError::SerializationError(_)) => {
             // This is also acceptable - serialization failed as expected
         }
-        Err(other) => panic!("Unexpected error type: {:?}", other),
+        Err(other) => panic!("Unexpected error type: {other:?}"),
     }
 }
 
@@ -830,10 +810,7 @@ async fn test_database_unavailable_error() {
         pavex_session::store::errors::CreateError::Other(_) => {
             // Expected - database connection error
         }
-        other => panic!(
-            "Expected Other error for database unavailability, got: {:?}",
-            other
-        ),
+        other => panic!("Expected Other error for database unavailability, got: {other:?}"),
     }
 
     let load_result = store.load(&session_id).await;
@@ -842,9 +819,6 @@ async fn test_database_unavailable_error() {
         pavex_session::store::errors::LoadError::Other(_) => {
             // Expected - database connection error
         }
-        other => panic!(
-            "Expected Other error for database unavailability, got: {:?}",
-            other
-        ),
+        other => panic!("Expected Other error for database unavailability, got: {other:?}"),
     }
 }

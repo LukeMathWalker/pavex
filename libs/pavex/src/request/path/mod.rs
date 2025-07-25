@@ -12,30 +12,22 @@
 //! # Example: path parameters
 //!
 //! ```rust
-//! use pavex::f;
-//! use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-//! use pavex::request::path::PathParams;
+//! use pavex::{get, request::path::PathParams};
 //!
-//! fn blueprint() -> Blueprint{
-//!     let mut bp = Blueprint::new();
-//!     // [...]
-//!     // Register a route with a path parameter, `:home_id`.
-//!     bp.route(GET, "/home/:home_id", f!(crate::get_home));
-//!     bp
+//! // Define a route with a path parameter, `{home_id}`.
+//! // The `PathParams` extractor deserializes the extracted path parameters into
+//! // the type you specified—`Home` in this case.
+//! #[get(path = "/home/{home_id}")]
+//! pub fn get_home(params: &PathParams<Home>) -> String {
+//!    format!("The identifier for this home is: {}", params.0.home_id)
 //! }
 //!
 //! // The PathParams attribute macro derives the necessary (de)serialization traits.
 //! #[PathParams]
-//! struct Home {
+//! pub struct Home {
 //!     // The name of the field must match the name of the path parameter
-//!     // used in `bp.route`.
+//!     // used in the route definition.
 //!     home_id: u32
-//! }
-//!
-//! // The `PathParams` extractor deserializes the extracted path parameters into
-//! // the type you specified—`Home` in this case.
-//! fn get_home(params: &PathParams<Home>) -> String {
-//!    format!("The identifier for this home is: {}", params.0.home_id)
 //! }
 //! ```
 //!
@@ -58,25 +50,20 @@ pub use path_params::PathParams;
 /// # Example
 ///
 /// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-/// use pavex::request::path::PathParams;
+/// use pavex::{get, request::path::PathParams};
 ///
-/// fn blueprint() -> Blueprint { ///
-///     let mut bp = Blueprint::new();
-///     // [...]
-///     // Register a route with a path parameter, `:home_id`.
-///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
-///     # bp
+/// // Define a route with a path parameter, `{home_id}`.
+/// #[get(path = "/home/{home_id}")]
+/// pub fn get_home(params: &PathParams<Home>) -> String {
+///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 ///
+/// // The PathParams attribute macro derives the necessary (de)serialization traits.
 /// #[PathParams]
-/// struct Home {
+/// pub struct Home {
+///     // The name of the field must match the name of the path parameter
+///     // used in the route definition.
 ///     home_id: u32
-/// }
-///
-/// fn get_home(params: &PathParams<Home>) -> String {
-///     format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
 ///

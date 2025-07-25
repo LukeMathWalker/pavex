@@ -1,4 +1,4 @@
-use pavex::{http::StatusCode, request::body::JsonBody};
+use pavex::{http::StatusCode, post, request::body::JsonBody};
 
 use crate::schemas::Article;
 
@@ -18,6 +18,7 @@ pub struct PublishArticleResponse {
     pub article: Article,
 }
 
+#[post(path = "")]
 pub fn publish_article(_body: JsonBody<PublishArticle>) -> StatusCode {
     StatusCode::OK
 }

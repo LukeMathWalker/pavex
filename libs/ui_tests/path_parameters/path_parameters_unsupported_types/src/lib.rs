@@ -1,16 +1,18 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
 use pavex::http::StatusCode;
 use pavex::request::path::PathParams;
+use pavex::{blueprint::from, Blueprint};
 
+#[pavex::get(path = "/b/{x}/{y}")]
 pub fn tuple(_params: PathParams<(u32, u32)>) -> StatusCode {
     todo!()
 }
 
+#[pavex::get(path = "/a/{x}")]
 pub fn primitive(_params: PathParams<u32>) -> StatusCode {
     todo!()
 }
 
+#[pavex::get(path = "/c/{x}/{z}")]
 pub fn slice_ref(_params: PathParams<&[u32]>) -> StatusCode {
     todo!()
 }
@@ -21,7 +23,8 @@ pub struct MyStruct {
     y: u32,
 }
 
-pub fn reference<T>(_params: PathParams<&T>) -> StatusCode {
+#[pavex::get(path = "/d/{x}/{y}")]
+pub fn reference(_params: PathParams<&MyStruct>) -> StatusCode {
     todo!()
 }
 
@@ -32,6 +35,7 @@ pub enum MyEnum {
     C { x: u32, y: u32 },
 }
 
+#[pavex::get(path = "/e/{x}/{y}")]
 pub fn enum_(_params: PathParams<MyEnum>) -> StatusCode {
     todo!()
 }
@@ -39,6 +43,7 @@ pub fn enum_(_params: PathParams<MyEnum>) -> StatusCode {
 #[PathParams]
 pub struct UnitStruct;
 
+#[pavex::get(path = "/g/{x}/{y}")]
 pub fn unit_struct(_params: PathParams<UnitStruct>) -> StatusCode {
     todo!()
 }
@@ -46,25 +51,14 @@ pub fn unit_struct(_params: PathParams<UnitStruct>) -> StatusCode {
 #[PathParams]
 pub struct TupleStruct(u32, u32);
 
+#[pavex::get(path = "/f/{x}/{y}")]
 pub fn tuple_struct(_params: PathParams<TupleStruct>) -> StatusCode {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(
-        f!(pavex::request::path::PathParams::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::path::errors::ExtractPathParamsError::into_response
-    ));
-    bp.route(GET, "/a/{x}", f!(crate::primitive));
-    bp.route(GET, "/b/{x}/{y}", f!(crate::tuple));
-    bp.route(GET, "/c/{x}/{z}", f!(crate::slice_ref));
-    bp.route(GET, "/d/{x}/{y}", f!(crate::reference::<crate::MyStruct>));
-    bp.route(GET, "/e/{x}/{y}", f!(crate::enum_));
-    bp.route(GET, "/f/{x}/{y}", f!(crate::tuple_struct));
-    bp.route(GET, "/g/{x}/{y}", f!(crate::unit_struct));
+    bp.import(from![pavex]);
+    bp.routes(from![crate]);
     bp
 }

@@ -1,0 +1,10 @@
+```rust hl_lines="6"
+use crate::redirect::REDIRECT_TO_NORMALIZED;
+use pavex::{Blueprint, blueprint::from};
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.pre_process(REDIRECT_TO_NORMALIZED); // (1)!
+    // [...]
+}
+```

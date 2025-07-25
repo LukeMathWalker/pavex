@@ -25,13 +25,6 @@ impl ApplicationState {
         }
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-    v0: app::Config,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config, v0).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(
@@ -42,7 +35,7 @@ pub fn run(
         request: http::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
         server_state: std::sync::Arc<ServerState>,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (router, state) = (&server_state.router, &server_state.application_state);
         router.route(request, connection_info, state).await
     }
@@ -74,7 +67,7 @@ impl Router {
         _connection_info: Option<pavex::connection::ConnectionInfo>,
         #[allow(unused)]
         state: &ApplicationState,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
@@ -82,13 +75,13 @@ impl Router {
                     vec![],
                 )
                 .into();
-            return route_1::entrypoint(&allowed_methods).await;
+            return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(state.http_client.clone(), request_head)
+                        route_1::entrypoint(state.http_client.clone(), request_head)
                             .await
                     }
                     _ => {
@@ -96,7 +89,7 @@ impl Router {
                                 pavex::http::Method::GET,
                             ])
                             .into();
-                        route_1::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
                     }
                 }
             }
@@ -105,37 +98,79 @@ impl Router {
     }
 }
 pub mod route_0 {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::Response {
+        let response = wrapping_0(s_0).await;
+        response
+    }
+    async fn stage_1<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    async fn wrapping_0(v0: &pavex::router::AllowedMethods) -> pavex::Response {
+        let v1 = crate::route_0::Next0 {
+            s_0: v0,
+            next: stage_1,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::Response as pavex::IntoResponse>::into_response(v3)
+    }
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::Response as pavex::IntoResponse>::into_response(v1)
+    }
+    struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::Response>,
+    {
+        s_0: &'a pavex::router::AllowedMethods,
+        next: fn(&'a pavex::router::AllowedMethods) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::Response>,
+    {
+        type Output = pavex::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+}
+pub mod route_1 {
     pub async fn entrypoint(
         s_0: app::HttpClient,
         s_1: pavex::request::RequestHead,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = wrapping_0(s_0, s_1).await;
         response
     }
     async fn stage_1(
         s_0: pavex::request::RequestHead,
         s_1: app::HttpClient,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let response = handler(s_0, s_1).await;
         response
     }
     async fn wrapping_0(
         v0: app::HttpClient,
         v1: pavex::request::RequestHead,
-    ) -> pavex::response::Response {
-        let v2 = crate::route_0::Next0 {
+    ) -> pavex::Response {
+        let v2 = crate::route_1::Next0 {
             s_0: v1,
             s_1: v0,
             next: stage_1,
         };
         let v3 = pavex::middleware::Next::new(v2);
         let v4 = pavex::middleware::wrap_noop(v3).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     async fn handler(
         v0: pavex::request::RequestHead,
         v1: app::HttpClient,
-    ) -> pavex::response::Response {
+    ) -> pavex::Response {
         let v2 = app::extract_path(v0).await;
         let v3 = match v2 {
             Ok(ok) => ok,
@@ -143,19 +178,17 @@ pub mod route_0 {
                 return {
                     let v4 = app::logger();
                     let v5 = app::handle_extract_path_error(&v3, v4);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    <pavex::Response as pavex::IntoResponse>::into_response(v5)
                 };
             }
         };
         let v4 = app::logger();
         let v5 = app::stream_file(v3, v4, v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
+        <pavex::Response as pavex::IntoResponse>::into_response(v5)
     }
     struct Next0<T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
         s_0: pavex::request::RequestHead,
         s_1: app::HttpClient,
@@ -163,58 +196,12 @@ pub mod route_0 {
     }
     impl<T> std::future::IntoFuture for Next0<T>
     where
-        T: std::future::Future<Output = pavex::response::Response>,
+        T: std::future::Future<Output = pavex::Response>,
     {
-        type Output = pavex::response::Response;
+        type Output = pavex::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1)
-        }
-    }
-}
-pub mod route_1 {
-    pub async fn entrypoint<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
-        let response = wrapping_0(s_0).await;
-        response
-    }
-    async fn stage_1<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
-        let response = handler(s_0).await;
-        response
-    }
-    async fn wrapping_0(
-        v0: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
-        let v1 = crate::route_1::Next0 {
-            s_0: v0,
-            next: stage_1,
-        };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = pavex::middleware::wrap_noop(v2).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
-    }
-    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
-        let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    struct Next0<'a, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: &'a pavex::router::AllowedMethods,
-        next: fn(&'a pavex::router::AllowedMethods) -> T,
-    }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
         }
     }
 }

@@ -1,8 +1,6 @@
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::middleware::Next;
-use pavex::response::Response;
-use std::future::IntoFuture;
+use pavex::Response;
+use pavex::{blueprint::from, Blueprint};
 
 // The call graph for the handler looks like this:
 //
@@ -25,32 +23,35 @@ pub struct B;
 
 pub struct C;
 
+#[pavex::wrap]
 pub fn wrapper<F: IntoFuture<Output = Response>>(_next: Next<F>, _c: C) -> Response {
     todo!()
 }
 
+#[pavex::request_scoped(id = "A_")]
 pub fn a() -> A {
     todo!()
 }
 
+#[pavex::request_scoped(id = "C_")]
 pub fn c(_a: &A) -> C {
     todo!()
 }
 
+#[pavex::request_scoped(id = "B_")]
 pub fn b(_a: &A) -> B {
     todo!()
 }
 
+#[pavex::get(path = "/")]
 pub fn handler(_b: B, _a: &mut A) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(crate::a));
-    bp.request_scoped(f!(crate::b));
-    bp.request_scoped(f!(crate::c));
-    bp.wrap(f!(crate::wrapper));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.import(from![crate]);
+    bp.wrap(WRAPPER);
+    bp.routes(from![crate]);
     bp
 }

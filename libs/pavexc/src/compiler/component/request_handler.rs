@@ -7,8 +7,8 @@ use crate::compiler::computation::MatchResult;
 use crate::language::{Callable, ResolvedType};
 
 /// A callable that handles incoming requests for one or more routes.
-/// It must return a type that implements `pavex::response::IntoResponse`.
-/// It can be fallible, as long as the `Ok` type implements `pavex::response::IntoResponse`.
+/// It must return a type that implements `pavex::IntoResponse`.
+/// It can be fallible, as long as the `Ok` type implements `pavex::IntoResponse`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct RequestHandler<'a> {
     pub(crate) callable: Cow<'a, Callable>,
@@ -66,13 +66,13 @@ impl<'a> RequestHandler<'a> {
 pub(crate) enum RequestHandlerValidationError {
     #[error(
         "All request handlers must return a type that can be converted into a \
-        `pavex::response::Response`.\n\
+        `pavex::Response`.\n\
         This request handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response."
     )]
     CannotReturnTheUnitType,
     #[error(
         "All request handlers must return a type that can be converted into a \
-        `pavex::response::Response`.\n\
+        `pavex::Response`.\n\
         This request handler doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
     )]
     CannotFalliblyReturnTheUnitType,

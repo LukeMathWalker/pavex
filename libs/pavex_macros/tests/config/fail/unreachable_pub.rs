@@ -1,7 +1,7 @@
 mod private {
     use pavex_macros::config;
 
-    #[config(key = "a")]
+    #[config(key = "a", id = "A_")]
     pub struct A;
 
     #[config(key = "a1")]

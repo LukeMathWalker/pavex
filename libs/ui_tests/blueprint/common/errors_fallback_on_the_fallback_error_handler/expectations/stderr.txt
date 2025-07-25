@@ -1,0 +1,17 @@
+[33;1mWARNING[0m:
+  [33m⚠[0m There is no specific error handler for `app::CustomError`, the
+  [33m│[0m error returned by one of your request handlers.
+  [33m│[0m It'll be converted to `pavex::Error` and handled by the fallback error
+  [33m│[0m handler.
+  [33m│[0m
+  [33m│[0m     ╭─[[36;1;4mblueprint/common/errors_fallback_on_the_fallback_error_handler/src/lib.rs[0m:25:1]
+  [33m│[0m  [2m25[0m │
+  [33m│[0m  [2m26[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[get(path = "/")]
+  [33m│[0m  [2m27[0m │ [35;1m│[0m   // No allow, this will trigger a warning.
+  [33m│[0m  [2m28[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn handler(_dep: Dep) -> Result<Response, CustomError> {
+  [33m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe fallible request handler was registered here[0m
+  [33m│[0m  [2m29[0m │         todo!()
+  [33m│[0m     ╰────
+  [33m│[0m   [36mhelp:[0m Define an error handler for `app::CustomError`
+  [33m│[0m   [36mhelp:[0m Add `allow(error_fallback)` to your component's attribute to silence
+  [33m│[0m         this warning

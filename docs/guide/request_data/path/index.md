@@ -11,7 +11,7 @@ more details.
 
 Inject [`RequestHead`][RequestHead] to access the raw path via its [`target`][RequestHead::target] field:
 
---8<-- "doc_examples/guide/request_data/path/project-raw_path.snap"
+--8<-- "docs/examples/request_data/wire_data/raw_path.snap"
 
 [RequestHead]: /api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::target]: /api_reference/pavex/request/struct.RequestHead.html#structfield.target

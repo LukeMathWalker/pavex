@@ -1,0 +1,10 @@
+```rust hl_lines="6"
+use crate::logger::RESPONSE_LOGGER;
+use pavex::{Blueprint, blueprint::from};
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.post_process(RESPONSE_LOGGER); // (1)!
+    // [...]
+}
+```
