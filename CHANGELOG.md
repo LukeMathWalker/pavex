@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/LukeMathWalker/pavex/compare/0.1.80...0.2.1) - 2025-03-22
+
+### ‼️ Breaking changes
+
+- A complete revamp of the dependency injection system, using annotations and imports 
+  rather than manually specified paths. Check out the updated guide on [pavex.dev](https://pavex.dev/docs/guide/attributes/)
+  for a thorough overview of the new system.
+- `Response` and `IntoResponse` are now top-level items in the `pavex` crate.
+
+### ⛰️ Features
+
+- It is no longer necessary to specify an error handler for every single error type. Check
+  out the guide [on error fallbacks](https://pavex.dev/docs/guide/errors/error_handlers/#fallback-error-handler) 
+  for more details.
+- There is a new backend for HTTP sessions built on top of SQLite (by @oliverbarnes) - #497
+
+### Contributors
+
+- @LukeMathWalker
+- @oliverbarnes
+- @leonqadirie 
+
 ## [0.1.80](https://github.com/LukeMathWalker/pavex/compare/0.1.79...0.1.80) - 2025-03-22
 
 ### 🐛 Bug Fixes

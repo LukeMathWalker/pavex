@@ -7,7 +7,7 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.0" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.1" }
 serde = { workspace = true }
 syn = { workspace = true, features = ["full"] }
 proc-macro2 = { workspace = true }
