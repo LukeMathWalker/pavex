@@ -31,6 +31,8 @@ install-path = "CARGO_HOME"
 # coming from https://github.com/axodotdev/cargo-dist/issues/1760#issuecomment-2769218034
 global = "ubuntu-latest"
 
+x86_64-pc-windows-msvc = "windows-latest"
+
 # Use faster built-in runners for macOS on ARM
 aarch64-apple-darwin = "macos-14"
 x86_64-apple-darwin = "macos-14"
