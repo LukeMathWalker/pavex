@@ -13,7 +13,7 @@ digraph "* * - 0" {
 }
 digraph "* * - 1" {
     0 [ label = "0| &app::A"]
-    1 [ label = "1| app::pre(&app::A) -> pavex::middleware::Processing<pavex::Response>"]
+    1 [ label = "1| app::pre(&app::A) -> pavex::middleware::Processing"]
     0 -> 1 [ ]
 }
 digraph "* * - 2" {
@@ -58,7 +58,7 @@ digraph "GET / - 0" {
 }
 digraph "GET / - 1" {
     0 [ label = "0| &app::A"]
-    1 [ label = "1| app::pre(&app::A) -> pavex::middleware::Processing<pavex::Response>"]
+    1 [ label = "1| app::pre(&app::A) -> pavex::middleware::Processing"]
     0 -> 1 [ ]
 }
 digraph "GET / - 2" {

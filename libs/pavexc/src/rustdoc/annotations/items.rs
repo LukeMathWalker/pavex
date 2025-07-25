@@ -1,25 +1,24 @@
 use std::collections::BTreeMap;
 
-use super::super::SortableId;
 use pavex_bp_schema::CreatedBy;
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 
 /// All the annotated items for a given package.
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnnotatedItems {
-    item_id2details: BTreeMap<SortableId, AnnotatedItem>,
+    item_id2details: BTreeMap<rustdoc_types::Id, AnnotatedItem>,
     annotation_id2item_id: BTreeMap<String, rustdoc_types::Id>,
 }
 
 impl AnnotatedItems {
     /// Iterate over the annotated items in this package.
     pub fn iter(&self) -> impl Iterator<Item = (rustdoc_types::Id, &AnnotatedItem)> {
-        self.item_id2details.iter().map(|(id, item)| (id.0, item))
+        self.item_id2details.iter().map(|(id, item)| (*id, item))
     }
 
     /// Get the annotation for a specific item, if any.
     pub fn get_by_item_id(&self, id: rustdoc_types::Id) -> Option<&AnnotatedItem> {
-        self.item_id2details.get(&id.into())
+        self.item_id2details.get(&id)
     }
 
     /// Get the annotation with a specific id, if any.
@@ -31,7 +30,7 @@ impl AnnotatedItems {
     /// Insert an annotated item.
     pub fn insert(&mut self, id: rustdoc_types::Id, item: AnnotatedItem) -> Result<(), IdConflict> {
         let annotation_id = item.properties.id().map(|s| s.to_owned());
-        self.item_id2details.insert(id.into(), item);
+        self.item_id2details.insert(id, item);
         let Some(annotation_id) = annotation_id else {
             return Ok(());
         };

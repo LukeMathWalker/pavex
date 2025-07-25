@@ -3,7 +3,7 @@ use pavexc_attr_parser::{AnnotationProperties, errors};
 
 // Convenience function to parse a single attribute string.
 fn parse(attrs: &str) -> Result<Option<AnnotationProperties>, errors::AttributeParserError> {
-    pavexc_attr_parser::parse(&[attrs.to_owned()])
+    pavexc_attr_parser::parse(std::iter::once(attrs))
 }
 
 #[test]

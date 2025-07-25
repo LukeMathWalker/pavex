@@ -11,7 +11,7 @@ digraph "* * - 0" {
 }
 
 digraph "* * - 1" {
-    0 [ label = "0| app_8ac65a81::pre() -> pavex::middleware::Processing<pavex::Response>"]
+    0 [ label = "0| app_8ac65a81::pre() -> pavex::middleware::Processing"]
 }
 
 digraph "* * - 2" {
@@ -33,7 +33,7 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "0| app_8ac65a81::pre() -> pavex::middleware::Processing<pavex::Response>"]
+    0 [ label = "0| app_8ac65a81::pre() -> pavex::middleware::Processing"]
 }
 
 digraph "GET /home - 2" {

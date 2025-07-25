@@ -84,10 +84,8 @@ pub fn convert_proc_macro_span(source: &str, span: proc_macro2::Span) -> SourceS
 
 /// Convert a `rustc_span::Span` to a `miette::SourceSpan`.
 pub fn convert_rustdoc_span(source: &str, span: rustdoc_types::Span) -> SourceSpan {
-    // No idea why the +1 is required, but I kept getting labeled spans that were _consistently_
-    // shifted by one character. So...
-    let start = SourceOffset::from_location(source, span.begin.0, span.begin.1 + 1);
-    let end = SourceOffset::from_location(source, span.end.0, span.end.1 + 1);
+    let start = SourceOffset::from_location(source, span.begin.0, span.begin.1);
+    let end = SourceOffset::from_location(source, span.end.0, span.end.1);
     let len = end.offset() - start.offset();
     SourceSpan::from((start.offset(), len))
 }

@@ -11,12 +11,12 @@ pub mod model;
 /// It returns `None` for:
 /// - attributes that don't belong to the `diagnostic::pavex` namespace (e.g. `#[inline]`)
 /// - attributes that don't parse successfully into `syn::Attribute`
-pub fn parse(
-    attrs: &[String],
-) -> Result<Option<AnnotationProperties>, errors::AttributeParserError> {
+pub fn parse<'a, I>(attrs: I) -> Result<Option<AnnotationProperties>, errors::AttributeParserError>
+where
+    I: Iterator<Item = &'a str>,
+{
     let mut component = None;
     let attrs = attrs
-        .iter()
         .filter_map(|a| match parse_outer_attrs(a) {
             Ok(attrs) => Some(attrs.into_iter()),
             Err(_) => None,

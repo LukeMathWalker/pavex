@@ -20,12 +20,6 @@ impl ApplicationState {
         crate::ApplicationState {}
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(
@@ -55,16 +49,12 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self {
-            router: Self::router(),
-        }
+        Self { router: Self::router() }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
         router.insert("/greet", 0u32).unwrap();
-        router
-            .insert("/greet/{first_name}/{last_name}", 1u32)
-            .unwrap();
+        router.insert("/greet/{first_name}/{last_name}", 1u32).unwrap();
         router.insert("/greet/{name}", 2u32).unwrap();
         router.insert("/info/{name}/{*details}", 3u32).unwrap();
         router
@@ -73,59 +63,78 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)] state: &ApplicationState,
+        #[allow(unused)]
+        state: &ApplicationState,
     ) -> pavex::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods =
-                pavex::router::MethodAllowList::from_iter(vec![]).into();
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_0::entrypoint(&allowed_methods).await;
         };
-        let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route.params.into();
+        let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
+            .params
+            .into();
         match matched_route.value {
-            0u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_4::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            0u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_4::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            1u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_2::entrypoint(url_params).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            1u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_2::entrypoint(url_params).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            2u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_3::entrypoint(url_params).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            2u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_3::entrypoint(url_params).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            3u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_1::entrypoint(url_params).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            3u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_1::entrypoint(url_params).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
+            }
             i => unreachable!("Unknown route id: {}", i),
         }
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -171,11 +180,15 @@ pub mod route_1 {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(s_0: pavex::request::path::RawPathParams<'a, 'b>) -> pavex::Response {
+    async fn stage_1<'a, 'b>(
+        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    ) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
-    async fn wrapping_0(v0: pavex::request::path::RawPathParams<'_, '_>) -> pavex::Response {
+    async fn wrapping_0(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::Response {
         let v1 = crate::route_1::Next0 {
             s_0: v0,
             next: stage_1,
@@ -184,14 +197,17 @@ pub mod route_1 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: pavex::request::path::RawPathParams<'_, '_>) -> pavex::Response {
+    async fn handler(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::Response {
         let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v2);
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
@@ -224,11 +240,15 @@ pub mod route_2 {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(s_0: pavex::request::path::RawPathParams<'a, 'b>) -> pavex::Response {
+    async fn stage_1<'a, 'b>(
+        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    ) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
-    async fn wrapping_0(v0: pavex::request::path::RawPathParams<'_, '_>) -> pavex::Response {
+    async fn wrapping_0(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::Response {
         let v1 = crate::route_2::Next0 {
             s_0: v0,
             next: stage_1,
@@ -237,14 +257,17 @@ pub mod route_2 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: pavex::request::path::RawPathParams<'_, '_>) -> pavex::Response {
+    async fn handler(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::Response {
         let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v2);
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
@@ -277,11 +300,15 @@ pub mod route_3 {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(s_0: pavex::request::path::RawPathParams<'a, 'b>) -> pavex::Response {
+    async fn stage_1<'a, 'b>(
+        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    ) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
-    async fn wrapping_0(v0: pavex::request::path::RawPathParams<'_, '_>) -> pavex::Response {
+    async fn wrapping_0(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::Response {
         let v1 = crate::route_3::Next0 {
             s_0: v0,
             next: stage_1,
@@ -290,14 +317,17 @@ pub mod route_3 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: pavex::request::path::RawPathParams<'_, '_>) -> pavex::Response {
+    async fn handler(
+        v0: pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::Response {
         let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::request::path::errors::ExtractPathParamsError::into_response(&v2);
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::Response as pavex::IntoResponse>::into_response(v3)
                 };
             }
@@ -333,7 +363,9 @@ pub mod route_4 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_4::Next0 { next: stage_1 };
+        let v0 = crate::route_4::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)

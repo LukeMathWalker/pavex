@@ -151,7 +151,7 @@ enum Commands {
         #[clap(long, env = "PAVEXC_PRECOMPUTED_METADATA", value_parser)]
         precomputed_metadata: Option<PathBuf>,
     },
-    /// Scaffold a new Pavex project at <PATH>.
+    /// Scaffold a new Pavex project at the given path.
     New {
         /// The path of the new directory that will contain the project files.
         ///

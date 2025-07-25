@@ -232,9 +232,7 @@ pub mod route_1 {
         let v3 = app::first(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
         app::first_pre(v0).await
     }
     async fn wrapping_2(v0: &app::Spy) -> pavex::Response {
@@ -246,9 +244,7 @@ pub mod route_1 {
         let v3 = app::second(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_1(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1(v0: &app::Spy) -> pavex::middleware::Processing {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::Response {
@@ -368,9 +364,7 @@ pub mod route_2 {
         let v3 = app::first(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
         let v1 = app::failing_pre_(v0).await;
         let v2 = match v1 {
             Ok(ok) => ok,
@@ -393,9 +387,7 @@ pub mod route_2 {
         let v3 = app::second(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_1(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1(v0: &app::Spy) -> pavex::middleware::Processing {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::Response {
@@ -515,9 +507,7 @@ pub mod route_3 {
         let v3 = app::first(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
         app::early_return_pre(v0).await
     }
     async fn wrapping_2(v0: &app::Spy) -> pavex::Response {
@@ -529,9 +519,7 @@ pub mod route_3 {
         let v3 = app::second(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_1(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1(v0: &app::Spy) -> pavex::middleware::Processing {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::Response {
@@ -641,9 +629,7 @@ pub mod route_4 {
         let v3 = app::first(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
         app::first_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::Response {
@@ -746,14 +732,10 @@ pub mod route_5 {
         let v3 = app::second(v0, v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
         app::first_pre(v0).await
     }
-    async fn pre_processing_1(
-        v0: &app::Spy,
-    ) -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1(v0: &app::Spy) -> pavex::middleware::Processing {
         app::second_pre(v0).await
     }
     async fn handler(v0: &app::Spy) -> pavex::Response {

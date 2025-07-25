@@ -31,12 +31,6 @@ impl ApplicationState {
         }
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    app_config: crate::ApplicationConfig,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(app_config).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(
@@ -66,9 +60,7 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self {
-            router: Self::router(),
-        }
+        Self { router: Self::router() }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
@@ -79,33 +71,42 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)] state: &ApplicationState,
+        #[allow(unused)]
+        state: &ApplicationState,
     ) -> pavex::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods =
-                pavex::router::MethodAllowList::from_iter(vec![]).into();
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
-            0u32 => match &request_head.method {
-                &pavex::http::Method::GET => {
-                    route_1::entrypoint(&state.postgres_config, &state.server_config).await
-                }
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            0u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => {
+                        route_1::entrypoint(&state.postgres_config, &state.server_config)
+                            .await
+                    }
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
+            }
             i => unreachable!("Unknown route id: {}", i),
         }
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }

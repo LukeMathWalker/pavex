@@ -175,7 +175,7 @@ impl Blueprint {
     /// ```
     ///
     /// The specified crates must be direct dependencies of the current crate.
-    pub fn import(&mut self, import: Import) -> RegisteredImport {
+    pub fn import(&mut self, import: Import) -> RegisteredImport<'_> {
         let import = pavex_bp_schema::Import {
             sources: sources2sources(import.sources),
             relative_to: import.relative_to.to_owned(),
@@ -264,7 +264,7 @@ impl Blueprint {
     /// ```
     ///
     /// This is generally discouraged.
-    pub fn routes(&mut self, import: Import) -> RegisteredRoutes {
+    pub fn routes(&mut self, import: Import) -> RegisteredRoutes<'_> {
         let import = pavex_bp_schema::RoutesImport {
             sources: sources2sources(import.sources),
             relative_to: import.relative_to.to_owned(),
@@ -379,7 +379,7 @@ impl Blueprint {
     /// ```
     ///
     /// Check out the documentation for [`.routes()`][`Blueprint::routes`] for more information.
-    pub fn route(&mut self, route: Route) -> RegisteredRoute {
+    pub fn route(&mut self, route: Route) -> RegisteredRoute<'_> {
         let registered = pavex_bp_schema::Route {
             coordinates: coordinates2coordinates(route.coordinates),
             registered_at: Location::caller(),
@@ -450,7 +450,7 @@ impl Blueprint {
     /// ```
     ///
     /// Check out the documentation for [`Blueprint::import`] for more information.
-    pub fn config(&mut self, config: Config) -> RegisteredConfig {
+    pub fn config(&mut self, config: Config) -> RegisteredConfig<'_> {
         let registered = pavex_bp_schema::ConfigType {
             coordinates: coordinates2coordinates(config.coordinates),
             cloning_policy: None,
@@ -567,7 +567,7 @@ impl Blueprint {
     /// ```
     ///
     /// Check out the documentation for [`Blueprint::import`] for more information.
-    pub fn constructor(&mut self, constructor: Constructor) -> RegisteredConstructor {
+    pub fn constructor(&mut self, constructor: Constructor) -> RegisteredConstructor<'_> {
         let registered_constructor = pavex_bp_schema::Constructor {
             coordinates: coordinates2coordinates(constructor.coordinates),
             lifecycle: None,
@@ -661,7 +661,7 @@ impl Blueprint {
     /// # }
     /// ```
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, m: WrappingMiddleware) -> RegisteredWrappingMiddleware {
+    pub fn wrap(&mut self, m: WrappingMiddleware) -> RegisteredWrappingMiddleware<'_> {
         let registered = pavex_bp_schema::WrappingMiddleware {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
@@ -767,7 +767,7 @@ impl Blueprint {
     pub fn post_process(
         &mut self,
         m: PostProcessingMiddleware,
-    ) -> RegisteredPostProcessingMiddleware {
+    ) -> RegisteredPostProcessingMiddleware<'_> {
         let registered = pavex_bp_schema::PostProcessingMiddleware {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
@@ -868,7 +868,10 @@ impl Blueprint {
     /// ```
     #[doc(alias = "middleware")]
     #[doc(alias = "preprocess")]
-    pub fn pre_process(&mut self, m: PreProcessingMiddleware) -> RegisteredPreProcessingMiddleware {
+    pub fn pre_process(
+        &mut self,
+        m: PreProcessingMiddleware,
+    ) -> RegisteredPreProcessingMiddleware<'_> {
         let registered = pavex_bp_schema::PreProcessingMiddleware {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
@@ -993,7 +996,7 @@ impl Blueprint {
     /// }
     /// # pub fn handler() {}
     /// ```
-    pub fn prefix(&mut self, prefix: &str) -> RoutingModifiers {
+    pub fn prefix(&mut self, prefix: &str) -> RoutingModifiers<'_> {
         RoutingModifiers::empty(&mut self.schema).prefix(prefix)
     }
 
@@ -1054,7 +1057,7 @@ impl Blueprint {
     ///
     /// Keep in mind that the [`Host` header can be easily spoofed by the client](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/17-Testing_for_Host_Header_Injection),
     /// so you should not rely on its value for auth or other security-sensitive operations.
-    pub fn domain(&mut self, domain: &str) -> RoutingModifiers {
+    pub fn domain(&mut self, domain: &str) -> RoutingModifiers<'_> {
         RoutingModifiers::empty(&mut self.schema).domain(domain)
     }
 
@@ -1208,7 +1211,7 @@ impl Blueprint {
     /// prefix of the nested blueprint (`/room`).
     ///
     /// [`Response`]: crate::Response
-    pub fn fallback(&mut self, fallback: Fallback) -> RegisteredFallback {
+    pub fn fallback(&mut self, fallback: Fallback) -> RegisteredFallback<'_> {
         let registered = pavex_bp_schema::Fallback {
             coordinates: coordinates2coordinates(fallback.coordinates),
             registered_at: Location::caller(),
@@ -1285,7 +1288,7 @@ impl Blueprint {
     /// bp.error_observer(ERROR_LOGGER_LOG);
     /// # }
     /// ```
-    pub fn error_observer(&mut self, error_observer: ErrorObserver) -> RegisteredErrorObserver {
+    pub fn error_observer(&mut self, error_observer: ErrorObserver) -> RegisteredErrorObserver<'_> {
         let registered = pavex_bp_schema::ErrorObserver {
             coordinates: coordinates2coordinates(error_observer.coordinates),
             registered_at: Location::caller(),
@@ -1377,7 +1380,7 @@ impl Blueprint {
     /// bp.error_handler(LOGIN_ERROR_TO_RESPONSE);
     /// # }
     /// ```
-    pub fn error_handler(&mut self, m: ErrorHandler) -> RegisteredErrorHandler {
+    pub fn error_handler(&mut self, m: ErrorHandler) -> RegisteredErrorHandler<'_> {
         let registered = pavex_bp_schema::ErrorHandler {
             coordinates: coordinates2coordinates(m.coordinates),
             registered_at: Location::caller(),
@@ -1397,7 +1400,7 @@ impl Blueprint {
     /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
     /// section of Pavex's guide for a thorough introduction to dependency injection
     /// in Pavex applications.
-    pub fn prebuilt(&mut self, prebuilt: Prebuilt) -> RegisteredPrebuilt {
+    pub fn prebuilt(&mut self, prebuilt: Prebuilt) -> RegisteredPrebuilt<'_> {
         let registered = pavex_bp_schema::PrebuiltType {
             coordinates: coordinates2coordinates(prebuilt.coordinates),
             cloning_policy: None,

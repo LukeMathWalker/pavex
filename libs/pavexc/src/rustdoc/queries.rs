@@ -24,6 +24,7 @@ use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
 use super::AnnotatedItem;
 use super::annotations::{
     self, AnnotatedItems, AnnotationCoordinates, QueueItem, invalid_diagnostic_attribute,
+    parse_pavex_attributes,
 };
 use super::compute::{RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
 
@@ -1210,7 +1211,7 @@ fn index_local_types<'a>(
         Some(i) => i,
     };
 
-    match pavexc_attr_parser::parse(&current_item.attrs) {
+    match parse_pavex_attributes(&current_item.attrs) {
         Ok(Some(_)) => {
             annotation_queue.insert(QueueItem::Standalone(*current_item_id));
         }

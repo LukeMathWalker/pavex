@@ -20,12 +20,6 @@ impl ApplicationState {
         crate::ApplicationState {}
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(
@@ -55,9 +49,7 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self {
-            router: Self::router(),
-        }
+        Self { router: Self::router() }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
@@ -73,81 +65,104 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)] state: &ApplicationState,
+        #[allow(unused)]
+        state: &ApplicationState,
     ) -> pavex::Response {
         let (request_head, request_body) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let request_body = pavex::request::body::RawIncomingBody::from(request_body);
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods =
-                pavex::router::MethodAllowList::from_iter(vec![]).into();
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
-            0u32 => match &request_head.method {
-                &pavex::http::Method::POST => route_1::entrypoint(request_body).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::POST])
+            0u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::POST => route_1::entrypoint(request_body).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::POST,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            1u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_2::entrypoint(&request_head).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            1u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_2::entrypoint(&request_head).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            2u32 => match &request_head.method {
-                &pavex::http::Method::GET => {
-                    let connection_info =
-                        connection_info.expect("Required `ConnectionInfo` is missing");
-                    route_3::entrypoint(connection_info).await
-                }
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            2u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => {
+                        let connection_info = connection_info
+                            .expect("Required `ConnectionInfo` is missing");
+                        route_3::entrypoint(connection_info).await
+                    }
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            3u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_4::entrypoint(&request_head).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            3u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_4::entrypoint(&request_head).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            4u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_5::entrypoint(&request_head).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            4u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_5::entrypoint(&request_head).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            5u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_6::entrypoint(&request_head).await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            5u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_6::entrypoint(&request_head).await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
+            }
             i => unreachable!("Unknown route id: {}", i),
         }
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -187,7 +202,9 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn entrypoint(s_0: pavex::request::body::RawIncomingBody) -> pavex::Response {
+    pub async fn entrypoint(
+        s_0: pavex::request::body::RawIncomingBody,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -227,7 +244,9 @@ pub mod route_1 {
     }
 }
 pub mod route_2 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::request::RequestHead) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::request::RequestHead,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -307,7 +326,9 @@ pub mod route_3 {
     }
 }
 pub mod route_4 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::request::RequestHead) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::request::RequestHead,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -347,7 +368,9 @@ pub mod route_4 {
     }
 }
 pub mod route_5 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::request::RequestHead) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::request::RequestHead,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -387,7 +410,9 @@ pub mod route_5 {
     }
 }
 pub mod route_6 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::request::RequestHead) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::request::RequestHead,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }

@@ -20,12 +20,6 @@ impl ApplicationState {
         crate::ApplicationState {}
     }
 }
-#[deprecated(note = "Use `ApplicationState::new` instead.")]
-pub async fn build_application_state(
-    _app_config: crate::ApplicationConfig,
-) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    crate::ApplicationState::new(_app_config).await
-}
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {}
 pub fn run(
@@ -55,9 +49,7 @@ impl Router {
     ///
     /// This method is invoked once, when the server starts.
     pub fn new() -> Self {
-        Self {
-            router: Self::router(),
-        }
+        Self { router: Self::router() }
     }
     fn router() -> matchit::Router<u32> {
         let mut router = matchit::Router::new();
@@ -76,103 +68,135 @@ impl Router {
         &self,
         request: http::Request<hyper::body::Incoming>,
         _connection_info: Option<pavex::connection::ConnectionInfo>,
-        #[allow(unused)] state: &ApplicationState,
+        #[allow(unused)]
+        state: &ApplicationState,
     ) -> pavex::Response {
         let (request_head, _) = request.into_parts();
         let request_head: pavex::request::RequestHead = request_head.into();
         let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
-            let allowed_methods: pavex::router::AllowedMethods =
-                pavex::router::MethodAllowList::from_iter(vec![]).into();
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_0::entrypoint(&allowed_methods).await;
         };
         match matched_route.value {
-            0u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_9::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            0u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_9::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            1u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_2::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            1u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_2::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            2u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_1::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            2u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_1::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            3u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_4::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            3u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_4::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            4u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_7::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            4u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_7::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            5u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_5::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            5u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_5::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            6u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_3::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            6u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_3::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            7u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_8::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            7u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_8::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
-            8u32 => match &request_head.method {
-                &pavex::http::Method::GET => route_6::entrypoint().await,
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods =
-                        pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET])
+            }
+            8u32 => {
+                match &request_head.method {
+                    &pavex::http::Method::GET => route_6::entrypoint().await,
+                    _ => {
+                        let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                                pavex::http::Method::GET,
+                            ])
                             .into();
-                    route_0::entrypoint(&allowed_methods).await
+                        route_0::entrypoint(&allowed_methods).await
+                    }
                 }
-            },
+            }
             i => unreachable!("Unknown route id: {}", i),
         }
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a pavex::router::AllowedMethods) -> pavex::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -225,13 +249,17 @@ pub mod route_1 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_1::Next0 { next: stage_1 };
+        let v0 = crate::route_1::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn wrapping_1() -> pavex::Response {
-        let v0 = crate::route_1::Next1 { next: stage_2 };
+        let v0 = crate::route_1::Next1 {
+            next: stage_2,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap1(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
@@ -287,13 +315,17 @@ pub mod route_2 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_2::Next0 { next: stage_1 };
+        let v0 = crate::route_2::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn wrapping_1() -> pavex::Response {
-        let v0 = crate::route_2::Next1 { next: stage_2 };
+        let v0 = crate::route_2::Next1 {
+            next: stage_2,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap1(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
@@ -368,30 +400,36 @@ pub mod route_3 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_3::Next0 { next: stage_1 };
+        let v0 = crate::route_3::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         order::pre1()
     }
     async fn wrapping_1() -> pavex::Response {
-        let v0 = crate::route_3::Next1 { next: stage_2 };
+        let v0 = crate::route_3::Next1 {
+            next: stage_2,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap1(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_1() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1() -> pavex::middleware::Processing {
         order::pre2()
     }
     async fn wrapping_2() -> pavex::Response {
-        let v0 = crate::route_3::Next2 { next: stage_3 };
+        let v0 = crate::route_3::Next2 {
+            next: stage_3,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap2(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_2() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_2() -> pavex::middleware::Processing {
         order::pre3()
     }
     async fn handler() -> pavex::Response {
@@ -463,13 +501,17 @@ pub mod route_4 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_4::Next0 { next: stage_1 };
+        let v0 = crate::route_4::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn wrapping_1() -> pavex::Response {
-        let v0 = crate::route_4::Next1 { next: stage_2 };
+        let v0 = crate::route_4::Next1 {
+            next: stage_2,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap1(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
@@ -539,15 +581,17 @@ pub mod route_5 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_5::Next0 { next: stage_1 };
+        let v0 = crate::route_5::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         order::pre1()
     }
-    async fn pre_processing_1() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1() -> pavex::middleware::Processing {
         order::pre2()
     }
     async fn handler() -> pavex::Response {
@@ -597,19 +641,25 @@ pub mod route_6 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_6::Next0 { next: stage_1 };
+        let v0 = crate::route_6::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn wrapping_1() -> pavex::Response {
-        let v0 = crate::route_6::Next1 { next: stage_2 };
+        let v0 = crate::route_6::Next1 {
+            next: stage_2,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap1(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn wrapping_2() -> pavex::Response {
-        let v0 = crate::route_6::Next2 { next: stage_3 };
+        let v0 = crate::route_6::Next2 {
+            next: stage_3,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap2(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
@@ -679,7 +729,9 @@ pub mod route_7 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_7::Next0 { next: stage_1 };
+        let v0 = crate::route_7::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
@@ -731,15 +783,17 @@ pub mod route_8 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_8::Next0 { next: stage_1 };
+        let v0 = crate::route_8::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         order::pre1()
     }
-    async fn pre_processing_1() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1() -> pavex::middleware::Processing {
         order::pre2()
     }
     async fn handler() -> pavex::Response {
@@ -789,21 +843,25 @@ pub mod route_9 {
         response
     }
     async fn wrapping_0() -> pavex::Response {
-        let v0 = crate::route_9::Next0 { next: stage_1 };
+        let v0 = crate::route_9::Next0 {
+            next: stage_1,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         order::pre1()
     }
     async fn wrapping_1() -> pavex::Response {
-        let v0 = crate::route_9::Next1 { next: stage_2 };
+        let v0 = crate::route_9::Next1 {
+            next: stage_2,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = order::wrap1(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_1() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_1() -> pavex::middleware::Processing {
         order::pre2()
     }
     async fn handler() -> pavex::Response {

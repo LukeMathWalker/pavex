@@ -1,5 +1,6 @@
 mod diagnostic;
 mod items;
+mod parser;
 mod queue;
 
 use super::Crate;
@@ -12,6 +13,7 @@ use std::collections::BTreeSet;
 
 pub(crate) use diagnostic::invalid_diagnostic_attribute;
 pub use items::{AnnotatedItem, AnnotatedItems, ImplInfo};
+pub(crate) use parser::parse_pavex_attributes;
 pub(crate) use queue::QueueItem;
 
 /// Enough information to locate an annotated component in the
@@ -52,7 +54,7 @@ pub(crate) fn process_queue(
                     }));
                 }
 
-                let annotation = match pavexc_attr_parser::parse(&item.attrs) {
+                let annotation = match parse_pavex_attributes(&item.attrs) {
                     Ok(Some(annotation)) => annotation,
                     Ok(None) => {
                         continue;
@@ -105,7 +107,7 @@ pub(crate) fn process_queue(
                 let ItemEnum::Function(_) = &item.inner else {
                     continue;
                 };
-                let annotation = match pavexc_attr_parser::parse(&item.attrs) {
+                let annotation = match parse_pavex_attributes(&item.attrs) {
                     Ok(Some(annotation)) => annotation,
                     Ok(None) => {
                         continue;
@@ -122,7 +124,7 @@ pub(crate) fn process_queue(
 
                 // Check that the `impl` block has been annotated with #[pavex::methods].
                 let impl_item = krate.get_item_by_local_type_id(&impl_);
-                match pavexc_attr_parser::parse(&impl_item.attrs) {
+                match parse_pavex_attributes(&impl_item.attrs) {
                     Ok(Some(AnnotationProperties::Methods)) => {}
                     Ok(_) => {
                         missing_methods_attribute(
