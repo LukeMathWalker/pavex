@@ -16,7 +16,7 @@ verifier_args = ["--check"]
 http = { version = "1", default-features = false }
 hyper = { version = "1", default-features = false }
 matchit = { version = "0.8", default-features = false }
-pavex = { version = "0.1", path = "../../../../../libs/pavex", default-features = false }
+pavex = { version = "0.2", path = "../../../../../libs/pavex", default-features = false }
 serde = { version = "1", default-features = false }
 thiserror = { version = "2", default-features = false }
 wire_data = { version = "0.1", path = "..", default-features = false }
