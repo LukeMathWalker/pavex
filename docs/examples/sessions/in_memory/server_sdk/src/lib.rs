@@ -122,7 +122,7 @@ pub mod route_0 {
         s_5: &'e pavex::router::AllowedMethods,
     ) -> pavex::Response {
         let response = handler(s_5).await;
-        let response = post_processing_0(s_2, s_1, response, s_3, s_4, &mut s_0).await;
+        let response = post_processing_0(s_1, s_2, response, s_3, s_4, &mut s_0).await;
         let response = post_processing_1(response, s_0, s_1).await;
         response
     }
@@ -152,14 +152,14 @@ pub mod route_0 {
         <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     async fn post_processing_0(
-        v0: &pavex::request::RequestHead,
-        v1: &biscotti::Processor,
+        v0: &biscotti::Processor,
+        v1: &pavex::request::RequestHead,
         v2: pavex::Response,
         v3: &pavex_session::SessionConfig,
         v4: &pavex_session::SessionStore,
         v5: &mut pavex::cookie::ResponseCookies,
     ) -> pavex::Response {
-        let v6 = pavex::cookie::extract_request_cookies(v0, v1);
+        let v6 = pavex::cookie::extract_request_cookies(v1, v0);
         let v7 = match v6 {
             Ok(ok) => ok,
             Err(v7) => {
@@ -174,7 +174,7 @@ pub mod route_0 {
         let v8 = pavex_session::SessionConfig::cookie_config(v3);
         let v9 = pavex_session::IncomingSession::extract(&v7, v8);
         let v10 = pavex_session::Session::new(v4, v3, v9);
-        let v11 = pavex_session::finalize_session(v2, v5, v10).await;
+        let v11 = pavex_session::finalize_session(v2, v5, v0, v10).await;
         let v12 = match v11 {
             Ok(ok) => ok,
             Err(v12) => {
