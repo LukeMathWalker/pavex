@@ -28,7 +28,7 @@ pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.80" }
 pavex_reflection = { path = "../pavex_reflection", version = "=0.1.80" }
 pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.1.80" }
 pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.1.80" }
-rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.80", package = "pavexc_rustdoc_types" }
+rustdoc-types = { workspace = true }
 cargo-like-utils = { workspace = true }
 tracing_log_error = { workspace = true }
 darling = { workspace = true }
@@ -39,7 +39,7 @@ serde_stacker = { workspace = true }
 anyhow = { workspace = true }
 fs-err = { workspace = true }
 indexmap = { workspace = true, features = ["serde"] }
-petgraph = { workspace = true, features = ["graphmap", "stable_graph"] }
+petgraph = { workspace = true, features = ["graphmap", "stable_graph", "std"] }
 bimap = { workspace = true }
 prettyplease = { workspace = true }
 quote = { workspace = true }

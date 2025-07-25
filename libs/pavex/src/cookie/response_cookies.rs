@@ -233,7 +233,7 @@ impl ResponseCookies {
     ///     }
     /// }
     /// ```
-    pub fn iter(&self) -> ResponseCookiesIter {
+    pub fn iter(&self) -> ResponseCookiesIter<'_> {
         ResponseCookiesIter {
             cookies: self.0.iter(),
         }

@@ -17,7 +17,7 @@ use crate::{
 /// Verify that all types whose cloning strategy is set to "CloneIfNecessary" can actually
 /// be cloned.
 #[tracing::instrument(name = "If cloning is allowed, types must be cloneable", skip_all)]
-pub(crate) fn cloneables_can_be_cloned<'a>(
+pub(crate) fn cloneables_can_be_cloned(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,

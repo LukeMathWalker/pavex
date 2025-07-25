@@ -15,7 +15,7 @@ In the example above, we end up with three different route paths:
 You aren't limited to a single level of nesting. You can break down your routes into as many levels as you need—path prefixes
 will be concatenated in the order they were declared.
 
---8<-- "docs/examples/routing/path_prefixes/nested.snap"
+--8<-- "docs/examples/routing/path_prefixes/deep.snap"
 
 The `get_room` route will be available at `/home/{home_id}/room/{room_id}`, after prepending all relevant prefixes.
 

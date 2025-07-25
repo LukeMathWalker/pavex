@@ -11,14 +11,14 @@ digraph "* * - 0" {
 }
 
 digraph "* * - 1" {
-    0 [ label = "0| app_1e65444f::pre() -> core::result::Result<pavex::middleware::Processing<pavex::Response>, app_1e65444f::CustomError>"]
+    0 [ label = "0| app_1e65444f::pre() -> core::result::Result<pavex::middleware::Processing, app_1e65444f::CustomError>"]
     1 [ label = "1| `match`"]
-    2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::Response>, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
+    2 [ label = "2| core::result::Result<pavex::middleware::Processing, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
     3 [ label = "3| pavex::Error::new(app_1e65444f::CustomError) -> pavex::Error"]
     4 [ label = "4| pavex::Error::to_response(&pavex::Error) -> pavex::Response"]
     5 [ label = "5| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     6 [ label = "6| pavex::middleware::Processing::EarlyReturn(pavex::Response) -> pavex::middleware::Processing<pavex::Response>"]
-    7 [ label = "7| core::result::Result<pavex::middleware::Processing<pavex::Response>, app_1e65444f::CustomError> -> pavex::middleware::Processing<pavex::Response>"]
+    7 [ label = "7| core::result::Result<pavex::middleware::Processing, app_1e65444f::CustomError> -> pavex::middleware::Processing"]
     1 -> 7 [ ]
     1 -> 2 [ ]
     2 -> 3 [ ]
@@ -47,14 +47,14 @@ digraph "GET / - 0" {
 }
 
 digraph "GET / - 1" {
-    0 [ label = "0| app_1e65444f::pre() -> core::result::Result<pavex::middleware::Processing<pavex::Response>, app_1e65444f::CustomError>"]
+    0 [ label = "0| app_1e65444f::pre() -> core::result::Result<pavex::middleware::Processing, app_1e65444f::CustomError>"]
     1 [ label = "1| `match`"]
-    2 [ label = "2| core::result::Result<pavex::middleware::Processing<pavex::Response>, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
+    2 [ label = "2| core::result::Result<pavex::middleware::Processing, app_1e65444f::CustomError> -> app_1e65444f::CustomError"]
     3 [ label = "3| pavex::Error::new(app_1e65444f::CustomError) -> pavex::Error"]
     4 [ label = "4| pavex::Error::to_response(&pavex::Error) -> pavex::Response"]
     5 [ label = "5| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     6 [ label = "6| pavex::middleware::Processing::EarlyReturn(pavex::Response) -> pavex::middleware::Processing<pavex::Response>"]
-    7 [ label = "7| core::result::Result<pavex::middleware::Processing<pavex::Response>, app_1e65444f::CustomError> -> pavex::middleware::Processing<pavex::Response>"]
+    7 [ label = "7| core::result::Result<pavex::middleware::Processing, app_1e65444f::CustomError> -> pavex::middleware::Processing"]
     1 -> 7 [ ]
     1 -> 2 [ ]
     2 -> 3 [ ]

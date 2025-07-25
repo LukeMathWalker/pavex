@@ -30,6 +30,7 @@ workspace-members = [
     "configuration_server_sdk",
     "cookies_server_sdk",
     "user_middleware_server_sdk",
+    "core_concepts_server_sdk",
     "di_core_concepts_server_sdk",
     "di_prebuilt_server_sdk",
     "in_memory_sessions_server_sdk",

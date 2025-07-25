@@ -14,7 +14,7 @@ digraph "* * - 0" {
 
 digraph "* * - 1" {
     0 [ label = "0| &app_4b6f5359::A"]
-    1 [ label = "1| app_4b6f5359::pre(&app_4b6f5359::A) -> pavex::middleware::Processing<pavex::Response>"]
+    1 [ label = "1| app_4b6f5359::pre(&app_4b6f5359::A) -> pavex::middleware::Processing"]
     0 -> 1 [ ]
 }
 
@@ -64,7 +64,7 @@ digraph "GET / - 0" {
 
 digraph "GET / - 1" {
     0 [ label = "0| &app_4b6f5359::A"]
-    1 [ label = "1| app_4b6f5359::pre(&app_4b6f5359::A) -> pavex::middleware::Processing<pavex::Response>"]
+    1 [ label = "1| app_4b6f5359::pre(&app_4b6f5359::A) -> pavex::middleware::Processing"]
     0 -> 1 [ ]
 }
 

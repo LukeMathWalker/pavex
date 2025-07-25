@@ -10,7 +10,7 @@ digraph "* * - 0" {
     0 -> 1 [ ]
 }
 digraph "* * - 1" {
-    0 [ label = "0| app::pre() -> pavex::middleware::Processing<pavex::Response>"]
+    0 [ label = "0| app::pre() -> pavex::middleware::Processing"]
 }
 digraph "* * - 2" {
     0 [ label = "0| &pavex::router::AllowedMethods"]
@@ -29,7 +29,7 @@ digraph "GET /home - 0" {
     2 -> 3 [ ]
 }
 digraph "GET /home - 1" {
-    0 [ label = "0| app::pre() -> pavex::middleware::Processing<pavex::Response>"]
+    0 [ label = "0| app::pre() -> pavex::middleware::Processing"]
 }
 digraph "GET /home - 2" {
     0 [ label = "0| app::handler() -> pavex::Response"]

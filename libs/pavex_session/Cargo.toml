@@ -28,5 +28,5 @@ px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 [dev-dependencies]
 static_assertions = { workspace = true }
 pavex_session_memory_store = { path = "../pavex_session_memory_store" }
-googletest = "0.13.0"
+googletest = "0.14.2"
 itertools = { workspace = true }

@@ -114,7 +114,7 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         let v0 = app::pre();
         let v1 = match v0 {
             Ok(ok) => ok,
@@ -173,7 +173,7 @@ pub mod route_1 {
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing<pavex::Response> {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         let v0 = app::pre();
         let v1 = match v0 {
             Ok(ok) => ok,
