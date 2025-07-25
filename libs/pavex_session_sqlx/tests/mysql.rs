@@ -5,7 +5,6 @@ use serde_json;
 use sqlx::MySqlPool;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::num::NonZeroUsize;
 
 use std::time::Duration;
 
@@ -267,60 +266,46 @@ async fn test_change_id_roundtrip() {
 async fn test_delete_expired() {
     let store = create_test_store().await;
 
-    // Create expired sessions by directly inserting with past deadlines
-    use pavex::time::Timestamp;
-    let current_time = Timestamp::now().as_second();
-    let past_deadline = current_time - 3600; // 1 hour ago
+    // First clean up any existing expired sessions
+    store.delete_expired(None).await.unwrap();
 
-    let mut expired_session_ids = Vec::new();
-    for i in 0..5 {
-        let session_id = SessionId::random();
-        expired_session_ids.push(session_id.clone());
-        let state = serde_json::json!({
-            "session_name": format!("expired_session_{}", i)
-        });
+    // Create a session that expires quickly
+    let (expired_session_id, expired_state) = create_test_record(1);
+    let expired_record = SessionRecordRef {
+        state: Cow::Borrowed(&expired_state),
+        ttl: Duration::from_secs(1),
+    };
+    store
+        .create(&expired_session_id, expired_record)
+        .await
+        .unwrap();
 
-        // Insert directly with past deadline
-        sqlx::query("INSERT INTO sessions (id, deadline, state) VALUES (?, ?, ?)")
-            .bind(session_id.inner().to_string())
-            .bind(past_deadline)
-            .bind(state)
-            .execute(&store.0)
-            .await
-            .unwrap();
-    }
-
-    // Create a non-expired session normally
-    let valid_session_id = SessionId::random();
-    let mut valid_state = HashMap::new();
-    valid_state.insert(
-        Cow::Borrowed("session_name"),
-        serde_json::Value::String("valid_session".to_string()),
-    );
+    // Create a session that doesn't expire
+    let (valid_session_id, valid_state) = create_test_record(3600);
     let valid_record = SessionRecordRef {
         state: Cow::Borrowed(&valid_state),
         ttl: Duration::from_secs(3600),
     };
     store.create(&valid_session_id, valid_record).await.unwrap();
 
-    // Verify expired sessions can't be loaded
-    for session_id in &expired_session_ids {
-        assert!(store.load(session_id).await.unwrap().is_none());
-    }
+    // Wait for the first to expire
+    tokio::time::sleep(Duration::from_secs(2)).await;
 
-    // Delete expired sessions - we don't check the exact count since other tests may have created expired sessions
+    // Verify expired session can't be loaded
+    assert!(store.load(&expired_session_id).await.unwrap().is_none());
+    // Verify valid session can still be loaded
+    assert!(store.load(&valid_session_id).await.unwrap().is_some());
+
+    // Delete expired sessions - should delete some (at least our expired one)
     let deleted_count = store.delete_expired(None).await.unwrap();
-    // We should have deleted at least our 5 expired sessions
     assert!(
-        deleted_count >= 5,
-        "Expected to delete at least 5 sessions, but deleted {}",
-        deleted_count
+        deleted_count > 0,
+        "Should have deleted at least one session"
     );
 
-    // Verify our specific expired sessions are gone by trying to delete them again
-    for session_id in &expired_session_ids {
-        assert!(store.load(session_id).await.unwrap().is_none());
-    }
+    // Run again - should delete 0 (all expired sessions already deleted)
+    let deleted_count_2 = store.delete_expired(None).await.unwrap();
+    assert_eq!(deleted_count_2, 0);
 
     // Valid session should still exist
     assert!(store.load(&valid_session_id).await.unwrap().is_some());
@@ -330,68 +315,76 @@ async fn test_delete_expired() {
 async fn test_delete_expired_with_batch_size() {
     let store = create_test_store().await;
 
-    // Create expired sessions by directly inserting with past deadlines
-    use pavex::time::Timestamp;
-    let current_time = Timestamp::now().as_second();
-    let past_deadline = current_time - 3600; // 1 hour ago
+    // First clean up any existing expired sessions
+    store.delete_expired(None).await.unwrap();
 
+    // Create 3 sessions that will expire quickly
     let mut expired_session_ids = Vec::new();
-    for i in 0..10 {
-        let session_id = SessionId::random();
+    for _ in 0..3 {
+        let (session_id, state) = create_test_record(1);
         expired_session_ids.push(session_id.clone());
-        let state = serde_json::json!({
-            "session_name": format!("expired_session_{}", i)
-        });
-
-        // Insert directly with past deadline
-        sqlx::query("INSERT INTO sessions (id, deadline, state) VALUES (?, ?, ?)")
-            .bind(session_id.inner().to_string())
-            .bind(past_deadline)
-            .bind(state)
-            .execute(&store.0)
-            .await
-            .unwrap();
+        let record = SessionRecordRef {
+            state: Cow::Borrowed(&state),
+            ttl: Duration::from_secs(1),
+        };
+        store.create(&session_id, record).await.unwrap();
     }
 
-    // Verify all sessions are expired
+    // Wait for expiration
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Verify sessions are expired before testing batch deletion
     for session_id in &expired_session_ids {
         assert!(store.load(session_id).await.unwrap().is_none());
     }
 
-    // Test batch deletion functionality by calling it several times
-    let batch_size = NonZeroUsize::new(3).unwrap();
+    // Test batch deletion with batch size of 2
+    let batch_size = std::num::NonZeroUsize::new(2).unwrap();
 
-    // First batch - should delete something (at least 1, up to 3)
-    let first_batch = store.delete_expired(Some(batch_size)).await.unwrap();
-    assert!(first_batch <= 3, "Batch size should be respected");
+    // First batch - should delete up to 2 sessions
+    let deleted_1 = store.delete_expired(Some(batch_size)).await.unwrap();
+    assert!(
+        deleted_1 <= 2,
+        "Batch size not respected: deleted {} but limit was 2",
+        deleted_1
+    );
 
-    // Continue deleting until all our sessions are gone
-    let mut iterations = 0;
-    let mut all_sessions_deleted = false;
+    // If there were no expired sessions to delete, create one more test
+    if deleted_1 == 0 {
+        // Create and immediately expire a session to test the mechanism
+        let (test_session_id, test_state) = create_test_record(1);
+        let test_record = SessionRecordRef {
+            state: Cow::Borrowed(&test_state),
+            ttl: Duration::from_secs(1),
+        };
+        store.create(&test_session_id, test_record).await.unwrap();
+        tokio::time::sleep(Duration::from_secs(2)).await;
 
-    while !all_sessions_deleted && iterations < 10 {
-        store.delete_expired(Some(batch_size)).await.unwrap();
+        let test_deleted = store.delete_expired(Some(batch_size)).await.unwrap();
+        assert!(
+            test_deleted <= 2,
+            "Batch size not respected in test deletion: {}",
+            test_deleted
+        );
+    }
 
-        // Check if all our expired sessions are gone
-        all_sessions_deleted = true;
-        for session_id in &expired_session_ids {
-            if store.load(session_id).await.unwrap().is_some() {
-                all_sessions_deleted = false;
-                break;
-            }
+    // Continue deleting until no more expired sessions remain
+    let mut total_iterations = 0;
+    loop {
+        let deleted = store.delete_expired(Some(batch_size)).await.unwrap();
+        if deleted == 0 {
+            break;
         }
-        iterations += 1;
+        // Ensure batch size is respected
+        assert!(
+            deleted <= 2,
+            "Batch size not respected: deleted {}",
+            deleted
+        );
+        total_iterations += 1;
+        // Safety check to prevent infinite loop
+        assert!(total_iterations < 10, "Too many iterations");
     }
-
-    // Verify our specific expired sessions are gone
-    for session_id in &expired_session_ids {
-        assert!(store.load(session_id).await.unwrap().is_none());
-    }
-
-    // Final call should return 0 (no more expired sessions to delete)
-    let _final_batch = store.delete_expired(Some(batch_size)).await.unwrap();
-    // Note: We can't assert this is exactly 0 because other tests might create expired sessions
-    // but we can verify the functionality worked for our sessions
 }
 
 #[tokio::test]
@@ -522,19 +515,16 @@ async fn test_concurrent_operations() {
     // Create session
     store.create(&session_id, record).await.unwrap();
 
-    // Spawn multiple concurrent operations
-    // Create multiple concurrent operations using the same pool
-    let store_clone1 = MySqlSessionStore::new(store.0.clone());
-    let store_clone2 = MySqlSessionStore::new(store.0.clone());
-    let store_clone3 = MySqlSessionStore::new(store.0.clone());
+    // Spawn multiple concurrent operations on the same store
+    // The underlying connection pool will handle concurrent access
     let id1 = session_id.clone();
     let id2 = session_id.clone();
     let id3 = session_id.clone();
 
     let (result1, result2, result3) = tokio::join!(
-        store_clone1.load(&id1),
-        store_clone2.update_ttl(&id2, Duration::from_secs(7200)),
-        store_clone3.load(&id3)
+        store.load(&id1),
+        store.update_ttl(&id2, Duration::from_secs(7200)),
+        store.load(&id3)
     );
 
     // All operations should succeed
@@ -816,39 +806,30 @@ async fn test_serialization_error() {
 #[tokio::test]
 async fn test_database_unavailable_error() {
     // Create a store with an invalid connection to simulate database unavailability
-    let invalid_url = "mysql://invalid_user:invalid_password@localhost:9999/nonexistent_db";
+    let invalid_url = "mysql://invalid_user:invalid_password@localhost:19999/nonexistent_db";
 
-    // This will fail to connect, but we'll create the store anyway to test error handling
-    match MySqlPool::connect(invalid_url).await {
-        Ok(_pool) => {
-            // If somehow this succeeds, skip this test
-            println!("Warning: Expected database connection to fail, but it succeeded");
-            return;
-        }
-        Err(_) => {
-            // Expected - connection failed
-            // We'll test this by using a closed pool instead
-        }
+    // Try to connect to invalid database - this should fail
+    let pool_result = MySqlPool::connect(invalid_url).await;
+    if pool_result.is_ok() {
+        // If somehow this succeeds, skip this test
+        println!("Warning: Expected database connection to fail, but it succeeded");
+        return;
     }
 
-    // Use the existing store but close its pool
-    let store = create_test_store().await;
+    // Create store with a connection that will have issues
+    let timeout_url = "mysql://root:testpassword@localhost:3306/test_sessions?connect_timeout=1";
+    let pool = MySqlPool::connect(timeout_url).await.unwrap();
+
+    // Close connections by setting pool to minimum
+    pool.close().await;
+
+    let store = MySqlSessionStore::new(pool);
     let (session_id, state) = create_test_record(3600);
 
-    // Create a session first to ensure the pool works
-    let record = SessionRecordRef {
-        state: Cow::Borrowed(&state),
-        ttl: Duration::from_secs(3600),
-    };
-    store.create(&session_id, record).await.unwrap();
-
-    // Close the pool to simulate database unavailability
-    store.0.close().await;
-
-    // Operations should fail with database errors
+    // Operations should fail with database errors due to closed pool
     let create_result = store
         .create(
-            &SessionId::random(),
+            &session_id,
             SessionRecordRef {
                 state: Cow::Borrowed(&state),
                 ttl: Duration::from_secs(3600),

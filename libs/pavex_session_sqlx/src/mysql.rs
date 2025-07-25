@@ -35,7 +35,7 @@ use std::num::NonZeroUsize;
 ///
 /// This implementation requires MySQL 5.7.8+ or MariaDB 10.2+ for JSON support.
 /// For optimal performance with JSON operations, MySQL 8.0+ is recommended.
-pub struct MySqlSessionStore(pub sqlx::MySqlPool);
+pub struct MySqlSessionStore(sqlx::MySqlPool);
 
 #[methods]
 impl From<MySqlSessionStore> for SessionStore {
