@@ -26,7 +26,7 @@ mod prebuilt;
 mod routes;
 pub(crate) mod utils;
 
-#[proc_macro_derive(ConfigProfile, attributes(pavex))]
+#[proc_macro_derive(ConfigProfile, attributes(px))]
 pub fn derive_config_profile(input: TokenStream) -> TokenStream {
     config_profile::derive_config_profile(input)
 }

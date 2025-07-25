@@ -21,7 +21,7 @@ are often modelled as enums:
 
 1. The [`ConfigProfile`][ConfigProfileT] trait can be derived using the [`ConfigProfile`][ConfigProfileD] derive macro.
    By default, the name of the profile is the snake_case representation of the enum variant name, but
-   it can be customized via the `#[pavex(profile = "...")]` attribute.
+   it can be customized via the `#[px(profile = "...")]` helper attribute.
 
 ### Customize your profiles
 

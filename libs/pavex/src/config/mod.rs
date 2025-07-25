@@ -27,9 +27,9 @@ use serde::de::DeserializeOwned;
 ///
 /// #[derive(ConfigProfile, Debug, Clone, Copy, PartialEq, Eq)]
 /// pub enum Profile {
-///     #[pavex(profile = "dev")]
+///     #[px(profile = "dev")]
 ///     Development,
-///     #[pavex(profile = "prod")]
+///     #[px(profile = "prod")]
 ///     Production,
 /// }
 ///
@@ -83,7 +83,7 @@ pub struct ConfigLoader<Profile> {
 ///
 /// ## Custom Profile Names
 ///
-/// You can override the default representation using `#[pavex(profile = "...")]`:
+/// You can override the default representation using `#[px(profile = "...")]`:
 ///
 /// ```rust
 /// use pavex::config::ConfigProfile;
@@ -91,9 +91,9 @@ pub struct ConfigLoader<Profile> {
 ///
 /// #[derive(ConfigProfile)]
 /// pub enum Profile {
-///     #[pavex(profile = "dev")]
+///     #[px(profile = "dev")]
 ///     Development,
-///     #[pavex(profile = "prod")]
+///     #[px(profile = "prod")]
 ///     Production,
 /// }
 ///
@@ -128,9 +128,9 @@ pub use pavex_macros::ConfigProfile;
 /// // Equivalent to the manual implementation below!
 /// #[derive(ConfigProfile, Debug, Clone, Copy, PartialEq, Eq)]
 /// pub enum Profile {
-///     #[pavex(profile = "dev")]
+///     #[px(profile = "dev")]
 ///     Development,
-///     #[pavex(profile = "prod")]
+///     #[px(profile = "prod")]
 ///     Production,
 /// }
 /// ```

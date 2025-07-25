@@ -3,8 +3,8 @@ pub use pavex::config::ConfigProfile;
 
 #[derive(ConfigProfile)] // px::ann:1
 pub enum Profile {
-    #[pavex(profile = "dev")]
+    #[px(profile = "dev")]
     Development,
-    #[pavex(profile = "prod")]
+    #[px(profile = "prod")]
     Production,
 }
