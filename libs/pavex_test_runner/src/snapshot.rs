@@ -29,14 +29,16 @@ impl SnapshotTest {
         let actual = actual.replace(&self.app_name_with_hash, "app");
 
         let expected = match fs_err::read_to_string(&self.expectation_path) {
-            Ok(s) => s,
-            Err(e) if e.kind() == ErrorKind::NotFound => "".into(),
-            outcome @ Err(_) => {
-                outcome.expect("Failed to load the expected value for a snapshot test")
+            Ok(s) => Some(s),
+            Err(e) if e.kind() == ErrorKind::NotFound => None,
+            Err(e) => {
+                panic!(
+                    "Failed to load the expected value for a snapshot test: {e}"
+                )
             }
         };
 
-        let expected = Self::sanitize_output(&expected);
+        let expected = expected.map(|s| Self::sanitize_output(&s));
         let actual = Self::sanitize_output(&actual);
 
         let expectation_directory = self.expectation_path.parent().unwrap();
@@ -45,14 +47,23 @@ impl SnapshotTest {
             self.expectation_path.file_name().unwrap().to_string_lossy()
         ));
 
-        if expected != actual {
-            print_changeset(&expected, &actual);
+        if let Some(expected) = expected {
+            if expected != actual {
+                print_changeset(&expected, &actual);
+                fs_err::write(last_snapshot_path, actual)
+                    .expect("Failed to save the actual value for a failed snapshot test");
+                Err(())
+            } else {
+                let _ = fs_err::remove_file(last_snapshot_path);
+                Ok(())
+            }
+        } else if actual.is_empty() {
+            Err(())
+        } else {
+            print_changeset("", &actual);
             fs_err::write(last_snapshot_path, actual)
                 .expect("Failed to save the actual value for a failed snapshot test");
             Err(())
-        } else {
-            let _ = fs_err::remove_file(last_snapshot_path);
-            Ok(())
         }
     }
 

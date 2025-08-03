@@ -205,6 +205,7 @@ impl From<RouteProperties> for AnnotationProperties {
 /// `pavex::diagnostic::prebuilt`.
 pub struct PrebuiltProperties {
     pub id: String,
+    pub allow_unused: Option<bool>,
     pub cloning_policy: Option<CloningPolicy>,
 }
 
@@ -212,6 +213,7 @@ impl From<PrebuiltProperties> for AnnotationProperties {
     fn from(value: PrebuiltProperties) -> Self {
         AnnotationProperties::Prebuilt {
             id: value.id,
+            allow_unused: value.allow_unused,
             cloning_policy: value.cloning_policy.map(Into::into),
         }
     }

@@ -8,8 +8,8 @@ level = "allow"
 check-cfg = ["cfg(pavex_ide_hint)"]
 
 [dependencies]
-pavex = "1"
-pavex_cli_client = "1"
+pavex.workspace = true
+pavex_cli_client.workspace = true
 
 [dependencies.dep_1]
 path = "ephemeral_deps/dep_1"
