@@ -129,11 +129,21 @@ pub(crate) fn resolve_annotation_coordinates(
         }
 
         // Retrieve prebuilt properties for prebuilt types that have been registered directly against the blueprint
-        if let AnnotationProperties::Prebuilt { cloning_policy, .. } = &annotation.properties {
+        if let AnnotationProperties::Prebuilt {
+            cloning_policy,
+            allow_unused,
+            id: _,
+        } = &annotation.properties
+        {
             assert!(matches!(
                 aux.component_interner[component_id],
                 UserComponent::PrebuiltType { .. }
             ));
+
+            let lints = aux.id2lints.entry(component_id).or_default();
+            if let Some(true) = allow_unused {
+                lints.entry(Lint::Unused).or_insert(LintSetting::Allow);
+            }
 
             // Use the behaviour specified in the annotation, unless the user has overridden
             // it when registering the prebuilt directly with the blueprint.

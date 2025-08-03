@@ -53,6 +53,7 @@ pub enum AnnotationProperties {
     },
     Prebuilt {
         id: String,
+        allow_unused: Option<bool>,
         cloning_policy: Option<CloningPolicy>,
     },
     Config {

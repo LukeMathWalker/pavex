@@ -11,6 +11,12 @@ pub struct InputSchema {
     pub id: Option<syn::Ident>,
     pub clone_if_necessary: Flag,
     pub never_clone: Flag,
+    pub allow: Option<PrebuiltAllows>,
+}
+
+#[derive(darling::FromMeta, Debug, Clone)]
+pub struct PrebuiltAllows {
+    unused: Flag,
 }
 
 impl TryFrom<InputSchema> for Properties {
@@ -21,6 +27,7 @@ impl TryFrom<InputSchema> for Properties {
             id,
             clone_if_necessary,
             never_clone,
+            allow,
         } = input;
         let Ok(cloning_policy) = CloningPolicyFlags {
             clone_if_necessary,
@@ -32,7 +39,12 @@ impl TryFrom<InputSchema> for Properties {
             ));
         };
 
-        Ok(Properties { id, cloning_policy })
+        let allow_unused = allow.as_ref().map(|a| a.unused.is_present());
+        Ok(Properties {
+            id,
+            cloning_policy,
+            allow_unused,
+        })
     }
 }
 
@@ -40,6 +52,7 @@ impl TryFrom<InputSchema> for Properties {
 pub struct Properties {
     pub id: Option<syn::Ident>,
     pub cloning_policy: Option<CloningPolicy>,
+    pub allow_unused: Option<bool>,
 }
 
 pub struct PrebuiltAnnotation;
@@ -63,7 +76,11 @@ impl TypeAnnotation for PrebuiltAnnotation {
 /// Decorate the input with a `#[diagnostic::pavex::prebuilt]` attribute
 /// that matches the provided properties.
 fn emit(item: TypeItem, properties: Properties) -> Result<AnnotationCodegen, darling::Error> {
-    let Properties { cloning_policy, id } = properties;
+    let Properties {
+        cloning_policy,
+        id,
+        allow_unused,
+    } = properties;
 
     let name = item.name();
     // Use the span of the type name if no identifier is provided.
@@ -87,6 +104,11 @@ fn emit(item: TypeItem, properties: Properties) -> Result<AnnotationCodegen, dar
     if let Some(cloning_policy) = cloning_policy {
         properties.extend(quote! {
             cloning_policy = #cloning_policy,
+        });
+    }
+    if let Some(allow_unused) = allow_unused {
+        properties.extend(quote! {
+            allow_unused = #allow_unused,
         });
     }
 

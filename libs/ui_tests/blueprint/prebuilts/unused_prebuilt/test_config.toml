@@ -1,4 +1,5 @@
-description = """You can inject a missing type as a prebuilt type."""
+description = """Pavex emits a warning for unused prebuilt types."""
 
 [expectations]
 codegen = "pass"
+lints = "fail"

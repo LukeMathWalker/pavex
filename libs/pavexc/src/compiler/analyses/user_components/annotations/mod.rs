@@ -394,6 +394,7 @@ fn intern_annotated(
         }
         AnnotationProperties::Prebuilt {
             cloning_policy,
+            allow_unused,
             id: _,
         } => {
             let prebuilt = UserComponent::PrebuiltType { source };
@@ -403,6 +404,20 @@ fn intern_annotated(
                 prebuilt_id,
                 cloning_policy.unwrap_or(CloningPolicy::NeverClone),
             );
+
+            let lints = aux.id2lints.entry(prebuilt_id).or_default();
+
+            if let Some(true) = allow_unused {
+                lints.insert(Lint::Unused, LintSetting::Allow);
+            } else if !krate_collection
+                .package_graph()
+                .metadata(&krate.core.package_id)
+                .unwrap()
+                .in_workspace()
+            {
+                // Ignore unused prebuilt types imported from crates defined outside the current workspace
+                lints.insert(Lint::Unused, LintSetting::Allow);
+            }
 
             let ty = annotated_item2type(item, krate, krate_collection, diagnostics)?;
             match PrebuiltType::new(ty) {
