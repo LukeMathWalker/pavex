@@ -19,7 +19,9 @@ use serde;
 use std::num::NonZeroUsize;
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
+/// Configuration options for the Redis session store.
 pub struct RedisSessionStoreConfig {
+    /// Optional namespace prefix for Redis keys. When set, all session keys will be prefixed with this value.
     #[serde(default)]
     pub namespace: Option<String>,
 }
@@ -28,6 +30,11 @@ pub struct RedisSessionStoreConfig {
 /// A server-side session store using Redis as its backend.
 ///
 /// # Implementation details
+///
+/// This store uses the `redis` crate to interact with Redis. All session records are stored as individual
+/// Redis keys with TTL set for automatic expiration. If the `namespace` value in [`RedisSessionStoreConfig`]
+/// is `Some`, then all session keys are stored prefixed with this string, allowing multiple applications
+/// to share the same Redis instance.
 pub struct RedisSessionStore {
     conn: ConnectionManager,
     cfg: RedisSessionStoreConfig,
