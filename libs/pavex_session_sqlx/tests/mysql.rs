@@ -549,8 +549,15 @@ async fn test_create_duplicate_id_error() {
     store.create(&session_id, record).await.unwrap();
 
     // Try to create another session with the same ID but different data
-    let (_, different_state) = create_test_record(7200);
-    let mut conflicting_state = different_state;
+    let mut conflicting_state = HashMap::new();
+    conflicting_state.insert(
+        Cow::Borrowed("user_id"),
+        serde_json::Value::String("different-user".to_string()),
+    );
+    conflicting_state.insert(
+        Cow::Borrowed("different_field"),
+        serde_json::Value::String("different_value".to_string()),
+    );
     conflicting_state.insert(
         Cow::Borrowed("conflict_field"),
         serde_json::Value::String("this should conflict".to_string()),
@@ -558,25 +565,90 @@ async fn test_create_duplicate_id_error() {
 
     let conflicting_record = SessionRecordRef {
         state: Cow::Borrowed(&conflicting_state),
-        ttl: Duration::from_secs(1), // Short TTL to force conflict
+        ttl: Duration::from_secs(1),
     };
 
-    // This should succeed due to ON DUPLICATE KEY UPDATE clause
-    // But verify the original data is preserved (not overwritten)
-    store.create(&session_id, conflicting_record).await.unwrap();
+    // This should return a DuplicateId error because the existing session is not expired
+    let result = store.create(&session_id, conflicting_record).await;
+    assert!(result.is_err());
+    match result.unwrap_err() {
+        pavex_session::store::errors::CreateError::DuplicateId(err) => {
+            assert!(err.id == session_id);
+        }
+        other => panic!(
+            "Expected DuplicateId error for non-expired session, got: {:?}",
+            other
+        ),
+    }
 
-    // Verify the original data is still there (not overwritten)
+    // Verify the original data is still there (unchanged)
     let loaded_after = store.load(&session_id).await.unwrap().unwrap();
     for (key, expected_value) in &state {
         assert_eq!(
             loaded_after.state.get(key).unwrap(),
             expected_value,
-            "Original data should be preserved when session exists"
+            "Original data should be preserved when create fails"
         );
     }
 
-    // Verify conflicting data was written (due to ON DUPLICATE KEY UPDATE)
-    assert!(loaded_after.state.get("conflict_field").is_some());
+    // Verify conflicting data was NOT written
+    assert!(loaded_after.state.get("conflict_field").is_none());
+}
+
+#[tokio::test]
+async fn test_create_overwrites_expired_session() {
+    let store = create_test_store().await;
+    let (session_id, state) = create_test_record(1);
+
+    let record = SessionRecordRef {
+        state: Cow::Borrowed(&state),
+        ttl: Duration::from_secs(1), // Very short TTL
+    };
+
+    // Create initial session with short TTL
+    store.create(&session_id, record).await.unwrap();
+
+    // Wait for expiration
+    tokio::time::sleep(Duration::from_secs(3)).await;
+
+    // Try to create another session with the same ID but different data
+    let mut new_state = HashMap::new();
+    new_state.insert(
+        Cow::Borrowed("user_id"),
+        serde_json::Value::String("new-user-456".to_string()),
+    );
+    new_state.insert(
+        Cow::Borrowed("session_type"),
+        serde_json::Value::String("overwrite_test".to_string()),
+    );
+
+    let new_record = SessionRecordRef {
+        state: Cow::Borrowed(&new_state),
+        ttl: Duration::from_secs(3600),
+    };
+
+    // This should succeed because the existing session is expired
+    store.create(&session_id, new_record).await.unwrap();
+
+    // Verify the new data has replaced the old data
+    let loaded_after = store.load(&session_id).await.unwrap().unwrap();
+
+    // Verify new data is present
+    assert_eq!(
+        loaded_after.state.get("user_id").unwrap(),
+        &serde_json::Value::String("new-user-456".to_string()),
+        "user_id should be updated"
+    );
+    assert_eq!(
+        loaded_after.state.get("session_type").unwrap(),
+        &serde_json::Value::String("overwrite_test".to_string()),
+        "session_type should be present"
+    );
+
+    // Verify old data from create_test_record is gone
+    assert!(loaded_after.state.get("login_time").is_none());
+    assert!(loaded_after.state.get("counter").is_none());
+    assert!(loaded_after.state.get("theme").is_none());
 }
 
 #[tokio::test]
