@@ -110,47 +110,29 @@ impl SessionStorageBackend for MySqlSessionStore {
         let deadline = Timestamp::now() + record.ttl;
         let deadline_unix = deadline.as_second();
         let state = serde_json::to_value(record.state)?;
-
-        // First check if there's already a non-expired session with this ID
-        let existing_check = sqlx::query(
-            "SELECT deadline, UNIX_TIMESTAMP() as curr_time FROM sessions WHERE id = ?",
-        )
-        .bind(id.inner().to_string())
-        .fetch_optional(&self.0)
-        .await
-        .map_err(|e| CreateError::Other(e.into()))?;
-
-        use sqlx::Row as _;
-        if let Some(row) = existing_check {
-            let existing_deadline: i64 = row.try_get(0).unwrap_or(0);
-            let curr_time: i64 = row.try_get(1).unwrap_or(0);
-            let is_expired = existing_deadline <= curr_time;
-
-            if !is_expired {
-                // There's already a non-expired session with this ID
-                return Err(CreateError::DuplicateId(DuplicateIdError {
-                    id: id.to_owned(),
-                }));
-            }
-        }
-
-        // Now we can safely insert or replace expired sessions
         let query = sqlx::query(
             "INSERT INTO sessions (id, deadline, state)
             VALUES (?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                deadline = VALUES(deadline),
-                state = VALUES(state)",
+                deadline = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(deadline), sessions.deadline),
+                state = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(state), sessions.state)",
         )
         .bind(id.inner().to_string())
         .bind(deadline_unix)
         .bind(state);
 
-        query
-            .execute(&self.0)
-            .await
-            .map_err(|e| CreateError::Other(e.into()))?;
-        Ok(())
+        match query.execute(&self.0).await {
+            // All good, we created the session record.
+            Ok(_) => Ok(()),
+            Err(e) => {
+                // Return the specialized error variant if the ID is already in use
+                if let Err(e) = as_duplicated_id_error(&e, id) {
+                    Err(e.into())
+                } else {
+                    Err(CreateError::Other(e.into()))
+                }
+            }
+        }
     }
 
     /// Update the state of an existing session in the store.
