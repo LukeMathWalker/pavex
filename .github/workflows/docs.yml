@@ -189,12 +189,12 @@ jobs:
     - name: Install cargo-px
       run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -296,12 +296,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -396,12 +396,12 @@ jobs:
     - name: Install cargo-px
       run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -505,12 +505,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -588,12 +588,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -742,12 +742,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_macos
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_macos
         path: ~/.cargo/bin
@@ -825,12 +825,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_macos
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_macos
         path: ~/.cargo/bin
@@ -979,12 +979,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_windows
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_windows
         path: ~/.cargo/bin
@@ -1056,12 +1056,12 @@ jobs:
         rustflags: ""
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_windows
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_windows
         path: ~/.cargo/bin
@@ -1201,17 +1201,17 @@ jobs:
         components: rustfmt
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
     - name: Download pxh CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pxh
         path: ~/.cargo/bin
