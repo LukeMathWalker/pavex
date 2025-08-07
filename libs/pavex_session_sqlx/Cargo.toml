@@ -38,3 +38,4 @@ pavex_tracing = { path = "../pavex_tracing" }
 tokio = { workspace = true, features = ["rt-multi-thread", "time", "macros"] }
 tempfile = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
+tracing-subscriber = { workspace = true }
