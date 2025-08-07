@@ -121,16 +121,32 @@ impl SessionStorageBackend for MySqlSessionStore {
         .bind(deadline_unix)
         .bind(state);
 
-        match query.execute(&self.0).await {
-            // All good, we created the session record.
-            Ok(_) => Ok(()),
-            Err(e) => {
-                // Return the specialized error variant if the ID is already in use
-                if let Err(e) = as_duplicated_id_error(&e, id) {
-                    Err(e.into())
-                } else {
-                    Err(CreateError::Other(e.into()))
-                }
+        let result = query
+            .execute(&self.0)
+            .await
+            .map_err(|e| CreateError::Other(e.into()))?;
+
+        // Check what actually happened based on rows_affected():
+        // - 1: New session was inserted
+        // - 2: Existing expired session was updated
+        // - 0: Nothing changed - existing non-expired session prevented update
+        match result.rows_affected() {
+            1 | 2 => {
+                // Either new session created (1) or expired session updated (2)
+                // Both are success cases
+                Ok(())
+            }
+            0 => {
+                // Nothing was changed - existing non-expired session prevented update
+                Err(CreateError::DuplicateId(DuplicateIdError {
+                    id: id.to_owned(),
+                }))
+            }
+            n => {
+                // Unexpected number of affected rows
+                Err(CreateError::Other(
+                    anyhow::anyhow!("Unexpected rows affected: {}", n).into(),
+                ))
             }
         }
     }
