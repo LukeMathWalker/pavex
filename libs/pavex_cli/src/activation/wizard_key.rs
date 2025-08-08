@@ -1,5 +1,5 @@
 use crate::activation::{
-    HTTP_CLIENT, InvalidWizardKey, MalformedWizardKey, json_api::JsonApiErrors,
+    API_URL, HTTP_CLIENT, InvalidWizardKey, MalformedWizardKey, json_api::JsonApiErrors,
 };
 use redact::Secret;
 
@@ -30,7 +30,7 @@ impl WizardKey {
         }
 
         let response = HTTP_CLIENT
-            .post("https://api.pavex.dev/v1/cli/wizard/key/exchange")
+            .post(format!("{API_URL}/v1/cli/wizard/key/exchange"))
             .json(&Request {
                 wizard_key: self.0.clone(),
             })

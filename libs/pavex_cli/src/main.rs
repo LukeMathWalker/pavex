@@ -102,8 +102,15 @@ fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
                 SelfCommands::Setup {
                     wizard_key,
                     skip_activation,
-                } => setup(cli.color, &locator, &key_set, wizard_key, skip_activation)
-                    .map(|_| ExitCode::SUCCESS),
+                } => setup(
+                    cli.debug,
+                    cli.color,
+                    &locator,
+                    &key_set,
+                    wizard_key,
+                    skip_activation,
+                )
+                .map(|_| ExitCode::SUCCESS),
             }
         }
     }
@@ -282,6 +289,7 @@ fn update() -> Result<ExitCode, anyhow::Error> {
 
 #[tracing::instrument("Setup Pavex", skip_all)]
 fn setup(
+    debug: bool,
     color: Color,
     locator: &PavexLocator,
     key_set: &JwkSet,
@@ -296,26 +304,49 @@ fn setup(
             Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
             Err(_) => true,
         };
-        if must_activate {
-            match wizard_key {
-                Some(key) => {
-                    exchange_wizard_key(locator, key)?;
-                    SHELL.status("Success", "Pavex has been activated on your machine");
+        match wizard_key {
+            Some(key) => match exchange_wizard_key(locator, key) {
+                Ok(_) => {
+                    if must_activate {
+                        SHELL.status("Success", "Pavex has been activated on your machine");
+                    } else {
+                        SHELL.status("Success", "Pavex has been re-activated on your machine");
+                    }
                 }
-                None => {
+                Err(e) => {
+                    if !must_activate {
+                        SHELL.status_with_color(
+                            "Failed",
+                            format!("{e}"),
+                            &cargo_like_utils::shell::style::WARN,
+                        );
+                        if debug {
+                            eprintln!("{e:?}");
+                        }
+                        SHELL.status(
+                            "Skipping",
+                            "Pavex re-activation, since a valid key was already present",
+                        );
+                    } else {
+                        return Err(e);
+                    }
+                }
+            },
+            None => {
+                if must_activate {
                     SHELL.status_with_color(
                         "Inactive",
                         "Pavex has not been activated yet",
                         &cargo_like_utils::shell::style::ERROR,
                     );
                     activate(color, locator, None, key_set).map_err(|e| e.into_miette())?;
+                } else {
+                    SHELL.status(
+                        "Success",
+                        "Pavex has already been activated on your machine",
+                    );
                 }
             }
-        } else {
-            SHELL.status(
-                "Success",
-                "Pavex has already been activated on your machine",
-            );
         }
     }
 
@@ -362,12 +393,11 @@ fn activate(
                     format!(
                         "Welcome to Pavex's beta program! Please enter your {}.\n{}",
                         "activation key".bold().green(),
-                        "You can provision an activation key at https://console.pavex.dev\n"
-                            .dimmed()
+                        "You can provision an activation key at {CONSOLE_URL}\n".dimmed()
                     )
                 } else {
                     "Welcome to Pavex's beta program! Please enter your activation key.\n\
-                    You can provision an activation key at https://console.pavex.dev\n"
+                    You can provision an activation key at {CONSOLE_URL}\n"
                         .to_string()
                 };
                 let attempt = Secret::new(
