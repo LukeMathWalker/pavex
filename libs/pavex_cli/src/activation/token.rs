@@ -1,5 +1,5 @@
-use crate::activation::HTTP_CLIENT;
 use crate::activation::token_cache::CliTokenDiskCache;
+use crate::activation::{API_URL, HTTP_CLIENT};
 use crate::activation::{CliTokenError, InvalidActivationKey};
 use anyhow::Context;
 use jsonwebtoken::jwk::{JwkSet, KeyAlgorithm};
@@ -33,7 +33,7 @@ impl CliToken {
         }
 
         let response = HTTP_CLIENT
-            .post("https://api.pavex.dev/v1/cli/login")
+            .post(format!("{API_URL}/v1/cli/login"))
             .json(&Request { activation_key })
             .send()
             .await
