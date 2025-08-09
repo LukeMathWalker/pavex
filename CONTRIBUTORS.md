@@ -18,3 +18,4 @@ We contributors to Pavex:
 - Donmai (@donmai-me)
 - Leon Qadirie (@leonqadirie)
 - Oliver Barnes (@oliverbarnes)
+- Joe Hasson (@joehasson)
