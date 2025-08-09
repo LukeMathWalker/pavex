@@ -9,5 +9,5 @@ license.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-pavex = { path = "../pavex", version = "0.2.3" }
+pavex = { path = "../pavex", version = "0.2.4" }
 thiserror = { workspace = true }
