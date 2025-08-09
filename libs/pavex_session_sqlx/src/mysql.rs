@@ -123,14 +123,7 @@ impl SessionStorageBackend for MySqlSessionStore {
         match query.execute(&self.0).await {
             // All good, we created the session record.
             Ok(_) => Ok(()),
-            Err(e) => {
-                // Return the specialized error variant if the ID is already in use
-                if let Err(e) = as_duplicated_id_error(&e, id) {
-                    Err(e.into())
-                } else {
-                    Err(CreateError::Other(e.into()))
-                }
-            }
+            Err(e) => Err(CreateError::Other(e.into())),
         }
     }
 
