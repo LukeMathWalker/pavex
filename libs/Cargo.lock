@@ -303,9 +303,9 @@ dependencies = [
 
 [[package]]
 name = "biscotti"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d3be68d54a8c249f8b28bceddf39790b42c4a6cfee43c7e3691073f2ddbbbe6"
+checksum = "9c04c1ac624f96193053602cccb83015da1df21fe754a798c589535171beee12"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
@@ -2753,6 +2753,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "googletest",
+ "insta",
  "itertools",
  "pavex",
  "pavex_session_memory_store",
