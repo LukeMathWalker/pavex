@@ -1201,17 +1201,17 @@ jobs:
         components: rustfmt
         cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
     - name: Download pxh CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: pxh
         path: ~/.cargo/bin
@@ -1385,7 +1385,7 @@ jobs:
         workflow: "Build and store docs artifacts"
         run_id: ${{ github.run_id }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: dprint/check@v2.2
+    - uses: dprint/check@v2.3
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
