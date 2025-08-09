@@ -119,5 +119,5 @@ At every stage of the commit history for the doc project, you can specify in `tu
 - which commands should be run (and what their outcome should be)
 
 For a comprehensive example,
-check out the [tutorial.yml](doc_examples/quickstart/tutorial.yml) for the quickstart guide.\
+check out the [tutorial.yml](docs/tutorials/quickstart/tutorial.yml) for the quickstart guide.\
 For a reference of the available commands, check out the source code of the `tutorial_generator` binary.
