@@ -126,16 +126,6 @@ impl SessionStorageBackend for MySqlSessionStore {
             .await
             .map_err(|e| CreateError::Other(e.into()))?;
 
-        let rows_affected = result.rows_affected();
-
-        // Debug: Log what MySQL actually did
-        println!(
-            "MySQL ON DUPLICATE KEY UPDATE result: session_id={}, rows_affected={}, expected_deadline={}",
-            id.inner(),
-            rows_affected,
-            deadline_unix
-        );
-
         // Check what actually happened based on rows_affected():
         // - 1: New session was inserted
         // - 2: Existing expired session was updated
