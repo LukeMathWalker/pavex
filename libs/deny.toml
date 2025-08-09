@@ -11,6 +11,11 @@ ignore = [
     # `paste` is unmaintained, but it's a small utility for macro-writing.
     # There are no known vulnerabilities, so we'll ignore the advisory for now.
     "RUSTSEC-2024-0436",
+    # `rsa` crate has a timing sidechannel vulnerability (Marvin Attack)
+    # but it's a transitive dependency through sqlx-mysql and no safe upgrade
+    # is available. The risk is acceptable for server-side usage where timing
+    # attacks are difficult to execute.
+    "RUSTSEC-2023-0071",
 ]
 
 [licenses]
