@@ -111,11 +111,11 @@ impl SessionStorageBackend for MySqlSessionStore {
         let deadline_unix = deadline.as_second();
         let state = serde_json::to_value(record.state)?;
         let query = sqlx::query(
-            "INSERT INTO sessions (id, deadline, state)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                deadline = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(deadline), sessions.deadline),
-                state = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(state), sessions.state)",
+INSERT INTO sessions (id, deadline, state)
+VALUES (?, ?, ?)
+ON DUPLICATE KEY UPDATE
+    deadline = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(deadline), sessions.deadline),
+    state = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(state), sessions.state)
         )
         .bind(id.inner().to_string())
         .bind(deadline_unix)
