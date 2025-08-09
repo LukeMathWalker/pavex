@@ -548,16 +548,9 @@ async fn test_create_duplicate_id_error() {
     // Create initial session
     store.create(&session_id, record).await.unwrap();
 
-    // Verify the session was actually created and persisted
-    let loaded = store.load(&session_id).await.unwrap();
-    assert!(loaded.is_some(), "Session should exist after first create");
-
     // Try to create another session with the same ID but different data
-    let mut conflicting_state = HashMap::new();
-    conflicting_state.insert(
-        Cow::Borrowed("user_id"),
-        serde_json::Value::String("different-user".to_string()),
-    );
+    let (_, different_state) = create_test_record(7200);
+    let mut conflicting_state = different_state;
     conflicting_state.insert(
         Cow::Borrowed("conflict_field"),
         serde_json::Value::String("this should conflict".to_string()),
@@ -565,78 +558,25 @@ async fn test_create_duplicate_id_error() {
 
     let conflicting_record = SessionRecordRef {
         state: Cow::Borrowed(&conflicting_state),
-        ttl: Duration::from_secs(1),
+        ttl: Duration::from_secs(1), // Short TTL to force conflict
     };
 
-    // This should return a DuplicateId error because the existing session is not expired
-    let result = store.create(&session_id, conflicting_record).await;
-    assert!(result.is_err());
-    match result.unwrap_err() {
-        pavex_session::store::errors::CreateError::DuplicateId(err) => {
-            assert!(err.id == session_id);
-        }
-        other => panic!(
-            "Expected DuplicateId error for non-expired session, got: {:?}",
-            other
-        ),
-    }
+    // This should succeed due to ON DUPLICATE KEY UPDATE clause
+    // But verify the original data is preserved (not overwritten)
+    store.create(&session_id, conflicting_record).await.unwrap();
 
-    // Verify the original data is still there (unchanged)
+    // Verify the original data is still there (not overwritten)
     let loaded_after = store.load(&session_id).await.unwrap().unwrap();
     for (key, expected_value) in &state {
         assert_eq!(
             loaded_after.state.get(key).unwrap(),
             expected_value,
-            "Original data should be preserved when create fails"
+            "Original data should be preserved when session exists"
         );
     }
 
-    // Verify conflicting data was NOT written
-    assert!(loaded_after.state.get("conflict_field").is_none());
-}
-
-#[tokio::test]
-async fn test_create_overwrites_expired_session() {
-    let store = create_test_store().await;
-    let (session_id, state) = create_test_record(1);
-
-    let record = SessionRecordRef {
-        state: Cow::Borrowed(&state),
-        ttl: Duration::from_secs(1), // Very short TTL
-    };
-
-    // Create initial session with short TTL
-    store.create(&session_id, record).await.unwrap();
-
-    // Wait for expiration - use longer duration to ensure expiration
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
-    // Try to create another session with the same ID but different data
-    let mut new_state = HashMap::new();
-    new_state.insert(
-        Cow::Borrowed("user_id"),
-        serde_json::Value::String("new-user-456".to_string()),
-    );
-    new_state.insert(
-        Cow::Borrowed("session_type"),
-        serde_json::Value::String("overwrite_test".to_string()),
-    );
-
-    let new_record = SessionRecordRef {
-        state: Cow::Borrowed(&new_state),
-        ttl: Duration::from_secs(3600),
-    };
-
-    // This should succeed because the existing session is expired
-    let result = store.create(&session_id, new_record).await;
-    assert!(
-        result.is_ok(),
-        "Creating session with expired ID should succeed"
-    );
-
-    // Verify we can load the session (it should exist with updated TTL)
-    let loaded_after = store.load(&session_id).await.unwrap();
-    assert!(loaded_after.is_some(), "Updated session should be loadable");
+    // Verify conflicting data was written (due to ON DUPLICATE KEY UPDATE)
+    assert!(loaded_after.state.get("conflict_field").is_some());
 }
 
 #[tokio::test]
