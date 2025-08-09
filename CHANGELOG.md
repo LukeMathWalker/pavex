@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4](https://github.com/LukeMathWalker/pavex/compare/0.2.3...0.2.4) - 2025-08-09
+
+### 📚 Documentation
+
+- Document `allow(unused)` for #[pavex::prebuilt] (by @LukeMathWalker) - #519
+
+### Contributors
+
+- @LukeMathWalker
+
 ## [0.2.3](https://github.com/LukeMathWalker/pavex/compare/0.2.2...0.2.3) - 2025-08-04
 
 ### ⛰️ Features
