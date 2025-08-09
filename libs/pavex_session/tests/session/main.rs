@@ -4,7 +4,7 @@ use assertions::is_removal_cookie;
 use fixtures::{SessionFixture, spy_store, store};
 use googletest::{
     assert_that,
-    prelude::{empty, eq, len, none, not},
+    prelude::{eq, is_empty, len, none, not},
 };
 use helpers::SetCookie;
 use itertools::Itertools;
@@ -17,6 +17,7 @@ mod assertions;
 mod config;
 mod fixtures;
 mod helpers;
+mod middleware;
 mod operations;
 
 #[tokio::test]
@@ -201,7 +202,7 @@ async fn server_state_can_be_cleared_without_invalidating_the_session() {
 
     // The server state is present, but empty.
     let server_state = store.load(&fixture.id).await.unwrap().unwrap();
-    assert_that!(server_state.state, empty());
+    assert_that!(server_state.state, is_empty());
 }
 
 #[tokio::test]
@@ -279,7 +280,7 @@ async fn ttl_is_not_updated_if_server_state_is_unchanged_but_ttl_threshold_is_no
     assert_eq!(cookie.id(), fixture.id());
 
     let oplog = call_tracker.operation_log().await;
-    assert_that!(oplog, empty());
+    assert_that!(oplog, is_empty());
 }
 
 #[tokio::test]

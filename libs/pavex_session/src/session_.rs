@@ -1145,6 +1145,22 @@ pub mod errors {
         SerializationError(#[from] serde_json::Error),
         #[error("Failed to sync the server-side session state")]
         SyncErr(#[from] SyncError),
+        #[error(
+            "The client-side session state is not empty, but the session cookie (`{cookie_name}`) is not configured to be encrypted. \
+            This may be a security risk, as the client-side session state may be intercepted and read by an attacker. \
+            Configure the cookie processor to encrypt the session cookie; check out \
+            https://docs.rs/biscotti/latest/biscotti/struct.ProcessorConfig.html#structfield.crypto_rules \
+            for more information."
+        )]
+        EncryptionRequired { cookie_name: String },
+        #[error(
+            "The session cookie (`{cookie_name}`) is not configured to be signed nor encrypted. \
+            This is a security risk, as the client-side session state may be intercepted and manipulated by an attacker. \
+            Configure the cookie processor to sign or encrypt the session cookie; check out \
+            https://docs.rs/biscotti/latest/biscotti/struct.ProcessorConfig.html#structfield.crypto_rules \
+            for more information."
+        )]
+        CryptoRequired { cookie_name: String },
     }
 
     #[methods]
