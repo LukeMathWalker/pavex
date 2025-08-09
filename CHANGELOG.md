@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4](https://github.com/LukeMathWalker/pavex/compare/0.2.3...0.2.4) - 2025-08-09
+
+### 📚 Documentation
+
+- Document `allow(unused)` for #[pavex::prebuilt] (by @LukeMathWalker) - #519
+
+### Contributors
+
+- @LukeMathWalker
+
+## [0.2.3](https://github.com/LukeMathWalker/pavex/compare/0.2.2...0.2.3) - 2025-08-04
+
+### ⛰️ Features
+
+- Emit a warning if a type marked as prebuilt doesn't get used (by @LukeMathWalker) - #516
+
+### Contributors
+
+- @LukeMathWalker
+
 ## [0.2.2](https://github.com/LukeMathWalker/pavex/compare/0.2.1...0.2.2) - 2025-03-22
 
 ### ⛰️ Features

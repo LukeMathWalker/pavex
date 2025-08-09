@@ -501,7 +501,11 @@ debug = "none""##
     writeln!(&mut cargo_toml, "resolver = \"3\"").unwrap();
     writeln!(&mut cargo_toml, "[workspace.package]\nedition = \"2024\"")?;
     writeln!(&mut cargo_toml, "[workspace.dependencies]").unwrap();
-    writeln!(&mut cargo_toml, "pavex = {{ path = \"../pavex\" }}").unwrap();
+    writeln!(
+        &mut cargo_toml,
+        "pavex = {{ path = \"../pavex\", features = [\"server\"] }}"
+    )
+    .unwrap();
     writeln!(
         &mut cargo_toml,
         "pavex_cli_client = {{ path = \"../pavex_cli_client\" }}"

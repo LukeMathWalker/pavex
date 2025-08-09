@@ -10,7 +10,7 @@ use redact::Secret;
 use token_cache::CliTokenDiskCache;
 use tracing_log_error::log_error;
 
-pub use http_client::HTTP_CLIENT;
+pub use http_client::{API_URL, CONSOLE_URL, HTTP_CLIENT};
 pub use token::CliToken;
 pub use wizard_key::WizardKey;
 
@@ -194,7 +194,7 @@ pub struct InvalidActivationKey;
 pub enum CliTokenError {
     #[error(transparent)]
     ActivationKey(#[from] InvalidActivationKey),
-    #[error("Failed to exchange your activation key for a CLI token with api.pavex.dev")]
+    #[error("Failed to exchange your activation key for a CLI token with {API_URL}")]
     RpcError(#[source] anyhow::Error),
 }
 
@@ -204,7 +204,7 @@ pub enum CliTokenError {
     details = .details.as_deref().unwrap_or_default()
 )]
 #[diagnostic(help(
-    "Try copying the key again from the browser (https://console.pavex.dev/wizard/setup). Perhaps you lost a piece along the way?"
+    "Try copying the key again from the browser ({CONSOLE_URL}/wizard/setup). Perhaps you lost a piece along the way?"
 ))]
 pub struct MalformedWizardKey {
     details: Option<String>,
@@ -213,7 +213,7 @@ pub struct MalformedWizardKey {
 #[derive(thiserror::Error, miette::Diagnostic, Debug)]
 #[error("The wizard key you provided is either invalid or expired.")]
 #[diagnostic(help(
-    "Refresh the setup page (https://console.pavex.dev/wizard/setup) in the browser to generate a new key."
+    "Refresh the setup page ({CONSOLE_URL}/wizard/setup) in the browser to generate a new key."
 ))]
 pub struct InvalidWizardKey;
 

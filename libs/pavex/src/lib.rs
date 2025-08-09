@@ -80,6 +80,7 @@ pub mod time {
 /// | [`id`](#id)                                   | Argument | No       |
 /// | [`clone_if_necessary`](#clone_if_necessary)   | Flag     | No       |
 /// | [`never_clone`](#never_clone)                 | Flag     | No       |
+/// | [`allow`](#allow)                             | Argument | No       |
 ///
 /// ## `id`
 ///
@@ -153,6 +154,26 @@ pub mod time {
 ///
 /// Pavex will report an error during the code-generation phase if cloning is required
 /// but forbidden.
+///
+/// ## `allow`
+///
+/// The `allow` argument can be used to suppress specific warnings.
+///
+/// Currently, only one value is supported:
+/// - `unused`: Suppress warnings if this prebuilt type is registered but never used
+///
+/// ### Example
+///
+/// ```rust
+/// use pavex::prebuilt;
+///
+/// #[prebuilt(allow(unused))]
+/// //         👆 Don't warn if unused
+/// #[derive(Debug, Clone)]
+/// pub struct DatabaseConnectionPool {
+///     // [...]
+/// }
+/// ```
 ///
 /// [`Blueprint::import`]: crate::Blueprint::import
 /// [`Blueprint::prebuilt`]: crate::Blueprint::prebuilt

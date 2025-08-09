@@ -6,6 +6,8 @@ use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use reqwest_tracing::TracingMiddleware;
 
 pub static HTTP_CLIENT: LazyLock<ClientWithMiddleware> = LazyLock::new(http_client);
+pub static API_URL: &str = "https://api.pavex.dev";
+pub static CONSOLE_URL: &str = "https://console.pavex.dev";
 
 fn http_client() -> ClientWithMiddleware {
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
