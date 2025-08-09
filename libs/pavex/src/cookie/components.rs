@@ -7,6 +7,7 @@ use biscotti::{Processor, RequestCookies};
 use http::HeaderValue;
 use http::header::{COOKIE, SET_COOKIE};
 use pavex_macros::{post_process, request_scoped};
+use tracing_log_error::log_error;
 
 /// Parse cookies out of the incoming request.
 ///
@@ -16,8 +17,11 @@ pub fn extract_request_cookies<'request>(
     request_head: &'request RequestHead,
     processor: &Processor,
 ) -> Result<RequestCookies<'request>, ExtractRequestCookiesError> {
-    let mut cookies = RequestCookies::new();
-    for header in request_head.headers.get_all(COOKIE).into_iter() {
+    fn extract_request_cookie<'request>(
+        header: &'request HeaderValue,
+        processor: &Processor,
+        cookies: &mut RequestCookies<'request>,
+    ) -> Result<(), ExtractRequestCookiesError> {
         let header = header
             .to_str()
             .map_err(ExtractRequestCookiesError::InvalidHeaderValue)?;
@@ -31,7 +35,30 @@ pub fn extract_request_cookies<'request>(
                 _ => ExtractRequestCookiesError::Unexpected(UnexpectedError::new(e)),
             }
         })?;
+        Ok(())
     }
+
+    let mut cookies = RequestCookies::new();
+    for header in request_head.headers.get_all(COOKIE).into_iter() {
+        // Per RFC 6265 (HTTP State Management Mechanism), servers are free to ignore the Cookie
+        // header entirely (Section 4.2.2), and the spec places no requirement to reject requests
+        // containing malformed cookies. In practice, major frameworks (Tomcat, Django, Express, etc.)
+        // use tolerant, best-effort parsing to avoid breaking legitimate requests just because one
+        // cookie is corrupt, truncated, or non-compliant.
+        //
+        // We follow the same approach: skip only the invalid cookie(s) and keep the rest.
+        // This prevents unnecessary 4xx/5xx responses, avoids breaking user sessions due to
+        // transient client or proxy bugs, and mitigates the risk of denial-of-service from
+        // intentionally malformed Cookie headers.
+        if let Err(e) = extract_request_cookie(header, processor, &mut cookies) {
+            log_error!(
+                e,
+                level: tracing::Level::WARN,
+                "A request cookie is invalid, ignoring it"
+            );
+        }
+    }
+
     Ok(cookies)
 }
 
