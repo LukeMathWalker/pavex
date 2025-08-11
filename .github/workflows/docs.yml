@@ -35,7 +35,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -44,7 +44,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -102,7 +102,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -111,7 +111,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -160,7 +160,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -169,7 +169,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -269,7 +269,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -278,7 +278,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -367,7 +367,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -376,7 +376,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -478,7 +478,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -487,7 +487,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -561,7 +561,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -570,7 +570,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -645,7 +645,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -654,7 +654,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -715,7 +715,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -724,7 +724,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -798,7 +798,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -807,7 +807,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -882,7 +882,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -891,7 +891,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -952,7 +952,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -961,7 +961,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -1029,7 +1029,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -1038,7 +1038,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -1105,7 +1105,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -1114,7 +1114,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -1170,7 +1170,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -1179,7 +1179,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -1261,7 +1261,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -1270,7 +1270,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
@@ -1365,7 +1365,7 @@ jobs:
     - name: Checkout repository from source repo
       if: |
         (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Checkout repository from fork
       if: |
         github.event_name == 'repository_dispatch' &&
@@ -1374,7 +1374,7 @@ jobs:
           github.event.client_payload.pull_request.head.sha,
           github.event.client_payload.slash_command.args.named.sha
         )
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
     - uses: ./.github/actions/create-check
