@@ -19,19 +19,29 @@ use crate::{Session, errors::FinalizeError};
 pub async fn finalize_session<'store>(
     response: Response,
     response_cookies: &mut ResponseCookies,
-    // TODO: we'll use the processor to make sure that the outgoing
-    //  session cookie is:
-    //  - encrypted, if the client state is not empty
-    //  - signed, otherwise
-    //  But adding it now to avoid breaking changes later.
-    _processor: &Processor,
+    processor: &Processor,
     mut session: Session<'store>,
 ) -> Result<Response, FinalizeError> {
+    // If the client-side session state is not empty, we require encryption
+    // to minimize the risk of exposure for sensitive data.
+    let must_encrypt = !session.client().is_empty();
     let cookie = session.finalize().await?;
 
     Span::current().record("session.cookie.set", cookie.is_some());
 
     if let Some(cookie) = cookie {
+        let will_encrypt = processor.will_encrypt(cookie.name());
+
+        if must_encrypt && !will_encrypt {
+            return Err(FinalizeError::EncryptionRequired {
+                cookie_name: cookie.name().to_string(),
+            });
+        }
+        if !(will_encrypt || processor.will_sign(cookie.name())) {
+            return Err(FinalizeError::CryptoRequired {
+                cookie_name: cookie.name().to_string(),
+            });
+        }
         response_cookies.insert(cookie);
     }
 

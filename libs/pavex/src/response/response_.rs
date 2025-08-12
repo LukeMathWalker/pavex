@@ -40,6 +40,7 @@ use super::body::raw::RawBody;
 ///
 /// There are other methods available on [`Response`] that you might find useful, but the
 /// ones listed above are the most commonly used and should be enough to get you started.
+#[derive(Debug)]
 pub struct Response {
     inner: http::Response<ResponseBody>,
 }
