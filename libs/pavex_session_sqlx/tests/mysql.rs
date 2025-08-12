@@ -533,10 +533,10 @@ async fn test_concurrent_operations() {
     assert!(result3.unwrap().is_some());
 }
 
-// Unhappy path tests - Error scenarios
+// Unhappy path tests
 
 #[tokio::test]
-async fn test_create_duplicate_id_error() {
+async fn test_create_with_duplicate_id() {
     let store = create_test_store().await;
     let (session_id, state) = create_test_record(3600);
 
@@ -548,35 +548,44 @@ async fn test_create_duplicate_id_error() {
     // Create initial session
     store.create(&session_id, record).await.unwrap();
 
-    // Try to create another session with the same ID but different data
-    let (_, different_state) = create_test_record(7200);
-    let mut conflicting_state = different_state;
-    conflicting_state.insert(
-        Cow::Borrowed("conflict_field"),
-        serde_json::Value::String("this should conflict".to_string()),
+    // New state that will overwrite the original one
+    // Each field is different.
+    let mut new_state = HashMap::new();
+    new_state.insert(
+        Cow::Borrowed("user_id"),
+        serde_json::Value::String("different-user-id".to_string()),
+    );
+    new_state.insert(
+        Cow::Borrowed("login_time"),
+        serde_json::Value::String("2024-02-01T00:00:00Z".to_string()),
+    );
+    new_state.insert(
+        Cow::Borrowed("counter"),
+        serde_json::Value::Number(50.into()),
+    );
+    new_state.insert(
+        Cow::Borrowed("theme"),
+        serde_json::Value::String("light".to_string()),
     );
 
     let conflicting_record = SessionRecordRef {
-        state: Cow::Borrowed(&conflicting_state),
-        ttl: Duration::from_secs(1), // Short TTL to force conflict
+        state: Cow::Borrowed(&new_state),
+        ttl: Duration::from_secs(7200),
     };
 
     // This should succeed due to ON DUPLICATE KEY UPDATE clause
-    // But verify the original data is preserved (not overwritten)
+    // We're in fact performing an upsert.
     store.create(&session_id, conflicting_record).await.unwrap();
 
-    // Verify the original data is still there (not overwritten)
+    // Original data should be overwritten
     let loaded_after = store.load(&session_id).await.unwrap().unwrap();
-    for (key, expected_value) in &state {
+    for (key, expected_value) in &new_state {
         assert_eq!(
             loaded_after.state.get(key).unwrap(),
             expected_value,
-            "Original data should be preserved when session exists"
+            "Original data should be overwritten when session exists"
         );
     }
-
-    // Verify conflicting data was written (due to ON DUPLICATE KEY UPDATE)
-    assert!(loaded_after.state.get("conflict_field").is_some());
 }
 
 #[tokio::test]
