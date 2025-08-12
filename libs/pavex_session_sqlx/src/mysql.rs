@@ -101,6 +101,17 @@ CREATE TABLE IF NOT EXISTS sessions (
 #[async_trait::async_trait]
 impl SessionStorageBackend for MySqlSessionStore {
     /// Creates a new session record in the store using the provided ID.
+    /// When a conflicting session id is present, we perform a simple upsert.
+    /// This is a deliberate decision given we can't return an error and keep atomicity
+    /// at the same time.
+    ///
+    /// Even when using a guard clause, which we'd expect to amount to a noop:
+    ///
+    /// ON DUPLICATE KEY UPDATE
+    ///    deadline = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(deadline), sessions.deadline),
+    ///    state = IF(sessions.deadline < UNIX_TIMESTAMP(), VALUES(state), sessions.state)
+    ///
+    /// affected_rows() is still non-zero. This seems to be a kink in MySQL.
     #[tracing::instrument(name = "Create server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn create(
         &self,
