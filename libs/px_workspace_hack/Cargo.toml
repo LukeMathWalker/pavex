@@ -82,6 +82,7 @@ toml-274715c4dabd11b0 = { package = "toml", version = "0.9", features = ["preser
 toml-c38e5c1d305a1b54 = { package = "toml", version = "0.8", features = ["preserve_order"] }
 toml_datetime = { version = "0.7", features = ["serde"] }
 toml_parser = { version = "1" }
+toml_writer = { version = "1" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
@@ -157,6 +158,7 @@ toml-274715c4dabd11b0 = { package = "toml", version = "0.9", features = ["preser
 toml-c38e5c1d305a1b54 = { package = "toml", version = "0.8", features = ["preserve_order"] }
 toml_datetime = { version = "0.7", features = ["serde"] }
 toml_parser = { version = "1" }
+toml_writer = { version = "1" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
