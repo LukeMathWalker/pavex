@@ -44,20 +44,20 @@ impl<'a> Constructor<'a> {
         if &output_type == pavex_error {
             return Err(ConstructorValidationError::CannotConstructPavexError);
         }
-        if let ResolvedType::Reference(ref_type) = &output_type {
-            if ref_type.inner.as_ref() == pavex_error {
-                return Err(ConstructorValidationError::CannotConstructPavexError);
-            }
+        if let ResolvedType::Reference(ref_type) = &output_type
+            && ref_type.inner.as_ref() == pavex_error
+        {
+            return Err(ConstructorValidationError::CannotConstructPavexError);
         }
 
         // You can't construct `pavex::Response` or `&pavex::Response`.
         if &output_type == pavex_response {
             return Err(ConstructorValidationError::CannotConstructPavexResponse);
         }
-        if let ResolvedType::Reference(ref_type) = &output_type {
-            if ref_type.inner.as_ref() == pavex_response {
-                return Err(ConstructorValidationError::CannotConstructPavexResponse);
-            }
+        if let ResolvedType::Reference(ref_type) = &output_type
+            && ref_type.inner.as_ref() == pavex_response
+        {
+            return Err(ConstructorValidationError::CannotConstructPavexResponse);
         }
 
         for (_, framework_primitive_type) in framework_item_db.iter() {
@@ -68,14 +68,14 @@ impl<'a> Constructor<'a> {
                     },
                 );
             }
-            if let ResolvedType::Reference(ref_type) = &output_type {
-                if ref_type.inner.as_ref() == framework_primitive_type {
-                    return Err(
-                        ConstructorValidationError::CannotConstructFrameworkPrimitive {
-                            primitive_type: framework_primitive_type.to_owned(),
-                        },
-                    );
-                }
+            if let ResolvedType::Reference(ref_type) = &output_type
+                && ref_type.inner.as_ref() == framework_primitive_type
+            {
+                return Err(
+                    ConstructorValidationError::CannotConstructFrameworkPrimitive {
+                        primitive_type: framework_primitive_type.to_owned(),
+                    },
+                );
             }
         }
 
@@ -120,7 +120,7 @@ impl Constructor<'_> {
     }
 
     /// The inputs types used by this constructor.
-    pub fn input_types(&self) -> Cow<[ResolvedType]> {
+    pub fn input_types(&self) -> Cow<'_, [ResolvedType]> {
         self.0.input_types()
     }
 

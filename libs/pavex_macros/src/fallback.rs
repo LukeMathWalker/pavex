@@ -25,7 +25,11 @@ impl TryFrom<InputSchema> for Properties {
     fn try_from(input: InputSchema) -> Result<Self, Self::Error> {
         let InputSchema { id, pavex, allow } = input;
         let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
-        Ok(Properties { id, pavex, allow_error_fallback })
+        Ok(Properties {
+            id,
+            pavex,
+            allow_error_fallback,
+        })
     }
 }
 
@@ -60,14 +64,18 @@ impl CallableAnnotation for FallbackAnnotation {
 /// Decorate the input with a `#[diagnostic::pavex::fallback]` attribute
 /// that matches the provided properties.
 fn emit(impl_: Option<ImplContext>, item: Callable, properties: Properties) -> AnnotationCodegen {
-    let Properties { id, pavex, allow_error_fallback } = properties;
+    let Properties {
+        id,
+        pavex,
+        allow_error_fallback,
+    } = properties;
     let id = id.unwrap_or_else(|| default_id(impl_.as_ref(), &item));
     let id_str = id.to_string();
 
     let mut properties = quote! {
         id = #id_str,
     };
-    
+
     if let Some(allow_error_fallback) = allow_error_fallback {
         properties.extend(quote! {
             allow_error_fallback = #allow_error_fallback,

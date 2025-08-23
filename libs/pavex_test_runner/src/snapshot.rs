@@ -32,9 +32,7 @@ impl SnapshotTest {
             Ok(s) => Some(s),
             Err(e) if e.kind() == ErrorKind::NotFound => None,
             Err(e) => {
-                panic!(
-                    "Failed to load the expected value for a snapshot test: {e}"
-                )
+                panic!("Failed to load the expected value for a snapshot test: {e}")
             }
         };
 

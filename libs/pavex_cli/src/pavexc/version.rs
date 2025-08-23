@@ -9,7 +9,7 @@ use guppy::graph::{PackageGraph, PackageSource};
 /// in its dependency tree or if it has more than one version of `pavex`.
 pub(super) fn pavex_lib_version(
     package_graph: &PackageGraph,
-) -> Result<(&Version, PackageSource), PavexVersionError> {
+) -> Result<(&Version, PackageSource<'_>), PavexVersionError> {
     let pavex_packages: Vec<_> = package_graph
         .packages()
         .filter(|p| p.name() == "pavex")

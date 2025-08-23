@@ -349,63 +349,59 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
         opt_source: Option<&dyn SourceCode>,
     ) -> fmt::Result {
-        if let Some(source) = opt_source {
-            if let Some(labels) = diagnostic.labels() {
-                let mut labels = labels.collect::<Vec<_>>();
-                labels.sort_unstable_by_key(|l| l.inner().offset());
-                if !labels.is_empty() {
-                    let contents = labels
-                        .iter()
-                        .map(|label| {
-                            source.read_span(label.inner(), self.context_lines, self.context_lines)
-                        })
-                        .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
-                        .map_err(|_| fmt::Error)?;
-                    let mut contexts = Vec::new();
-                    for (right, right_conts) in labels.iter().cloned().zip(contents.iter()) {
-                        if contexts.is_empty() {
-                            contexts.push((right, right_conts));
-                        } else {
-                            let (left, left_conts) = contexts.last().unwrap().clone();
-                            let left_end = left.offset() + left.len();
-                            let right_end = right.offset() + right.len();
-                            if left_conts.line() + left_conts.line_count() >= right_conts.line() {
-                                // The snippets will overlap, so we create one Big Chunky Boi
-                                let new_span = LabeledSpan::new(
-                                    left.label().map(String::from),
-                                    left.offset(),
-                                    if right_end >= left_end {
-                                        // Right end goes past left end
-                                        right_end - left.offset()
-                                    } else {
-                                        // right is contained inside left
-                                        left.len()
-                                    },
-                                );
-                                if source
-                                    .read_span(
-                                        new_span.inner(),
-                                        self.context_lines,
-                                        self.context_lines,
-                                    )
-                                    .is_ok()
-                                {
-                                    contexts.pop();
-                                    contexts.push((
-                                        // We'll throw this away later
-                                        new_span, left_conts,
-                                    ));
+        if let Some(source) = opt_source
+            && let Some(labels) = diagnostic.labels()
+        {
+            let mut labels = labels.collect::<Vec<_>>();
+            labels.sort_unstable_by_key(|l| l.inner().offset());
+            if !labels.is_empty() {
+                let contents = labels
+                    .iter()
+                    .map(|label| {
+                        source.read_span(label.inner(), self.context_lines, self.context_lines)
+                    })
+                    .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
+                    .map_err(|_| fmt::Error)?;
+                let mut contexts = Vec::new();
+                for (right, right_conts) in labels.iter().cloned().zip(contents.iter()) {
+                    if contexts.is_empty() {
+                        contexts.push((right, right_conts));
+                    } else {
+                        let (left, left_conts) = contexts.last().unwrap().clone();
+                        let left_end = left.offset() + left.len();
+                        let right_end = right.offset() + right.len();
+                        if left_conts.line() + left_conts.line_count() >= right_conts.line() {
+                            // The snippets will overlap, so we create one Big Chunky Boi
+                            let new_span = LabeledSpan::new(
+                                left.label().map(String::from),
+                                left.offset(),
+                                if right_end >= left_end {
+                                    // Right end goes past left end
+                                    right_end - left.offset()
                                 } else {
-                                    contexts.push((right, right_conts));
-                                }
+                                    // right is contained inside left
+                                    left.len()
+                                },
+                            );
+                            if source
+                                .read_span(new_span.inner(), self.context_lines, self.context_lines)
+                                .is_ok()
+                            {
+                                contexts.pop();
+                                contexts.push((
+                                    // We'll throw this away later
+                                    new_span, left_conts,
+                                ));
                             } else {
                                 contexts.push((right, right_conts));
                             }
+                        } else {
+                            contexts.push((right, right_conts));
                         }
                     }
-                    for (ctx, _) in contexts {
-                        self.render_context(f, source, &ctx, &labels[..])?;
-                    }
+                }
+                for (ctx, _) in contexts {
+                    self.render_context(f, source, &ctx, &labels[..])?;
                 }
             }
         }

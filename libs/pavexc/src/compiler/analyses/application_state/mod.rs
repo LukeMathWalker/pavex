@@ -184,7 +184,7 @@ impl ApplicationState {
         // We build a "mock" callable that has the right inputs in order to drive the machinery
         // that builds the dependency graph.
         let ty_ = self.type_();
-        
+
         Callable {
             is_async: false,
             takes_self_as_ref: false,

@@ -296,8 +296,8 @@ impl RequestHandlerPipeline {
                     }
                 }
 
-                if let Some(next_state_parameters) = &previous_next_state {
-                    if let Some(bound_middleware_id) = Self::bind_next(
+                if let Some(next_state_parameters) = &previous_next_state
+                    && let Some(bound_middleware_id) = Self::bind_next(
                         module_name.clone(),
                         middleware_id,
                         next_state_parameters,
@@ -308,13 +308,13 @@ impl RequestHandlerPipeline {
                         component_db,
                         constructible_db,
                         framework_item_db,
-                    ) {
-                        if stage_index != 0 {
-                            wrapping_id -= 1;
-                        }
-                        wrapping_id2bound_id.insert(middleware_id, bound_middleware_id);
-                        middleware_id = bound_middleware_id;
+                    )
+                {
+                    if stage_index != 0 {
+                        wrapping_id -= 1;
                     }
+                    wrapping_id2bound_id.insert(middleware_id, bound_middleware_id);
+                    middleware_id = bound_middleware_id;
                 }
 
                 // We recompute the call graph for the middleware,
@@ -918,17 +918,17 @@ impl InputParameters {
         let mut inner_type2by_value: IndexMap<ResolvedType, Metadata> = IndexMap::new();
         for ty_ in types {
             let ty_ = ty_.as_ref();
-            if let ResolvedType::Reference(ref_) = ty_ {
-                if !ref_.lifetime.is_static() {
-                    let entry = inner_type2by_value
-                        .entry(ref_.inner.as_ref().to_owned())
-                        .or_insert(Metadata {
-                            by_value: false,
-                            mutable: false,
-                        });
-                    entry.mutable |= ref_.is_mutable;
-                    continue;
-                }
+            if let ResolvedType::Reference(ref_) = ty_
+                && !ref_.lifetime.is_static()
+            {
+                let entry = inner_type2by_value
+                    .entry(ref_.inner.as_ref().to_owned())
+                    .or_insert(Metadata {
+                        by_value: false,
+                        mutable: false,
+                    });
+                entry.mutable |= ref_.is_mutable;
+                continue;
             }
             let entry = inner_type2by_value
                 .entry(ty_.to_owned())

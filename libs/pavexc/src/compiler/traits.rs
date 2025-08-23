@@ -148,24 +148,21 @@ pub(crate) fn implements_trait(
                     }
                     _ => unreachable!(),
                 };
-                if let Some(trait_id) = trait_id {
-                    if let Ok((_, trait_path)) = krate_collection
+                if let Some(trait_id) = trait_id
+                    && let Ok((_, trait_path)) = krate_collection
                         .get_canonical_path_by_local_type_id(
                             &our_path_type.package_id,
                             trait_id,
                             None,
                         )
-                    {
-                        if trait_path == expected_trait.base_type
+                        && trait_path == expected_trait.base_type
                             // The "impls" for a rustdoc item include implementations for
                             // references to the type!
                             // Therefore we must verify that the implementer type is indeed the
                             // "owned" version of our type.
                             && is_equivalent(implementer_type, type_, krate_collection, &our_path_type.package_id)
-                        {
-                            return Ok(true);
-                        }
-                    }
+                {
+                    return Ok(true);
                 }
             }
         }

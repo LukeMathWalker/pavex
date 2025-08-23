@@ -68,36 +68,36 @@ pub(super) fn move_while_borrowed(
 
         let mut directly_borrowed = IndexSet::new();
         let mut captured = IndexSet::new();
-        if let Some(hydrated_component) = node.as_hydrated_component(component_db, computation_db) {
-            if let Computation::Callable(callable) = hydrated_component.computation() {
-                directly_borrowed = callable
-                    .inputs_that_output_borrows_immutably_from()
-                    .iter()
-                    .map(|&i| {
-                        let t = &callable.inputs[i];
-                        if let ResolvedType::Reference(r) = t {
-                            r.inner.deref().to_owned()
-                        } else {
-                            t.to_owned()
-                        }
-                    })
-                    .collect();
-                captured = callable
-                    .inputs_with_lifetime_tied_with_output()
-                    .iter()
-                    .map(|&i| {
-                        let t = &callable.inputs[i];
-                        if let ResolvedType::Reference(r) = t {
-                            r.inner.deref().to_owned()
-                        } else {
-                            t.to_owned()
-                        }
-                    })
-                    .collect();
-                #[cfg(debug_assertions)]
-                {
-                    assert!(directly_borrowed.is_subset(&captured));
-                }
+        if let Some(hydrated_component) = node.as_hydrated_component(component_db, computation_db)
+            && let Computation::Callable(callable) = hydrated_component.computation()
+        {
+            directly_borrowed = callable
+                .inputs_that_output_borrows_immutably_from()
+                .iter()
+                .map(|&i| {
+                    let t = &callable.inputs[i];
+                    if let ResolvedType::Reference(r) = t {
+                        r.inner.deref().to_owned()
+                    } else {
+                        t.to_owned()
+                    }
+                })
+                .collect();
+            captured = callable
+                .inputs_with_lifetime_tied_with_output()
+                .iter()
+                .map(|&i| {
+                    let t = &callable.inputs[i];
+                    if let ResolvedType::Reference(r) = t {
+                        r.inner.deref().to_owned()
+                    } else {
+                        t.to_owned()
+                    }
+                })
+                .collect();
+            #[cfg(debug_assertions)]
+            {
+                assert!(directly_borrowed.is_subset(&captured));
             }
         }
 
@@ -427,21 +427,21 @@ fn emit_ancestor_descendant_borrow_error(
 
     let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
-    if let Some(component_id) = contended_component_id {
-        if let Some(user_id) = db.user_component_id(component_id) {
-            let help_msg = format!(
-                "Allow me to clone `{contended_type:?}` in order to satisfy the borrow checker.\n\
+    if let Some(component_id) = contended_component_id
+        && let Some(user_id) = db.user_component_id(component_id)
+    {
+        let help_msg = format!(
+            "Allow me to clone `{contended_type:?}` in order to satisfy the borrow checker.\n\
                 You can do so by invoking `.clone_if_necessary()` after having registered your constructor.",
-            );
-            let help = match diagnostics.annotated(
-                db.registration_target(user_id),
-                "The constructor was registered here",
-            ) {
-                None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
-                Some(s) => HelpWithSnippet::new(help_msg, s.normalize()),
-            };
-            diagnostic = diagnostic.help_with_snippet(help);
-        }
+        );
+        let help = match diagnostics.annotated(
+            db.registration_target(user_id),
+            "The constructor was registered here",
+        ) {
+            None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+            Some(s) => HelpWithSnippet::new(help_msg, s.normalize()),
+        };
+        diagnostic = diagnostic.help_with_snippet(help);
     }
 
     let help = HelpWithSnippet::new(

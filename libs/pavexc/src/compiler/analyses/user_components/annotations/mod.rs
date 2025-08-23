@@ -861,12 +861,11 @@ fn rustdoc_method2callable(
             // The first parameter might be `&self` or `&mut self`.
             // This is important to know for carrying out further analysis doing the line,
             // e.g. undoing lifetime elision.
-            if let rustdoc_types::Type::BorrowedRef { type_, .. } = parameter_type {
-                if let rustdoc_types::Type::Generic(g) = type_.deref() {
-                    if g == "Self" {
-                        takes_self_as_ref = true;
-                    }
-                }
+            if let rustdoc_types::Type::BorrowedRef { type_, .. } = parameter_type
+                && let rustdoc_types::Type::Generic(g) = type_.deref()
+                && g == "Self"
+            {
+                takes_self_as_ref = true;
             }
         }
 

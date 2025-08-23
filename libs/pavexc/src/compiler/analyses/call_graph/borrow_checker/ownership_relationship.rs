@@ -44,7 +44,7 @@ impl OwnershipRelationships {
 
     #[must_use]
     /// Zoom in on a single node, either to add new relationship or to query existing ones.
-    pub(super) fn node(&mut self, node_index: NodeIndex) -> NodeRelationships {
+    pub(super) fn node(&mut self, node_index: NodeIndex) -> NodeRelationships<'_> {
         NodeRelationships {
             relationships: self,
             node_index,

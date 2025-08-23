@@ -131,7 +131,10 @@ pub(super) fn id_conflict(e: IdConflict, krate: &Crate, diagnostics: &Diagnostic
     let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err))
         .optional_source(first_source)
         .optional_source(second_source)
-        .help("Use the `id` macro argument to change the identifier of one of the two components.".to_string())
+        .help(
+            "Use the `id` macro argument to change the identifier of one of the two components."
+                .to_string(),
+        )
         .build();
     diagnostics.push(diagnostic);
 }

@@ -594,17 +594,17 @@ impl FQPath {
                         // times in different implementation blocks with non-overlapping constraints.
                         for impl_item_id in &impl_block.items {
                             let impl_item = search_krate.get_item_by_local_type_id(impl_item_id);
-                            if impl_item.name.as_ref() == Some(&method_name_segment.ident) {
-                                if let ItemEnum::Function(_) = &impl_item.inner {
-                                    method = Some(ResolvedItem {
-                                        item: impl_item,
-                                        item_id: GlobalItemId {
-                                            package_id: search_krate.core.package_id.clone(),
-                                            rustdoc_item_id: impl_item_id.to_owned(),
-                                        },
-                                    });
-                                    break 'outer;
-                                }
+                            if impl_item.name.as_ref() == Some(&method_name_segment.ident)
+                                && let ItemEnum::Function(_) = &impl_item.inner
+                            {
+                                method = Some(ResolvedItem {
+                                    item: impl_item,
+                                    item_id: GlobalItemId {
+                                        package_id: search_krate.core.package_id.clone(),
+                                        rustdoc_item_id: impl_item_id.to_owned(),
+                                    },
+                                });
+                                break 'outer;
                             }
                         }
                     }

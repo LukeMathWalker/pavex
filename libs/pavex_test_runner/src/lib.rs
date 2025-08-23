@@ -151,10 +151,10 @@ pub fn run_tests(
                     return (name.to_owned(), (trials, false));
                 }
 
-                if let Some(codegen_output) = codegen_output {
-                    if let Some(trial) = code_generation_lints_test(data, name, &codegen_output) {
-                        trials.push(trial);
-                    }
+                if let Some(codegen_output) = codegen_output
+                    && let Some(trial) = code_generation_lints_test(data, name, &codegen_output)
+                {
+                    trials.push(trial);
                 };
 
                 if data.configuration.expectations.codegen == ExpectedOutcome::Fail {

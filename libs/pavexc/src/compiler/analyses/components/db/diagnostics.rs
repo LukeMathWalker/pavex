@@ -73,10 +73,10 @@ impl ComponentDb {
                         "they are"
                     };
                     for param in &params {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                def.label(ty, "I can't infer this..");
-                            }
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str())
+                        {
+                            def.label(ty, "I can't infer this..");
                         }
                     }
                     def.label_output(format!("..because {subject_verb} not used here"));
@@ -276,14 +276,14 @@ impl ComponentDb {
 
                     let mut labels = vec![];
                     for param in generic_params {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                labels.push(
-                                    convert_proc_macro_span(&span_contents, ty.span()).labeled(
-                                        "The generic parameter without a concrete type".into(),
-                                    ),
-                                );
-                            }
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str())
+                        {
+                            labels.push(
+                                convert_proc_macro_span(&span_contents, ty.span()).labeled(
+                                    "The generic parameter without a concrete type".into(),
+                                ),
+                            );
                         }
                     }
                     let source_path = definition_span.filename.to_str().unwrap();
@@ -393,10 +393,10 @@ impl ComponentDb {
                     let mut def = CallableDefSource::compute(callable, krate_collection)?;
 
                     for param in def.sig.generics.params.clone() {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                def.label(ty, "The generic parameter without a concrete type");
-                            }
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str())
+                        {
+                            def.label(ty, "The generic parameter without a concrete type");
                         }
                     }
                     Some(def.annotated_source)
@@ -471,10 +471,10 @@ impl ComponentDb {
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
                     let mut def = CallableDefSource::compute(callable, krate_collection)?;
                     for param in def.sig.generics.params.clone() {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                def.label(ty, "The generic parameter without a concrete type");
-                            }
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str())
+                        {
+                            def.label(ty, "The generic parameter without a concrete type");
                         }
                     }
                     Some(def.annotated_source)
@@ -560,10 +560,10 @@ impl ComponentDb {
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
                     let mut def = CallableDefSource::compute(callable, krate_collection)?;
                     for param in def.sig.generics.params.clone() {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                def.label(ty, "The generic parameter without a concrete type");
-                            }
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str())
+                        {
+                            def.label(ty, "The generic parameter without a concrete type");
                         }
                     }
                     Some(def.annotated_source)
@@ -705,11 +705,10 @@ impl ComponentDb {
                         krate_collection,
                     )?;
                     for param in def.sig.generics.params.clone() {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str()) {
                                 def.label(ty, "I can't infer this");
                             }
-                        }
                     }
                     Some(def.annotated_source)
                 }
@@ -789,11 +788,10 @@ impl ComponentDb {
                         "they are"
                     };
                     for param in params {
-                        if let syn::GenericParam::Type(ty) = param {
-                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                        if let syn::GenericParam::Type(ty) = param
+                            && free_parameters.contains(ty.ident.to_string().as_str()) {
                                 def.label(ty, "I can't infer this..");
                             }
-                        }
                     }
                     let error_input = def.sig.inputs[error_ref_input_index].clone();
                     def.label(error_input, format!("..because {subject_verb} not used here"));

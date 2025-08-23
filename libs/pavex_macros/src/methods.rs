@@ -170,14 +170,13 @@ impl MethodSubAttributes {
 
             // Multi-segment form #[pavex::error_handler]
             let mut segments = attr.path().segments.iter();
-            if let (Some(first), Some(second)) = (segments.next(), segments.next()) {
-                if first.ident == "pavex"
+            if let (Some(first), Some(second)) = (segments.next(), segments.next())
+                && first.ident == "pavex"
                        && second.ident == name
                        // and *no* further segments
                        && segments.next().is_none()
-                {
-                    return true;
-                }
+            {
+                return true;
             }
 
             false

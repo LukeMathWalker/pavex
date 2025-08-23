@@ -273,10 +273,10 @@ fn main() -> ExitCode {
         // This is an undocumented feature that allows us to force set the width of the
         // terminal as seen by the graphical error handler.
         // This is useful for testing/doc-generation purposes.
-        if let Ok(width) = std::env::var("PAVEX_TTY_WIDTH") {
-            if let Ok(width) = width.parse::<usize>() {
-                handler = handler.width(width);
-            }
+        if let Ok(width) = std::env::var("PAVEX_TTY_WIDTH")
+            && let Ok(width) = width.parse::<usize>()
+        {
+            handler = handler.width(width);
         }
         match cli.color {
             Color::Auto => {}
