@@ -6,6 +6,7 @@
 //! There is a dedicated feature flag for each supported database backend:
 //!
 //! - `postgres`: Support for PostgreSQL.
+//! - `mysql`: Support for MySQL.
 //! - `sqlite`: Support for SQLite.
 
 #[cfg(feature = "postgres")]
@@ -16,6 +17,15 @@ pub mod postgres;
 #[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
 #[doc(inline)]
 pub use postgres::PostgresSessionStore;
+
+#[cfg(feature = "mysql")]
+#[cfg_attr(docsrs, doc(cfg(feature = "mysql")))]
+pub mod mysql;
+
+#[cfg(feature = "mysql")]
+#[cfg_attr(docsrs, doc(cfg(feature = "mysql")))]
+#[doc(inline)]
+pub use mysql::MySqlSessionStore;
 
 #[cfg(feature = "sqlite")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sqlite")))]

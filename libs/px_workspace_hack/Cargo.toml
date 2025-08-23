@@ -20,7 +20,6 @@ license.workspace = true
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -28,7 +27,7 @@ console = { version = "0.16" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
 darling_core = { version = "0.21", default-features = false, features = ["suggestions"] }
-digest = { version = "0.10", features = ["mac", "std"] }
+digest = { version = "0.10", features = ["mac", "oid", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
 fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
@@ -46,11 +45,12 @@ hmac = { version = "0.12", default-features = false, features = ["reset"] }
 indexmap = { version = "2", features = ["serde"] }
 jiff = { version = "0.2", features = ["serde"] }
 jiff-sqlx = { version = "0.1", features = ["postgres"] }
+lazy_static = { version = "1", default-features = false, features = ["spin_no_std"] }
 libsqlite3-sys = { version = "0.30", features = ["bundled", "unlock_notify"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", features = ["i128"] }
+num-traits = { version = "0.2", features = ["i128", "libm"] }
 once_cell = { version = "1" }
 percent-encoding = { version = "2" }
 petgraph = { version = "0.8", default-features = false, features = ["graphmap", "stable_graph", "std"] }
@@ -68,8 +68,9 @@ serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 serde_spanned = { version = "1" }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
-sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
+sqlx = { version = "0.8", features = ["mysql", "postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
 sqlx-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "json", "migrate", "offline", "uuid"] }
+sqlx-mysql = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-sqlite = { version = "0.8", default-features = false, features = ["any", "bundled", "json", "migrate", "offline", "uuid"] }
 stable_deref_trait = { version = "1" }
@@ -94,7 +95,6 @@ zeroize = { version = "1" }
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -102,7 +102,7 @@ console = { version = "0.16" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
 darling_core = { version = "0.21", default-features = false, features = ["suggestions"] }
-digest = { version = "0.10", features = ["mac", "std"] }
+digest = { version = "0.10", features = ["mac", "oid", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
 fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
@@ -120,11 +120,12 @@ hmac = { version = "0.12", default-features = false, features = ["reset"] }
 indexmap = { version = "2", features = ["serde"] }
 jiff = { version = "0.2", features = ["serde"] }
 jiff-sqlx = { version = "0.1", features = ["postgres"] }
+lazy_static = { version = "1", default-features = false, features = ["spin_no_std"] }
 libsqlite3-sys = { version = "0.30", features = ["bundled", "unlock_notify"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", features = ["i128"] }
+num-traits = { version = "0.2", features = ["i128", "libm"] }
 once_cell = { version = "1" }
 percent-encoding = { version = "2" }
 petgraph = { version = "0.8", default-features = false, features = ["graphmap", "stable_graph", "std"] }
@@ -142,10 +143,11 @@ serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 serde_spanned = { version = "1" }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
-sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
+sqlx = { version = "0.8", features = ["mysql", "postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
 sqlx-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "json", "migrate", "offline", "uuid"] }
-sqlx-macros = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "derive", "json", "macros", "migrate", "postgres", "sqlite", "uuid"] }
-sqlx-macros-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "derive", "json", "macros", "migrate", "postgres", "sqlite", "uuid"] }
+sqlx-macros = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "derive", "json", "macros", "migrate", "mysql", "postgres", "sqlite", "uuid"] }
+sqlx-macros-core = { version = "0.8", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "derive", "json", "macros", "migrate", "mysql", "postgres", "sqlite", "uuid"] }
+sqlx-mysql = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "uuid"] }
 sqlx-sqlite = { version = "0.8", default-features = false, features = ["any", "bundled", "json", "migrate", "offline", "uuid"] }
 stable_deref_trait = { version = "1" }
