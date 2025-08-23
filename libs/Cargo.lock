@@ -3291,7 +3291,6 @@ dependencies = [
  "toml 0.9.5",
  "toml_datetime 0.7.0",
  "toml_parser",
- "toml_writer",
  "tracing",
  "tracing-core",
  "tracing-log",

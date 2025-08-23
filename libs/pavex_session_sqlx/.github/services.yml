@@ -1,11 +1,30 @@
 # Extra services that must spun up before this example can be tested
 services:
   postgres:
-    # Docker Hub image
-    image: postgres:14
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
+    image: postgres:16-alpine
     ports:
-      - 5432:5432
+      - "55432:5432"
+    env:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: session_test
+    options: >-
+      --health-cmd="pg_isready -U test -d session_test -h 127.0.0.1"
+      --health-interval=5s
+      --health-timeout=5s
+      --health-retries=5
+
+  mysql:
+    image: mysql:8.4
+    ports:
+      - "53306:3306"
+    env:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+      MYSQL_DATABASE: session_test
+    options: >-
+      --health-cmd="mysqladmin ping -h 127.0.0.1 -utest -ptest"
+      --health-interval=5s
+      --health-timeout=5s
+      --health-retries=10

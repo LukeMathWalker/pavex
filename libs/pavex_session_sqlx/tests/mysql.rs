@@ -2,7 +2,8 @@ use pavex_session::SessionId;
 use pavex_session::store::{SessionRecordRef, SessionStorageBackend};
 use pavex_session_sqlx::MySqlSessionStore;
 use serde_json;
-use sqlx::MySqlPool;
+use sqlx::mysql::MySqlPoolOptions;
+use sqlx::{Connection, MySqlConnection};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -10,10 +11,11 @@ use std::time::Duration;
 
 async fn create_test_store() -> MySqlSessionStore {
     let database_url = std::env::var("TEST_MYSQL_URL")
-        .unwrap_or_else(|_| "mysql://root:password@localhost:3306/test_sessions".to_string());
+        .unwrap_or_else(|_| "mysql://test:test@localhost:53306/session_test".to_string());
 
-    let pool = MySqlPool::connect(&database_url)
-        .await
+    let pool_options = MySqlPoolOptions::new().acquire_timeout(Duration::from_secs(3));
+    let pool = pool_options
+        .connect_lazy(&database_url)
         .expect("MySQL test database not available. Set TEST_MYSQL_URL environment variable.");
 
     let store = MySqlSessionStore::new(pool);
@@ -818,19 +820,16 @@ async fn test_database_unavailable_error() {
     let invalid_url = "mysql://invalid_user:invalid_password@localhost:19999/nonexistent_db";
 
     // Try to connect to invalid database - this should fail
-    let pool_result = MySqlPool::connect(invalid_url).await;
-    if pool_result.is_ok() {
+    if MySqlConnection::connect(invalid_url).await.is_ok() {
         // If somehow this succeeds, skip this test
         println!("Warning: Expected database connection to fail, but it succeeded");
         return;
     }
 
-    // Create store with a connection that will have issues
-    let timeout_url = "mysql://root:testpassword@localhost:3306/test_sessions?connect_timeout=1";
-    let pool = MySqlPool::connect(timeout_url).await.unwrap();
-
-    // Close connections by setting pool to minimum
-    pool.close().await;
+    let pool = MySqlPoolOptions::new()
+        .acquire_timeout(Duration::from_secs(2))
+        .connect_lazy(invalid_url)
+        .unwrap();
 
     let store = MySqlSessionStore::new(pool);
     let (session_id, state) = create_test_record(3600);
@@ -845,7 +844,6 @@ async fn test_database_unavailable_error() {
             },
         )
         .await;
-    assert!(create_result.is_err());
     match create_result.unwrap_err() {
         pavex_session::store::errors::CreateError::Other(_) => {
             // Expected - database connection error
@@ -857,7 +855,6 @@ async fn test_database_unavailable_error() {
     }
 
     let load_result = store.load(&session_id).await;
-    assert!(load_result.is_err());
     match load_result.unwrap_err() {
         pavex_session::store::errors::LoadError::Other(_) => {
             // Expected - database connection error
