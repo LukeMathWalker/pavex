@@ -244,10 +244,10 @@ fn uninstall(must_prompt_user: bool, locator: PavexLocator) -> Result<ExitCode, 
     }
 
     SHELL.status("Uninstalling", "Pavex");
-    if let Err(e) = fs_err::remove_dir_all(locator.root_dir()) {
-        if ErrorKind::NotFound != e.kind() {
-            Err(e).context("Failed to remove Pavex data")?;
-        }
+    if let Err(e) = fs_err::remove_dir_all(locator.root_dir())
+        && ErrorKind::NotFound != e.kind()
+    {
+        Err(e).context("Failed to remove Pavex data")?;
     }
     self_replace::self_delete().context("Failed to delete the current Pavex CLI binary")?;
     SHELL.status("Uninstalled", "Pavex");

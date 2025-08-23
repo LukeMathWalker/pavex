@@ -296,7 +296,7 @@ impl UserComponentDb {
     ///
     /// It's the primary entrypoint when you're building a diagnostic that
     /// includes a span from the source file where the component was registered.
-    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan {
+    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan<'_> {
         TargetSpan::Registration(self.registration(id), self[id].kind())
     }
 

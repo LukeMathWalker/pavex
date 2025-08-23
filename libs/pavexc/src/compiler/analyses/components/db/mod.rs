@@ -1804,7 +1804,7 @@ impl ComponentDb {
     }
 
     /// Return a [`TargetSpan`] for the given user component, aimed at its registration.
-    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan {
+    pub fn registration_target(&self, id: UserComponentId) -> TargetSpan<'_> {
         TargetSpan::Registration(self.registration(id), self.user_db[id].kind())
     }
 

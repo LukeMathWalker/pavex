@@ -57,20 +57,20 @@ where
         let dimmed = Style::new().dimmed();
         let bold = Style::new().bold();
 
-        if let Some(mut scope) = ctx.event_scope() {
-            if let Some(span) = scope.next() {
-                write!(&mut buffer, "{}\n ", bold.style(span.metadata().name()))?;
+        if let Some(mut scope) = ctx.event_scope()
+            && let Some(span) = scope.next()
+        {
+            write!(&mut buffer, "{}\n ", bold.style(span.metadata().name()))?;
 
-                let mut sub_writer = tracing_subscriber::fmt::format::Writer::new(&mut buffer);
-                ctx.format_fields(sub_writer.by_ref(), event)?;
-                writeln!(&mut buffer)?;
+            let mut sub_writer = tracing_subscriber::fmt::format::Writer::new(&mut buffer);
+            ctx.format_fields(sub_writer.by_ref(), event)?;
+            writeln!(&mut buffer)?;
 
-                let ext = span.extensions();
-                if let Some(fields) = &ext.get::<FormattedFields<N>>() {
-                    if !fields.is_empty() {
-                        writeln!(&mut buffer, " {} {}", dimmed.style("with"), fields)?;
-                    }
-                }
+            let ext = span.extensions();
+            if let Some(fields) = &ext.get::<FormattedFields<N>>()
+                && !fields.is_empty()
+            {
+                writeln!(&mut buffer, " {} {}", dimmed.style("with"), fields)?;
             }
         }
 

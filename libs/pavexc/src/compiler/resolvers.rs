@@ -193,12 +193,12 @@ pub(crate) fn _resolve_type(
         }) => {
             let re_exporter_crate_name = {
                 let mut re_exporter = None;
-                if let Some(krate) = krate_collection.get_crate_by_package_id(used_by_package_id) {
-                    if let Some(item) = krate.maybe_get_item_by_local_type_id(id) {
-                        // 0 is the crate index of local types.
-                        if item.crate_id == 0 {
-                            re_exporter = Some(None);
-                        }
+                if let Some(krate) = krate_collection.get_crate_by_package_id(used_by_package_id)
+                    && let Some(item) = krate.maybe_get_item_by_local_type_id(id)
+                {
+                    // 0 is the crate index of local types.
+                    if item.crate_id == 0 {
+                        re_exporter = Some(None);
                     }
                 }
                 if re_exporter.is_none() {
@@ -652,15 +652,15 @@ pub(crate) fn resolve_callable(
         ..
     } = &callable_items
     {
-        if matches!(&method_owner.0.item.inner, ItemEnum::Trait(_)) {
-            if let Err(e) = get_trait_generic_bindings(
+        if matches!(&method_owner.0.item.inner, ItemEnum::Trait(_))
+            && let Err(e) = get_trait_generic_bindings(
                 &method_owner.0,
                 &method_owner.1,
                 krate_collection,
                 &mut generic_bindings,
-            ) {
-                log_error!(*e, level: tracing::Level::WARN, "Error getting trait generic bindings");
-            }
+            )
+        {
+            log_error!(*e, level: tracing::Level::WARN, "Error getting trait generic bindings");
         }
 
         let self_ = match qualified_self {
@@ -714,12 +714,11 @@ pub(crate) fn resolve_callable(
             // The first parameter might be `&self` or `&mut self`.
             // This is important to know for carrying out further analysis doing the line,
             // e.g. undoing lifetime elision.
-            if let Type::BorrowedRef { type_, .. } = parameter_type {
-                if let Type::Generic(g) = type_.deref() {
-                    if g == "Self" {
-                        takes_self_as_ref = true;
-                    }
-                }
+            if let Type::BorrowedRef { type_, .. } = parameter_type
+                && let Type::Generic(g) = type_.deref()
+                && g == "Self"
+            {
+                takes_self_as_ref = true;
             }
         }
         match resolve_type(
@@ -810,7 +809,6 @@ pub(crate) fn resolve_callable(
             _ => None,
         };
 
-        
         match parent_canonical_path {
             Some(p) => {
                 // We have already canonicalized the parent path, so we just need to append the method name and we're done.

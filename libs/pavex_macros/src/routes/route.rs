@@ -44,9 +44,7 @@ impl TryFrom<InputSchema> for Properties {
             .as_ref()
             .map(|a| a.any_method.is_present())
             .unwrap_or(false);
-        let allow_error_fallback = allow
-            .as_ref()
-            .map(|a| a.error_fallback.is_present());
+        let allow_error_fallback = allow.as_ref().map(|a| a.error_fallback.is_present());
 
         if let Some(method) = method.as_ref() {
             if allow_any_method {

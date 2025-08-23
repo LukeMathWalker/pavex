@@ -269,22 +269,22 @@ fn emit_multiple_consumers_error(
 
     let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
-    if let Some(component_id) = consumed_component_id {
-        if let Some(user_id) = db.user_component_id(component_id) {
-            let help_msg = format!(
-                "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
+    if let Some(component_id) = consumed_component_id
+        && let Some(user_id) = db.user_component_id(component_id)
+    {
+        let help_msg = format!(
+            "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
                 You can do so by invoking `.cloning(CloningPolicy::CloneIfNecessary)` on the type returned by `.constructor`.",
-            );
-            let kind = db.user_db()[user_id].kind();
-            let help = match diagnostics.annotated(
-                db.registration_target(user_id),
-                format!("The {kind} was registered here"),
-            ) {
-                None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
-                Some(s) => HelpWithSnippet::new(help_msg, s).normalize(),
-            };
-            diagnostic = diagnostic.help_with_snippet(help);
-        }
+        );
+        let kind = db.user_db()[user_id].kind();
+        let help = match diagnostics.annotated(
+            db.registration_target(user_id),
+            format!("The {kind} was registered here"),
+        ) {
+            None => HelpWithSnippet::new(help_msg, AnnotatedSource::empty()),
+            Some(s) => HelpWithSnippet::new(help_msg, s).normalize(),
+        };
+        diagnostic = diagnostic.help_with_snippet(help);
     }
 
     let help = HelpWithSnippet::new(

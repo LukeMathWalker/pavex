@@ -47,10 +47,10 @@ impl CliToken {
                 Ok(Self(response.jwt))
             }
             Err(e) => {
-                if let Some(status) = e.status() {
-                    if status == reqwest::StatusCode::UNAUTHORIZED {
-                        return Err(InvalidActivationKey.into());
-                    }
+                if let Some(status) = e.status()
+                    && status == reqwest::StatusCode::UNAUTHORIZED
+                {
+                    return Err(InvalidActivationKey.into());
                 }
                 Err(CliTokenError::RpcError(e.into()))
             }

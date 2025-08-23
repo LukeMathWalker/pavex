@@ -214,10 +214,10 @@ impl SessionStorageBackend for InMemorySessionStore {
         for (id, record) in guard.iter() {
             if record.deadline <= now {
                 stale_ids.push(*id);
-                if let Some(batch_size) = batch_size {
-                    if stale_ids.len() >= batch_size.get() {
-                        break;
-                    }
+                if let Some(batch_size) = batch_size
+                    && stale_ids.len() >= batch_size.get()
+                {
+                    break;
                 }
             }
         }

@@ -133,12 +133,11 @@ pub(super) fn install(
             resolved,
         }) => {
             let mut try_prebuilt = false;
-            if repository == "https://github.com/LukeMathWalker/pavex" {
-                if let GitReq::Tag(tag) = req {
-                    if tag == version.to_string().as_str() {
-                        try_prebuilt = true;
-                    }
-                }
+            if repository == "https://github.com/LukeMathWalker/pavex"
+                && let GitReq::Tag(tag) = req
+                && tag == version.to_string().as_str()
+            {
+                try_prebuilt = true;
             }
             let git_source = match resolved {
                 None => match req {

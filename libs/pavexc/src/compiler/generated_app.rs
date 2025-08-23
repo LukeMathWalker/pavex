@@ -184,10 +184,10 @@ impl GeneratedApp {
             // The `members` key is optional—you can omit it if your workspace has
             // a single member, i.e. the package defined in the same manifest file.
             if let Some(members) = workspace.get_mut("members") {
-                if let Some(members) = members.as_array_mut() {
-                    if !members.iter().any(|m| m.as_str() == Some(&member_path)) {
-                        members.push(member_path);
-                    }
+                if let Some(members) = members.as_array_mut()
+                    && !members.iter().any(|m| m.as_str() == Some(&member_path))
+                {
+                    members.push(member_path);
                 }
             } else {
                 let members = {

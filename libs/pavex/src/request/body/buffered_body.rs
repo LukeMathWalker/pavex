@@ -103,10 +103,10 @@ impl BufferedBody {
         // This is a performance optimization: it allows us to short-circuit the
         // body reading process entirely rather than reading the body incrementally
         // until the limit is reached.
-        if let Some(len) = content_length {
-            if len > max_size {
-                return Err(limit_error().into());
-            }
+        if let Some(len) = content_length
+            && len > max_size
+        {
+            return Err(limit_error().into());
         }
 
         // We saturate to `usize::MAX` if we happen to be on a platform where

@@ -1158,10 +1158,10 @@ impl Crate {
     /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
-        if type_id.package_id == self.core.package_id {
-            if let Some(entry) = self.import_index.items.get(&type_id.rustdoc_item_id) {
-                return Ok(entry.canonical_path());
-            }
+        if type_id.package_id == self.core.package_id
+            && let Some(entry) = self.import_index.items.get(&type_id.rustdoc_item_id)
+        {
+            return Ok(entry.canonical_path());
         }
         Err(anyhow::anyhow!(
             "Failed to find an importable path for the type id `{:?}` in the index I computed for `{:?}`. \
@@ -1196,11 +1196,11 @@ fn index_local_types<'a>(
     //       we can likely reuse the same buffer throughout.
     let current_item = match krate.index.get(current_item_id) {
         None => {
-            if let Some(summary) = krate.paths.get(current_item_id) {
-                if summary.kind == ItemKind::Primitive {
-                    // This is a known bug—see https://github.com/rust-lang/rust/issues/104064
-                    return;
-                }
+            if let Some(summary) = krate.paths.get(current_item_id)
+                && summary.kind == ItemKind::Primitive
+            {
+                // This is a known bug—see https://github.com/rust-lang/rust/issues/104064
+                return;
             }
             panic!(
                 "Failed to retrieve item id `{:?}` from the JSON `index` for package id `{}`.",
@@ -1527,10 +1527,10 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::Variant(_) => "an enum variant",
             ItemEnum::Function(func) => {
                 let mut func_kind = "a function";
-                if let Some((param, _)) = func.sig.inputs.first() {
-                    if param == "self" {
-                        func_kind = "a method";
-                    }
+                if let Some((param, _)) = func.sig.inputs.first()
+                    && param == "self"
+                {
+                    func_kind = "a method";
                 }
 
                 func_kind
@@ -1720,15 +1720,13 @@ pub fn compute_package_id_for_crate_id(
                 package_id,
                 &intermediate_crate.name,
                 intermediate_crate_version.as_ref(),
+            ) && let Some(id) = find_transitive_dependency(
+                package_graph,
+                &intermediate_package_id,
+                &external_crate.name,
+                external_crate_version.as_ref(),
             ) {
-                if let Some(id) = find_transitive_dependency(
-                    package_graph,
-                    &intermediate_package_id,
-                    &external_crate.name,
-                    external_crate_version.as_ref(),
-                ) {
-                    return Ok(id);
-                }
+                return Ok(id);
             }
         }
     }

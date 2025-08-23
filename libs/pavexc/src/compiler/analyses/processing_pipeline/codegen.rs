@@ -123,10 +123,10 @@ impl RequestHandlerPipeline {
                                     }
                                     Some(i) => {
                                         let mut output = i.to_token_stream();
-                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(input_type) {
-                                            if cloning_indexes.contains(&index) {
+                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(input_type)
+                                            && cloning_indexes.contains(&index) {
                                                 output = quote! { #i.clone() };
-                                            }                                        }
+                                            }
                                         output
                                     },
                                 }
