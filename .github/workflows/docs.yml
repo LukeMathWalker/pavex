@@ -530,7 +530,7 @@ jobs:
     - name: Run tests
       working-directory: libs
       run: |
-        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros"
+        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex_session_sqlx"
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -538,7 +538,101 @@ jobs:
         job: Run tests (linux)
         conclusion: ${{ job.status }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
-
+  
+  tests_pavex_session_sqlx_linux:
+    name: "Tests for `pavex_session_sqlx` (linux)"
+    runs-on: ubuntu-latest
+    # Extra services that must spun up before this example can be tested
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    needs:
+      - build_clis_linux
+      
+    permissions:
+      pull-requests: write
+      checks: write
+    # Run if it's a PR on the official repo or a push to `main`
+    if: |
+      (github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.slash_command.args.named.sha != '' &&
+      contains(
+        github.event.client_payload.pull_request.head.sha,
+        github.event.client_payload.slash_command.args.named.sha
+      )) ||
+      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    steps:
+    - name: Checkout repository from source repo
+      if: |
+        (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+      uses: actions/checkout@v4
+    - name: Checkout repository from fork
+      if: |
+        github.event_name == 'repository_dispatch' &&
+        github.event.client_payload.slash_command.args.named.sha != '' &&
+        contains(
+          github.event.client_payload.pull_request.head.sha,
+          github.event.client_payload.slash_command.args.named.sha
+        )
+      uses: actions/checkout@v4
+      with:
+        ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
+    - uses: ./.github/actions/create-check
+      if: ${{ github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Tests pavex_session_sqlx (linux)
+        workflow: "Build and store docs artifacts"
+        run_id: ${{ github.run_id }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Rust stable toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+      with:
+        components: rustfmt
+        rustflags: ""
+        cache-workspaces: "./libs -> ./target"
+    - name: Download pavex CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavex_cli_linux
+        path: ~/.cargo/bin
+    - name: Download pavexc CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavexc_cli_linux
+        path: ~/.cargo/bin
+    - name: Mark pavex as executable
+      env:
+        PAVEX: /home/runner/.cargo/bin/pavex
+        PAVEXC: /home/runner/.cargo/bin/pavexc
+      run: |
+        chmod +x ${{ env.PAVEX }}
+        chmod +x ${{ env.PAVEXC }}
+    - name: Activate pavex
+      env:
+        PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+      run: |
+        pavex self activate
+        pavexc self setup
+    - name: Run tests
+      working-directory: libs
+      run: |
+        cargo test --all-features --package pavex_session_sqlx
+    - uses: ./.github/actions/finalize-check
+      if: ${{ always() && github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Tests pavex_session_sqlx (linux)
+        conclusion: ${{ job.status }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+  
   ui_tests_linux:
     name: "Run UI tests (linux)"
     runs-on: ubuntu-latest
@@ -767,7 +861,7 @@ jobs:
     - name: Run tests
       working-directory: libs
       run: |
-        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros"
+        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex_session_sqlx"
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -775,7 +869,101 @@ jobs:
         job: Run tests (macos)
         conclusion: ${{ job.status }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
-
+  
+  tests_pavex_session_sqlx_macos:
+    name: "Tests for `pavex_session_sqlx` (macos)"
+    runs-on: macos-14
+    # Extra services that must spun up before this example can be tested
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    needs:
+      - build_clis_macos
+      
+    permissions:
+      pull-requests: write
+      checks: write
+    # Run if it's a PR on the official repo or a push to `main`
+    if: |
+      (github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.slash_command.args.named.sha != '' &&
+      contains(
+        github.event.client_payload.pull_request.head.sha,
+        github.event.client_payload.slash_command.args.named.sha
+      )) ||
+      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    steps:
+    - name: Checkout repository from source repo
+      if: |
+        (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+      uses: actions/checkout@v4
+    - name: Checkout repository from fork
+      if: |
+        github.event_name == 'repository_dispatch' &&
+        github.event.client_payload.slash_command.args.named.sha != '' &&
+        contains(
+          github.event.client_payload.pull_request.head.sha,
+          github.event.client_payload.slash_command.args.named.sha
+        )
+      uses: actions/checkout@v4
+      with:
+        ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
+    - uses: ./.github/actions/create-check
+      if: ${{ github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Tests pavex_session_sqlx (macos)
+        workflow: "Build and store docs artifacts"
+        run_id: ${{ github.run_id }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Rust stable toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+      with:
+        components: rustfmt
+        rustflags: ""
+        cache-workspaces: "./libs -> ./target"
+    - name: Download pavex CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavex_cli_macos
+        path: ~/.cargo/bin
+    - name: Download pavexc CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavexc_cli_macos
+        path: ~/.cargo/bin
+    - name: Mark pavex as executable
+      env:
+        PAVEX: /Users/runner/.cargo/bin/pavex
+        PAVEXC: /Users/runner/.cargo/bin/pavexc
+      run: |
+        chmod +x ${{ env.PAVEX }}
+        chmod +x ${{ env.PAVEXC }}
+    - name: Activate pavex
+      env:
+        PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+      run: |
+        pavex self activate
+        pavexc self setup
+    - name: Run tests
+      working-directory: libs
+      run: |
+        cargo test --all-features --package pavex_session_sqlx
+    - uses: ./.github/actions/finalize-check
+      if: ${{ always() && github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Tests pavex_session_sqlx (macos)
+        conclusion: ${{ job.status }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+  
   ui_tests_macos:
     name: "Run UI tests (macos)"
     runs-on: macos-14
@@ -998,7 +1186,7 @@ jobs:
     - name: Run tests
       working-directory: libs
       run: |
-        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros"
+        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex_session_sqlx"
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -1006,7 +1194,95 @@ jobs:
         job: Run tests (windows)
         conclusion: ${{ job.status }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
+  
+  tests_pavex_session_sqlx_windows:
+    name: "Tests for `pavex_session_sqlx` (windows)"
+    runs-on: windows-2022
+    # Extra services that must spun up before this example can be tested
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    needs:
+      - build_clis_windows
+      
+    permissions:
+      pull-requests: write
+      checks: write
+    # Run if it's a PR on the official repo or a push to `main`
+    if: |
+      (github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.slash_command.args.named.sha != '' &&
+      contains(
+        github.event.client_payload.pull_request.head.sha,
+        github.event.client_payload.slash_command.args.named.sha
+      )) ||
+      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    steps:
+    - name: Checkout repository from source repo
+      if: |
+        (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+      uses: actions/checkout@v4
+    - name: Checkout repository from fork
+      if: |
+        github.event_name == 'repository_dispatch' &&
+        github.event.client_payload.slash_command.args.named.sha != '' &&
+        contains(
+          github.event.client_payload.pull_request.head.sha,
+          github.event.client_payload.slash_command.args.named.sha
+        )
+      uses: actions/checkout@v4
+      with:
+        ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
+    - uses: ./.github/actions/create-check
+      if: ${{ github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Tests pavex_session_sqlx (windows)
+        workflow: "Build and store docs artifacts"
+        run_id: ${{ github.run_id }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Rust stable toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+      with:
+        components: rustfmt
+        rustflags: ""
+        cache-workspaces: "./libs -> ./target"
+    - name: Download pavex CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavex_cli_windows
+        path: ~/.cargo/bin
+    - name: Download pavexc CLI artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pavexc_cli_windows
+        path: ~/.cargo/bin
 
+    - name: Activate pavex
+      env:
+        PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+      run: |
+        pavex self activate
+        pavexc self setup
+    - name: Run tests
+      working-directory: libs
+      run: |
+        cargo test --all-features --package pavex_session_sqlx
+    - uses: ./.github/actions/finalize-check
+      if: ${{ always() && github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Tests pavex_session_sqlx (windows)
+        conclusion: ${{ job.status }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+  
   ui_tests_windows:
     name: "Run UI tests (windows)"
     runs-on: windows-2022
