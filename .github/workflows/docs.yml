@@ -1311,7 +1311,7 @@ jobs:
       with:
         rustflags: ""
         components: rustfmt
-        cache-workspaces: "./libs -> ./target"
+        cache-workspaces: "./docs/examples -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v5
       with:
