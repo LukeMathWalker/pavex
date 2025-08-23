@@ -200,7 +200,7 @@ impl AuxiliaryData {
         }
     }
 
-    pub(crate) fn registration_target(&self, id: &UserComponentId) -> TargetSpan {
+    pub(crate) fn registration_target(&self, id: &UserComponentId) -> TargetSpan<'_> {
         TargetSpan::Registration(&self.id2registration[*id], self[id].kind())
     }
 }

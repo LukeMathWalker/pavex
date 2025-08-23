@@ -472,14 +472,12 @@ where
                 .into_iter()
                 .find(|node_ix| {
                     let node = &call_graph[*node_ix];
-                    if let CallGraphNode::Compute { component_id, .. } = node {
-                        if let HydratedComponent::Transformer(Computation::MatchResult(m), ..) =
+                    if let CallGraphNode::Compute { component_id, .. } = node
+                        && let HydratedComponent::Transformer(Computation::MatchResult(m), ..) =
                             component_db.hydrated_component(*component_id, computation_db)
-                        {
-                            if m.variant == MatchResultVariant::Ok {
-                                return true;
-                            }
-                        }
+                        && m.variant == MatchResultVariant::Ok
+                    {
+                        return true;
                     }
                     false
                 })

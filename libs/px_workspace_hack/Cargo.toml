@@ -20,7 +20,6 @@ license.workspace = true
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -84,6 +83,7 @@ toml-274715c4dabd11b0 = { package = "toml", version = "0.9", features = ["preser
 toml-c38e5c1d305a1b54 = { package = "toml", version = "0.8", features = ["preserve_order"] }
 toml_datetime = { version = "0.7", features = ["serde"] }
 toml_parser = { version = "1" }
+toml_writer = { version = "1" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
@@ -95,7 +95,6 @@ zeroize = { version = "1" }
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -161,6 +160,7 @@ toml-274715c4dabd11b0 = { package = "toml", version = "0.9", features = ["preser
 toml-c38e5c1d305a1b54 = { package = "toml", version = "0.8", features = ["preserve_order"] }
 toml_datetime = { version = "0.7", features = ["serde"] }
 toml_parser = { version = "1" }
+toml_writer = { version = "1" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }

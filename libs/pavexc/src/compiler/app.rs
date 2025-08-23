@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::fmt::Debug;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
@@ -25,7 +24,6 @@ use crate::compiler::analyses::router::Router;
 use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::generated_app::GeneratedApp;
-use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::{codegen, path_parameters};
 use crate::diagnostic::DiagnosticSink;
 use crate::rustdoc::CrateCollection;
@@ -277,14 +275,6 @@ impl App {
             application_state: application_state_graph,
         }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum BuildError {
-    #[error(transparent)]
-    HandlerError(#[from] Box<CallableResolutionError>),
-    #[error(transparent)]
-    GenericError(#[from] anyhow::Error),
 }
 
 /// A representation of an `App` geared towards debugging and testing.

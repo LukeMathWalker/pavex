@@ -92,12 +92,12 @@ fn reject_serde_attribute(attr: &Attribute) -> Result<(), TokenStream> {
        opt instead for implementing `serde::Serialize` and `serde::Deserialize` directly for your struct (either \
        manually or using a derive with custom attributes).\nKeep in mind that by going down this route \
        you give up compile-time checking of the route parameters!";
-    if let Some(ident) = attr.path().get_ident() {
-        if ident == "serde" {
-            return Err(Error::new_spanned(attr, err_msg)
-                .into_compile_error()
-                .into());
-        }
+    if let Some(ident) = attr.path().get_ident()
+        && ident == "serde"
+    {
+        return Err(Error::new_spanned(attr, err_msg)
+            .into_compile_error()
+            .into());
     }
     Ok(())
 }

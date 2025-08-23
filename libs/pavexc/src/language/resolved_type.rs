@@ -323,13 +323,11 @@ impl ResolvedType {
         match self {
             ResolvedType::ResolvedPath(path) => {
                 for arg in path.generic_arguments.iter_mut() {
-                    if let GenericArgument::Lifetime(lifetime) = arg {
-                        if let GenericLifetimeParameter::Named(name) = lifetime {
-                            if name == "_" {
-                                *lifetime =
-                                    GenericLifetimeParameter::Named(inferred_lifetime.clone());
-                            }
-                        }
+                    if let GenericArgument::Lifetime(lifetime) = arg
+                        && let GenericLifetimeParameter::Named(name) = lifetime
+                        && name == "_"
+                    {
+                        *lifetime = GenericLifetimeParameter::Named(inferred_lifetime.clone());
                     }
                 }
             }
@@ -366,10 +364,10 @@ impl ResolvedType {
                             tp.rename_lifetime_parameters(original2renamed);
                         }
                         GenericArgument::Lifetime(l) => {
-                            if let GenericLifetimeParameter::Named(l) = l {
-                                if let Some(new_name) = original2renamed.get(l) {
-                                    *l = new_name.clone();
-                                }
+                            if let GenericLifetimeParameter::Named(l) = l
+                                && let Some(new_name) = original2renamed.get(l)
+                            {
+                                *l = new_name.clone();
                             }
                         }
                     }
@@ -605,16 +603,16 @@ impl PathType {
                     // we expect, so it is a specialization.
                     let previous_assignment =
                         bindings.insert(unassigned.name.clone(), assigned.clone());
-                    if let Some(previous_assignment) = previous_assignment {
-                        if &previous_assignment != assigned {
-                            tracing::trace!(
-                                "Type parameter `{:?}` was already assigned to `{:?}` but is now being assigned to `{:?}`",
-                                unassigned,
-                                previous_assignment,
-                                assigned
-                            );
-                            return false;
-                        }
+                    if let Some(previous_assignment) = previous_assignment
+                        && &previous_assignment != assigned
+                    {
+                        tracing::trace!(
+                            "Type parameter `{:?}` was already assigned to `{:?}` but is now being assigned to `{:?}`",
+                            unassigned,
+                            previous_assignment,
+                            assigned
+                        );
+                        return false;
                     }
                 }
                 (TypeParameter(concrete_arg_type), TypeParameter(templated_arg_type)) => {

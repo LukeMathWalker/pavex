@@ -1,7 +1,7 @@
 # Contributing Guide
 
-This library relies on PostgreSQL, MySQL and SQLite for integration tests.  
-Before running the test suite, you must have both databases up and running locally.
+This library relies on PostgreSQL, MySQL and SQLite for integration tests.\
+Before running the test suite, you must have the first two databases up and running.
 
 ---
 
@@ -14,7 +14,7 @@ Before running the test suite, you must have both databases up and running local
 
 ## Running the Test Databases
 
-We provide a `docker-compose.yml` that starts both Postgres and MySQL with predictable settings.  
+We provide a `docker-compose.yml` that starts both Postgres and MySQL with predictable settings.
 
 Start the services:
 

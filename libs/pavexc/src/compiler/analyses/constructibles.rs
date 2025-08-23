@@ -200,10 +200,10 @@ impl ConstructibleDb {
                     continue;
                 };
                 // TODO: do we need this?
-                if let Some(id) = framework_items_db.get_id(input) {
-                    if let Lifecycle::RequestScoped = framework_items_db.lifecycle(id) {
-                        continue;
-                    }
+                if let Some(id) = framework_items_db.get_id(input)
+                    && let Lifecycle::RequestScoped = framework_items_db.lifecycle(id)
+                {
+                    continue;
                 }
 
                 // Both `T` and `&T` are always constructibles, when looking at generic constructors that take them
@@ -477,16 +477,15 @@ impl ConstructibleDb {
             for input_type in component.input_types().iter() {
                 if let Some((input_constructor_id, _)) =
                     self.get(component_scope, input_type, component_db.scope_graph())
+                    && component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped
                 {
-                    if component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped {
-                        Self::singleton_must_not_depend_on_request_scoped(
-                            component_id,
-                            input_constructor_id,
-                            component_db,
-                            computation_db,
-                            diagnostics,
-                        )
-                    }
+                    Self::singleton_must_not_depend_on_request_scoped(
+                        component_id,
+                        input_constructor_id,
+                        component_db,
+                        computation_db,
+                        diagnostics,
+                    )
                 }
             }
         }
@@ -584,10 +583,10 @@ impl ConstructibleDb {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
-            if let Some(constructibles) = self.scope_id2constructibles.get(&scope_id) {
-                if let Some(output) = constructibles.get(type_) {
-                    return Some(output);
-                }
+            if let Some(constructibles) = self.scope_id2constructibles.get(&scope_id)
+                && let Some(output) = constructibles.get(type_)
+            {
+                return Some(output);
             }
             fifo.extend(scope_id.direct_parent_ids(scope_graph));
         }
@@ -634,15 +633,15 @@ impl ConstructibleDb {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
-            if let Some(constructibles) = self.scope_id2constructibles.get_mut(&scope_id) {
-                if let Some(output) = constructibles.get_or_try_bind(
+            if let Some(constructibles) = self.scope_id2constructibles.get_mut(&scope_id)
+                && let Some(output) = constructibles.get_or_try_bind(
                     type_,
                     component_db,
                     computation_db,
                     framework_item_db,
-                ) {
-                    return Some(output);
-                }
+                )
+            {
+                return Some(output);
             }
             fifo.extend(scope_id.direct_parent_ids(component_db.scope_graph()));
         }

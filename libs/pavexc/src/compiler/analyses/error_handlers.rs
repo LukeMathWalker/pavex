@@ -73,10 +73,10 @@ impl ErrorHandlersDb {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
-            if let Some(handlers) = self.scope_id2error_handlers.get_mut(&scope_id) {
-                if let Some(output) = handlers.get_or_try_bind(type_) {
-                    return Some(output);
-                }
+            if let Some(handlers) = self.scope_id2error_handlers.get_mut(&scope_id)
+                && let Some(output) = handlers.get_or_try_bind(type_)
+            {
+                return Some(output);
             }
             fifo.extend(scope_id.direct_parent_ids(component_db.scope_graph()));
         }

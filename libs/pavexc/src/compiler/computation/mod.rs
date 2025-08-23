@@ -58,7 +58,7 @@ impl Computation<'_> {
     }
 
     /// The types required as input parameters by this computation.
-    pub fn input_types(&self) -> Cow<[ResolvedType]> {
+    pub fn input_types(&self) -> Cow<'_, [ResolvedType]> {
         match self {
             Computation::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
             Computation::MatchResult(m) => Cow::Owned(vec![m.input.clone()]),

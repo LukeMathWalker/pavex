@@ -40,10 +40,10 @@ where
     ) {
         let span = ctx.span(id).unwrap();
         let mut keep = false;
-        if let Some(parent) = span.parent() {
-            if parent.extensions().get::<Keep>().is_some() {
-                keep = true;
-            }
+        if let Some(parent) = span.parent()
+            && parent.extensions().get::<Keep>().is_some()
+        {
+            keep = true;
         }
 
         if !keep {

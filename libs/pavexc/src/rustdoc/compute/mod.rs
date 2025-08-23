@@ -140,17 +140,17 @@ where
             }
         }
 
-        if let Some(shell) = SHELL.get() {
-            if let Ok(mut shell) = shell.lock() {
-                for (package_id, _) in chunk.iter() {
-                    let Ok(package_metadata) = package_graph.metadata(package_id) else {
-                        continue;
-                    };
-                    let _ = shell.status(
-                        "Documenting",
-                        format!("{}@{}", package_metadata.name(), package_metadata.version()),
-                    );
-                }
+        if let Some(shell) = SHELL.get()
+            && let Ok(mut shell) = shell.lock()
+        {
+            for (package_id, _) in chunk.iter() {
+                let Ok(package_metadata) = package_graph.metadata(package_id) else {
+                    continue;
+                };
+                let _ = shell.status(
+                    "Documenting",
+                    format!("{}@{}", package_metadata.name(), package_metadata.version()),
+                );
             }
         }
         let timer = std::time::Instant::now();
@@ -162,22 +162,22 @@ where
         );
 
         let duration = timer.elapsed();
-        if let Some(shell) = SHELL.get() {
-            if let Ok(mut shell) = shell.lock() {
-                for (package_id, _) in chunk.iter() {
-                    let Ok(package_metadata) = package_graph.metadata(package_id) else {
-                        continue;
-                    };
-                    let _ = shell.status(
-                        "Documented",
-                        format!(
-                            "{}@{} in {:.3} seconds",
-                            package_metadata.name(),
-                            package_metadata.version(),
-                            duration.as_secs_f32()
-                        ),
-                    );
-                }
+        if let Some(shell) = SHELL.get()
+            && let Ok(mut shell) = shell.lock()
+        {
+            for (package_id, _) in chunk.iter() {
+                let Ok(package_metadata) = package_graph.metadata(package_id) else {
+                    continue;
+                };
+                let _ = shell.status(
+                    "Documented",
+                    format!(
+                        "{}@{} in {:.3} seconds",
+                        package_metadata.name(),
+                        package_metadata.version(),
+                        duration.as_secs_f32()
+                    ),
+                );
             }
         }
 
@@ -348,16 +348,16 @@ fn load_json_docs(
         }
         Err(e) => {
             // Reset the reader to the beginning of the file.
-            if reader.seek(SeekFrom::Start(0)).is_ok() {
-                if let Err(format_err) = check_format(reader) {
-                    return Err(format_err).with_context(|| {
+            if reader.seek(SeekFrom::Start(0)).is_ok()
+                && let Err(format_err) = check_format(reader)
+            {
+                return Err(format_err).with_context(|| {
                         format!(
                             "The JSON docs at `{}` are not in the expected format. \
                             Are you using the right version of the `nightly` toolchain, `{}`, to generate the JSON docs?",
                             json_path.display(), crate::DEFAULT_DOCS_TOOLCHAIN
                         )
                     });
-                }
             }
 
             Err(e).with_context(|| {

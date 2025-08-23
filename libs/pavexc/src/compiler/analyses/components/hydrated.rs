@@ -22,7 +22,7 @@ pub(crate) enum HydratedComponent<'a> {
 }
 
 impl<'a> HydratedComponent<'a> {
-    pub(crate) fn input_types(&self) -> Cow<[ResolvedType]> {
+    pub(crate) fn input_types(&self) -> Cow<'_, [ResolvedType]> {
         match self {
             HydratedComponent::Constructor(c) => c.input_types(),
             HydratedComponent::RequestHandler(r) => Cow::Borrowed(r.input_types()),

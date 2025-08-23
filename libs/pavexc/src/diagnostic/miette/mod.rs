@@ -5,30 +5,17 @@ use pavex_cli_diagnostic::AnnotatedSource;
 /// We might eventually want to upstream them.
 pub trait SourceSpanExt {
     fn labeled(self, label_msg: String) -> LabeledSpan;
-    fn unlabeled(self) -> LabeledSpan;
     fn shift(self, offset: usize) -> SourceSpan;
 }
 
 /// Helper methods to reduce boilerplate when working with an optional [`miette::SourceSpan`].
 pub trait OptionalSourceSpanExt {
     fn labeled(self, label_msg: String) -> Option<LabeledSpan>;
-    #[allow(unused)]
-    fn unlabeled(self) -> Option<LabeledSpan>;
-    #[allow(unused)]
-    fn shift(self, offset: usize) -> Option<SourceSpan>;
 }
 
 impl OptionalSourceSpanExt for Option<SourceSpan> {
     fn labeled(self, label_msg: String) -> Option<LabeledSpan> {
         self.map(|s| s.labeled(label_msg))
-    }
-
-    fn unlabeled(self) -> Option<LabeledSpan> {
-        self.map(|s| s.unlabeled())
-    }
-
-    fn shift(self, offset: usize) -> Option<SourceSpan> {
-        self.map(|s| s.shift(offset))
     }
 }
 
@@ -61,10 +48,6 @@ impl OptionalLabeledSpanExt for Option<LabeledSpan> {
 impl SourceSpanExt for SourceSpan {
     fn labeled(self, label_msg: String) -> LabeledSpan {
         LabeledSpan::new_with_span(Some(label_msg), self)
-    }
-
-    fn unlabeled(self) -> LabeledSpan {
-        LabeledSpan::new_with_span(None, self)
     }
 
     fn shift(self, offset: usize) -> SourceSpan {
