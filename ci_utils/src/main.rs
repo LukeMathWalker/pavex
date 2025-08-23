@@ -42,6 +42,7 @@ fn main() {
         ("example_steps", "job_steps/example.jinja"),
         ("build_pxh_steps", "job_steps/build_pxh.jinja"),
         ("is_up_to_date_steps", "job_steps/is_up_to_date.jinja"),
+        ("single_lib_tests_steps", "job_steps/single_lib_tests.jinja"),
         ("tests_steps", "job_steps/tests.jinja"),
         ("macro_tests_steps", "job_steps/macro_tests.jinja"),
         ("ui_tests_steps", "job_steps/ui_tests.jinja"),
@@ -61,6 +62,45 @@ fn main() {
     }
     env.add_function("pavex_path", pavex_path);
     env.add_function("pavexc_path", pavexc_path);
+
+    // Process library crates with service dependencies
+    let libs_with_deps = {
+        // Find all directories under `libs` with a `.github/services.yml` file inside.
+        let entries = std::fs::read_dir("../libs").expect("Failed to find the libs folder");
+        let mut libs_with_deps = vec![];
+        for entry in entries {
+            let Ok(entry) = entry else {
+                continue;
+            };
+            let type_ = entry.file_type().expect("Failed to get file type");
+            if !type_.is_dir() {
+                continue;
+            }
+            let name = entry.file_name().into_string().expect("Non UTF-8 dir name");
+            let services = entry.path().join(".github").join("services.yml");
+            let services = std::fs::read_to_string(services).ok();
+            if let Some(services) = services {
+                let library = LibraryCrateWithDeps { name, services };
+                libs_with_deps.push(library);
+            }
+        }
+        libs_with_deps
+    };
+    let exclude_libs_with_deps = libs_with_deps
+        .iter()
+        .map(|lib| format!("--exclude=\"{}\"", lib.name))
+        .collect::<Vec<String>>()
+        .join(" ");
+    env.add_global(
+        "libs_with_deps",
+        libs_with_deps
+            .into_iter()
+            .map(|l| minijinja::Value::from_object(l))
+            .collect::<Vec<_>>(),
+    );
+    env.add_global("exclude_libs_with_deps", exclude_libs_with_deps);
+
+    // Process examples
     let examples = {
         let entries = std::fs::read_dir("../examples").expect("Failed to find the examples folder");
         let mut examples = vec![];
@@ -89,6 +129,7 @@ fn main() {
         examples
     };
     env.add_global("examples", examples);
+
     let output = env
         .get_template("ci")
         .unwrap()
@@ -122,5 +163,30 @@ impl Object for Example {
 
     fn enumerate(self: &Arc<Self>) -> Enumerator {
         Enumerator::Str(&["name", "services", "pre_steps"])
+    }
+}
+
+#[derive(Debug, Clone)]
+/// A library crate that requires one or more services to be up and running
+/// in order to execute its tests.
+///
+/// E.g. a Postgres-based session store backend will require a Postgres database
+/// to be up and running.
+pub struct LibraryCrateWithDeps {
+    pub name: String,
+    pub services: String,
+}
+
+impl Object for LibraryCrateWithDeps {
+    fn get_value(self: &Arc<Self>, key: &minijinja::Value) -> Option<minijinja::Value> {
+        key.as_str().and_then(|key| match key {
+            "name" => Some(minijinja::Value::from_safe_string(self.name.clone())),
+            "services" => Some(minijinja::Value::from_safe_string(self.services.clone())),
+            _ => None,
+        })
+    }
+
+    fn enumerate(self: &Arc<Self>) -> Enumerator {
+        Enumerator::Str(&["name", "services"])
     }
 }
