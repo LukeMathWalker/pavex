@@ -26,7 +26,7 @@ fn test_unknown_pavex_attribute() {
 fn test_invalid_constructor_lifecycle() {
     let err =
         parse(r#"#[diagnostic::pavex::constructor(id = "B", lifecycle = "worker")]"#).unwrap_err();
-    insta::assert_snapshot!(err, @"Unknown literal value `worker` at lifecycle for `pavex::diagnostic::constructor` attribute");
+    insta::assert_snapshot!(err, @"Unknown value: `worker`. Available values: `request_scoped`, `singleton`, `transient` at lifecycle for `pavex::diagnostic::constructor` attribute");
 }
 
 #[test]
@@ -51,5 +51,5 @@ fn test_unknown_property_for_constructor() {
     let err =
         parse(r#"#[diagnostic::pavex::constructor(id = "B", lifecycle = "singleton", beautiful)]"#)
             .unwrap_err();
-    insta::assert_snapshot!(err, @"Unknown field: `beautiful` for `pavex::diagnostic::constructor` attribute");
+    insta::assert_snapshot!(err, @"Unknown field: `beautiful`. Available values: `allow_error_fallback`, `allow_unused`, `cloning_policy`, `id`, `lifecycle` for `pavex::diagnostic::constructor` attribute");
 }
