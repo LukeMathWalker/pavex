@@ -77,7 +77,17 @@ jobs:
       <% set job_name %>Run tests (<<- target >>)<% endset %>
       <%- from 'tests_steps' import output -%>
       <<- output | indent(4) >>
-
+  <% for lib in libs_with_deps %>
+  tests_<<lib.name>>_<<- target >>:
+    name: "Tests for `<< lib.name >>` (<<- target >>)"
+    runs-on: << os >>
+    << lib.services | indent(4) >>
+    needs:
+      - build_clis_<<- target >>
+      <% set job_name %>Tests << lib.name >> (<<- target >>)<% endset %>
+      <%- from 'single_lib_tests_steps' import output -%>
+      <<- output | indent(4) >>
+  <% endfor %>
   ui_tests_<<- target >>:
     name: "Run UI tests (<<- target >>)"
     runs-on: << os >>
