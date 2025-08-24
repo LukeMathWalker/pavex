@@ -16,7 +16,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       # Check https://docs.rs/cargo-hakari/0.9.29/cargo_hakari/#installation
       # to learn how to install cargo-hakari locally
