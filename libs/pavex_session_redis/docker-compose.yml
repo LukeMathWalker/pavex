@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:8
+    container_name: test-pavex-session-redis
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    name: test-session-redis
