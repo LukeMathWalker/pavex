@@ -84,6 +84,8 @@ fn main() {
                 libs_with_deps.push(library);
             }
         }
+        // Ensure deterministic order, no matter the underlying filesystem
+        libs_with_deps.sort_by_key(|l| l.name.clone());
         libs_with_deps
     };
     let exclude_libs_with_deps = libs_with_deps
@@ -101,7 +103,7 @@ fn main() {
     env.add_global("exclude_libs_with_deps", exclude_libs_with_deps);
 
     // Process examples
-    let examples = {
+    let examples: Vec<_> = {
         let entries = std::fs::read_dir("../examples").expect("Failed to find the examples folder");
         let mut examples = vec![];
         for entry in entries {
@@ -120,13 +122,18 @@ fn main() {
             let services = std::fs::read_to_string(services).ok();
             let pre_steps = entry.path().join(".github").join("pre_steps.yml");
             let pre_steps = std::fs::read_to_string(pre_steps).ok();
-            examples.push(minijinja::Value::from_object(Example {
+            examples.push(Example {
                 name,
                 services,
                 pre_steps,
-            }))
+            })
         }
+        // Ensure deterministic order, no matter the underlying filesystem
+        examples.sort_by_key(|v| v.name.clone());
         examples
+            .into_iter()
+            .map(|e| minijinja::Value::from_object(e))
+            .collect()
     };
     env.add_global("examples", examples);
 
