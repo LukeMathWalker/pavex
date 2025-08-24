@@ -1,26 +1,29 @@
 use pavex_session::store::{SessionRecordRef, SessionStorageBackend};
 use pavex_session::{SessionId, store::errors::*};
 use pavex_session_redis::{RedisSessionStore, RedisSessionStoreConfig};
+use redis::aio::ConnectionManager;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::time::Duration;
 
-async fn create_test_store() -> RedisSessionStore {
-    let client = redis::Client::open("redis://localhost:6379").unwrap();
-    let conn = tokio::time::timeout(
+async fn test_redis_connection() -> ConnectionManager {
+    let client = redis::Client::open("redis://127.0.0.1:56379").unwrap();
+    tokio::time::timeout(
         Duration::from_secs(2),
         redis::aio::ConnectionManager::new(client),
     )
     .await
     .expect("Failed to connect to Redis within 2 seconds - is Redis running on localhost:6379?")
-    .unwrap();
+    .unwrap()
+}
 
+async fn test_store() -> RedisSessionStore {
     // Use random namespace to avoid test collisions
     let config = RedisSessionStoreConfig {
         namespace: Some(format!("test_{}", uuid::Uuid::new_v4())),
     };
 
-    RedisSessionStore::new(conn, config)
+    RedisSessionStore::new(test_redis_connection().await, config)
 }
 
 fn create_test_record(
@@ -53,7 +56,7 @@ fn create_test_record(
 
 #[tokio::test]
 async fn test_create_and_load_roundtrip() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, state) = create_test_record(3600);
 
     let record = SessionRecordRef {
@@ -90,7 +93,7 @@ async fn test_create_and_load_roundtrip() {
 
 #[tokio::test]
 async fn test_update_roundtrip() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, mut state) = create_test_record(3600);
 
     let record = SessionRecordRef {
@@ -153,7 +156,7 @@ async fn test_update_roundtrip() {
 
 #[tokio::test]
 async fn test_ttl_expiry() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, state) = create_test_record(1);
 
     let record = SessionRecordRef {
@@ -178,7 +181,7 @@ async fn test_ttl_expiry() {
 
 #[tokio::test]
 async fn test_update_ttl_roundtrip() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, state) = create_test_record(3600);
 
     let record = SessionRecordRef {
@@ -212,7 +215,7 @@ async fn test_update_ttl_roundtrip() {
 
 #[tokio::test]
 async fn test_delete_roundtrip() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, state) = create_test_record(3600);
 
     let record = SessionRecordRef {
@@ -237,7 +240,7 @@ async fn test_delete_roundtrip() {
 
 #[tokio::test]
 async fn test_change_id_roundtrip() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (old_session_id, state) = create_test_record(3600);
     let new_session_id = SessionId::random();
 
@@ -278,7 +281,7 @@ async fn test_change_id_roundtrip() {
 
 #[tokio::test]
 async fn test_concurrent_operations() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let mut handles = vec![];
 
     // Create multiple concurrent sessions
@@ -333,17 +336,8 @@ async fn test_concurrent_operations() {
 
 #[tokio::test]
 async fn test_namespace_isolation() {
-    // Connect to redis
-    let client = redis::Client::open("redis://localhost:6379").unwrap();
-    let conn = tokio::time::timeout(
-        Duration::from_secs(2),
-        redis::aio::ConnectionManager::new(client),
-    )
-    .await
-    .expect("Failed to connect to Redis within 2 seconds - is Redis running on localhost:6379?")
-    .unwrap();
-
     // Create stores with different namespaces
+    let conn = test_redis_connection().await;
     let store_a = RedisSessionStore::new(
         conn.clone(),
         RedisSessionStoreConfig {
@@ -397,7 +391,7 @@ async fn test_namespace_isolation() {
 
 #[tokio::test]
 async fn test_create_duplicate_id_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, state) = create_test_record(3600);
 
     let record = SessionRecordRef {
@@ -447,7 +441,7 @@ async fn test_create_duplicate_id_error() {
 
 #[tokio::test]
 async fn test_update_unknown_id_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let non_existent_id = SessionId::random();
     let (_, state) = create_test_record(3600);
 
@@ -470,7 +464,7 @@ async fn test_update_unknown_id_error() {
 
 #[tokio::test]
 async fn test_update_ttl_unknown_id_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let non_existent_id = SessionId::random();
 
     // Try to update TTL for a session that doesn't exist
@@ -489,7 +483,7 @@ async fn test_update_ttl_unknown_id_error() {
 
 #[tokio::test]
 async fn test_delete_unknown_id_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let non_existent_id = SessionId::random();
 
     // Try to delete a session that doesn't exist
@@ -506,7 +500,7 @@ async fn test_delete_unknown_id_error() {
 
 #[tokio::test]
 async fn test_change_id_unknown_old_id_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let non_existent_old_id = SessionId::random();
     let new_id = SessionId::random();
 
@@ -524,7 +518,7 @@ async fn test_change_id_unknown_old_id_error() {
 
 #[tokio::test]
 async fn test_change_id_duplicate_new_id_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id_1, state_1) = create_test_record(3600);
     let (session_id_2, state_2) = create_test_record(3600);
 
@@ -559,7 +553,7 @@ async fn test_change_id_duplicate_new_id_error() {
 
 #[tokio::test]
 async fn test_operations_on_expired_session() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let (session_id, state) = create_test_record(1);
 
     let record = SessionRecordRef {
@@ -637,7 +631,7 @@ async fn test_operations_on_expired_session() {
 
 #[tokio::test]
 async fn test_serialization_error() {
-    let store = create_test_store().await;
+    let store = test_store().await;
     let session_id = SessionId::random();
 
     // Create a problematic state that might cause serialization issues

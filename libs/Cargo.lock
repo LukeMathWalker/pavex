@@ -2815,7 +2815,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_redis"
-version = "0.1.80"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3543,7 +3543,7 @@ dependencies = [
  "pin-project-lite",
  "ryu",
  "sha1_smol",
- "socket2",
+ "socket2 0.5.10",
  "tokio",
  "tokio-util",
  "url",

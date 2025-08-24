@@ -1,11 +1,10 @@
+#![deny(missing_docs)]
+//! A Redis-based session store for [`pavex_session`](https://crates.io/crates/pavex_session),
+//! implemented using the [`redis`](https://crates.io/crates/redis) crate.
 use anyhow::Context;
-use pavex::blueprint::{
-    Blueprint, config::ConfigType, constructor::Constructor, linter::Lint,
-    middleware::PostProcessingMiddleware,
-};
-use pavex::f;
+use pavex::{config, methods};
 use pavex_session::{
-    SessionId,
+    SessionId, SessionStore,
     store::{
         SessionRecord, SessionRecordRef, SessionStorageBackend,
         errors::{
@@ -15,13 +14,20 @@ use pavex_session::{
     },
 };
 use redis::{AsyncCommands, ExistenceCheck, SetExpiry, SetOptions, Value, aio::ConnectionManager};
-use serde;
 use std::num::NonZeroUsize;
 
+#[config(key = "redis_session_store", default_if_missing)]
 #[derive(Clone, Debug, Default, serde::Deserialize)]
 /// Configuration options for the Redis session store.
 pub struct RedisSessionStoreConfig {
     /// Optional namespace prefix for Redis keys. When set, all session keys will be prefixed with this value.
+    ///
+    /// Namespacing allows multiple applications to share the same Redis instance without interfering with each other.
+    ///
+    /// # Example
+    ///
+    /// If `namespace` is set to `myapp` and the session key is `12345`, then
+    /// the session state will be stored in Redis using the key `myapp:12345`.
     #[serde(default)]
     pub namespace: Option<String>,
 }
@@ -36,30 +42,42 @@ pub struct RedisSessionStoreConfig {
 /// is `Some`, then all session keys are stored prefixed with this string, allowing multiple applications
 /// to share the same Redis instance.
 pub struct RedisSessionStore {
-    conn: ConnectionManager,
-    cfg: RedisSessionStoreConfig,
+    connection: ConnectionManager,
+    config: RedisSessionStoreConfig,
+}
+
+#[methods]
+impl From<RedisSessionStore> for SessionStore {
+    #[singleton]
+    fn from(s: RedisSessionStore) -> Self {
+        SessionStore::new(s)
+    }
 }
 
 impl std::fmt::Debug for RedisSessionStore {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RedisSessionStore")
-            .field("conn", &"<ConnectionManager>")
-            .field("cfg", &format_args!("{:?}", self.cfg))
+            .field("connection", &"<ConnectionManager>")
+            .field("config", &self.config)
             .finish()
     }
 }
 
+#[methods]
 impl RedisSessionStore {
     /// Creates a new Redis session store instance.
     ///
-    /// It requires a redis::ConnectionManager instance to interact with redis.
-    pub fn new(conn: ConnectionManager, cfg: RedisSessionStoreConfig) -> Self {
-        Self { conn, cfg }
+    /// You must provide a connection as well as configuration.
+    #[singleton]
+    pub fn new(connection: ConnectionManager, config: RedisSessionStoreConfig) -> Self {
+        Self { connection, config }
     }
+}
 
+impl RedisSessionStore {
     fn redis_key(&self, id: &SessionId) -> String {
-        if let Some(namespace) = &self.cfg.namespace {
-            format!("{}:{}", namespace, id.inner().to_string())
+        if let Some(namespace) = &self.config.namespace {
+            format!("{}:{}", namespace, id.inner())
         } else {
             id.inner().to_string()
         }
@@ -104,7 +122,7 @@ impl SessionStorageBackend for RedisSessionStore {
         record: SessionRecordRef<'_>,
     ) -> Result<(), CreateError> {
         match self
-            .conn
+            .connection
             .clone()
             .set_options(
                 self.redis_key(id),
@@ -135,7 +153,7 @@ impl SessionStorageBackend for RedisSessionStore {
         record: SessionRecordRef<'_>,
     ) -> Result<(), UpdateError> {
         match self
-            .conn
+            .connection
             .clone()
             .set_options(
                 self.redis_key(id),
@@ -166,7 +184,7 @@ impl SessionStorageBackend for RedisSessionStore {
         ttl: std::time::Duration,
     ) -> Result<(), UpdateTtlError> {
         let k = self.redis_key(id);
-        let mut conn = self.conn.clone();
+        let mut conn = self.connection.clone();
         match redis::pipe()
             .cmd("EXISTS")
             .arg(&k)
@@ -183,7 +201,7 @@ impl SessionStorageBackend for RedisSessionStore {
                 "Session key exists but redis failed to update TTL"
             ))),
             (0, 1) => Err(UpdateTtlError::Other(anyhow::anyhow!(
-                "Unexpected reply from redis: redis should not report succesfully setting ttl for non-existent key"
+                "Unexpected reply from redis: redis should not report successfully setting ttl for non-existent key"
             ))),
             (v, w) => Err(UpdateTtlError::Other(anyhow::anyhow!(
                 "Unexpected reply from redis: EXISTS and EXPIRE only return 0 or 1. EXIST returned {:?}, EXPIRE returned {:?}",
@@ -200,7 +218,7 @@ impl SessionStorageBackend for RedisSessionStore {
     /// returned.
     #[tracing::instrument(name = "Load server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn load(&self, session_id: &SessionId) -> Result<Option<SessionRecord>, LoadError> {
-        let mut conn = self.conn.clone();
+        let mut conn = self.connection.clone();
         let k = self.redis_key(session_id);
         let (ttl_reply, get_reply): (Value, Value) = redis::pipe()
             .cmd("TTL")
@@ -248,7 +266,7 @@ impl SessionStorageBackend for RedisSessionStore {
     #[tracing::instrument(name = "Delete server-side session record", level = tracing::Level::INFO, skip_all)]
     async fn delete(&self, id: &SessionId) -> Result<(), DeleteError> {
         let ndeleted: u64 = self
-            .conn
+            .connection
             .clone()
             .del(self.redis_key(id))
             .await
@@ -282,7 +300,7 @@ impl SessionStorageBackend for RedisSessionStore {
         "#;
 
         let script = redis::Script::new(LUA_RENAME_IF_EXISTS);
-        let mut conn = self.conn.clone();
+        let mut conn = self.connection.clone();
         let old_key = self.redis_key(old_id);
         let new_key = self.redis_key(new_id);
         let result: i32 = script
@@ -314,67 +332,3 @@ impl SessionStorageBackend for RedisSessionStore {
         Ok(0)
     }
 }
-
-pub struct RedisSessionKit {
-    pub session: Option<Constructor>,
-    pub incoming_session: Option<Constructor>,
-    pub session_config: Option<ConfigType>,
-    pub redis_session_store: Option<Constructor>,
-    pub session_store: Option<Constructor>,
-    pub session_finalizer: Option<PostProcessingMiddleware>,
-}
-
-impl Default for RedisSessionKit {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RedisSessionKit {
-    pub fn new() -> Self {
-        let pavex_session::SessionKit {
-            session,
-            session_config,
-            session_finalizer,
-            incoming_session,
-            ..
-        } = pavex_session::SessionKit::new();
-        Self {
-            session,
-            incoming_session,
-            session_config,
-            session_finalizer,
-            redis_session_store: Some(
-                Constructor::singleton(f!(crate::RedisSessionStore::new)).ignore(Lint::Unused),
-            ),
-            session_store: Some(
-                Constructor::singleton(f!(pavex_session::SessionStore::new::<
-                    crate::RedisSessionStore,
-                >))
-                .ignore(Lint::Unused),
-            ),
-        }
-    }
-
-    pub fn register(self, bp: &mut Blueprint) -> RegisteredRedisSessionKit {
-        let mut kit = pavex_session::SessionKit::new();
-        kit.session = self.session;
-        kit.incoming_session = self.incoming_session;
-        kit.session_config = self.session_config;
-        kit.session_finalizer = self.session_finalizer;
-        kit.register(bp);
-        if let Some(redis_session_store) = self.redis_session_store {
-            redis_session_store.register(bp);
-        }
-        if let Some(session_store) = self.session_store {
-            session_store.register(bp);
-        }
-
-        RegisteredRedisSessionKit {}
-    }
-}
-
-#[derive(Clone, Debug)]
-#[non_exhaustive]
-/// The type returned by [`RedisSessionKit::register`].
-pub struct RegisteredRedisSessionKit {}
