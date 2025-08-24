@@ -29,6 +29,7 @@ crypto-common = { version = "0.1", default-features = false, features = ["getran
 darling_core = { version = "0.21", default-features = false, features = ["suggestions"] }
 digest = { version = "0.10", features = ["mac", "oid", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
+fastrand = { version = "2" }
 fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
@@ -50,6 +51,8 @@ libsqlite3-sys = { version = "0.30", features = ["bundled", "unlock_notify"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
+num-bigint = { version = "0.4" }
+num-integer = { version = "0.1", default-features = false, features = ["i128", "std"] }
 num-traits = { version = "0.2", features = ["i128", "libm"] }
 once_cell = { version = "1" }
 percent-encoding = { version = "2" }
@@ -104,6 +107,7 @@ crypto-common = { version = "0.1", default-features = false, features = ["getran
 darling_core = { version = "0.21", default-features = false, features = ["suggestions"] }
 digest = { version = "0.10", features = ["mac", "oid", "std"] }
 either = { version = "1", features = ["serde", "use_std"] }
+fastrand = { version = "2" }
 fixedbitset = { version = "0.5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
@@ -125,6 +129,8 @@ libsqlite3-sys = { version = "0.30", features = ["bundled", "unlock_notify"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
+num-bigint = { version = "0.4" }
+num-integer = { version = "0.1", default-features = false, features = ["i128", "std"] }
 num-traits = { version = "0.2", features = ["i128", "libm"] }
 once_cell = { version = "1" }
 percent-encoding = { version = "2" }
