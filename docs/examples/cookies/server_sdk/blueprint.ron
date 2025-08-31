@@ -25,7 +25,7 @@
                 id: "INJECT_RESPONSE_COOKIES",
                 created_at: (
                     package_name: "pavex",
-                    package_version: "0.1.80",
+                    package_version: "0.2.4",
                 ),
                 macro_name: "post_process",
             ),

@@ -10,6 +10,7 @@ struct ServerState {
 pub struct ApplicationConfig {
     #[serde(default)]
     pub cookies: biscotti::ProcessorConfig,
+    #[serde(default)]
     pub session: pavex_session::SessionConfig,
 }
 pub struct ApplicationState {
