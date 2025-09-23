@@ -23,3 +23,5 @@ As a rule of thumb:
 | No  | No            | Sync          | You can also make it asynchronous, it doesn't matter.                                                                              |
 
 Check out [Alice Rhyl's excellent article](https://ryhl.io/blog/async-what-is-blocking/) to learn more about what "blocking" means in the world of asynchronous Rust.
+
+[spawn_blocking]: https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
