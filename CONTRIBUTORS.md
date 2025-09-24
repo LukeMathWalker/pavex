@@ -19,3 +19,4 @@ We contributors to Pavex:
 - Leon Qadirie (@leonqadirie)
 - Oliver Barnes (@oliverbarnes)
 - Joe Hasson (@joehasson)
+- Peter Wischer (@peddermaster2)
