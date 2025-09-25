@@ -1,5 +1,6 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
+use pavex_cli::activation::CONSOLE_URL;
 use pavex_cli_diagnostic::AnyhowBridge;
 use pavex_cli_shell::{SHELL, ShellExt, try_init_shell};
 use std::io::{ErrorKind, IsTerminal};
@@ -393,12 +394,15 @@ fn activate(
                     format!(
                         "Welcome to Pavex's beta program! Please enter your {}.\n{}",
                         "activation key".bold().green(),
-                        "You can provision an activation key at {CONSOLE_URL}\n".dimmed()
+                        format!("You can provision an activation key at {}\n", CONSOLE_URL)
+                            .dimmed()
                     )
                 } else {
-                    "Welcome to Pavex's beta program! Please enter your activation key.\n\
-                    You can provision an activation key at {CONSOLE_URL}\n"
-                        .to_string()
+                    format!(
+                        "Welcome to Pavex's beta program! Please enter your activation key.\n\
+                        You can provision an activation key at {}\n",
+                        CONSOLE_URL
+                    )
                 };
                 let attempt = Secret::new(
                     mandatory_question(&question).context("Failed to read activation key")?,
