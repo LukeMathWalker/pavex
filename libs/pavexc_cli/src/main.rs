@@ -346,22 +346,6 @@ fn _main(cli: Cli) -> Result<ExitCode, miette::Error> {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-/// The dependencies of this version of `pavexc`.
-struct Deps {
-    /// The toolchain that `pavexc` will use to generate the JSON docs for crates in the
-    /// dependency tree of the current project.
-    docs_toolchain: ToolchainInfo,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ToolchainInfo {
-    /// The name of the toolchain.
-    ///
-    /// This must be a valid identifier for `rustup toolchain install`.
-    name: String,
-}
-
 #[tracing::instrument("Generate server sdk")]
 fn generate(
     blueprint: PathBuf,
