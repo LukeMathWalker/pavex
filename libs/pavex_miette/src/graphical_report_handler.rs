@@ -150,7 +150,7 @@ impl GraphicalReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
         writeln!(f)?;
@@ -179,7 +179,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         let severity_style = match diagnostic.severity() {
             Some(Severity::Error) | None => self.theme.styles.error,
             Some(Severity::Warning) => self.theme.styles.warning,
@@ -219,7 +219,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         let (severity_style, severity_icon) = match diagnostic.severity() {
             Some(Severity::Error) | None => (
                 self.theme.styles.error,
@@ -297,7 +297,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_help(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_help(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
             let width = self.termwidth.saturating_sub(4);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
@@ -312,7 +312,7 @@ impl GraphicalReportHandler {
     fn render_related(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
@@ -346,7 +346,7 @@ impl GraphicalReportHandler {
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         opt_source: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(source) = opt_source
@@ -944,7 +944,7 @@ impl GraphicalReportHandler {
 }
 
 impl ReportHandler for GraphicalReportHandler {
-    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn debug(&self, diagnostic: &dyn Diagnostic, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
         }
