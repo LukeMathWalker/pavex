@@ -1,0 +1,15 @@
+[package]
+name = "pavex_postgres"
+edition.workspace = true
+description = "First-class integration for PostgreSQL in Pavex"
+keywords = ["pavex", "postgresql", "postgres", "sql", "configuration"]
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+camino = { workspace = true, features = ["serde1"] }
+serde = { workspace = true, features = ["derive"] }
+redact = { workspace = true, features = ["serde"] }
+urlencoding = "2"
