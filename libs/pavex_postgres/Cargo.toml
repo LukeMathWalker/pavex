@@ -12,4 +12,4 @@ version.workspace = true
 camino = { workspace = true, features = ["serde1"] }
 serde = { workspace = true, features = ["derive"] }
 redact = { workspace = true, features = ["serde"] }
-urlencoding = "2"
+pavex = { path = "../pavex", version = "0.2.6" }

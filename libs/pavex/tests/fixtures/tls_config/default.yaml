@@ -1,0 +1,12 @@
+# In YAML format
+crypto_provider:
+  name: aws-lc-rs
+  require_fips: false
+allowed_versions:
+  v1_2: true
+  v1_3: true
+certificate_verification:
+  use_os_verifier: true
+  additional_roots: []
+insecure:
+  skip_verification: false
