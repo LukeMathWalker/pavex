@@ -9,8 +9,8 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-pavex = { version = "0.2.4", path = "../pavex" }
-pavex_session = { version = "0.2.4", path = "../pavex_session" }
+pavex = { version = "0.2.5", path = "../pavex" }
+pavex_session = { version = "0.2.5", path = "../pavex_session" }
 redis = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
