@@ -17,13 +17,16 @@ readme = "README.md"
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 
 [features]
-default = ["server", "server_request_id", "time", "cookie", "config"]
+default = ["server", "server_request_id", "time", "cookie", "config", "rustls_0_23"]
 
 server = ["dep:hyper-util", "dep:socket2", "tokio/net"]
 config = ["dep:figment"]
 cookie = ["dep:biscotti", "time"]
 server_request_id = ["dep:uuid"]
 time = ["dep:jiff"]
+rustls_0_23 = ["dep:rustls", "dep:rustls-pki-types", "dep:rustls-platform-verifier", "dep:base64"]
+tls_crypto_provider_ring = ["rustls?/aws_lc_rs"]
+tls_crypto_provider_aws_lc_rs = ["rustls?/ring"]
 
 [dependencies]
 bytes = { workspace = true }
@@ -73,6 +76,12 @@ type-safe-id = { workspace = true }
 
 # Time facilities
 jiff = { workspace = true, features = ["serde"], optional = true }
+
+# TLS
+rustls = { workspace = true, optional = true }
+rustls-pki-types = { workspace = true, optional = true }
+rustls-platform-verifier = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
 
 tokio = { workspace = true, features = ["sync", "rt", "time"] }
 hyper = { workspace = true, features = ["full"] }

@@ -38,6 +38,7 @@ pub mod time {
     //! It's a re-export of the [`jiff@0.2`](https://docs.rs/jiff/0.2) crate.
     pub use jiff::*;
 }
+pub mod tls;
 
 /// Define a [prebuilt type](https://pavex.dev/docs/guide/dependency_injection/prebuilt_types/).
 ///
