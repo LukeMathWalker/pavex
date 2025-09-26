@@ -12,7 +12,7 @@ edition = "2024"
 repository = "https://github.com/LukeMathWalker/pavex"
 homepage = "https://pavex.dev"
 license = "Apache-2.0"
-version = "0.2.4"
+version = "0.2.5"
 
 [workspace.dependencies]
 vergen-gitcl = { version = "1.0.8", features = ["build"] }

@@ -1307,7 +1307,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2558,7 +2558,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -2606,7 +2606,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -2614,7 +2614,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -2675,7 +2675,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2684,7 +2684,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_deps"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
@@ -2695,7 +2695,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_diagnostic"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "miette",
@@ -2704,7 +2704,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_flock"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2716,7 +2716,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_shell"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
@@ -2724,7 +2724,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "convert_case 0.8.0",
  "darling 0.21.3",
@@ -2740,7 +2740,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_miette"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "miette",
  "owo-colors",
@@ -2754,14 +2754,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_session"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2782,7 +2782,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_memory_store"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "async-trait",
  "pavex",
@@ -2794,7 +2794,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_redis"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2810,7 +2810,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_sqlx"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2829,7 +2829,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2861,7 +2861,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "pavex",
  "tracing",
@@ -2870,7 +2870,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2930,7 +2930,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_attr_parser"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "darling 0.21.3",
  "insta",
@@ -2945,7 +2945,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -2982,7 +2982,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "pavex",
@@ -3039,7 +3039,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "fs-err",
