@@ -12,3 +12,4 @@ tracing = { workspace = true, default-features = true }
 fs-err = { workspace = true }
 sha2 = { workspace = true }
 anyhow = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
