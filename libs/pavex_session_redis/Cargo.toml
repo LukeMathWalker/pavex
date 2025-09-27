@@ -2,7 +2,7 @@
 name = "pavex_session_redis"
 edition.workspace = true
 description = "Session store for `pavex-session` backed by Redis or Redis-compatible databases (e.g. Valkey)."
-keywords = ["pavex", "sessions", "HTTP", "auth", "redis", "valkey"]
+keywords = ["pavex", "sessions", "auth", "redis", "valkey"]
 repository.workspace = true
 homepage.workspace = true
 license.workspace = true
