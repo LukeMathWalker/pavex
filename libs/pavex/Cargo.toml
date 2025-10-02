@@ -13,17 +13,18 @@ repository.workspace = true
 license.workspace = true
 readme = "README.md"
 
-[lints.rust]
-unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
-
 [features]
-default = ["server", "server_request_id", "time", "cookie", "config"]
+default = ["server", "server_request_id", "time", "cookie", "config", "rustls_0_23"]
 
 server = ["dep:hyper-util", "dep:socket2", "tokio/net"]
 config = ["dep:figment"]
 cookie = ["dep:biscotti", "time"]
 server_request_id = ["dep:uuid"]
 time = ["dep:jiff"]
+rustls_0_23 = ["dep:rustls", "dep:rustls-platform-verifier"]
+fips = ["rustls?/fips"]
+tls_crypto_provider_ring = ["rustls?/ring"]
+tls_crypto_provider_aws_lc_rs = ["rustls?/aws_lc_rs"]
 
 [dependencies]
 bytes = { workspace = true }
@@ -46,6 +47,7 @@ persist_if_changed = { path = "../persist_if_changed", version = "0.2.7" }
 
 # Configuration
 figment = { workspace = true, features = ["env", "yaml"], optional = true }
+serde_yaml = { workspace = true }
 
 # Route parameters
 matchit = { workspace = true }
@@ -74,6 +76,10 @@ type-safe-id = { workspace = true }
 # Time facilities
 jiff = { workspace = true, features = ["serde"], optional = true }
 
+# TLS
+rustls = { workspace = true, default-features = false, features = ["std", "tls12", "logging"], optional = true }
+rustls-platform-verifier = { workspace = true, optional = true }
+
 tokio = { workspace = true, features = ["sync", "rt", "time"] }
 hyper = { workspace = true, features = ["full"] }
 hyper-util = { workspace = true, features = [
@@ -93,7 +99,9 @@ tracing = { workspace = true }
 reqwest = { workspace = true }
 itertools = { workspace = true }
 secrecy = { workspace = true, features = ["serde"] }
+serde_yaml = { workspace = true }
 pavex_tracing = { path = "../pavex_tracing" }
+uuid = { workspace = true, features = ["v7", "v4"] }
 
 pavex_macros = { path = "../pavex_macros", features = [
     "allow_unreachable_pub",
