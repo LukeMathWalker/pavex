@@ -37,6 +37,12 @@ pub fn allowed_sys_crates() {
     let allowed_sys_crates = BTreeSet::from([
         "windows-sys",
         "libsqlite3-sys",
+        // It doesn't actually get pulled in, since it's behind an optional feature in `pavex`
+        // that doesn't get activated by the CLI, but tracking that is messy.
+        "aws-lc-rs",
+        "aws-lc-sys",
+        "aws-lc-fips-sys",
+        "clang-sys",
         // We use the `static` feature of `lzma-sys` to avoid linking to the system LZMA library.
         "lzma-sys",
         // Various crates in the ecosystem are not proper "*-sys" crates, but they still

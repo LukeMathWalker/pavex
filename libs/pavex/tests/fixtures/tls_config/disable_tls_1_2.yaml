@@ -1,0 +1,3 @@
+# In YAML format
+allowed_versions:
+  v1_2: false
