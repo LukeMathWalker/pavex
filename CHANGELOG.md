@@ -9,20 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.5](https://github.com/LukeMathWalker/pavex/compare/0.2.4...0.2.5) - 2025-09-26
 
-
 ### ⛰️ Features
+
 - Don't raise an error for malformed request cookies (by @LukeMathWalker) - #526
 - Implement Debug for pavex::Response (by @LukeMathWalker) - #525
 
-
-
 ### 🐛 Bug Fixes
-- Replace '{CONSOLE_URL}' with the concrete URL value before showing the error message to the user (by @LukeMathWalker) - #540
 
+- Replace '{CONSOLE_URL}' with the concrete URL value before showing the error message to the user (by @LukeMathWalker) - #540
 
 ### Contributors
 
-* @LukeMathWalker
+- @LukeMathWalker
 
 ## [0.2.4](https://github.com/LukeMathWalker/pavex/compare/0.2.3...0.2.4) - 2025-08-09
 
