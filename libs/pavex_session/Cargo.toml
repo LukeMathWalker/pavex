@@ -30,3 +30,4 @@ pavex_session_memory_store = { path = "../pavex_session_memory_store" }
 googletest = "0.14.2"
 itertools = { workspace = true }
 insta = { workspace = true }
+tokio = { workspace = true, features = ["rt", "macros"] }
