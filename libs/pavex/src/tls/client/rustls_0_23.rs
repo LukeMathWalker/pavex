@@ -30,11 +30,12 @@ impl TryFrom<&TlsClientPolicyConfig> for ClientConfig {
 
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
-/// The error that can occur in [`TlsClientPolicyConfig::rustls_0_23_config`] when building a `rustls::ClientConfig`.
+/// The error that can occur in [`TlsClientPolicyConfig::rustls_0_23_config`] when building a
+/// [`rustls::ClientConfig`](https://docs.rs/rustls/0.23/rustls/client/struct.ClientConfig.html).
 pub struct Rustls023ConfigError(anyhow::Error);
 
 impl TlsClientPolicyConfig {
-    /// Build a [`rustls::ClientConfig`] according to the specified configuration.
+    /// Build a [`rustls::ClientConfig`](https://docs.rs/rustls/0.23/rustls/client/struct.ClientConfig.html) according to the specified configuration.
     pub fn rustls_0_23_config(&self) -> Result<ClientConfig, Rustls023ConfigError> {
         fn _config(policy: &TlsClientPolicyConfig) -> Result<ClientConfig, anyhow::Error> {
             let provider = Arc::new(crypto_provider(&policy.crypto_provider)?);

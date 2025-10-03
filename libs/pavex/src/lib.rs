@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! # Pavex - API reference
 //!
 //! Welcome to the API reference for Pavex!
@@ -16,9 +17,11 @@ pub use response::{into_response::IntoResponse, response_::Response};
 
 pub mod blueprint;
 #[cfg(feature = "config")]
+#[cfg_attr(docsrs, doc(cfg(feature = "config")))]
 pub mod config;
 pub mod connection;
 #[cfg(feature = "cookie")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cookie")))]
 pub mod cookie;
 pub mod error;
 pub mod http;
@@ -28,10 +31,12 @@ pub mod response;
 pub mod router;
 pub mod serialization;
 #[cfg(feature = "server")]
+#[cfg_attr(docsrs, doc(cfg(feature = "server")))]
 pub mod server;
 pub mod telemetry;
 pub mod unit;
 #[cfg(feature = "time")]
+#[cfg_attr(docsrs, doc(cfg(feature = "time")))]
 pub mod time {
     //! Utilities to work with dates, timestamps and datetimes.
     //!
