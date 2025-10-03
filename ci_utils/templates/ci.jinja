@@ -89,6 +89,14 @@ jobs:
       <% set job_name %>Run tests (<<- target >>)<% endset %>
       <%- from 'tests_steps' import output -%>
       <<- output | indent(4) >>
+  tests_pavex_<<- target >>:
+    name: "Run `pavex` tests (<<- target >>)"
+    runs-on: << os >>
+    needs:
+      - build_clis_<<- target >>
+      <% set job_name %>Run `pavex` tests (<<- target >>)<% endset %>
+      <%- from 'pavex_tests_steps' import output -%>
+      <<- output | indent(4) >>
   ui_tests_<<- target >>:
     name: "Run UI tests (<<- target >>)"
     runs-on: << os >>

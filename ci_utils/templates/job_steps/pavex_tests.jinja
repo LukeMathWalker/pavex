@@ -6,9 +6,10 @@
     components: rustfmt
     rustflags: ""
     cache-workspaces: "./libs -> ./target"
+- uses: taiki-e/install-action@cargo-hack
 <% include 'setup_pavex' %>
-- name: Run tests
+- name: Run Pavex tests with multiple feature combinations
   working-directory: libs
   run: |
-    cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" << exclude_libs_with_deps >>
+    cargo hack -p pavex --feature-powerset --depth 2 test --tests
 <%- endblock %>
