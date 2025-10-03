@@ -57,5 +57,6 @@ jobs:
       - name: Fail if any verification failed
         if: steps.verify_libs.outcome == 'failure' || steps.verify_examples.outcome == 'failure'
         run: |
-          echo "One or more verification steps failed. Check the logs of the previous steps for details."
+          echo "Verify workspace-hack in libs: ${{ steps.verify_libs.outcome }}"
+          echo "Verify workspace-hack in examples: ${{ steps.verify_examples.outcome }}"
           exit 1
