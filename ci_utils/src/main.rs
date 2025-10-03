@@ -45,6 +45,7 @@ fn main() {
         ("single_lib_tests_steps", "job_steps/single_lib_tests.jinja"),
         ("tests_steps", "job_steps/tests.jinja"),
         ("macro_tests_steps", "job_steps/macro_tests.jinja"),
+        ("pavex_tests_steps", "job_steps/pavex_tests.jinja"),
         ("ui_tests_steps", "job_steps/ui_tests.jinja"),
         ("setup_pavex", "setup_pavex.jinja"),
     ];
