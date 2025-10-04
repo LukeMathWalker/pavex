@@ -30,7 +30,7 @@ cargo build --bin pavexc && cargo test
 
 We primarily rely on end-to-end testing to check that Pavex's behaviour meets our expectations. We refer to these end-to-end tests
 as **UI tests**.\
-The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/libs/pavex_test_runner`. The actual UI tests are found under `libs/ui_tests`.
+The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/compiler/pavex_test_runner`. The actual UI tests are found under `libs/ui_tests`.
 
 In a nutshell:
 
@@ -52,7 +52,7 @@ The generated code or the graph diagnostics may not match our expectations.\
 The test runner will save the unexpected output in a file named like the expectation file with an additional `.snap` suffix. You can then choose to update the saved snapshot via our utility CLI:
 
 ```bash
-# It must be run from the root folder of the libs workspace
+# It must be run from the root of the repository
 cargo r --bin snaps
 ```
 
@@ -86,7 +86,7 @@ cargo install --path doc_examples/tutorial_generator
 Then install the `pavexc` binary from path to make sure that any change you made locally is picked up:
 
 ```bash
-cargo install --path libs/pavexc_cli
+cargo install --path pavexc_cli
 ```
 
 Then, to regenerate the snippets:

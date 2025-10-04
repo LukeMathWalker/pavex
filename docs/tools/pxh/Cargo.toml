@@ -1,3 +1,7 @@
+# We don't want to include this generator in
+# the "root" workspace
+[workspace]
+
 [package]
 name = "pxh"
 version = "0.1.0"

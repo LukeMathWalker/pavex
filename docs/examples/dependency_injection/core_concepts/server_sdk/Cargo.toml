@@ -17,6 +17,6 @@ di_core_concepts = { version = "0.1", path = "..", default-features = false }
 http = { version = "1", default-features = false }
 hyper = { version = "1", default-features = false }
 matchit = { version = "0.8", default-features = false }
-pavex = { version = "0.2", path = "../../../../../libs/pavex", default-features = false }
+pavex = { version = "0.2", path = "../../../../../runtime/pavex", default-features = false }
 serde = { version = "1", default-features = false }
 thiserror = { version = "2", default-features = false }

@@ -18,4 +18,4 @@ jobs:
       - name: Spell Check Repo
         uses: crate-ci/typos@v1
         with:
-          config: libs/typos.toml
+          config: typos.toml
