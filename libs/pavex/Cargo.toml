@@ -42,7 +42,6 @@ http-body-util = { workspace = true }
 pin-project-lite = { workspace = true }
 ubyte = { workspace = true, features = ["serde"] }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.7" }
-pavex_reflection = { path = "../pavex_reflection", version = "=0.2.7" }
 persist_if_changed = { path = "../persist_if_changed", version = "0.2.7" }
 
 # Configuration

@@ -21,7 +21,7 @@ use super::{
 use crate::blueprint::RegisteredErrorObserver;
 use crate::blueprint::RegisteredPrebuilt;
 use pavex_bp_schema::Blueprint as BlueprintSchema;
-use pavex_reflection::Location;
+use pavex_bp_schema::Location;
 
 /// The structure of your Pavex application.
 ///
