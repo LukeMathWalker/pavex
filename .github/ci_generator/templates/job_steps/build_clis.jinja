@@ -1,0 +1,18 @@
+<% extends 'steps' %>
+<% block inner_steps %>
+- name: Install Rust
+  uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+- name: Build CLI
+  run: |
+    cargo build --bin pavex --bin pavexc --release
+- name: Store pavex CLI artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: pavex_cli_<< target >>
+    path: target/release/pavex<< binary_extension >>
+- name: Store pavexc CLI artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: pavexc_cli_<< target >>
+    path: target/release/pavexc<< binary_extension >>
+<%- endblock %>

@@ -33,7 +33,6 @@ jobs:
           git config --global user.email "ci@pavex.dev"
       - name: Re-enable workspace hack
         run: |
-          cd libs
           cargo hakari generate
           cargo hakari manage-deps --yes
           git add .

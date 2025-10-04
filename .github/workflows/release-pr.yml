@@ -35,7 +35,6 @@ jobs:
           git config --global user.email "ci@pavex.dev"
       - name: Remove workspace hack from Cargo.toml
         run: |
-          cd libs
           cargo hakari disable
           cargo hakari remove-deps -y
           git add .
@@ -44,8 +43,8 @@ jobs:
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: "release-pr"
-          project_manifest: "libs/Cargo.toml"
-          config: "libs/.release-plz.toml"
+          project_manifest: "Cargo.toml"
+          config: ".release-plz.toml"
         env:
           RUST_LOG: "debug"
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}

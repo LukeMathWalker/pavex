@@ -19,8 +19,8 @@ http = { version = "1", default-features = false }
 hyper = { version = "1", default-features = false }
 jsonwebtoken = { version = "8", default-features = false }
 matchit = { version = "0.8", default-features = false }
-pavex = { version = "0.2", path = "../../../libs/pavex", default-features = false }
-pavex_tracing = { version = "0.2", path = "../../../libs/pavex_tracing", default-features = false }
+pavex = { version = "0.2", path = "../../../runtime/pavex", default-features = false }
+pavex_tracing = { version = "0.2", path = "../../../runtime/pavex_tracing", default-features = false }
 serde = { version = "1", default-features = false }
 sqlx-core = { version = "0.8", default-features = false }
 sqlx-postgres = { version = "0.8", default-features = false }
