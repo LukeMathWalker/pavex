@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
-use pavex_bp_schema::CreatedBy;
-use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
+use pavexc_attr_parser::AnnotationProperties;
 
 /// All the annotated items for a given package.
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -65,26 +64,6 @@ pub struct AnnotatedItem {
     pub properties: AnnotationProperties,
     /// Information about the `impl` block the item belongs to, if any.
     pub impl_: Option<ImplInfo>,
-}
-
-impl AnnotatedItem {
-    /// The name of the macro that was used to attach this annotation.
-    pub fn created_by(&self) -> CreatedBy {
-        let name = match self.properties.kind() {
-            AnnotationKind::PreProcessingMiddleware => "pre_process",
-            AnnotationKind::PostProcessingMiddleware => "post_process",
-            AnnotationKind::WrappingMiddleware => "wrap",
-            AnnotationKind::Constructor => "constructor",
-            AnnotationKind::Config => "config",
-            AnnotationKind::ErrorObserver => "error_observer",
-            AnnotationKind::ErrorHandler => "error_handler",
-            AnnotationKind::Prebuilt => "prebuilt",
-            AnnotationKind::Route => "route",
-            AnnotationKind::Fallback => "fallback",
-            AnnotationKind::Methods => "methods",
-        };
-        CreatedBy::macro_name(name)
-    }
 }
 
 /// Information about the `impl` block the item belongs to, if any.

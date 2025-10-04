@@ -239,7 +239,7 @@ fn _process_blueprint<'a>(
         // If the user hasn't registered one against the top-level blueprint,
         // we use the framework's default one.
         is_root.then(|| Fallback {
-            coordinates: pavex_reflection::AnnotationCoordinates {
+            coordinates: pavex_bp_schema::AnnotationCoordinates {
                 id: "DEFAULT_FALLBACK".into(),
                 created_at: CreatedAt {
                     package_name: "pavex".to_owned(),

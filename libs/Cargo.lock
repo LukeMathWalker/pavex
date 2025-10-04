@@ -2818,7 +2818,6 @@ dependencies = [
  "paste",
  "pavex_bp_schema",
  "pavex_macros",
- "pavex_reflection",
  "pavex_tracing",
  "percent-encoding",
  "persist_if_changed",
@@ -2848,7 +2847,6 @@ dependencies = [
 name = "pavex_bp_schema"
 version = "0.2.7"
 dependencies = [
- "pavex_reflection",
  "serde",
 ]
 
@@ -2993,13 +2991,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pavex_reflection"
-version = "0.2.7"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pavex_session"
 version = "0.2.7"
 dependencies = [
@@ -3138,7 +3129,6 @@ dependencies = [
  "pavex_bp_schema",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
- "pavex_reflection",
  "pavexc_attr_parser",
  "persist_if_changed",
  "petgraph",

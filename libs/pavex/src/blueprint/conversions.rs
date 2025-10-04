@@ -6,8 +6,8 @@ use crate::blueprint::{CloningPolicy, Lifecycle};
 #[track_caller]
 pub(super) fn coordinates2coordinates(
     c: AnnotationCoordinates,
-) -> pavex_reflection::AnnotationCoordinates {
-    pavex_reflection::AnnotationCoordinates {
+) -> pavex_bp_schema::AnnotationCoordinates {
+    pavex_bp_schema::AnnotationCoordinates {
         id: c.id.to_owned(),
         created_at: created_at2created_at(c.created_at),
         macro_name: c.macro_name.to_owned(),
