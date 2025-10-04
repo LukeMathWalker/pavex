@@ -1,0 +1,11 @@
+# We don't want to include this generator in
+# the "root" workspace
+[workspace]
+
+[package]
+name = "ci_utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+minijinja = { version = "2", features = ["custom_syntax"] }

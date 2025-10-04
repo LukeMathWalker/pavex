@@ -1,5 +1,5 @@
 [workspace]
-members = ["cargo:libs/"]
+members = ["cargo:."]
 
 # Config for 'dist'
 [dist]

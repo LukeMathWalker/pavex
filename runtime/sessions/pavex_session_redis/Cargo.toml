@@ -1,0 +1,24 @@
+[package]
+name = "pavex_session_redis"
+edition.workspace = true
+description = "Session store for `pavex-session` backed by Redis or Redis-compatible databases (e.g. Valkey)."
+keywords = ["pavex", "sessions", "auth", "redis", "valkey"]
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+pavex = { workspace = true }
+pavex_session = { workspace = true }
+redis = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+uuid = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }

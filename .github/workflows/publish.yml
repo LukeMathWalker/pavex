@@ -35,8 +35,8 @@ jobs:
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: "release"
-          project_manifest: "libs/Cargo.toml"
-          config: "libs/.release-plz.toml"
+          project_manifest: "Cargo.toml"
+          config: ".release-plz.toml"
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           RUST_LOG: "debug"

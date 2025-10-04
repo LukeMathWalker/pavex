@@ -18,19 +18,18 @@ Anything beyond 20 lines of code? **Open an issue first**.
 
 # Prerequisites
 
-- Rust's stable toolchain (`rustup toolchain install stable`);
-- Rust's nightly toolchain (`rustup toolchain install nightly`);
+- [`rustup`](https://rustup.rs/)
 - [`cargo-px`](https://lukemathwalker.github.io/cargo-px/)
 
 # Running tests
 
 ```bash
-cargo build --bin pavexc && cargo test
+cargo build_compiler && cargo test
 ```
 
 We primarily rely on end-to-end testing to check that Pavex's behaviour meets our expectations. We refer to these end-to-end tests
 as **UI tests**.\
-The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/libs/pavex_test_runner`. The actual UI tests are found under `libs/ui_tests`.
+The UI test suite is attached to the `pavex_cli` crate and relies on a custom test harness, which you can find at `/compiler/pavex_test_runner`. The actual UI tests are found under `compiler/ui_tests`.
 
 In a nutshell:
 
@@ -40,19 +39,13 @@ In a nutshell:
 - if the test is expected to pass, we check the generated code and the graph diagnostics;
 - if the test is expected to fail, we check `stderr` to verify the quality of the error message returned to users.
 
-## Test runtime environment
-
-For each test, a runtime environment is created as a sub-folder of `ui_test_envs`, which is in turn generated at the root of Pavex's workspace.\
-We use a consistent folder to leverage `cargo` caching and speed up successive test runs. It also allows you to easily inspect the artifacts generated during the test run.\
-If you suspect that something funny is going on due to cross-run contamination, delete the `ui_test_envs` folder to get a clean slate.
-
 ## Updating saved snapshots
 
 The generated code or the graph diagnostics may not match our expectations.\
 The test runner will save the unexpected output in a file named like the expectation file with an additional `.snap` suffix. You can then choose to update the saved snapshot via our utility CLI:
 
 ```bash
-# It must be run from the root folder of the libs workspace
+# It must be run from the root of the repository
 cargo r --bin snaps
 ```
 
@@ -66,58 +59,38 @@ Most snippets in the documentation hosted on [pavex.dev](https://pavex.dev/docs)
 In the documentation file, you'll see an include directive that looks like this:
 
 ```markdown
---8<-- "doc_examples/quickstart/06-extract.snap"
+--8<-- "docs/examples/quickstart/06-extract.snap"
 ```
 
 The path is relative to the root of the repository.\
 **Do not modify `*.snap` files directly**.
 If you do, the `is-up-to-date` CI check will fail when you open a pull request.
 
-## `tutorial_generator`
+## `pxh`
 
-All snippets are extracted using the `tutorial_generator` binary,
-defined in the [`doc_examples/tutorial_generator`](doc_examples/tutorial_generator) folder.\
+All snippets are extracted using the [`pxh` binary](docs/tools/pxh).
 To work on docs, start by installing it:
 
 ```bash
-cargo install --path doc_examples/tutorial_generator
+cargo install --path docs/tools/pxh
 ```
 
-Then install the `pavexc` binary from path to make sure that any change you made locally is picked up:
+Then install the `pavexc` binary to make sure that any change you made locally is picked up:
 
 ```bash
-cargo install --path libs/pavexc_cli
+cargo install -p pavexc_cli
 ```
 
 Then, to regenerate the snippets:
 
 ```bash
-cd doc_examples
-# `PAVEX_PAVEXC` tells the generator to use the locally installed `pavexc` binary
-# rather than the one from crates.io
-PAVEX_PAVEXC=pavexc tutorial_generator
+cd docs/examples
+pxh example regenerate
 ```
 
-You can also choose to regenerate the snippet for a subset of the documentation. E.g. to regenerate the snippets for the quickstart:
+You can also choose to regenerate the snippet for a subset of the documentation. E.g. to regenerate the snippets for the attributes chapter:
 
 ```bash
-cd doc_examples/quickstart
-PAVEX_PAVEXC=pavexc tutorial_generator
+cd docs/examples/attributes
+pxh example regenerate
 ```
-
-## `tutorial.yml`
-
-Each "group" of documentation snippets is identified by a `tutorial.yml` file.\
-It specifies:
-
-- the starter code for the group
-- `git` patches that should be applied on top of the starter code
-
-At every stage of the commit history for the doc project, you can specify in `tutorial.yml`:
-
-- which snippets should be extracted
-- which commands should be run (and what their outcome should be)
-
-For a comprehensive example,
-check out the [tutorial.yml](docs/tutorials/quickstart/tutorial.yml) for the quickstart guide.\
-For a reference of the available commands, check out the source code of the `tutorial_generator` binary.

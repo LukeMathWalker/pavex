@@ -37,5 +37,5 @@ If you want to generate or update the API reference,
 you'll need to run the following command from the root of the repository:
 
 ```bash
-pushd libs && cargo api_ref && cp -r target/doc/* ../docs/api_reference
+cargo api_ref && cp -r target/doc/* ../docs/api_reference
 ```

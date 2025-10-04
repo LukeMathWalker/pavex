@@ -58,12 +58,12 @@ resolver = "3"
 edition = "2024"
 
 [workspace.dependencies]
-pavex = { path = "../../libs/pavex" }
-pavex_cli_client = { path = "../../libs/pavex_cli_client" }
-pavex_session = { path = "../../libs/pavex_session" }
-pavex_session_memory_store = { path = "../../libs/pavex_session_memory_store" }
-pavex_session_sqlx = { path = "../../libs/pavex_session_sqlx" }
-pavex_tracing = { path = "../../libs/pavex_tracing" }
+pavex = { path = "../../runtime/pavex" }
+pavex_cli_client = { path = "../../compiler/pavex_cli_client" }
+pavex_session = { path = "../../runtime/sessions/pavex_session" }
+pavex_session_memory_store = { path = "../../runtime/sessions/pavex_session_memory_store" }
+pavex_session_sqlx = { path = "../../runtime/sessions/pavex_session_sqlx" }
+pavex_tracing = { path = "../../runtime/pavex_tracing" }
 
 anyhow = "1"
 cargo_px_env = "0.1"
