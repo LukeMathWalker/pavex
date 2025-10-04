@@ -1,0 +1,31 @@
+[package]
+name = "pavex_macros"
+version.workspace = true
+description = "Procedural macros for the Pavex framwork."
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[lib]
+proc-macro = true
+
+[features]
+# Allow items annotated with our macros to be marked as `pub` without being
+# reachable from outside the crate they were defined into.
+# This is necessary to get doc-tests compiling in the `pavex` crate.
+allow_unreachable_pub = []
+
+[dependencies]
+pavexc_attr_parser = { path = "../../compiler/pavexc_attr_parser", version = "=0.2.7" }
+paste = { workspace = true }
+darling = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true, features = ["visit-mut"] }
+convert_case = { workspace = true }
+
+[dev-dependencies]
+trybuild = { workspace = true }
+pavex = { workspace = true }
+serde = { workspace = true, features = ["derive"] }

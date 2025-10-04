@@ -1,0 +1,36 @@
+[package]
+name = "pavex_session_sqlx"
+edition.workspace = true
+description = "Session stores for `pavex-session` backed by `sqlx`"
+keywords = ["pavex", "sessions", "HTTP", "auth", "sqlx"]
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[features]
+default = []
+postgres = ["sqlx/postgres", "jiff-sqlx/postgres"]
+mysql = ["sqlx/mysql", "sqlx/runtime-tokio-rustls"]
+sqlite = ["sqlx/sqlite", "sqlx/runtime-tokio-rustls"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+jiff-sqlx = { workspace = true }
+pavex_session = { workspace = true }
+pavex = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+sqlx = { workspace = true, default-features = true, features = ["uuid"] }
+
+[dev-dependencies]
+pavex_session_sqlx = { workspace = true, features = ["postgres", "sqlite", "mysql"] }
+pavex_tracing = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "time", "macros"] }
+tempfile = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }

@@ -55,22 +55,19 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        cache-workspaces: "./libs -> ./target"
     - name: Build CLI
       run: |
-        cd libs
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: pavex_cli_linux
-        path: libs/target/release/pavex
+        path: target/release/pavex
     - name: Store pavexc CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: pavexc_cli_linux
-        path: libs/target/release/pavexc
+        path: target/release/pavexc
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -122,11 +119,8 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        cache-workspaces: "./libs -> ./target"
     - name: Build CLI
       run: |
-        cd libs
         cargo clippy
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
@@ -292,7 +286,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -317,7 +310,6 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run tests
-      working-directory: libs
       run: |
         cargo test -p pavex_macros
     - uses: ./.github/actions/finalize-check
@@ -454,215 +446,6 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
   
   
-  tests_pavex_session_redis_linux:
-    name: "Tests for `pavex_session_redis` (linux)"
-    # Jobs with Dockerized `services` can only be run on Linux
-    runs-on: ubuntu-latest
-    # Extra services that must spun up before this crate can be tested
-    services:
-      redis:
-        image: redis:8
-        ports:
-          - "56379:6379"
-        options: >-
-          --health-cmd="redis-cli ping || exit 1"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=5
-    needs:
-      - build_clis_linux
-      
-    permissions:
-      pull-requests: write
-      checks: write
-    # Run if it's a PR on the official repo or a push to `main`
-    if: |
-      (github.event_name == 'repository_dispatch' &&
-      github.event.client_payload.slash_command.args.named.sha != '' &&
-      contains(
-        github.event.client_payload.pull_request.head.sha,
-        github.event.client_payload.slash_command.args.named.sha
-      )) ||
-      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-    steps:
-    - name: Checkout repository from source repo
-      if: |
-        (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v5
-    - name: Checkout repository from fork
-      if: |
-        github.event_name == 'repository_dispatch' &&
-        github.event.client_payload.slash_command.args.named.sha != '' &&
-        contains(
-          github.event.client_payload.pull_request.head.sha,
-          github.event.client_payload.slash_command.args.named.sha
-        )
-      uses: actions/checkout@v5
-      with:
-        ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
-    - uses: ./.github/actions/create-check
-      if: ${{ github.event_name != 'push' }}
-      with:
-        pr_number: ${{ github.event.client_payload.pull_request.number }}
-        job: Tests pavex_session_redis (linux)
-        workflow: "Build and store docs artifacts"
-        run_id: ${{ github.run_id }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install Rust stable toolchain
-      uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        components: rustfmt
-        rustflags: ""
-        cache-workspaces: "./libs -> ./target"
-    - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: pavex_cli_linux
-        path: ~/.cargo/bin
-    - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: pavexc_cli_linux
-        path: ~/.cargo/bin
-    - name: Mark pavex as executable
-      env:
-        PAVEX: /home/runner/.cargo/bin/pavex
-        PAVEXC: /home/runner/.cargo/bin/pavexc
-      run: |
-        chmod +x ${{ env.PAVEX }}
-        chmod +x ${{ env.PAVEXC }}
-    - name: Activate pavex
-      env:
-        PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
-      run: |
-        pavex self activate
-        pavexc self setup
-    - name: Run tests
-      working-directory: libs
-      run: |
-        cargo test --all-features --package pavex_session_redis
-    - uses: ./.github/actions/finalize-check
-      if: ${{ always() && github.event_name != 'push' }}
-      with:
-        pr_number: ${{ github.event.client_payload.pull_request.number }}
-        job: Tests pavex_session_redis (linux)
-        conclusion: ${{ job.status }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-  
-  tests_pavex_session_sqlx_linux:
-    name: "Tests for `pavex_session_sqlx` (linux)"
-    # Jobs with Dockerized `services` can only be run on Linux
-    runs-on: ubuntu-latest
-    # Extra services that must spun up before this example can be tested
-    services:
-      postgres:
-        image: postgres:16-alpine
-        ports:
-          - "55432:5432"
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: session_test
-        options: >-
-          --health-cmd="pg_isready -U test -d session_test -h 127.0.0.1"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=5
-
-      mysql:
-        image: mysql:8.4
-        ports:
-          - "53306:3306"
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
-          MYSQL_DATABASE: session_test
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -utest -ptest"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=10
-    needs:
-      - build_clis_linux
-      
-    permissions:
-      pull-requests: write
-      checks: write
-    # Run if it's a PR on the official repo or a push to `main`
-    if: |
-      (github.event_name == 'repository_dispatch' &&
-      github.event.client_payload.slash_command.args.named.sha != '' &&
-      contains(
-        github.event.client_payload.pull_request.head.sha,
-        github.event.client_payload.slash_command.args.named.sha
-      )) ||
-      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-    steps:
-    - name: Checkout repository from source repo
-      if: |
-        (github.event_name == 'push' && github.event.repository.full_name == github.repository)
-      uses: actions/checkout@v5
-    - name: Checkout repository from fork
-      if: |
-        github.event_name == 'repository_dispatch' &&
-        github.event.client_payload.slash_command.args.named.sha != '' &&
-        contains(
-          github.event.client_payload.pull_request.head.sha,
-          github.event.client_payload.slash_command.args.named.sha
-        )
-      uses: actions/checkout@v5
-      with:
-        ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
-    - uses: ./.github/actions/create-check
-      if: ${{ github.event_name != 'push' }}
-      with:
-        pr_number: ${{ github.event.client_payload.pull_request.number }}
-        job: Tests pavex_session_sqlx (linux)
-        workflow: "Build and store docs artifacts"
-        run_id: ${{ github.run_id }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install Rust stable toolchain
-      uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        components: rustfmt
-        rustflags: ""
-        cache-workspaces: "./libs -> ./target"
-    - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: pavex_cli_linux
-        path: ~/.cargo/bin
-    - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: pavexc_cli_linux
-        path: ~/.cargo/bin
-    - name: Mark pavex as executable
-      env:
-        PAVEX: /home/runner/.cargo/bin/pavex
-        PAVEXC: /home/runner/.cargo/bin/pavexc
-      run: |
-        chmod +x ${{ env.PAVEX }}
-        chmod +x ${{ env.PAVEXC }}
-    - name: Activate pavex
-      env:
-        PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
-      run: |
-        pavex self activate
-        pavexc self setup
-    - name: Run tests
-      working-directory: libs
-      run: |
-        cargo test --all-features --package pavex_session_sqlx
-    - uses: ./.github/actions/finalize-check
-      if: ${{ always() && github.event_name != 'push' }}
-      with:
-        pr_number: ${{ github.event.client_payload.pull_request.number }}
-        job: Tests pavex_session_sqlx (linux)
-        conclusion: ${{ job.status }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-  
 
   tests_linux:
     name: "Run tests (linux)"
@@ -711,7 +494,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -736,9 +518,8 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run tests
-      working-directory: libs
       run: |
-        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" --exclude="pavex_session_redis" --exclude="pavex_session_sqlx"
+        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" 
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -793,7 +574,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - uses: taiki-e/install-action@cargo-hack
     - name: Install NASM for aws-lc-rs on Windows
       if: runner.os == 'Windows'
@@ -830,12 +610,10 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run Pavex tests with multiple feature combinations
-      working-directory: libs
       if: runner.os != 'Windows'
       run: |
         cargo hack -p pavex --feature-powerset --depth 2 test --tests
     - name: Run Pavex tests with multiple feature combinations
-      working-directory: libs
       if: runner.os == 'Windows'
       run: |
         # FIPS only builds in `release` mode on Windows
@@ -895,7 +673,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -923,7 +700,6 @@ jobs:
       env:
         PAVEX_TEST_CLI_PATH: /home/runner/.cargo/bin/pavex
         PAVEXC_TEST_CLI_PATH: /home/runner/.cargo/bin/pavexc
-      working-directory: libs
       run: |
         cargo test --package pavex_cli
     - uses: ./.github/actions/finalize-check
@@ -976,22 +752,19 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        cache-workspaces: "./libs -> ./target"
     - name: Build CLI
       run: |
-        cd libs
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: pavex_cli_macos
-        path: libs/target/release/pavex
+        path: target/release/pavex
     - name: Store pavexc CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: pavexc_cli_macos
-        path: libs/target/release/pavexc
+        path: target/release/pavexc
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -1049,7 +822,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -1074,9 +846,8 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run tests
-      working-directory: libs
       run: |
-        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" --exclude="pavex_session_redis" --exclude="pavex_session_sqlx"
+        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" 
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -1131,7 +902,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - uses: taiki-e/install-action@cargo-hack
     - name: Install NASM for aws-lc-rs on Windows
       if: runner.os == 'Windows'
@@ -1168,12 +938,10 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run Pavex tests with multiple feature combinations
-      working-directory: libs
       if: runner.os != 'Windows'
       run: |
         cargo hack -p pavex --feature-powerset --depth 2 test --tests
     - name: Run Pavex tests with multiple feature combinations
-      working-directory: libs
       if: runner.os == 'Windows'
       run: |
         # FIPS only builds in `release` mode on Windows
@@ -1233,7 +1001,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -1261,7 +1028,6 @@ jobs:
       env:
         PAVEX_TEST_CLI_PATH: /Users/runner/.cargo/bin/pavex
         PAVEXC_TEST_CLI_PATH: /Users/runner/.cargo/bin/pavexc
-      working-directory: libs
       run: |
         cargo test --package pavex_cli
     - uses: ./.github/actions/finalize-check
@@ -1314,22 +1080,19 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        cache-workspaces: "./libs -> ./target"
     - name: Build CLI
       run: |
-        cd libs
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: pavex_cli_windows
-        path: libs/target/release/pavex.exe
+        path: target/release/pavex.exe
     - name: Store pavexc CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: pavexc_cli_windows
-        path: libs/target/release/pavexc.exe
+        path: target/release/pavexc.exe
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -1387,7 +1150,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -1406,9 +1168,8 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run tests
-      working-directory: libs
       run: |
-        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" --exclude="pavex_session_redis" --exclude="pavex_session_sqlx"
+        cargo test --all-features --workspace --exclude="pavex_cli" --exclude="pavex_macros" --exclude="pavex" 
     - uses: ./.github/actions/finalize-check
       if: ${{ always() && github.event_name != 'push' }}
       with:
@@ -1463,7 +1224,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - uses: taiki-e/install-action@cargo-hack
     - name: Install NASM for aws-lc-rs on Windows
       if: runner.os == 'Windows'
@@ -1494,12 +1254,10 @@ jobs:
         pavex self activate
         pavexc self setup
     - name: Run Pavex tests with multiple feature combinations
-      working-directory: libs
       if: runner.os != 'Windows'
       run: |
         cargo hack -p pavex --feature-powerset --depth 2 test --tests
     - name: Run Pavex tests with multiple feature combinations
-      working-directory: libs
       if: runner.os == 'Windows'
       run: |
         # FIPS only builds in `release` mode on Windows
@@ -1559,7 +1317,6 @@ jobs:
       with:
         components: rustfmt
         rustflags: ""
-        cache-workspaces: "./libs -> ./target"
     - name: Download pavex CLI artifact
       uses: actions/download-artifact@v4
       with:
@@ -1581,7 +1338,6 @@ jobs:
       env:
         PAVEX_TEST_CLI_PATH: C:\Users\runneradmin\.cargo\bin\pavex.exe
         PAVEXC_TEST_CLI_PATH: C:\Users\runneradmin\.cargo\bin\pavexc.exe
-      working-directory: libs
       run: |
         cargo test --package pavex_cli
     - uses: ./.github/actions/finalize-check
@@ -1788,16 +1544,13 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install Rust stable toolchain
       uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
-      with:
-        cache-workspaces: "./libs -> ./target"
     - name: Build API reference
       run: |
-        cd libs
         cargo api_ref
     - name: Copy API reference files
       run: |
         mkdir -p docs/api_reference
-        cp -r libs/target/doc/* docs/api_reference
+        cp -r target/doc/* docs/api_reference
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx

@@ -1,0 +1,49 @@
+[package]
+name = "pavexc_cli"
+version.workspace = true
+description = "A CLI interface for the Pavex compiler."
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+include = ["template", "src", "build.rs"]
+
+[[bin]]
+name = "pavexc"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true, features = ["derive", "env"] }
+pavexc = { workspace = true }
+pavex_bp_schema = { workspace = true }
+pavexc_cli_client = { workspace = true }
+pavex_cli_deps = { workspace = true }
+pavex_cli_shell = { workspace = true }
+pavex_cli_diagnostic = { workspace = true }
+tracing_log_error = { workspace = true }
+cargo-like-utils = { workspace = true }
+pavex_miette = { workspace = true }
+liquid-core = { workspace = true }
+miette = { workspace = true }
+fs-err = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
+tracing-chrome = { workspace = true }
+tracing = { workspace = true, default-features = true }
+tracing-log = { workspace = true }
+textwrap = { workspace = true }
+owo-colors = { workspace = true }
+anyhow = { workspace = true }
+guppy = { workspace = true }
+supports-color = { workspace = true }
+include_dir = { workspace = true }
+path-absolutize = { workspace = true }
+ron = { workspace = true }
+generate_from_path = { workspace = true }
+tempfile = { workspace = true }
+better-panic = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+[build-dependencies]
+vergen-gitcl = { workspace = true }
+anyhow = { workspace = true }

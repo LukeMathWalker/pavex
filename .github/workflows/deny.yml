@@ -24,4 +24,4 @@ jobs:
         with:
           command: check ${{ matrix.checks }}
           arguments: --all-features
-          manifest-path: libs/Cargo.toml
+          manifest-path: Cargo.toml

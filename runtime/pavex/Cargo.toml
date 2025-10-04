@@ -1,0 +1,107 @@
+[package]
+name = "pavex"
+version.workspace = true
+description = "A framework for building API services and web applications in Rust."
+categories = [
+    "asynchronous",
+    "network-programming",
+    "web-programming::http-server",
+]
+keywords = ["http", "web", "framework", "pavex", "rest"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+readme = "README.md"
+
+[features]
+default = ["server", "server_request_id", "time", "cookie", "config", "rustls_0_23"]
+
+server = ["dep:hyper-util", "dep:socket2", "tokio/net"]
+config = ["dep:figment"]
+cookie = ["dep:biscotti", "time"]
+server_request_id = ["dep:uuid"]
+time = ["dep:jiff"]
+rustls_0_23 = ["dep:rustls", "dep:rustls-platform-verifier"]
+fips = ["rustls?/fips"]
+tls_crypto_provider_ring = ["rustls?/ring"]
+tls_crypto_provider_aws_lc_rs = ["rustls?/aws_lc_rs"]
+
+[dependencies]
+bytes = { workspace = true }
+http = { workspace = true }
+http-body = { workspace = true }
+anyhow = { workspace = true }
+futures-util = { workspace = true }
+mime = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+pavex_macros = { path = "../pavex_macros", version = "=0.2.7" }
+paste = { workspace = true }
+tracing = { workspace = true }
+http-body-util = { workspace = true }
+pin-project-lite = { workspace = true }
+ubyte = { workspace = true, features = ["serde"] }
+pavex_bp_schema = { path = "../../compiler/pavex_bp_schema", version = "=0.2.7" }
+persist_if_changed = { workspace = true }
+
+# Configuration
+figment = { workspace = true, features = ["env", "yaml"], optional = true }
+serde_yaml = { workspace = true }
+
+# Route parameters
+matchit = { workspace = true }
+percent-encoding = { workspace = true }
+
+# Query parameters
+serde_html_form = { workspace = true }
+form_urlencoded = { workspace = true }
+
+# Json body extractor
+serde_json = { workspace = true }
+serde_path_to_error = { workspace = true }
+
+# Blueprint builder
+indexmap = { workspace = true, features = ["serde"] }
+fs-err = { workspace = true }
+ron = { workspace = true }
+
+# Cookies
+biscotti = { workspace = true, optional = true, features = ["serde"] }
+
+# Server request id
+uuid = { workspace = true, features = ["v7"], optional = true }
+type-safe-id = { workspace = true }
+
+# Time facilities
+jiff = { workspace = true, features = ["serde"], optional = true }
+
+# TLS
+rustls = { workspace = true, default-features = false, features = ["std", "tls12", "logging"], optional = true }
+rustls-platform-verifier = { workspace = true, optional = true }
+
+tokio = { workspace = true, features = ["sync", "rt", "time"] }
+hyper = { workspace = true, features = ["full"] }
+hyper-util = { workspace = true, features = [
+    "tokio",
+    "server",
+    "server-auto",
+    "server-graceful",
+], optional = true }
+socket2 = { workspace = true, optional = true }
+smallvec = { workspace = true }
+tracing_log_error = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }
+insta = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+itertools = { workspace = true }
+secrecy = { workspace = true, features = ["serde"] }
+serde_yaml = { workspace = true }
+pavex_tracing = { workspace = true }
+uuid = { workspace = true, features = ["v7", "v4"] }
+
+pavex_macros = { workspace = true, features = [
+    "allow_unreachable_pub",
+] }
