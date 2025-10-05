@@ -9,7 +9,7 @@ version.workspace = true
 keywords = ["pavex"]
 
 [dependencies]
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.7" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.8" }
 serde = { workspace = true }
 syn = { workspace = true, features = ["full"] }
 proc-macro2 = { workspace = true }
