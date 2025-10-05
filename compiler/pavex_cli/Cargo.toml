@@ -73,7 +73,7 @@ pem = { workspace = true }
 jiff = { workspace = true }
 
 [dev-dependencies]
-pavex_test_runner = { workspace = true }
+pavex_test_runner = { path = "../pavex_test_runner" }
 # Enable more expensive debug assertions when building for testing purposes
-pavexc = { workspace = true, features = ["debug_assertions"] }
+pavexc = { path = "../pavexc", features = ["debug_assertions"] }
 itertools = { workspace = true }

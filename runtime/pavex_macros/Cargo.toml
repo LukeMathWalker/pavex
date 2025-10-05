@@ -27,5 +27,5 @@ convert_case = { workspace = true }
 
 [dev-dependencies]
 trybuild = { workspace = true }
-pavex = { workspace = true }
+pavex = { path = "../pavex" }
 serde = { workspace = true, features = ["derive"] }
