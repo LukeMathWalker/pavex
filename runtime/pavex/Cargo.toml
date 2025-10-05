@@ -99,9 +99,9 @@ reqwest = { workspace = true }
 itertools = { workspace = true }
 secrecy = { workspace = true, features = ["serde"] }
 serde_yaml = { workspace = true }
-pavex_tracing = { workspace = true }
+pavex_tracing = { path = "../pavex_tracing" }
 uuid = { workspace = true, features = ["v7", "v4"] }
 
-pavex_macros = { workspace = true, features = [
+pavex_macros = { path = "../pavex_macros", features = [
     "allow_unreachable_pub",
 ] }
