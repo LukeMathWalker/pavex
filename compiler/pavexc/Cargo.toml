@@ -59,7 +59,7 @@ once_cell = { workspace = true }
 toml = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed" }
+persist_if_changed = { workspace = true }
 matchit = { workspace = true }
 relative-path = { workspace = true }
 camino = { workspace = true }
