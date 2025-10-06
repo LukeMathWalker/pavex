@@ -114,7 +114,7 @@ fn key_algo2algo(key_algorithm: KeyAlgorithm) -> Result<Algorithm, anyhow::Error
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Clone)]
 /// `ValidationClaims` can't be constructed outside of this module.
 /// The only way to obtain one is via [`CliToken::validate`].
 pub struct ValidatedClaims {
