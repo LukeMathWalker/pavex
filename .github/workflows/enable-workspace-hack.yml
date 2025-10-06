@@ -35,6 +35,10 @@ jobs:
         run: |
           cargo hakari generate
           cargo hakari manage-deps --yes
+          cd docs/examples
+          cargo hakari generate
+          cargo hakari manage-deps --yes
+          cd ../..
           git add .
           git commit -am "release: Re-enable workspace hack after a release"
       - name: Create Pull Request
