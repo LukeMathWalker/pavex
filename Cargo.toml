@@ -125,7 +125,7 @@ rlimit = "0.10.2"
 ron = "0.10"
 rustc-hash = "2"
 rusqlite = "0.32"
-rustdoc-types = { version = "0.54.0", features = ["rustc-hash"] }
+rustdoc-types = { version = "0.56.0", features = ["rustc-hash"] }
 sanitize-filename = "0.6"
 self-replace = "1.5.0"
 secrecy = "0.10.3"
