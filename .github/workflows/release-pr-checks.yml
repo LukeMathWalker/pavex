@@ -1,0 +1,21 @@
+name: Pre-release checks
+
+on:
+  push:
+    branches:
+      - release-plz-*
+
+jobs:
+  publish-dry-run:
+    name: Publish (dry-run)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+      - name: Publish to crates.io (dry-run)
+        run: |
+          cargo publish --dry-run --workspace
