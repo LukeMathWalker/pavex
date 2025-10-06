@@ -7,3 +7,4 @@ edition.workspace = true
 pavex = { workspace = true }
 pavex_cli_client = { workspace = true }
 cargo_px_env = { workspace = true }
+workspace_hack = { version = "0.1", path = "../../workspace_hack" }
