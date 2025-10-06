@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9](https://github.com/LukeMathWalker/pavex/compare/0.2.8...0.2.9) - 2025-10-06
+
+### ⛰️ Features
+
+- Upgrade to latest nightly (2025-10-04) (by @LukeMathWalker) - #553
+
+### Contributors
+
+- @LukeMathWalker
+
 ## [0.2.5](https://github.com/LukeMathWalker/pavex/compare/0.2.4...0.2.5) - 2025-09-26
 
 ### ⛰️ Features
