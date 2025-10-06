@@ -17,3 +17,4 @@ serde_json = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../../../px_workspace_hack" }

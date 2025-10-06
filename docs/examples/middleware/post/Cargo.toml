@@ -11,3 +11,4 @@ serde = { workspace = true, features = ["derive"] }
 cargo_px_env = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true, features = ["time"] }
+workspace_hack = { version = "0.1", path = "../../workspace_hack" }
