@@ -14,42 +14,8 @@ publish = false
 # are managed by hakari.
 
 ### BEGIN HAKARI SECTION
-[dependencies]
-futures-core = { version = "0.3" }
-getrandom = { version = "0.2", default-features = false, features = ["std"] }
-log = { version = "0.4", default-features = false, features = ["std"] }
-memchr = { version = "2" }
-once_cell = { version = "1" }
-percent-encoding = { version = "2" }
-proc-macro2 = { version = "1", features = ["span-locations"] }
-quote = { version = "1" }
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-rustls = { version = "0.23", default-features = false, features = ["logging", "ring", "std", "tls12"] }
-serde = { version = "1", features = ["alloc", "derive", "rc"] }
-serde_core = { version = "1", features = ["alloc", "rc"] }
-serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
-smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
-stable_deref_trait = { version = "1" }
-subtle = { version = "2" }
-syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 
-[build-dependencies]
-futures-core = { version = "0.3" }
-getrandom = { version = "0.2", default-features = false, features = ["std"] }
-log = { version = "0.4", default-features = false, features = ["std"] }
-memchr = { version = "2" }
-once_cell = { version = "1" }
-percent-encoding = { version = "2" }
-proc-macro2 = { version = "1", features = ["span-locations"] }
-quote = { version = "1" }
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-rustls = { version = "0.23", default-features = false, features = ["logging", "ring", "std", "tls12"] }
-serde = { version = "1", features = ["alloc", "derive", "rc"] }
-serde_core = { version = "1", features = ["alloc", "rc"] }
-serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
-smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
-stable_deref_trait = { version = "1" }
-subtle = { version = "2" }
-syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
-
+# Disabled by running `cargo hakari disable`.
+# To re-enable, run:
+#     cargo hakari generate
 ### END HAKARI SECTION

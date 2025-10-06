@@ -43,7 +43,6 @@ tempfile = { workspace = true }
 better-panic = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
 
 [build-dependencies]
 vergen-gitcl = { workspace = true }

@@ -13,4 +13,3 @@ readme = "README.md"
 tracing = { workspace = true, features = ["std"] }
 tracing_log_error = { workspace = true }
 pavex = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
