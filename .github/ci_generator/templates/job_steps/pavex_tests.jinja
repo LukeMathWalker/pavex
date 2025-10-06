@@ -17,7 +17,14 @@
   uses: actions/setup-go@v6
   with:
     go-version: "1.25.0"
-<% include 'setup_pavex' %>
+- name: Install cargo-hakari
+  uses: taiki-e/install-action@v2
+  with:
+    tool: cargo-hakari
+- name: Remove workspace hack from Cargo.toml
+  run: |
+    cargo hakari disable
+    cargo hakari remove-deps -y
 - name: Run Pavex tests with multiple feature combinations
   if: runner.os != 'Windows'
   run: |
