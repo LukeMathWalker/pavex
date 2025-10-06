@@ -3494,7 +3494,6 @@ dependencies = [
  "aho-corasick",
  "base64 0.22.1",
  "byteorder",
- "cc",
  "clap",
  "clap_builder",
  "console 0.16.1",
@@ -3538,8 +3537,7 @@ dependencies = [
  "regex-automata",
  "regex-syntax",
  "reqwest",
- "rustls",
- "rustls-webpki",
+ "rustls-pki-types",
  "serde",
  "serde_core",
  "serde_json",
@@ -3569,6 +3567,7 @@ dependencies = [
  "tracing-log",
  "uuid",
  "winnow",
+ "zeroize",
 ]
 
 [[package]]

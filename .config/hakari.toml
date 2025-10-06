@@ -23,3 +23,11 @@ platforms = [
 
 # Write out exact versions rather than a semver range. (Defaults to false.)
 # exact-versions = true
+
+[traversal-excludes]
+third-party = [
+    # We don't want the `fips` feature to be enabled, but `hakari` doesn't
+    # allow us to exclude individual features. Therefore we must exclude
+    # `rustls` entirely.
+    { name = "rustls" }
+]
