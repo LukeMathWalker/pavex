@@ -1,0 +1,21 @@
+[package]
+name = "app_0389e07d"
+version = "0.1.0"
+edition.workspace = true
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[dependencies]
+workspace_hack = { version = "0.1", path = "../../workspace_hack" }
+
+[dependencies.pavex]
+workspace = true
+
+[dependencies.pavex_cli_client]
+workspace = true
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
