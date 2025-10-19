@@ -78,13 +78,15 @@ pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream
     }
 
     if no_pavex_method {
-        return Err(syn::Error::new_spanned(
-            &impl_,
+        return Err(syn::Error::new(
+            proc_macro2::Span::call_site(),
             "`#[pavex::methods]` is used to provide context for Pavex attributes on methods \
             (e.g., `#[pavex::get]`, `#[pavex::post]`, `#[pavex::error_handler]`, etc.).\n\
             This `impl` block contains no methods with Pavex attributes, so `#[pavex::methods]` \
-            is unnecessary."
-        ).into_compile_error().into());
+            is unnecessary.",
+        )
+        .into_compile_error()
+        .into());
     }
 
     PxStripper.visit_item_impl_mut(&mut impl_);
