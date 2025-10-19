@@ -1,8 +1,6 @@
-use pavex_macros::methods;
-
 pub struct A;
 
-#[methods]
+#[pavex::methods]
 impl A {
 }
 

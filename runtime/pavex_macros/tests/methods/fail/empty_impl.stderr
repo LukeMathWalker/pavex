@@ -1,8 +1,8 @@
 error: `#[pavex::methods]` is used to provide context for Pavex attributes on methods (e.g., `#[pavex::get]`, `#[pavex::post]`, `#[pavex::error_handler]`, etc.).
        This `impl` block contains no methods with Pavex attributes, so `#[pavex::methods]` is unnecessary.
- --> tests/methods/fail/empty_impl.rs:5:1
+ --> tests/methods/fail/empty_impl.rs:3:1
   |
-5 | #[methods]
-  | ^^^^^^^^^^
+3 | #[pavex::methods]
+  | ^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `methods` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the attribute macro `pavex::methods` (in Nightly builds, run with -Z macro-backtrace for more info)
