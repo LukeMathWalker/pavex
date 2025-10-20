@@ -69,6 +69,10 @@ commit_parsers = [
     { message = "^.*", skip = true },
 ]
 
+postprocessors = [
+  { pattern = '.*', replace_command = "dprint fmt --stdin md" },
+]
+
 [[package]]
 name = "pavex"
 changelog_update = true
