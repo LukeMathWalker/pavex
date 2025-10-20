@@ -11,3 +11,11 @@ error: Star re-exports can't be annotated with #[pavex::config].
   |
 7 | pub use private::*;
   | ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `private::*`
+ --> tests/config/fail/group_rexport.rs:7:9
+  |
+7 | pub use private::*;
+  |         ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

@@ -20,4 +20,4 @@ We contributors to Pavex:
 - Oliver Barnes (@oliverbarnes)
 - Joe Hasson (@joehasson)
 - Peter Wischer (@peddermaster2)
-- Paras Sharma (@duckaet)
+- Paras Sharma (@Duckaet)

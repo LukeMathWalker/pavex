@@ -39,3 +39,17 @@ error: Configuration types must be public.
    |
 19 | pub(crate) use sub::A as A3;
    | ^^^^^^^^^^
+
+warning: unused import: `sub::A as A2`
+  --> tests/config/fail/not_public.rs:16:5
+   |
+16 | use sub::A as A2;
+   |     ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `sub::A as A3`
+  --> tests/config/fail/not_public.rs:19:16
+   |
+19 | pub(crate) use sub::A as A3;
+   |                ^^^^^^^^^^^^
