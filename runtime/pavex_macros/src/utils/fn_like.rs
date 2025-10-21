@@ -1,7 +1,8 @@
 //! Machinery to abstract away the parsing and validation logic that's shared by all
 //! Pavex components that accept function-like inputs.
 use proc_macro2::TokenStream;
-use syn::ImplItemFn;
+use quote::quote;
+use syn::{ImplItemFn, visit_mut::VisitMut};
 
 use crate::utils::{AnnotationCodegen, deny_unreachable_pub_attr, validation::must_be_public};
 
@@ -98,9 +99,17 @@ pub fn direct_entrypoint<M: CallableAnnotation>(
         Ok(output.emit(input))
     }
 
-    match _inner::<M>(metadata, input) {
+    match _inner::<M>(metadata, input.clone()) {
         Ok(t) => t.into(),
-        Err(t) => t,
+        Err(error_tokens) => {
+            let error_tokens = proc_macro2::TokenStream::from(error_tokens);
+            let mut input_item: syn::Item = syn::parse2(input).expect("Input is not a valid syn::Item");
+            crate::utils::PxStripper.visit_item_mut(&mut input_item);
+            quote! {
+                #error_tokens
+                #input_item
+            }.into()
+        }
     }
 }
 
