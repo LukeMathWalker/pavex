@@ -25,12 +25,19 @@ impl ExtractJsonBodyError {
     /// Convert an [`ExtractJsonBodyError`] into an HTTP response.
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
+        let mut body = String::new();
+        self.response_body(&mut body)
+            .expect("Failed to write into a string buffer");
         match self {
             ExtractJsonBodyError::MissingContentType(_)
             | ExtractJsonBodyError::ContentTypeMismatch(_) => Response::unsupported_media_type(),
             ExtractJsonBodyError::DeserializationError(_) => Response::bad_request(),
         }
-        .set_typed_body(format!("{self}"))
+        .set_typed_body(body)
+    }
+
+    pub(crate) fn response_body<W: std::fmt::Write>(&self, writer: &mut W) -> std::fmt::Result {
+        write!(writer, "{self}")
     }
 }
 
@@ -53,11 +60,18 @@ impl ExtractBufferedBodyError {
     /// Convert an [`ExtractBufferedBodyError`] into an HTTP response.
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
+        let mut body = String::new();
+        self.response_body(&mut body)
+            .expect("Failed to write into a string buffer");
         match self {
             ExtractBufferedBodyError::SizeLimitExceeded(_) => Response::payload_too_large(),
             ExtractBufferedBodyError::UnexpectedBufferError(_) => Response::internal_server_error(),
         }
-        .set_typed_body(format!("{self}"))
+        .set_typed_body(body)
+    }
+
+    pub(crate) fn response_body<W: std::fmt::Write>(&self, writer: &mut W) -> std::fmt::Result {
+        write!(writer, "{self}")
     }
 }
 

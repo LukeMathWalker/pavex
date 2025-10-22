@@ -7,6 +7,7 @@
 pub use request_head::RequestHead;
 
 pub mod body;
+pub mod errors;
 pub mod path;
 pub mod query;
 mod request_head;

@@ -1,0 +1,6 @@
+error: Field `a` must specify a source.
+       Use one of the following: #[path_param], #[query_param], #[header], #[body], #[query_params], #[path_params], or #[headers].
+ --> tests/from_request/fail/missing_source.rs:5:5
+  |
+5 |     a: u64,
+  |     ^
