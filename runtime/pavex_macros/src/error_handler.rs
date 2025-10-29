@@ -52,7 +52,22 @@ impl CallableAnnotation for ErrorHandlerAnnotation {
         metadata: Self::InputSchema,
         item: Callable,
     ) -> Result<AnnotationCodegen, proc_macro::TokenStream> {
-        let error_ref_index = find_error_ref_index(&item).map_err(|e| e.write_errors())?;
+        let error_ref_index = match find_error_ref_index(&item) {
+            Ok(index) => index,
+            Err(e) => {
+                let properties = Properties::new(metadata, 0);
+                let result = emit(impl_, item, properties);
+
+                let error_tokens = e.write_errors();
+                let handle_def = result.id_def.unwrap_or_default();
+                let combined_error = quote::quote! {
+                    #error_tokens
+                    #handle_def
+                };
+                return Err(combined_error.into());
+            }
+        };
+
         let properties = Properties::new(metadata, error_ref_index);
         Ok(emit(impl_, item, properties))
     }

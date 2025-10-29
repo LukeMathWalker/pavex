@@ -2,7 +2,7 @@
 //! Pavex components that accept type-like inputs.
 use convert_case::{Case, Casing as _};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens, format_ident};
+use quote::{ToTokens, format_ident, quote};
 use syn::{parse_quote, visit_mut::VisitMut};
 
 use crate::utils::{AnnotationCodegen, deny_unreachable_pub_attr, validation::must_be_public};
@@ -218,12 +218,7 @@ pub fn entrypoint<M: TypeAnnotation>(
         Ok(t) => t.into(),
         Err(error_tokens) => {
             let error_tokens = proc_macro2::TokenStream::from(error_tokens);
-            let mut input_item: syn::Item = syn::parse2(input).expect("Input is not a valid syn::Item");
-            crate::utils::PxStripper.visit_item_mut(&mut input_item);
-            quote! {
-                #error_tokens
-                #input_item
-            }.into()
+            reemit_with_input(error_tokens, input)
         }
     }
 }
@@ -232,4 +227,15 @@ fn parse_metadata<T: darling::FromMeta>(metadata: TokenStream) -> Result<T, Toke
     let attrs =
         darling::ast::NestedMeta::parse_meta_list(metadata).map_err(|e| e.to_compile_error())?;
     T::from_list(&attrs).map_err(|e| e.write_errors())
+}
+
+fn reemit_with_input(
+    error_tokens: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro::TokenStream {
+    if let Ok(mut item) = syn::parse2::<syn::Item>(input.clone()) {
+        crate::utils::PxStripper.visit_item_mut(&mut item);
+        return quote! { #error_tokens #item }.into();
+    }
+    quote! { #error_tokens #input }.into()
 }

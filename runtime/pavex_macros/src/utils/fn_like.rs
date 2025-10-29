@@ -103,12 +103,7 @@ pub fn direct_entrypoint<M: CallableAnnotation>(
         Ok(t) => t.into(),
         Err(error_tokens) => {
             let error_tokens = proc_macro2::TokenStream::from(error_tokens);
-            let mut input_item: syn::Item = syn::parse2(input).expect("Input is not a valid syn::Item");
-            crate::utils::PxStripper.visit_item_mut(&mut input_item);
-            quote! {
-                #error_tokens
-                #input_item
-            }.into()
+            reemit_with_input(error_tokens, input)
         }
     }
 }
@@ -136,4 +131,27 @@ fn parse_metadata<T: darling::FromMeta>(metadata: TokenStream) -> Result<T, Toke
     let attrs =
         darling::ast::NestedMeta::parse_meta_list(metadata).map_err(|e| e.to_compile_error())?;
     T::from_list(&attrs).map_err(|e| e.write_errors())
+}
+
+fn reemit_with_input(
+    error_tokens: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro::TokenStream {
+    if let Ok(mut item) = syn::parse2::<syn::Item>(input.clone()) {
+        crate::utils::PxStripper.visit_item_mut(&mut item);
+        return quote! { #error_tokens #item }.into();
+    }
+    if let Ok(mut method) = syn::parse2::<syn::ImplItemFn>(input.clone()) {
+        crate::utils::PxStripper.visit_impl_item_fn_mut(&mut method);
+        return quote! { #error_tokens #method }.into();
+    }
+    if let Ok(mut trait_fn) = syn::parse2::<syn::TraitItemFn>(input.clone()) {
+        crate::utils::PxStripper.visit_trait_item_fn_mut(&mut trait_fn);
+        return quote! { #error_tokens #trait_fn }.into();
+    }
+    if let Ok(mut foreign_fn) = syn::parse2::<syn::ForeignItemFn>(input.clone()) {
+        crate::utils::PxStripper.visit_foreign_item_fn_mut(&mut foreign_fn);
+        return quote! { #error_tokens #foreign_fn }.into();
+    }
+    quote! { #error_tokens #input }.into()
 }

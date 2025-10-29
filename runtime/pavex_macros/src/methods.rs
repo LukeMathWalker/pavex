@@ -17,6 +17,21 @@ use crate::{
 };
 
 pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream, TokenStream> {
+    _methods_inner(_metadata, input.clone()).map_err(|error_tokens| {
+        let error_tokens = proc_macro2::TokenStream::from(error_tokens);
+        let input_ts: proc_macro2::TokenStream = input.into();
+        if let Ok(mut item) = syn::parse2::<syn::Item>(input_ts.clone()) {
+            crate::utils::PxStripper.visit_item_mut(&mut item);
+            return quote! { #error_tokens #item }.into();
+        }
+        quote! { #error_tokens #input_ts }.into()
+    })
+}
+
+fn _methods_inner(
+    _metadata: TokenStream,
+    input: TokenStream,
+) -> Result<TokenStream, proc_macro::TokenStream> {
     let mut impl_: syn::ItemImpl = syn::parse(input).map_err(|e| e.into_compile_error())?;
     let mut new_items: Vec<proc_macro2::TokenStream> = Vec::new();
 
@@ -78,15 +93,16 @@ pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream
     }
 
     if no_pavex_method {
-        return Err(syn::Error::new(
+        let error_tokens = syn::Error::new(
             proc_macro2::Span::call_site(),
             "`#[pavex::methods]` is used to provide context for Pavex attributes on methods \
             (e.g., `#[pavex::get]`, `#[pavex::post]`, `#[pavex::error_handler]`, etc.).\n\
             This `impl` block contains no methods with Pavex attributes, so `#[pavex::methods]` \
             is unnecessary.",
         )
-        .into_compile_error()
-        .into());
+        .into_compile_error();
+
+        return Err(error_tokens.into());
     }
 
     PxStripper.visit_item_impl_mut(&mut impl_);
