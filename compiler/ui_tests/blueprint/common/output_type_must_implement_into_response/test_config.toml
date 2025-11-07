@@ -1,4 +1,0 @@
-description = "pavex expects all (success) output types to implement IntoResponse"
-
-[expectations]
-codegen = "fail"

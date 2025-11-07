@@ -1,5 +1,0 @@
-description = """Paves should correctly handle the interaction between mutable
-and immutable reference, relying on deref coercion where appropriate"""
-
-[expectations]
-codegen = "pass"

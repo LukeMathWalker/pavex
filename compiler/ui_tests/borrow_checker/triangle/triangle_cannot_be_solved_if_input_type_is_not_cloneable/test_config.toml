@@ -1,5 +1,0 @@
-description = """Test what happens when we give pavex a graph that can't satisfy the constraints of the Rust borrow checker
-due to a non-cloneable input type"""
-
-[expectations]
-codegen = "fail"

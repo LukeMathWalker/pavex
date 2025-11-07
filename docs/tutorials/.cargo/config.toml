@@ -1,5 +1,0 @@
-[patch.crates-io]
-pavex = { path = "../../runtime/pavex" }
-pavex_cli_client = { path = "../../compiler/pavex_cli_client" }
-pavex_tracing = { path = "../../runtime/pavex_tracing" }
-pavex_bp_schema = { path = "../../compiler/pavex_bp_schema" }

@@ -1,4 +1,0 @@
-description = """Configuration types must be cloneable."""
-
-[expectations]
-codegen = "fail"

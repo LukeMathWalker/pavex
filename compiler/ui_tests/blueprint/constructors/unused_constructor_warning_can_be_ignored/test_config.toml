@@ -1,7 +1,0 @@
-description = """You can suppress the unused warning constructor"""
-
-[expectations]
-codegen = "pass"
-lints = "pass"
-
-

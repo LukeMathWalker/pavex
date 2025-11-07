@@ -1,4 +1,0 @@
-description = "pavex supports using attribute macros to register constructors"
-
-[expectations]
-codegen = "pass"

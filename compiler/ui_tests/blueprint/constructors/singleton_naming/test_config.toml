@@ -1,4 +1,0 @@
-description = "Pavex knows how to name assign non-conflicting names to singletons stored in the app state"
-
-[expectations]
-codegen = "pass"

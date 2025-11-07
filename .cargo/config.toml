@@ -1,4 +1,0 @@
-[alias]
-api_ref = "doc --all-features --no-deps -p pavex -p pavex_session -p pavex_session_sqlx -p pavex_session_memory_store -p pavex_cli_client"
-build_compiler = "build --bin pavexc"
-ui_tests = "test -p pavex_cli"

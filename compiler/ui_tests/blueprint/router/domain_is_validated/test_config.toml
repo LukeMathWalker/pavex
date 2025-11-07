@@ -1,4 +1,0 @@
-description = "Pavex returns an error if any of the registered domain constraints is invalid"
-
-[expectations]
-codegen = "fail"

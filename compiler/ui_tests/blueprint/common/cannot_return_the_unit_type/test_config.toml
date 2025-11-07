@@ -1,5 +1,0 @@
-description = """pavex expects constructors, request handlers, wrapping middlewares and error handlers 
-to return _something_! They cannot return the unit type."""
-
-[expectations]
-codegen = "fail"

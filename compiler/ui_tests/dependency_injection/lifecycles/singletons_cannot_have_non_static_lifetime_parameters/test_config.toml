@@ -1,4 +1,0 @@
-description = """Singletons cannot have non-'static lifetime parameters"""
-
-[expectations]
-codegen = "fail"

@@ -1,5 +1,0 @@
-description = """A singleton type that is cloneable can be consumed by two different singleton constructors by value.
-Pavex will insert a Clone invocation"""
-
-[expectations]
-codegen = "pass"

@@ -1,4 +1,0 @@
-description = "Verify the error returned by pavex when a handler depends on a non-singleton type for which we have no registered constructor"
-
-[expectations]
-codegen = "fail"

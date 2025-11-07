@@ -1,6 +1,0 @@
-error: Mark the error reference input with `#[px(error_ref)]`.
-       Pavex can't automatically identify it if your error handler has two or more input parameters.
- --> tests/error_handler/fail/multiple_inputs_no_attribute.rs:4:15
-  |
-4 | pub fn handler(_a: &str, _b: u64) -> pavex::Response {
-  |               ^^^^^^^^^^^^^^^^^^^

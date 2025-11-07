@@ -1,5 +1,0 @@
-description = """Wrapping middlewares must take exactly one Next<_> instance as 
-an input parameter. Having more than one Next<_> input parameter is not allowed."""
-
-[expectations]
-codegen = "fail"

@@ -1,7 +1,0 @@
-description = """When you have an unused constructor, Pavex emits a warning."""
-
-[expectations]
-codegen = "pass"
-lints = "fail"
-
-

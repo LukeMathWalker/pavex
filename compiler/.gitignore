@@ -1,4 +1,0 @@
-target
-metadata.json
-**/generated_app/
-Cargo.lock

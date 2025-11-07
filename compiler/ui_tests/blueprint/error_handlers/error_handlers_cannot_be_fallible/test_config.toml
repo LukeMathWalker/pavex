@@ -1,4 +1,0 @@
-description = """Error handlers cannot return a Result"""
-
-[expectations]
-codegen = "fail"

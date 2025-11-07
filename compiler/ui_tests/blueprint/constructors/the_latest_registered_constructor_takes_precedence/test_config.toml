@@ -1,8 +1,0 @@
-description = "The latest registered constructor takes precedence if the same constructor is registered multiple times"
-
-[expectations]
-codegen = "pass"
-
-[ephemeral_dependencies]
-dep = { path = "dep.rs" }
-

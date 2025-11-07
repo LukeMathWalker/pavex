@@ -1,4 +1,0 @@
-description = "Pavex returns an error if you register an error handler for an infallible sync constructor"
-
-[expectations]
-codegen = "fail"

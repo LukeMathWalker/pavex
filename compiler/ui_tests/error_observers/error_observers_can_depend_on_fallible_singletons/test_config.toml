@@ -1,4 +1,0 @@
-description = """Error observers can depend on a singleton with a fallible constructor"""
-
-[expectations]
-codegen = "pass"

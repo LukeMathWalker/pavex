@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `pavex_macros::constructor`
- --> tests/constructor/fail/multiple_lifecycles.rs:1:5
-  |
-1 | use pavex_macros::constructor;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ no `constructor` in the root

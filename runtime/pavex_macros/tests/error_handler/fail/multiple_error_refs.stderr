@@ -1,5 +1,0 @@
-error: Only one input parameter may be annotated with #[px(error_ref)].
- --> tests/error_handler/fail/multiple_error_refs.rs:4:15
-  |
-4 | pub fn handler(#[px(error_ref)] _a: &str, #[px(error_ref)] _b: u64) -> pavex::Response {
-  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

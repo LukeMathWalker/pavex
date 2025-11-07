@@ -1,6 +1,0 @@
-```rust hl_lines="2"
-#[pavex::post(path = "/login")]
-pub fn login(head: &RequestHead) -> Result<Response, LoginError /* (1)! */> {
-    // [...]
-}
-```

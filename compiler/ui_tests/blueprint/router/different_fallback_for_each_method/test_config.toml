@@ -1,4 +1,0 @@
-description = "pavex should return an error two routes for the same path (different method) use different fallbacks"
-
-[expectations]
-codegen = "fail"

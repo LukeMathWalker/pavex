@@ -1,4 +1,0 @@
-description = """prebuilt types can't be generic nor have a non-static lifetime parameter."""
-
-[expectations]
-codegen = "fail"

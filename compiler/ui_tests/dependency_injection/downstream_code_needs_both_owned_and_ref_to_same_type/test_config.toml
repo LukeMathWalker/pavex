@@ -1,9 +1,0 @@
-description = """
-The code downstream of a middleware needs both `&T` and `T`.
-The state for `Next` should only store `T`.
-"""
-
-[expectations]
-codegen = "pass"
-
-

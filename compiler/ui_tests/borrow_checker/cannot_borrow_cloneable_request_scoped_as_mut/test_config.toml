@@ -1,4 +1,0 @@
-description = "You can't borrow a mutable reference to a cloneable request-scoped component"
-
-[expectations]
-codegen = "fail"

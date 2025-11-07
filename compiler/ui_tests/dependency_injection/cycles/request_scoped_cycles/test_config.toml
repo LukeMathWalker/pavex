@@ -1,5 +1,0 @@
-description = """Cyclic dependencies are forbidden—the dependency graph for all handlers 
-must be a directed acyclic graph"""
-
-[expectations]
-codegen = "fail"

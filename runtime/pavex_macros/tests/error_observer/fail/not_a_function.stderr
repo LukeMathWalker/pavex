@@ -1,5 +1,0 @@
-error: #[pavex::error_observer] can only be applied to functions and methods.
- --> tests/error_observer/fail/not_a_function.rs:7:5
-  |
-7 |     const A: usize = 42;
-  |     ^^^^^^^^^^^^^^^^^^^^

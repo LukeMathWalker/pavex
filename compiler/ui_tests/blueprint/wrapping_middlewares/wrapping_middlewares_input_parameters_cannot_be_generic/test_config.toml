@@ -1,5 +1,0 @@
-description = """pavex does not allow input parameters of wrapping middlewares 
-to have unassigned generic parameters, with the exception of Next"""
-
-[expectations]
-codegen = "fail"

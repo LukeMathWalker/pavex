@@ -1,7 +1,0 @@
-error: Missing field `path`
- --> tests/route/fail/missing_path.rs:3:1
-  |
-3 | #[get]
-  | ^^^^^^
-  |
-  = note: this error originates in the attribute macro `get` (in Nightly builds, run with -Z macro-backtrace for more info)

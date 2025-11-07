@@ -1,6 +1,0 @@
-description = "pavex supports pattern bindings for input parameters"
-
-[expectations]
-codegen = "pass"
-
-

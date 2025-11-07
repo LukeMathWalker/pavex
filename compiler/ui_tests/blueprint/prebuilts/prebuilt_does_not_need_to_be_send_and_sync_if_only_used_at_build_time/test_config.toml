@@ -1,5 +1,0 @@
-description = """Prebuilt types can be !Send and/or !Sync if they are only used in
-build_application_state"""
-
-[expectations]
-codegen = "pass"

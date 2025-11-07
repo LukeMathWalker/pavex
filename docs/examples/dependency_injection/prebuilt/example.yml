@@ -1,4 +1,0 @@
-snippets:
-  - name: "build_state"
-    source_path: "server_sdk/src/lib.rs"
-    ranges: ["13..18"]

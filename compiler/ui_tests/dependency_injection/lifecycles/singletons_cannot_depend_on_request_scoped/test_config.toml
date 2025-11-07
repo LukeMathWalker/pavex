@@ -1,5 +1,0 @@
-description = """Singletons can only depend on other singletons, they can't depend on 
-request-scoped or transient components"""
-
-[expectations]
-codegen = "fail"

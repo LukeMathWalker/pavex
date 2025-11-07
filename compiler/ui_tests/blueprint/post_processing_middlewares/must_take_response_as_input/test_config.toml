@@ -1,4 +1,0 @@
-description = """Post-processing middlewares must take `Response` as an input parameter"""
-
-[expectations]
-codegen = "fail"

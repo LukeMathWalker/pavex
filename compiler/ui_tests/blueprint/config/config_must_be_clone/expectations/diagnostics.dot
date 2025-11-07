@@ -1,3 +1,0 @@
-digraph app_state {
-    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
-}

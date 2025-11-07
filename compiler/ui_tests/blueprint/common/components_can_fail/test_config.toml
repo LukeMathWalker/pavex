@@ -1,5 +1,0 @@
-description = """An application that uses fallible constructors (all lifecycles),
-fallible request handlers and fallible wrapping middlewares"""
-
-[dependencies]
-thiserror = "1"

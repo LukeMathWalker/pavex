@@ -1,9 +1,0 @@
-```rust hl_lines="5"
-use pavex::Blueprint;
-
-pub fn bp() -> Blueprint {
-    let mut bp = Blueprint::new();
-    bp.domain("{sub}.pavex.dev").nest(sub_bp());
-    // [...]
-}
-```

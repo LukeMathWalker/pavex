@@ -1,5 +1,0 @@
-description = """Pavex emits a warning for unused prebuilt types."""
-
-[expectations]
-codegen = "pass"
-lints = "fail"

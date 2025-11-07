@@ -1,5 +1,0 @@
-error: #[pavex::get] can only be applied to functions and methods.
- --> tests/route/fail/not_a_function.rs:4:1
-  |
-4 | pub struct A;
-  | ^^^^^^^^^^^^^

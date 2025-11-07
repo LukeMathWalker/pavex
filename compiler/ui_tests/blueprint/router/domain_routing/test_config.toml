@@ -1,7 +1,0 @@
-description = "Pavex invokes the handlers based on the `Host` header value, the path and the method of the incoming request"
-
-[expectations]
-codegen = "pass"
-
-[dev-dependencies]
-tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

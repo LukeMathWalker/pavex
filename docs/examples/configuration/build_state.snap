@@ -1,8 +1,0 @@
-```rust
-// [...]
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct ApplicationConfig {
-    pub postgres: configuration::postgres::PostgresConfig,
-    pub server: configuration::server::ServerConfig,
-}
-```

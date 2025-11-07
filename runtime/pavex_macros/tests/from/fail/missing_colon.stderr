@@ -1,5 +1,0 @@
-error: expected `,`
- --> tests/from/fail/missing_colon.rs:6:24
-  |
-6 |     let _ = from![crate:a];
-  |                        ^

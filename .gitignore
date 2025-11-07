@@ -1,9 +1,0 @@
-/.cache/
-/vendor
-.DS_Store
-.claude
-trace-*.json
-/docs/api_reference/
-.direnv/
-site
-target

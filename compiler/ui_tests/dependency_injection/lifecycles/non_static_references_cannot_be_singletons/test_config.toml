@@ -1,4 +1,0 @@
-description = """Singletons cannot be non-'static references"""
-
-[expectations]
-codegen = "fail"

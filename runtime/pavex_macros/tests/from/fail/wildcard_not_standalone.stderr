@@ -1,6 +1,0 @@
-error: The wildcard source, `*`, can't be combined with other module paths.
-       `*` will automatically include all local modules and all direct dependencies of the current crate.
- --> tests/from/fail/wildcard_not_standalone.rs:4:19
-  |
-4 |     let _ = from![*, crate::router];
-  |                   ^^^^^^^^^^^^^^^^

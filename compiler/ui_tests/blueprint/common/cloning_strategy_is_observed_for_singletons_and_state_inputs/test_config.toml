@@ -1,5 +1,0 @@
-description = """Pavex returns an error if a singleton or a prebuilt type must be cloned,
-but their cloning strategy doesn't allow it."""
-
-[expectations]
-codegen = "fail"

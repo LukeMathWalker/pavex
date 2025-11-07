@@ -1,5 +1,0 @@
-description = """It is forbidden to register a constructor for pavex::Error or &pavex::Error,
-as well as any framework primitive."""
-
-[expectations]
-codegen = "fail"

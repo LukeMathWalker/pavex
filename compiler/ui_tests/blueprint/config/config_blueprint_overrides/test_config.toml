@@ -1,4 +1,0 @@
-description = """You can override the attributes set in the annotation."""
-
-[expectations]
-codegen = "pass"

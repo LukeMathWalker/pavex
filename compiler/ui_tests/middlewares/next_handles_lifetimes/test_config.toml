@@ -1,4 +1,0 @@
-description = """The state for `Next` can handle request-scoped state with a lifetime attached"""
-
-[expectations]
-codegen = "pass"

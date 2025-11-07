@@ -1,7 +1,0 @@
-```rust hl_lines="2"
-// [...]
-#[derive(serde::Deserialize)]
-pub struct SearchParams {
-    pub sorted: bool,
-}
-```

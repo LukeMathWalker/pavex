@@ -1,5 +1,0 @@
-error: expected ident
- --> tests/from/fail/type_path.rs:6:29
-  |
-6 |     let _ = from![crate::A::<String>];
-  |                             ^

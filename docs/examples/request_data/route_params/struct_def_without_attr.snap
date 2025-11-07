@@ -1,6 +1,0 @@
-```rust hl_lines="3"
-// [...]
-pub struct GetUserParams {
-    pub id: u64,
-}
-```

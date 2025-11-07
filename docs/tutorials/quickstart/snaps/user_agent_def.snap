@@ -1,8 +1,0 @@
-```rust title="app/src/user_agent.rs"
-pub enum UserAgent {
-    /// No `User-Agent` header was provided.
-    Unknown,
-    /// The value of the `User-Agent` header for the incoming request.
-    Known(String),
-}
-```

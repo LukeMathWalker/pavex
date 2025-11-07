@@ -1,4 +1,0 @@
-description = """You can inject a missing type as a config type."""
-
-[expectations]
-codegen = "pass"

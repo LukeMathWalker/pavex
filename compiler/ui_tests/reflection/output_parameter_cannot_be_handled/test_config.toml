@@ -1,6 +1,0 @@
-description = "Checking the error message returned by Pavex when it cannot resolve the output parameter of a constructor"
-
-[expectations]
-codegen = "fail"
-
-

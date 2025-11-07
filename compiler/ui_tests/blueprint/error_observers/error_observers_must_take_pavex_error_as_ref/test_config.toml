@@ -1,4 +1,0 @@
-description = """Pavex expects error observers to take &pavex::Error as input."""
-
-[expectations]
-codegen = "fail"

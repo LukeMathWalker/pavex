@@ -1,6 +1,0 @@
-description = "pavex knows how to deal with shared references, no matter the lifecycle of the underlying type"
-
-[expectations]
-codegen = "pass"
-
-

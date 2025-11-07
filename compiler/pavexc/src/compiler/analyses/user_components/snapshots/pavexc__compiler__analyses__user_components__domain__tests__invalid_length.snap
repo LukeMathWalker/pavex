@@ -1,5 +1,0 @@
----
-source: pavexc/src/compiler/analyses/user_components/domain.rs
-expression: validate(&long_domain).unwrap_err()
----
-`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.com` is too long to be a valid domain. The maximum allowed length is 253 characters, but this domain is 254 characters long.

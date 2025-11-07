@@ -1,7 +1,0 @@
-description = """
-Pavex correctly handles lifetime parameters, 
-even when they're omitted in the input that must be injected.
-""""
-
-[expectations]
-codegen = "pass"
