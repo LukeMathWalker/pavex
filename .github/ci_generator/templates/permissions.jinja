@@ -1,6 +1,3 @@
-permissions:
-  pull-requests: write
-  checks: write
 # Run if it's a PR on the official repo or a push to `main`
 if: |
   (github.event_name == 'repository_dispatch' &&
@@ -10,3 +7,6 @@ if: |
     github.event.client_payload.slash_command.args.named.sha
   )) ||
   (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+permissions:
+  pull-requests: write
+  checks: write

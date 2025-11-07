@@ -1,5 +1,5 @@
 [project]
-name = "md-slash"
+name = "md_slash"
 version = "0.1.0"
 readme = "README.md"
 description = "MkDocs extension to convert trailing slashes to <br>"
@@ -8,7 +8,7 @@ requires-python = ">=3.11"
 dependencies = ["Markdown"]
 
 [project.entry-points."markdown.extensions"]
-trailing_slash = "md-slash:makeExtension"
+trailing_slash = "md_slash:makeExtension"
 
 [build-system]
 requires = ["hatchling"]
