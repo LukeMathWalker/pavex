@@ -1,5 +1,5 @@
 site_name: Pavex
-site_url: "https://pavex.dev/"
+site_url: "https://pavex.dev/docs/"
 site_description: "The documentation for Pavex, a framework for building robust APIs in Rust."
 repo_url: "https://github.com/LukeMathWalker/pavex"
 repo_name: "LukeMathWalker/pavex"
@@ -7,9 +7,14 @@ edit_uri: "edit/main/docs/"
 plugins:
   #  - social
   - search
+  - mike:
+      canonical_version: "latest"
   - redirects:
       redirect_maps:
         "index.md": "overview/index.md"
+extra:
+  version:
+    provider: "mike"
 markdown_extensions:
   - admonition
   - pymdownx.details

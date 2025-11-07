@@ -9,14 +9,14 @@ and [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
 ## Prerequisites
 
-We don't want to force you to set up a Python dev environment: we rely on Docker to build and preview the docs.
-Make sure you have [Docker](https://www.docker.com/) installed and running.
-
-You'll then need to build the relevant image:
+Install [`uv`](https://docs.astral.sh/uv/getting-started/installation/), a Python toolchain manager and built tool.
+Then run:
 
 ```bash
-docker build -t pavex-docs .
+uv sync
 ```
+
+from the root of the repository.
 
 ## Commands
 
@@ -24,18 +24,17 @@ You can preview the docs locally by running from the root of the repository (i.e
 the directory containing this README file):
 
 ```bash
-docker run --rm -it -p 8001:8000 \
-  -v ${PWD}:/docs \
-  pavex-docs
+uv run mkdocs serve --open
 ```
 
-The docs will be available at [http://localhost:8001](http://localhost:8001) and will auto-reload when you make changes.
+The docs will be available at [http://localhost:8000](http://localhost:8000) and will auto-reload when you make changes.
 
 The docs embed the auto-generated API reference for the first-party Pavex crates: the command above mounts the
 relevant folders so that the docs can access the generated HTML files, but it **won't (re)generate them for you**.\
 If you want to generate or update the API reference,
-you'll need to run the following command from the root of the repository:
+you'll need to run the following commands from the root of the repository:
 
 ```bash
-cargo api_ref && cp -r target/doc/* ../docs/api_reference
+mkdir -p docs/api_reference
+cargo api_ref && cp -r target/doc/* docs/api_reference
 ```
