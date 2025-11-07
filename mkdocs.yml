@@ -7,9 +7,15 @@ edit_uri: "edit/main/docs/"
 plugins:
   #  - social
   - search
+  - mike:
+      deploy_prefix: "rendered_docs"
+      canonical_version: "latest"
   - redirects:
       redirect_maps:
         "index.md": "overview/index.md"
+extra:
+  version:
+    provider: "mike"
 markdown_extensions:
   - admonition
   - pymdownx.details
