@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"attr":["PathParams"],"mod":["errors"],"struct":["EncodedParamValue","MatchedPathPattern","PathParams","RawPathParams","RawPathParamsIter"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ChangeIdError","CreateError","DeleteError","LoadError","UpdateError","UpdateTtlError"],"struct":["DeleteExpiredError","DuplicateIdError","UnknownIdError"]};

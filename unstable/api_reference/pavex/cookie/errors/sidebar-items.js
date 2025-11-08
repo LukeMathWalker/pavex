@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EXTRACT_REQUEST_COOKIES_ERROR_INTO_RESPONSE","INJECT_RESPONSE_COOKIES_ERROR_INTO_RESPONSE"],"enum":["ExtractRequestCookiesError","KeyError","ParseError","ProcessIncomingError"],"struct":["CryptoError","DecodingError","EmptyNameError","InjectResponseCookiesError","MissingPairError","ShortKeyError"]};

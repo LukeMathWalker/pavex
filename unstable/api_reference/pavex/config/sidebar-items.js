@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"derive":["ConfigProfile"],"mod":["errors"],"struct":["ConfigLoader"],"trait":["ConfigProfile"]};

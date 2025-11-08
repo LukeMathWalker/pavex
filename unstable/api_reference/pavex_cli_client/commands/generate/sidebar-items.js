@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GenerateError"],"struct":["BlueprintPersistenceError","GenerateBuilder"]};
