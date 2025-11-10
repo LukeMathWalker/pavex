@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Convenience routines for serializing `Span` values."><title>pavex::time::fmt::serde::span - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module span</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module span</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#advice" title="Advice">Advice</a></li><li><a href="#available-routines" title="Available routines">Available routines</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In pavex::<wbr>time::<wbr>fmt::<wbr>serde</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../../../index.html">pavex</a>::<wbr><a href="../../../index.html">time</a>::<wbr><a href="../../index.html">fmt</a>::<wbr><a href="../index.html">serde</a></div><h1>Module <span>span</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Convenience routines for serializing <a href="../../../struct.Span.html" title="struct pavex::time::Span"><code>Span</code></a> values.</p>
+<p>These convenience routines exist because the <code>Serialize</code> implementation for
+<code>Span</code> always uses the ISO 8601 duration format. These routines provide a
+way to use the “<a href="../../friendly/index.html" title="mod pavex::time::fmt::friendly">friendly</a>” format.</p>
+<p>Only serialization routines are provided because a <code>Span</code>’s <code>Deserialize</code>
+implementation automatically handles both the ISO 8601 duration format and
+the “friendly” format.</p>
+<h2 id="advice"><a class="doc-anchor" href="#advice">§</a>Advice</h2>
+<p>The <code>Serialize</code> implementation uses ISO 8601 because it is a widely
+accepted interchange format for communicating durations. If you need to
+inter-operate with other systems, it is almost certainly the correct choice.</p>
+<p>The “friendly” format does not adhere to any universal specified format.
+However, it is perhaps easier to read, and crucially, unambiguously
+represents all components of a <code>Span</code> faithfully. (In contrast, the ISO
+8601 format always normalizes sub-second durations into fractional seconds,
+which means durations like <code>1100ms</code> and <code>1s100ms</code> are alwasys considered
+equivalent.)</p>
+<h2 id="available-routines"><a class="doc-anchor" href="#available-routines">§</a>Available routines</h2>
+<p>A <a href="../../friendly/struct.SpanPrinter.html" title="struct pavex::time::fmt::friendly::SpanPrinter"><code>SpanPrinter</code></a> has a lot of different
+configuration options. The convenience routines provided by this module
+only cover a small space of those options since it isn’t feasible to
+provide a convenience routine for every possible set of configuration
+options.</p>
+<p>While more convenience routines could be added (please file an issue), only
+the most common or popular such routines can be feasibly added. So in the
+case where a convenience routine isn’t available for the configuration you
+want, you can very easily define your own <code>serialize_with</code> routine.</p>
+<p>The recommended approach is to define a function and a type that
+implements the <code>std::fmt::Display</code> trait. This way, if a serializer can
+efficiently support <code>Display</code> implementations, then an allocation can be
+avoided.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{Span, ToSpan};
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Data {
+    <span class="attr">#[serde(serialize_with = <span class="string">"custom_friendly"</span>)]
+    </span>duration: Span,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"duration": "1 year 2 months 36 hours 1100ms"}"#</span>;
+<span class="kw">let </span>got: Data = serde_json::from_str(<span class="kw-2">&amp;</span>json).unwrap();
+<span class="macro">assert_eq!</span>(
+    got.duration,
+    <span class="number">1</span>.year().months(<span class="number">2</span>).hours(<span class="number">36</span>).milliseconds(<span class="number">1100</span>).fieldwise(),
+);
+
+<span class="kw">let </span>expected = <span class="string">r#"{"duration":"1 year, 2 months, 36:00:01.100"}"#</span>;
+<span class="macro">assert_eq!</span>(serde_json::to_string(<span class="kw-2">&amp;</span>got).unwrap(), expected);
+
+<span class="kw">fn </span>custom_friendly&lt;S: serde::Serializer&gt;(
+    span: <span class="kw-2">&amp;</span>Span,
+    se: S,
+) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt; {
+    <span class="kw">struct </span>Custom&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Span);
+
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; std::fmt::Display <span class="kw">for </span>Custom&lt;<span class="lifetime">'a</span>&gt; {
+        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter) -&gt; std::fmt::Result {
+            <span class="kw">use </span>jiff::fmt::{
+                friendly::{Designator, Spacing, SpanPrinter},
+                StdFmtWrite,
+            };
+
+            <span class="kw">static </span>PRINTER: SpanPrinter = SpanPrinter::new()
+                .designator(Designator::Verbose)
+                .comma_after_designator(<span class="bool-val">true</span>)
+                .spacing(Spacing::BetweenUnitsAndDesignators)
+                .hours_minutes_seconds(<span class="bool-val">true</span>)
+                .precision(<span class="prelude-val">Some</span>(<span class="number">3</span>));
+
+            PRINTER
+                .print_span(<span class="self">self</span>.<span class="number">0</span>, StdFmtWrite(f))
+                .map_err(|<span class="kw">_</span>| core::fmt::Error)
+        }
+    }
+
+    se.collect_str(<span class="kw-2">&amp;</span>Custom(span))
+}</code></pre></div>
+<p>Recall from above that you only need a custom serialization routine
+for this. Namely, deserialization automatically supports parsing all
+configuration options for serialization unconditionally.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="friendly/index.html" title="mod pavex::time::fmt::serde::span::friendly">friendly</a></dt><dd>Serialize a <code>Span</code> in the <a href="../../friendly/index.html" title="mod pavex::time::fmt::friendly"><code>friendly</code></a> duration
+format.</dd></dl></section></div></main></body></html>

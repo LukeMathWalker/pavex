@@ -1,0 +1,33 @@
+.highlight .-Color-Red, .highlight .-Color-Bold-Red {
+    color: var(--md-code-hl-special-color);
+}
+
+.highlight .-Color-Magenta, .highlight .-Color-Bold-Magenta {
+    color: var(--md-code-hl-function-color);
+}
+
+.highlight .-Color-Yellow, .highlight .-Color-Bold-Yellow {
+    /* We don't have anything yellow-ish, we go for violet */
+    color: var(--md-code-hl-constant-color);
+}
+
+.highlight .-Color-Cyan, .highlight .-Color-Bold-Cyan {
+    color: var(--md-code-hl-keyword-color);
+}
+
+.highlight .-Color-Blue, .highlight .-Color-Bold-Blue {
+    /* We treat Cyan and Blue the same */
+    color: var(--md-code-hl-keyword-color);
+}
+
+.highlight .-Color-Green, .highlight .-Color-Bold-Green {
+    color: var(--md-code-hl-string-color);
+}
+
+.highlight .-Color-Bold {
+    font-weight: bold;
+}
+
+.highlight .-Color-Faint {
+    font-weight: lighter;
+}

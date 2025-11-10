@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_FALLBACK"],"enum":["AllowedMethods"],"fn":["default_fallback"],"struct":["MethodAllowList"]};

@@ -1,0 +1,134 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Define a route for requests to a given path."><title>route in pavex - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc attr"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">route</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">route</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example-multiple-methods" title="Example: Multiple methods">Example: Multiple methods</a></li><li><a href="#guide" title="Guide">Guide</a></li><li><a href="#registration" title="Registration">Registration</a></li><li><a href="#arguments" title="Arguments">Arguments</a><ul><li><a href="#method" title="`method`"><code>method</code></a></li><li><a href="#path" title="`path`"><code>path</code></a></li><li><a href="#id" title="`id`"><code>id</code></a></li><li><a href="#allow" title="`allow`"><code>allow</code></a></li></ul></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate pavex</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">pavex</a></div><h1>Attribute Macro <span class="attr">route</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><pre class="rust item-decl"><code>#[route]</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Define a <a href="https://pavex.dev/docs/guide/routing/">route</a> for requests to a given path.</p>
+<p>The <code>#[route]</code> macro can be used to define routes that match multiple HTTP methods, or
+non-standard ones (e.g. <code>QUERY</code>).
+Prefer one of the short-hand attributes if you need to match a standard HTTP method:
+<a href="attr.get.html" title="attr pavex::get"><code>#[get]</code></a>, <a href="attr.post.html" title="attr pavex::post"><code>#[post]</code></a>, <a href="attr.put.html" title="attr pavex::put"><code>#[put]</code></a>, <a href="attr.patch.html" title="attr pavex::patch"><code>#[patch]</code></a>,
+<a href="attr.delete.html" title="attr pavex::delete"><code>#[delete]</code></a>, <a href="attr.head.html" title="attr pavex::head"><code>#[head]</code></a>, and <a href="attr.options.html" title="attr pavex::options"><code>#[options]</code></a>.</p>
+<h2 id="example-multiple-methods"><a class="doc-anchor" href="#example-multiple-methods">§</a>Example: Multiple methods</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(method = [<span class="string">"GET"</span>, <span class="string">"HEAD"</span>]</span>, path = <span class="string">"/users/{id}"</span>)]
+<span class="comment">//      👆 Multiple methods
+</span><span class="kw">pub async fn </span>get_or_head_user(<span class="comment">/* */</span>) -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div><h2 id="guide"><a class="doc-anchor" href="#guide">§</a>Guide</h2>
+<p>Check out the <a href="https://pavex.dev/docs/guide/routing/">“Routing”</a>
+section of Pavex’s guide for a thorough introduction to routing
+in Pavex applications.</p>
+<h2 id="registration"><a class="doc-anchor" href="#registration">§</a>Registration</h2>
+<p>You can register a route with your application in two ways:</p>
+<ul>
+<li>Use <a href="struct.Blueprint.html#method.route" title="method pavex::Blueprint::route"><code>Blueprint::route</code></a> to register a single route</li>
+<li>Use <a href="struct.Blueprint.html#method.routes" title="method pavex::Blueprint::routes"><code>Blueprint::routes</code></a> to register multiple routes in bulk</li>
+</ul>
+<p>The <code>#[route]</code> macro <a href="#id">generates a constant</a> that you can use to refer to the
+route when invoking <a href="struct.Blueprint.html#method.route" title="method pavex::Blueprint::route"><code>Blueprint::route</code></a>.</p>
+<h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
+<p>The sections below provide an exhaustive list of all the arguments supported by the <a href="attr.route.html" title="attr pavex::route"><code>route</code></a> macro:</p>
+<div><table><thead><tr><th>Name</th><th>Kind</th><th>Required</th></tr></thead><tbody>
+<tr><td><a href="#method"><code>method</code></a></td><td>Argument</td><td>Yes*</td></tr>
+<tr><td><a href="#path"><code>path</code></a></td><td>Argument</td><td>Yes</td></tr>
+<tr><td><a href="#id"><code>id</code></a></td><td>Argument</td><td>No</td></tr>
+<tr><td><a href="#allow"><code>allow</code></a></td><td>Argument</td><td>No</td></tr>
+</tbody></table>
+</div>
+<p>* The <code>method</code> argument is required unless <a href="#allow"><code>allow(any_method)</code></a> is specified.</p>
+<h3 id="method"><a class="doc-anchor" href="#method">§</a><code>method</code></h3>
+<p>The <code>method</code> argument specifies the HTTP method(s) that this route will match.
+You can specify a single method or multiple methods.</p>
+<p><code>method</code> is required unless you specified <a href="#allow"><code>allow(any_method)</code></a> to accept
+any HTTP method.</p>
+<h4 id="example"><a class="doc-anchor" href="#example">§</a>Example</h4>
+<p>Single method:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(method = <span class="string">"POST"</span>, path = <span class="string">"/users/{id}"</span>)]
+</span><span class="comment">//       👆 Single method
+</span><span class="kw">pub async fn </span>create_user(<span class="comment">/* */</span>) -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div>
+<p>Multiple methods:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(method = [<span class="string">"GET"</span>, <span class="string">"HEAD"</span>]</span>, path = <span class="string">"/users/{id}"</span>)]
+<span class="comment">//       👆 Multiple methods
+</span><span class="kw">pub async fn </span>get_or_head_user(<span class="comment">/* */</span>) -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div><h3 id="path"><a class="doc-anchor" href="#path">§</a><code>path</code></h3>
+<p>The <code>path</code> argument specifies the URL path pattern that this route will match.</p>
+<p>The path can contain parameter placeholders in the format <code>{parameter_name}</code> that will
+be extracted and passed to your handler function.</p>
+<h4 id="example-1"><a class="doc-anchor" href="#example-1">§</a>Example</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(method = <span class="string">"GET"</span>, path = <span class="string">"/users/{id}/posts/{post_id}"</span>)]
+</span><span class="comment">//                            👆 Path with multiple parameters
+</span><span class="kw">pub async fn </span>get_user_post(<span class="comment">/* */</span>) -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div><h3 id="id"><a class="doc-anchor" href="#id">§</a><code>id</code></h3>
+<p>By default, Pavex generates a constant named after your function
+(converted to UPPER_SNAKE_CASE) that you use when registering the route.</p>
+<p>The <code>id</code> argument allows you to customize the name of the generated constant.</p>
+<h4 id="example-2"><a class="doc-anchor" href="#example-2">§</a>Example</h4>
+<p>Using the default generated identifier:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response, Blueprint};
+
+<span class="attr">#[route(method = <span class="string">"GET"</span>, path = <span class="string">"/users/{id}"</span>)]
+</span><span class="kw">pub async fn </span>get_user(<span class="comment">/* */</span>) -&gt; Response {
+    <span class="comment">// [...]
+</span>}
+
+<span class="kw">let </span><span class="kw-2">mut </span>bp = Blueprint::new();
+<span class="comment">// The generated constant is named `GET_USER`
+</span>bp.route(GET_USER);</code></pre></div>
+<p>Using a custom identifier:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response, Blueprint};
+
+<span class="attr">#[route(method = <span class="string">"GET"</span>, path = <span class="string">"/users/{id}"</span>, id = <span class="string">"USER_ROUTE"</span>)]
+</span><span class="comment">//                                            👆 Custom identifier
+</span><span class="kw">pub async fn </span>get_user(<span class="comment">/* */</span>) -&gt; Response {
+    <span class="comment">// [...]
+</span>}
+
+<span class="kw">let </span><span class="kw-2">mut </span>bp = Blueprint::new();
+<span class="comment">// Use the custom identifier when registering
+</span>bp.route(USER_ROUTE);</code></pre></div><h3 id="allow"><a class="doc-anchor" href="#allow">§</a><code>allow</code></h3>
+<p>The <code>allow</code> argument can be used to enable additional behaviors for this route.</p>
+<p>Currently, the following values are supported:</p>
+<ul>
+<li><code>non_standard_methods</code>: Allow non-standard HTTP methods</li>
+<li><code>any_method</code>: Match any HTTP method.
+It matches non-standard methods if <code>non_standard_methods</code> is also enabled.</li>
+</ul>
+<h4 id="example-non-standard-method"><a class="doc-anchor" href="#example-non-standard-method">§</a>Example: Non-standard method</h4>
+<p>Allow non-standard methods:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(method = <span class="string">"QUERY"</span>, path = <span class="string">"/users"</span>, allow(non_standard_methods))]
+</span><span class="comment">//                                         👆 Allow non-standard methods
+</span><span class="kw">pub async fn </span>query_users() -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div><h4 id="example-any-standard-method"><a class="doc-anchor" href="#example-any-standard-method">§</a>Example: Any standard method</h4>
+<p>Allow any method (no need to specify <code>method</code>):</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(path = <span class="string">"/webhook"</span>, allow(any_method))]
+</span><span class="comment">//                         👆 Allow any HTTP method
+</span><span class="kw">pub async fn </span>webhook() -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div><h4 id="example-arbitrary-methods"><a class="doc-anchor" href="#example-arbitrary-methods">§</a>Example: Arbitrary methods</h4>
+<p>Allow any method, including non-standard ones:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{route, Response};
+
+<span class="attr">#[route(path = <span class="string">"/webhook"</span>, allow(any_method, non_standard_methods))]
+</span><span class="comment">//                         👆 Allow any HTTP method, including non-standard ones
+</span><span class="kw">pub async fn </span>webhook() -&gt; Response {
+    <span class="comment">// [...]
+</span>}</code></pre></div></div></details></section></div></main></body></html>

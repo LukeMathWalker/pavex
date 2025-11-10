@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A macro to derive an implementation of the [`ConfigProfile`] trait."><title>ConfigProfile in pavex::config - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc derive"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">ConfigProfile</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Config<wbr>Profile</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#usage" title="Usage">Usage</a></li><li><a href="#custom-profile-names" title="Custom Profile Names">Custom Profile Names</a></li><li><a href="#limitations" title="Limitations">Limitations</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In pavex::<wbr>config</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pavex</a>::<wbr><a href="index.html">config</a></div><h1>Derive Macro <span class="derive">Config<wbr>Profile</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><pre class="rust item-decl"><code>#[derive(ConfigProfile)]
+{
+    <span class="comment">// Attributes available to this derive:</span>
+    #[px]
+}
+</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A macro to derive an implementation of the <a href="trait.ConfigProfile.html" title="trait pavex::config::ConfigProfile"><code>ConfigProfile</code></a> trait.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::config::ConfigProfile;
+
+<span class="attr">#[derive(ConfigProfile)]
+</span><span class="kw">pub enum </span>Profile {
+    Development, <span class="comment">// "development"
+    </span>Production,  <span class="comment">// "production"
+</span>}</code></pre></div><h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<p>By default, each variant is converted to a <strong>snake_case</strong> string representation:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::config::ConfigProfile;
+<span class="kw">use </span>std::str::FromStr;
+
+<span class="attr">#[derive(ConfigProfile)]
+</span><span class="kw">pub enum </span>Profile {
+    LocalDevelopment, <span class="comment">// "local_development"
+    </span>Production,  <span class="comment">// "production"
+</span>}
+
+<span class="kw">let </span>p = Profile::from_str(<span class="string">"local_development"</span>).unwrap();
+<span class="macro">assert_eq!</span>(p.as_ref(), <span class="string">"local_development"</span>);</code></pre></div><h3 id="custom-profile-names"><a class="doc-anchor" href="#custom-profile-names">§</a>Custom Profile Names</h3>
+<p>You can override the default representation using <code>#[px(profile = "...")]</code>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::config::ConfigProfile;
+<span class="kw">use </span>std::str::FromStr;
+
+<span class="attr">#[derive(ConfigProfile)]
+</span><span class="kw">pub enum </span>Profile {
+    <span class="attr">#[px(profile = <span class="string">"dev"</span>)]
+    </span>Development,
+    <span class="attr">#[px(profile = <span class="string">"prod"</span>)]
+    </span>Production,
+}
+
+<span class="kw">let </span>p = Profile::from_str(<span class="string">"dev"</span>)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(p.as_ref(), <span class="string">"dev"</span>);</code></pre></div><h3 id="limitations"><a class="doc-anchor" href="#limitations">§</a>Limitations</h3>
+<p>The macro only works on enums with unit variants.
+Enums with fields, structs, or unions are not supported and will result in a compile-time error.</p>
+<p>If you need more flexibility, consider implementing <a href="trait.ConfigProfile.html" title="trait pavex::config::ConfigProfile"><code>ConfigProfile</code></a> manually.</p>
+</div></details></section></div></main></body></html>

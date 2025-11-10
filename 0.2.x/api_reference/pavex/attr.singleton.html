@@ -1,0 +1,162 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Define a singleton constructor."><title>singleton in pavex - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc attr"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">singleton</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">singleton</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example" title="Example">Example</a></li><li><a href="#guide" title="Guide">Guide</a></li><li><a href="#registration" title="Registration">Registration</a></li><li><a href="#arguments" title="Arguments">Arguments</a><ul><li><a href="#id" title="`id`"><code>id</code></a></li><li><a href="#clone_if_necessary" title="`clone_if_necessary`"><code>clone_if_necessary</code></a></li><li><a href="#never_clone" title="`never_clone`"><code>never_clone</code></a></li><li><a href="#allow" title="`allow`"><code>allow</code></a></li></ul></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate pavex</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">pavex</a></div><h1>Attribute Macro <span class="attr">singleton</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><pre class="rust item-decl"><code>#[singleton]</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Define a <a href="https://pavex.dev/docs/guide/dependency_injection/constructors/">singleton constructor</a>.</p>
+<p>Singleton constructors are invoked once (when the application starts up) to create
+a new instance of their output type. The created instance is then shared across all
+requests for the lifetime of the application.</p>
+<p>Check out <a href="attr.request_scoped.html" title="attr pavex::request_scoped"><code>#[request_scoped]</code></a> and <a href="attr.transient.html" title="attr pavex::transient"><code>#[transient]</code></a>
+if you need to define constructors with different lifecycles.</p>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::methods;
+
+<span class="kw">pub struct </span>DatabasePool {
+    <span class="comment">// [...]
+</span>}
+
+<span class="attr">#[methods]
+</span><span class="kw">impl </span>DatabasePool {
+    <span class="attr">#[singleton]
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            <span class="comment">// [...]
+        </span>}
+    }
+}</code></pre></div>
+<p><code>DatabasePool::new</code> will be called once at application startup, and the resulting
+instance will be shared across all requests.</p>
+<h2 id="guide"><a class="doc-anchor" href="#guide">§</a>Guide</h2>
+<p>Check out the <a href="https://pavex.dev/docs/guide/dependency_injection">“Dependency injection”</a>
+section of Pavex’s guide for a thorough introduction to dependency injection
+in Pavex applications.</p>
+<h2 id="registration"><a class="doc-anchor" href="#registration">§</a>Registration</h2>
+<p>You can register a singleton constructor with your application in two ways:</p>
+<ul>
+<li>Use <a href="struct.Blueprint.html#method.constructor" title="method pavex::Blueprint::constructor"><code>Blueprint::constructor</code></a> to register a single constructor</li>
+<li>Use <a href="struct.Blueprint.html#method.import" title="method pavex::Blueprint::import"><code>Blueprint::import</code></a> to import multiple constructors in bulk</li>
+</ul>
+<p>The <code>#[singleton]</code> macro <a href="#id">generates a constant</a> that you can use to refer to the
+constructor when invoking <a href="struct.Blueprint.html#method.constructor" title="method pavex::Blueprint::constructor"><code>Blueprint::constructor</code></a>.</p>
+<h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
+<p>The sections below provide an exhaustive list of all the arguments and flags supported by the <a href="attr.singleton.html" title="attr pavex::singleton"><code>singleton</code></a> macro:</p>
+<div><table><thead><tr><th>Name</th><th>Kind</th><th>Required</th></tr></thead><tbody>
+<tr><td><a href="#id"><code>id</code></a></td><td>Argument</td><td>No</td></tr>
+<tr><td><a href="#clone_if_necessary"><code>clone_if_necessary</code></a></td><td>Flag</td><td>No</td></tr>
+<tr><td><a href="#never_clone"><code>never_clone</code></a></td><td>Flag</td><td>No</td></tr>
+<tr><td><a href="#allow"><code>allow</code></a></td><td>Argument</td><td>No</td></tr>
+</tbody></table>
+</div><h3 id="id"><a class="doc-anchor" href="#id">§</a><code>id</code></h3>
+<p>By default, Pavex generates a constant named after your type and method
+(converted to UPPER_SNAKE_CASE) that you use when registering the constructor.</p>
+<p>The <code>id</code> argument allows you to customize the name of the generated constant.</p>
+<h4 id="example-1"><a class="doc-anchor" href="#example-1">§</a>Example</h4>
+<p>Using the default generated identifier:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{methods, Blueprint};
+
+<span class="kw">pub struct </span>CacheManager {
+    <span class="comment">// [...]
+</span>}
+
+<span class="attr">#[methods]
+</span><span class="kw">impl </span>CacheManager {
+    <span class="attr">#[singleton]
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            <span class="comment">// [...]
+        </span>}
+    }
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>bp = Blueprint::new();
+<span class="comment">// The generated constant is named `CACHE_MANAGER_NEW`
+</span>bp.constructor(CACHE_MANAGER_NEW);</code></pre></div>
+<p>Using a custom identifier:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::{methods, Blueprint};
+
+<span class="kw">pub struct </span>CacheManager {
+    <span class="comment">// [...]
+</span>}
+
+<span class="attr">#[methods]
+</span><span class="kw">impl </span>CacheManager {
+    <span class="attr">#[singleton(id = <span class="string">"CACHE_CONSTRUCTOR"</span>)]
+    </span><span class="comment">//           👆 Custom identifier
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            <span class="comment">// [...]
+        </span>}
+    }
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>bp = Blueprint::new();
+<span class="comment">// Use the custom identifier when registering
+</span>bp.constructor(CACHE_CONSTRUCTOR);</code></pre></div><h3 id="clone_if_necessary"><a class="doc-anchor" href="#clone_if_necessary">§</a><code>clone_if_necessary</code></h3>
+<p>By default, Pavex will <strong>not</strong> clone the output of singleton constructors. The <code>clone_if_necessary</code>
+flag allows Pavex to invoke <code>.clone()</code> on the output if it helps satisfy Rust’s borrow checker.</p>
+<p>The constructed type must implement the <code>Clone</code> trait.</p>
+<p>This flag is mutually exclusive with <code>never_clone</code>.</p>
+<h4 id="example-2"><a class="doc-anchor" href="#example-2">§</a>Example</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::methods;
+<span class="kw">use </span>std::collections::HashMap;
+
+<span class="attr">#[derive(Clone)]
+</span><span class="kw">pub struct </span>GlobalConfig {
+    settings: HashMap&lt;String, String&gt;,
+}
+
+<span class="attr">#[methods]
+</span><span class="kw">impl </span>GlobalConfig {
+    <span class="attr">#[singleton(clone_if_necessary)]
+    </span><span class="comment">//          👆 Allow cloning when needed
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            settings: HashMap::new(),
+        }
+    }
+}</code></pre></div><h3 id="never_clone"><a class="doc-anchor" href="#never_clone">§</a><code>never_clone</code></h3>
+<p>The <code>never_clone</code> flag explicitly prevents Pavex from cloning the output of this constructor.
+This is the default behavior for singleton constructors, so this flag is typically used
+for clarity and explicitness.</p>
+<p>This flag is mutually exclusive with <code>clone_if_necessary</code>.</p>
+<h4 id="example-3"><a class="doc-anchor" href="#example-3">§</a>Example</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::methods;
+
+<span class="kw">pub struct </span>LogSink {
+    <span class="comment">// Contains non-cloneable resources
+    </span>handle: std::fs::File,
+}
+
+<span class="attr">#[methods]
+</span><span class="kw">impl </span>LogSink {
+    <span class="attr">#[singleton(never_clone)]
+    </span><span class="comment">//          👆 Explicitly prevent cloning (default behavior)
+    </span><span class="kw">pub fn </span>new() -&gt; std::io::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            handle: std::fs::File::create(<span class="string">"global.log"</span>)<span class="question-mark">?</span>,
+        })
+    }
+}</code></pre></div>
+<p>Pavex will report an error during the code-generation phase if cloning is required
+but forbidden.</p>
+<h3 id="allow"><a class="doc-anchor" href="#allow">§</a><code>allow</code></h3>
+<p>The <code>allow</code> argument can be used to suppress specific warnings.</p>
+<p>Currently, only one value is supported:</p>
+<ul>
+<li><code>unused</code>: Suppress warnings if this constructor is registered but never used</li>
+</ul>
+<h4 id="example-4"><a class="doc-anchor" href="#example-4">§</a>Example</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>pavex::methods;
+
+<span class="kw">pub struct </span>MetricsCollector {
+    <span class="comment">// [...]
+</span>}
+
+<span class="attr">#[methods]
+</span><span class="kw">impl </span>MetricsCollector {
+    <span class="attr">#[singleton(allow(unused))]
+    </span><span class="comment">//          👆 Don't warn if unused
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            <span class="comment">// [...]
+        </span>}
+    }
+}</code></pre></div></div></details></section></div></main></body></html>

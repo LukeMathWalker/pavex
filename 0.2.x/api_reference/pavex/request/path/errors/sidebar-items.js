@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EXTRACT_PATH_PARAMS_ERROR_INTO_RESPONSE"],"enum":["ErrorKind","ExtractPathParamsError"],"struct":["DecodeError","InvalidUtf8InPathParam","PathDeserializationError"]};

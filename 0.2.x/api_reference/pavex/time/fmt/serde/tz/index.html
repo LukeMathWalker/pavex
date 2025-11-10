@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Convenience routines for (de)serializing `TimeZone` values."><title>pavex::time::fmt::serde::tz - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module tz</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module tz</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#advice" title="Advice">Advice</a></li><li><a href="#example" title="Example">Example</a></li><li><a href="#example-serializing-an-unknown-timezone-works" title="Example: serializing an unknown `TimeZone` works">Example: serializing an unknown <code>TimeZone</code> works</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In pavex::<wbr>time::<wbr>fmt::<wbr>serde</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../../../index.html">pavex</a>::<wbr><a href="../../../index.html">time</a>::<wbr><a href="../../index.html">fmt</a>::<wbr><a href="../index.html">serde</a></div><h1>Module <span>tz</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Convenience routines for (de)serializing <a href="../../../tz/struct.TimeZone.html" title="struct pavex::time::tz::TimeZone"><code>TimeZone</code></a>
+values.</p>
+<p>The <code>required</code> and <code>optional</code> sub-modules each provide serialization and
+deserialization routines. They are meant to be used with Serde’s
+<a href="https://serde.rs/field-attrs.html#with"><code>with</code> attribute</a>.</p>
+<h2 id="advice"><a class="doc-anchor" href="#advice">§</a>Advice</h2>
+<p>Serializing time zones is useful when you want to accept user configuration
+selecting a time zone to use. This might be beneficial when one cannot rely
+on a system’s time zone.</p>
+<p>Note that when deserializing time zones that are IANA time zone
+identifiers, Jiff will automatically use the implicit global database to
+resolve the identifier to an actual time zone. If you do not want to use
+Jiff’s global time zone database for this, you’ll need to write your own
+Serde integration.</p>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::tz::TimeZone;
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Record {
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::tz::required"</span>)]
+    </span>tz: TimeZone,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"tz":"America/Nuuk"}"#</span>;
+<span class="kw">let </span>got: Record = serde_json::from_str(<span class="kw-2">&amp;</span>json)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(got.tz, TimeZone::get(<span class="string">"America/Nuuk"</span>)<span class="question-mark">?</span>);
+<span class="macro">assert_eq!</span>(serde_json::to_string(<span class="kw-2">&amp;</span>got)<span class="question-mark">?</span>, json);
+</code></pre></div><h2 id="example-serializing-an-unknown-timezone-works"><a class="doc-anchor" href="#example-serializing-an-unknown-timezone-works">§</a>Example: serializing an unknown <code>TimeZone</code> works</h2>
+<p>For example, when a time zone was created from
+<a href="../../../tz/struct.TimeZone.html#method.system" title="associated function pavex::time::tz::TimeZone::system"><code>TimeZone::system</code></a> and a system configured
+time zone could not be found. One can artifically create this situation
+with <a href="../../../tz/struct.TimeZone.html#method.unknown" title="associated function pavex::time::tz::TimeZone::unknown"><code>TimeZone::unknown</code></a>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::tz::TimeZone;
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Record {
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::tz::required"</span>)]
+    </span>tz: TimeZone,
+}
+
+<span class="kw">let </span>record = Record { tz: TimeZone::unknown() };
+<span class="macro">assert_eq!</span>(
+    serde_json::to_string(<span class="kw-2">&amp;</span>record)<span class="question-mark">?</span>,
+    <span class="string">r#"{"tz":"Etc/Unknown"}"#</span>,
+);
+</code></pre></div>
+<p>And it deserializes as well:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::tz::TimeZone;
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Record {
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::tz::required"</span>)]
+    </span>tz: TimeZone,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"tz":"Etc/Unknown"}"#</span>;
+<span class="kw">let </span>got: Record = serde_json::from_str(<span class="kw-2">&amp;</span>json)<span class="question-mark">?</span>;
+<span class="macro">assert!</span>(got.tz.is_unknown());
+</code></pre></div>
+<p>An unknown time zone is “allowed” to percolate through Jiff because it’s
+usually not desirable to return an error and completely fail if a system
+time zone could not be detected. On the other hand, by using a special
+<code>Etc/Unknown</code> identifier for this case, it still surfaces the fact that
+something has gone wrong.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="optional/index.html" title="mod pavex::time::fmt::serde::tz::optional">optional</a></dt><dd>(De)serialize an optional <a href="../../../tz/struct.TimeZone.html" title="struct pavex::time::tz::TimeZone"><code>TimeZone</code></a>.</dd><dt><a class="mod" href="required/index.html" title="mod pavex::time::fmt::serde::tz::required">required</a></dt><dd>(De)serialize a required <a href="../../../tz/struct.TimeZone.html" title="struct pavex::time::tz::TimeZone"><code>TimeZone</code></a>.</dd></dl></section></div></main></body></html>

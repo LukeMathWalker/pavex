@@ -1,0 +1,141 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This module provides helpers to use with Serde."><title>pavex::time::fmt::serde - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../static.files/storage-e2aeef58.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module serde</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module serde</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#module-hierarchy" title="Module hierarchy">Module hierarchy</a></li><li><a href="#example-timestamps-as-an-integer" title="Example: timestamps as an integer">Example: timestamps as an integer</a></li><li><a href="#example-optional-timestamp-support" title="Example: optional timestamp support">Example: optional timestamp support</a></li><li><a href="#example-the-friendly-duration-format" title="Example: the “friendly” duration format">Example: the “friendly” duration format</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In pavex::<wbr>time::<wbr>fmt</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../../index.html">pavex</a>::<wbr><a href="../../index.html">time</a>::<wbr><a href="../index.html">fmt</a></div><h1>Module <span>serde</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>This module provides helpers to use with <a href="https://serde.rs/">Serde</a>.</p>
+<p>Some helpers, like those for <code>Timestamp</code>, are exposed as modules meant
+to be used with Serde’s <a href="https://serde.rs/field-attrs.html#with"><code>with</code> attribute</a>. Others, like for <code>Span</code> and
+<code>SignedDuration</code>, only provide serialization helpers to be used with Serde’s
+<a href="https://serde.rs/field-attrs.html#serialize_with"><code>serialize_with</code> attribute</a>.</p>
+<h2 id="module-hierarchy"><a class="doc-anchor" href="#module-hierarchy">§</a>Module hierarchy</h2>
+<p>The available helpers can be more quickly understood by looking at a fully
+rendered tree of this module’s hierarchy. Only the leaves of the tree are
+usable with Serde’s attributes. For each leaf, the full path is spelled out for
+easy copy &amp; paste.</p>
+<ul>
+<li><a href="duration/index.html" title="mod pavex::time::fmt::serde::duration"><code>duration</code></a>
+<ul>
+<li><a href="duration/friendly/index.html" title="mod pavex::time::fmt::serde::duration::friendly"><code>friendly</code></a>
+<ul>
+<li><a href="duration/friendly/compact/index.html" title="mod pavex::time::fmt::serde::duration::friendly::compact"><code>compact</code></a>
+<ul>
+<li><a href="duration/friendly/compact/fn.required.html" title="fn pavex::time::fmt::serde::duration::friendly::compact::required"><code>jiff::fmt::serde::duration::friendly::compact::required</code></a></li>
+<li><a href="duration/friendly/compact/fn.optional.html" title="fn pavex::time::fmt::serde::duration::friendly::compact::optional"><code>jiff::fmt::serde::duration::friendly::compact::optional</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="span/index.html" title="mod pavex::time::fmt::serde::span"><code>span</code></a>
+<ul>
+<li><a href="span/friendly/index.html" title="mod pavex::time::fmt::serde::span::friendly"><code>friendly</code></a>
+<ul>
+<li><a href="span/friendly/compact/index.html" title="mod pavex::time::fmt::serde::span::friendly::compact"><code>compact</code></a>
+<ul>
+<li><a href="span/friendly/compact/fn.required.html" title="fn pavex::time::fmt::serde::span::friendly::compact::required"><code>jiff::fmt::serde::span::friendly::compact::required</code></a></li>
+<li><a href="span/friendly/compact/fn.optional.html" title="fn pavex::time::fmt::serde::span::friendly::compact::optional"><code>jiff::fmt::serde::span::friendly::compact::optional</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="timestamp/index.html" title="mod pavex::time::fmt::serde::timestamp"><code>timestamp</code></a>
+<ul>
+<li><a href="timestamp/second/index.html" title="mod pavex::time::fmt::serde::timestamp::second"><code>second</code></a>
+<ul>
+<li><a href="timestamp/second/required/index.html" title="mod pavex::time::fmt::serde::timestamp::second::required"><code>jiff::fmt::serde::timestamp::second::required</code></a></li>
+<li><a href="timestamp/second/optional/index.html" title="mod pavex::time::fmt::serde::timestamp::second::optional"><code>jiff::fmt::serde::timestamp::second::optional</code></a></li>
+</ul>
+</li>
+<li><a href="timestamp/millisecond/index.html" title="mod pavex::time::fmt::serde::timestamp::millisecond"><code>millisecond</code></a>
+<ul>
+<li><a href="timestamp/millisecond/required/index.html" title="mod pavex::time::fmt::serde::timestamp::millisecond::required"><code>jiff::fmt::serde::timestamp::millisecond::required</code></a></li>
+<li><a href="timestamp/millisecond/optional/index.html" title="mod pavex::time::fmt::serde::timestamp::millisecond::optional"><code>jiff::fmt::serde::timestamp::millisecond::optional</code></a></li>
+</ul>
+</li>
+<li><a href="timestamp/millisecond/index.html" title="mod pavex::time::fmt::serde::timestamp::millisecond"><code>microsecond</code></a>
+<ul>
+<li><a href="timestamp/microsecond/required/index.html" title="mod pavex::time::fmt::serde::timestamp::microsecond::required"><code>jiff::fmt::serde::timestamp::microsecond::required</code></a></li>
+<li><a href="timestamp/microsecond/optional/index.html" title="mod pavex::time::fmt::serde::timestamp::microsecond::optional"><code>jiff::fmt::serde::timestamp::microsecond::optional</code></a></li>
+</ul>
+</li>
+<li><a href="timestamp/millisecond/index.html" title="mod pavex::time::fmt::serde::timestamp::millisecond"><code>nanosecond</code></a>
+<ul>
+<li><a href="timestamp/nanosecond/required/index.html" title="mod pavex::time::fmt::serde::timestamp::nanosecond::required"><code>jiff::fmt::serde::timestamp::nanosecond::required</code></a></li>
+<li><a href="timestamp/nanosecond/optional/index.html" title="mod pavex::time::fmt::serde::timestamp::nanosecond::optional"><code>jiff::fmt::serde::timestamp::nanosecond::optional</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="tz/index.html" title="mod pavex::time::fmt::serde::tz"><code>tz</code></a>
+<ul>
+<li><a href="tz/required/index.html" title="mod pavex::time::fmt::serde::tz::required"><code>jiff::fmt::serde::tz::required</code></a></li>
+<li><a href="tz/optional/index.html" title="mod pavex::time::fmt::serde::tz::optional"><code>jiff::fmt::serde::tz::optional</code></a></li>
+</ul>
+</li>
+</ul>
+<h2 id="example-timestamps-as-an-integer"><a class="doc-anchor" href="#example-timestamps-as-an-integer">§</a>Example: timestamps as an integer</h2>
+<p>This example shows how to deserialize an integer number of seconds since the
+Unix epoch into a <a href="../../struct.Timestamp.html" title="struct pavex::time::Timestamp"><code>Timestamp</code></a>. And the reverse operation
+for serialization:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Timestamp;
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Record {
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::timestamp::second::required"</span>)]
+    </span>timestamp: Timestamp,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"timestamp":1517644800}"#</span>;
+<span class="kw">let </span>got: Record = serde_json::from_str(<span class="kw-2">&amp;</span>json)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(got.timestamp, Timestamp::from_second(<span class="number">1517644800</span>)<span class="question-mark">?</span>);
+<span class="macro">assert_eq!</span>(serde_json::to_string(<span class="kw-2">&amp;</span>got)<span class="question-mark">?</span>, json);
+</code></pre></div><h2 id="example-optional-timestamp-support"><a class="doc-anchor" href="#example-optional-timestamp-support">§</a>Example: optional timestamp support</h2>
+<p>And this example shows how to use an <code>Option&lt;Timestamp&gt;</code> instead of a
+<code>Timestamp</code>. Note that in this case, we show how to roundtrip the number of
+<strong>milliseconds</strong> since the Unix epoch:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Timestamp;
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Record {
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::timestamp::millisecond::optional"</span>)]
+    </span>timestamp: <span class="prelude-ty">Option</span>&lt;Timestamp&gt;,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"timestamp":1517644800123}"#</span>;
+<span class="kw">let </span>got: Record = serde_json::from_str(<span class="kw-2">&amp;</span>json)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(got.timestamp, <span class="prelude-val">Some</span>(Timestamp::from_millisecond(<span class="number">1517644800_123</span>)<span class="question-mark">?</span>));
+<span class="macro">assert_eq!</span>(serde_json::to_string(<span class="kw-2">&amp;</span>got)<span class="question-mark">?</span>, json);
+</code></pre></div><h2 id="example-the-friendly-duration-format"><a class="doc-anchor" href="#example-the-friendly-duration-format">§</a>Example: the “friendly” duration format</h2>
+<p>The <a href="../../struct.Span.html" title="struct pavex::time::Span"><code>Span</code></a> and <a href="../../struct.SignedDuration.html" title="struct pavex::time::SignedDuration"><code>SignedDuration</code></a> types
+in this crate both implement Serde’s <code>Serialize</code> and <code>Deserialize</code> traits. For
+<code>Serialize</code>, they both use the <a href="../temporal/index.html" title="mod pavex::time::fmt::temporal">ISO 8601 Temporal duration format</a>, but for
+<code>Deserialize</code>, they both support the ISO 8601 Temporal duration format and
+the <a href="../friendly/index.html" title="mod pavex::time::fmt::friendly">“friendly” duration format</a> simultaneously. In order to serialize either
+type in the “friendly” format, you can either define your own serialization
+functions or use one of the convenience routines provided by this module. For
+example:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{ToSpan, Span};
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Record {
+    <span class="attr">#[serde(
+        serialize_with = <span class="string">"jiff::fmt::serde::span::friendly::compact::required"
+    </span>)]
+    </span>span: Span,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"span":"1 year 2 months 36 hours 1100ms"}"#</span>;
+<span class="kw">let </span>got: Record = serde_json::from_str(<span class="kw-2">&amp;</span>json)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(
+    got.span,
+    <span class="number">1</span>.year().months(<span class="number">2</span>).hours(<span class="number">36</span>).milliseconds(<span class="number">1100</span>).fieldwise(),
+);
+
+<span class="kw">let </span>expected = <span class="string">r#"{"span":"1y 2mo 36h 1100ms"}"#</span>;
+<span class="macro">assert_eq!</span>(serde_json::to_string(<span class="kw-2">&amp;</span>got).unwrap(), expected);
+</code></pre></div></div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="duration/index.html" title="mod pavex::time::fmt::serde::duration">duration</a></dt><dd>Convenience routines for serializing <a href="../../struct.SignedDuration.html" title="struct pavex::time::SignedDuration"><code>SignedDuration</code></a>
+values.</dd><dt><a class="mod" href="span/index.html" title="mod pavex::time::fmt::serde::span">span</a></dt><dd>Convenience routines for serializing <a href="../../struct.Span.html" title="struct pavex::time::Span"><code>Span</code></a> values.</dd><dt><a class="mod" href="timestamp/index.html" title="mod pavex::time::fmt::serde::timestamp">timestamp</a></dt><dd>Convenience routines for (de)serializing <a href="../../struct.Timestamp.html" title="struct pavex::time::Timestamp"><code>Timestamp</code></a> as
+raw integer values.</dd><dt><a class="mod" href="tz/index.html" title="mod pavex::time::fmt::serde::tz">tz</a></dt><dd>Convenience routines for (de)serializing <a href="../../tz/struct.TimeZone.html" title="struct pavex::time::tz::TimeZone"><code>TimeZone</code></a>
+values.</dd></dl></section></div></main></body></html>

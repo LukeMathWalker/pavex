@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FINALIZE_SESSION","SESSION_CONFIG","SESSION_CONFIG_COOKIE_CONFIG","SESSION_CONFIG_STATE_CONFIG"],"fn":["finalize_session"],"mod":["client","config","errors","store"],"struct":["IncomingSession","Session","SessionConfig","SessionId","SessionStore"]};
