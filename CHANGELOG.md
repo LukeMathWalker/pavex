@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.10](https://github.com/LukeMathWalker/pavex/compare/0.2.9...0.2.10) - 2025-11-10
+
+### ⛰️ Features
+
+- Minimize diagnostic noise when Pavex attributes emit an error ([#559](https://github.com/LukeMathWalker/pavex/pull/559)) (by @Duckaet) - #559
+- Emit an error if #[pavex::methods] is used on an impl block with no Pavex-annotated methods (by @Duckaet) - #558
+
+### Contributors
+
+- @LukeMathWalker
+- @Duckaet
+
 ## [0.2.9](https://github.com/LukeMathWalker/pavex/compare/0.2.8...0.2.9) - 2025-10-06
 
 ### ⛰️ Features

@@ -35,13 +35,13 @@ futures-util = { workspace = true }
 mime = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "=0.2.9" }
+pavex_macros = { path = "../pavex_macros", version = "=0.2.10" }
 paste = { workspace = true }
 tracing = { workspace = true }
 http-body-util = { workspace = true }
 pin-project-lite = { workspace = true }
 ubyte = { workspace = true, features = ["serde"] }
-pavex_bp_schema = { path = "../../compiler/pavex_bp_schema", version = "=0.2.9" }
+pavex_bp_schema = { path = "../../compiler/pavex_bp_schema", version = "=0.2.10" }
 persist_if_changed = { workspace = true }
 
 # Configuration
