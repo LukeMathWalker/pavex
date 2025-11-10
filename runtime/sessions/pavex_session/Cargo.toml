@@ -13,7 +13,7 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 [dependencies]
 pavex = { path = "../../pavex", default-features = false, features = [
     "cookie",
-], version = "0.2.9" }
+], version = "0.2.10" }
 pavex_tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
