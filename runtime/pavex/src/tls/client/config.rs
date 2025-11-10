@@ -56,14 +56,14 @@ pub(crate) mod _config {
     pub struct TlsClientPolicyConfig {
         /// The cryptographic stack used to secure the connection.
         ///
-        /// Refer to the documentation for [`CryptoProviderConfig`](CryptoProviderConfig)
+        /// Refer to the documentation for [`CryptoProviderConfig`]
         /// for more details.
         #[serde(default)]
         #[serde(with = "serde_yaml::with::singleton_map_recursive")]
         pub crypto_provider: CryptoProviderConfig,
         /// Which TLS versions are allowed.
         ///
-        /// Refer to the documentation for [`AllowedTlsVersionsConfig`](AllowedTlsVersionsConfig)
+        /// Refer to the documentation for [`AllowedTlsVersionsConfig`]
         /// for more details.
         #[serde(default)]
         pub allowed_versions: AllowedTlsVersionsConfig,

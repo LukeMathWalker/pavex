@@ -20,6 +20,8 @@ pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream
     let mut impl_: syn::ItemImpl = syn::parse(input).map_err(|e| e.into_compile_error())?;
     let mut new_items: Vec<proc_macro2::TokenStream> = Vec::new();
 
+    let mut no_pavex_method = true;
+
     for item in impl_.items.iter_mut() {
         let ImplItem::Fn(method) = item else {
             continue;
@@ -31,6 +33,7 @@ pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream
         else {
             continue;
         };
+        no_pavex_method = false;
         let attr = method.attrs.remove(attr_index);
         let metadata = match attr.meta {
             // No arguments, just the path—e.g. `#[error_handler]`.
@@ -72,6 +75,18 @@ pub fn methods(_metadata: TokenStream, input: TokenStream) -> Result<TokenStream
             new_items.push(id_def);
         }
         method.attrs.extend(new_attributes);
+    }
+
+    if no_pavex_method {
+        return Err(syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "`#[pavex::methods]` is used to provide context for Pavex attributes on methods \
+            (e.g., `#[pavex::get]`, `#[pavex::post]`, `#[pavex::error_handler]`, etc.).\n\
+            This `impl` block contains no methods with Pavex attributes, so `#[pavex::methods]` \
+            is unnecessary.",
+        )
+        .into_compile_error()
+        .into());
     }
 
     PxStripper.visit_item_impl_mut(&mut impl_);

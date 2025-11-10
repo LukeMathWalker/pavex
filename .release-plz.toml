@@ -91,6 +91,6 @@ changelog_include = [
     "pavex_session_redis",
     "pavex_session_memory_store",
 ]
-changelog_path = "../CHANGELOG.md"
+changelog_path = "CHANGELOG.md"
 git_tag_name = "{{ version }}"
 git_tag_enable = true
