@@ -27,6 +27,7 @@ tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 sqlx = { workspace = true, default-features = true, features = ["uuid"] }
+px_workspace_hack = { version = "0.1", path = "../../../px_workspace_hack" }
 
 [dev-dependencies]
 pavex_session_sqlx = { path = ".", features = ["postgres", "sqlite", "mysql"] }
