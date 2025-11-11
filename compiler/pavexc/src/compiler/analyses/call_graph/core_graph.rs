@@ -781,6 +781,15 @@ pub(crate) enum CallGraphEdgeMetadata {
     HappensBefore,
 }
 
+impl CallGraphEdgeMetadata {
+    pub(crate) fn is_borrow(&self) -> bool {
+        matches!(
+            self,
+            CallGraphEdgeMetadata::SharedBorrow | CallGraphEdgeMetadata::ExclusiveBorrow
+        )
+    }
+}
+
 impl From<ConsumptionMode> for CallGraphEdgeMetadata {
     fn from(value: ConsumptionMode) -> Self {
         match value {

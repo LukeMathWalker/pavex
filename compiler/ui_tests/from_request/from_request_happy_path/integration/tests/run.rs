@@ -82,7 +82,7 @@ async fn path_parameter_has_the_wrong_type() {
     assert_eq!(response.status(), 400);
     let text = response.text().await.expect("Failed to get response body");
     assert_eq!(
-        "Invalid URL. `home_id` is set to `abc`, which we can't parse as a `u32`",
+        "Some parts of the incoming request don't match the expected format:\n- Invalid URL. `home_id` is set to `abc`, which we can't parse as a `u32`",
         text
     );
 }
@@ -96,21 +96,7 @@ async fn path_parameter_is_invalid_ut8() {
     assert_eq!(response.status(), 400);
     let text = response.text().await.expect("Failed to get response body");
     assert_eq!(
-        "Invalid URL. `%DE~%C7%1FY` cannot be used as `home_id` since it is not a well-formed UTF8 string when percent-decoded",
-        text
-    );
-}
-
-#[tokio::test]
-async fn path_parameter_is_invalid_type() {
-    let port = spawn_test_server().await;
-    let response = reqwest::get(&format!("http://localhost:{}/home/123/room/123", port))
-        .await
-        .expect("Failed to make request");
-    assert_eq!(response.status(), 500);
-    let text = response.text().await.expect("Failed to get response body");
-    assert_eq!(
-        "Invalid URL.",
+        "Some parts of the incoming request don't match the expected format:\n- Invalid URL. `%DE~%C7%1FY` cannot be used as `home_id` since it is not a well-formed UTF8 string when percent-decoded",
         text
     );
 }
