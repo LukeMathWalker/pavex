@@ -9,7 +9,7 @@ version.workspace = true
 keywords = ["pavex"]
 
 [dependencies]
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.9" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.10" }
 serde = { workspace = true }
 syn = { workspace = true, features = ["full"] }
 proc-macro2 = { workspace = true }
@@ -17,6 +17,7 @@ quote = { workspace = true }
 itertools = { workspace = true }
 thiserror = { workspace = true }
 darling = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
 
 [dev-dependencies]
 insta = { workspace = true }

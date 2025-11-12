@@ -14,28 +14,28 @@ edition = "2024"
 repository = "https://github.com/LukeMathWalker/pavex"
 homepage = "https://pavex.dev"
 license = "Apache-2.0"
-version = "0.2.9"
+version = "0.2.10"
 
 [workspace.dependencies]
-generate_from_path = { path = "compiler/generate_from_path", version = "0.2.9" }
-pavex = { path = "runtime/pavex", version = "0.2.9" }
-pavex_bp_schema = { path = "compiler/pavex_bp_schema", version = "0.2.9" }
-pavex_cli_deps = { path = "compiler/pavex_cli_deps", version = "0.2.9" }
-pavex_cli_shell = { path = "compiler/pavex_cli_shell", version = "0.2.9" }
-pavex_cli_flock = { path = "compiler/pavex_cli_flock", version = "0.2.9" }
-pavex_cli_diagnostic = { path = "compiler/pavex_cli_diagnostic", version = "0.2.9" }
-pavex_macros = { path = "runtime/pavex_macros", version = "0.2.9" }
-pavex_miette = { path = "compiler/pavex_miette", version = "0.2.9" }
-pavex_session = { path = "runtime/sessions/pavex_session", version = "0.2.9" }
-pavex_session_sqlx = { path = "runtime/sessions/pavex_session_sqlx", version = "0.2.9" }
-pavex_session_redis = { path = "runtime/sessions/pavex_session_redis", version = "0.2.9" }
-pavex_session_memory_store = { path = "runtime/sessions/pavex_session_memory_store", version = "0.2.9" }
-pavex_tracing = { path = "runtime/pavex_tracing", version = "0.2.9" }
+generate_from_path = { path = "compiler/generate_from_path", version = "0.2.10" }
+pavex = { path = "runtime/pavex", version = "0.2.10" }
+pavex_bp_schema = { path = "compiler/pavex_bp_schema", version = "0.2.10" }
+pavex_cli_deps = { path = "compiler/pavex_cli_deps", version = "0.2.10" }
+pavex_cli_shell = { path = "compiler/pavex_cli_shell", version = "0.2.10" }
+pavex_cli_flock = { path = "compiler/pavex_cli_flock", version = "0.2.10" }
+pavex_cli_diagnostic = { path = "compiler/pavex_cli_diagnostic", version = "0.2.10" }
+pavex_macros = { path = "runtime/pavex_macros", version = "0.2.10" }
+pavex_miette = { path = "compiler/pavex_miette", version = "0.2.10" }
+pavex_session = { path = "runtime/sessions/pavex_session", version = "0.2.10" }
+pavex_session_sqlx = { path = "runtime/sessions/pavex_session_sqlx", version = "0.2.10" }
+pavex_session_redis = { path = "runtime/sessions/pavex_session_redis", version = "0.2.10" }
+pavex_session_memory_store = { path = "runtime/sessions/pavex_session_memory_store", version = "0.2.10" }
+pavex_tracing = { path = "runtime/pavex_tracing", version = "0.2.10" }
 pavex_test_runner = { path = "compiler/pavex_test_runner", version = "0.2.7" }
-pavexc = { path = "compiler/pavexc", version = "0.2.9" }
-pavexc_attr_parser = { path = "compiler/pavexc_attr_parser", version = "0.2.9" }
-pavexc_cli_client = { path = "compiler/pavexc_cli_client", version = "0.2.9" }
-persist_if_changed = { path = "compiler/persist_if_changed", version = "0.2.9" }
+pavexc = { path = "compiler/pavexc", version = "0.2.10" }
+pavexc_attr_parser = { path = "compiler/pavexc_attr_parser", version = "0.2.10" }
+pavexc_cli_client = { path = "compiler/pavexc_cli_client", version = "0.2.10" }
+persist_if_changed = { path = "compiler/persist_if_changed", version = "0.2.10" }
 
 vergen-gitcl = { version = "1.0.8", features = ["build"] }
 ahash = "0.8"

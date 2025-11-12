@@ -1,55 +1,41 @@
 error: Configuration types must be public.
        Mark `A` as `pub`, and make sure it can be imported from outside your crate.
- --> tests/config/fail/not_public.rs:4:1
+ --> tests/config/fail/not_public.rs:5:1
   |
-4 | struct A;
+5 | struct A;
   | ^^^^^^^^
 
 error: Configuration types must be public.
        Mark `A1` as `pub`, and make sure it can be imported from outside your crate.
- --> tests/config/fail/not_public.rs:7:1
+ --> tests/config/fail/not_public.rs:8:1
   |
-7 | enum A1 {}
+8 | enum A1 {}
   | ^^^^^^^
 
 error: Configuration types must be public.
        Mark `B` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
-  --> tests/config/fail/not_public.rs:10:1
+  --> tests/config/fail/not_public.rs:11:1
    |
-10 | pub(crate) struct B;
+11 | pub(crate) struct B;
    | ^^^^^^^^^^
 
 error: Configuration types must be public.
        Mark `B1` as `pub`, and make sure it can be imported from outside your crate.
-  --> tests/config/fail/not_public.rs:13:1
+  --> tests/config/fail/not_public.rs:14:1
    |
-13 | enum B1 {}
+14 | enum B1 {}
    | ^^^^^^^
 
 error: Configuration types must be public.
        Mark `use` as `pub`, and make sure it can be imported from outside your crate.
-  --> tests/config/fail/not_public.rs:16:1
+  --> tests/config/fail/not_public.rs:17:1
    |
-16 | use sub::A as A2;
+17 | use sub::A as A2;
    | ^^^^^^^^^^^^^^^^
 
 error: Configuration types must be public.
        Mark `use` as `pub`, instead of `pub(crate)`, and make sure it can be imported from outside your crate.
-  --> tests/config/fail/not_public.rs:19:1
+  --> tests/config/fail/not_public.rs:20:1
    |
-19 | pub(crate) use sub::A as A3;
+20 | pub(crate) use sub::A as A3;
    | ^^^^^^^^^^
-
-warning: unused import: `sub::A as A2`
-  --> tests/config/fail/not_public.rs:16:5
-   |
-16 | use sub::A as A2;
-   |     ^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` on by default
-
-warning: unused import: `sub::A as A3`
-  --> tests/config/fail/not_public.rs:19:16
-   |
-19 | pub(crate) use sub::A as A3;
-   |                ^^^^^^^^^^^^

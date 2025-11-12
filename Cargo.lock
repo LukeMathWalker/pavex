@@ -1574,7 +1574,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1583,6 +1583,7 @@ dependencies = [
  "liquid",
  "liquid-core",
  "path-absolutize",
+ "px_workspace_hack",
  "regex",
  "sanitize-filename",
  "tempfile",
@@ -2949,7 +2950,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -2976,6 +2977,7 @@ dependencies = [
  "percent-encoding",
  "persist_if_changed",
  "pin-project-lite",
+ "px_workspace_hack",
  "reqwest",
  "ron 0.11.0",
  "rustls",
@@ -2999,14 +3001,15 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
+ "px_workspace_hack",
  "serde",
 ]
 
 [[package]]
 name = "pavex_cli"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -3035,6 +3038,7 @@ dependencies = [
  "pavexc",
  "pavexc_cli_client",
  "pem",
+ "px_workspace_hack",
  "redact",
  "remove_dir_all",
  "reqwest",
@@ -3067,56 +3071,61 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror 2.0.17",
 ]
 
 [[package]]
 name = "pavex_cli_deps"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
  "miette",
  "pavex_cli_shell",
+ "px_workspace_hack",
  "thiserror 2.0.17",
 ]
 
 [[package]]
 name = "pavex_cli_diagnostic"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "miette",
+ "px_workspace_hack",
  "thiserror 2.0.17",
 ]
 
 [[package]]
 name = "pavex_cli_flock"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "fs-err",
  "libc",
  "pavex_cli_shell",
+ "px_workspace_hack",
  "tracing",
  "windows-sys 0.61.1",
 ]
 
 [[package]]
 name = "pavex_cli_shell"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
+ "px_workspace_hack",
 ]
 
 [[package]]
 name = "pavex_macros"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "convert_case 0.8.0",
  "darling 0.21.3",
@@ -3124,6 +3133,7 @@ dependencies = [
  "pavex",
  "pavexc_attr_parser",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "serde",
  "syn",
@@ -3132,10 +3142,11 @@ dependencies = [
 
 [[package]]
 name = "pavex_miette"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "miette",
  "owo-colors",
+ "px_workspace_hack",
  "supports-color",
  "supports-hyperlinks",
  "supports-unicode",
@@ -3146,7 +3157,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3156,6 +3167,7 @@ dependencies = [
  "pavex",
  "pavex_session_memory_store",
  "pavex_tracing",
+ "px_workspace_hack",
  "serde",
  "serde_json",
  "static_assertions",
@@ -3167,11 +3179,12 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_memory_store"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "async-trait",
  "pavex",
  "pavex_session",
+ "px_workspace_hack",
  "serde_json",
  "tokio",
  "tracing",
@@ -3179,12 +3192,13 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_redis"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "async-trait",
  "pavex",
  "pavex_session",
+ "px_workspace_hack",
  "redis",
  "serde",
  "serde_json",
@@ -3195,7 +3209,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_session_sqlx"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3204,6 +3218,7 @@ dependencies = [
  "pavex_session",
  "pavex_session_sqlx",
  "pavex_tracing",
+ "px_workspace_hack",
  "serde_json",
  "sqlx",
  "tempfile",
@@ -3214,7 +3229,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3231,6 +3246,7 @@ dependencies = [
  "once_cell",
  "pavexc",
  "persist_if_changed",
+ "px_workspace_hack",
  "rayon",
  "regex",
  "rlimit",
@@ -3246,16 +3262,17 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "pavex",
+ "px_workspace_hack",
  "tracing",
  "tracing_log_error",
 ]
 
 [[package]]
 name = "pavexc"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3288,6 +3305,7 @@ dependencies = [
  "petgraph",
  "prettyplease",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "r2d2",
  "r2d2_sqlite",
@@ -3314,13 +3332,14 @@ dependencies = [
 
 [[package]]
 name = "pavexc_attr_parser"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "darling 0.21.3",
  "insta",
  "itertools 0.14.0",
  "pavex_bp_schema",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "serde",
  "syn",
@@ -3329,7 +3348,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -3350,6 +3369,7 @@ dependencies = [
  "pavex_miette",
  "pavexc",
  "pavexc_cli_client",
+ "px_workspace_hack",
  "ron 0.11.0",
  "serde",
  "serde_json",
@@ -3366,10 +3386,11 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror 2.0.17",
 ]
 
@@ -3423,10 +3444,11 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.2.9"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "fs-err",
+ "px_workspace_hack",
  "sha2",
  "tracing",
 ]
@@ -3629,6 +3651,89 @@ dependencies = [
 [[package]]
 name = "px_workspace_hack"
 version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "base64 0.22.1",
+ "byteorder",
+ "clap",
+ "clap_builder",
+ "console 0.16.1",
+ "crossbeam-utils",
+ "crypto-common",
+ "darling_core 0.21.3",
+ "digest",
+ "either",
+ "fastrand",
+ "fixedbitset",
+ "form_urlencoded",
+ "futures-channel",
+ "futures-core",
+ "futures-executor",
+ "futures-io",
+ "futures-sink",
+ "futures-util",
+ "generic-array",
+ "getrandom 0.2.16",
+ "getrandom 0.3.3",
+ "hashbrown 0.14.5",
+ "hashbrown 0.15.5",
+ "hmac",
+ "indexmap",
+ "jiff",
+ "jiff-sqlx",
+ "lazy_static",
+ "libsqlite3-sys",
+ "log",
+ "memchr",
+ "miette",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "percent-encoding",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "regex-automata",
+ "regex-syntax",
+ "reqwest",
+ "rustls-pki-types",
+ "semver",
+ "serde",
+ "serde_core",
+ "serde_json",
+ "serde_spanned 1.0.2",
+ "sha2",
+ "smallvec",
+ "spin",
+ "sqlx",
+ "sqlx-core",
+ "sqlx-macros",
+ "sqlx-macros-core",
+ "sqlx-mysql",
+ "sqlx-postgres",
+ "sqlx-sqlite",
+ "stable_deref_trait",
+ "subtle",
+ "syn",
+ "textwrap",
+ "time",
+ "tokio",
+ "toml 0.8.23",
+ "toml 0.9.7",
+ "toml_datetime 0.7.2",
+ "toml_parser",
+ "toml_writer",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "uuid",
+ "winnow",
+ "zeroize",
+]
 
 [[package]]
 name = "quinn"

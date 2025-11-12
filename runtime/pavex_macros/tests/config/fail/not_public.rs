@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use pavex_macros::config;
 
 #[config(key = "a", id = "A_")]

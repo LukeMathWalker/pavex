@@ -1,21 +1,13 @@
 error: Grouped re-exports can't be annotated with #[pavex::config].
        Re-export your configuration types one by one, annotating each `use` with #[pavex::config].
- --> tests/config/fail/group_rexport.rs:4:1
+ --> tests/config/fail/group_rexport.rs:5:1
   |
-4 | pub use private::{A, B};
+5 | pub use private::{A, B};
   | ^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: Star re-exports can't be annotated with #[pavex::config].
        Re-export your configuration types one by one, annotating each `use` with #[pavex::config].
- --> tests/config/fail/group_rexport.rs:7:1
+ --> tests/config/fail/group_rexport.rs:8:1
   |
-7 | pub use private::*;
+8 | pub use private::*;
   | ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `private::*`
- --> tests/config/fail/group_rexport.rs:7:9
-  |
-7 | pub use private::*;
-  |         ^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default

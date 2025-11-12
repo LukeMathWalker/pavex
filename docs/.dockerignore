@@ -1,4 +1,0 @@
-# We don't need anything from the current directory as context,
-# we are just placing the Dockerfile image here for grouping
-# convenience.
-.

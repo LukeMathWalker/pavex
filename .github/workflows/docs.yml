@@ -17,9 +17,6 @@ jobs:
     name: "Build CLIs (linux)"
     runs-on: ubuntu-latest
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -29,6 +26,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -81,9 +81,6 @@ jobs:
     name: "Lint (linux)"
     runs-on: ubuntu-latest
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -93,6 +90,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -136,9 +136,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -148,6 +145,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -245,9 +245,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -257,6 +254,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -341,9 +341,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -353,6 +350,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -464,9 +464,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -476,6 +473,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -576,9 +576,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -588,6 +585,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -658,9 +658,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -670,6 +667,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -738,9 +738,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -750,6 +747,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -822,9 +822,6 @@ jobs:
     needs:
       - build_clis_linux
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -834,6 +831,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -904,9 +904,6 @@ jobs:
     name: "Build CLIs (macos)"
     runs-on: macos-14
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -916,6 +913,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -971,9 +971,6 @@ jobs:
     needs:
       - build_clis_macos
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -983,6 +980,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1051,9 +1051,6 @@ jobs:
     needs:
       - build_clis_macos
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1063,6 +1060,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1135,9 +1135,6 @@ jobs:
     needs:
       - build_clis_macos
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1147,6 +1144,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1217,9 +1217,6 @@ jobs:
     name: "Build CLIs (windows)"
     runs-on: windows-2022
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1229,6 +1226,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1284,9 +1284,6 @@ jobs:
     needs:
       - build_clis_windows
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1296,6 +1293,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1358,9 +1358,6 @@ jobs:
     needs:
       - build_clis_windows
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1370,6 +1367,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1442,9 +1442,6 @@ jobs:
     needs:
       - build_clis_windows
       
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1454,6 +1451,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1516,9 +1516,6 @@ jobs:
 
   build_pxh:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1528,6 +1525,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1581,9 +1581,6 @@ jobs:
     needs:
       - build_clis_linux
       - build_pxh
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1593,6 +1590,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1672,9 +1672,6 @@ jobs:
 
   build_docs:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1684,6 +1681,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
@@ -1717,28 +1717,22 @@ jobs:
       run: |
         mkdir -p docs/api_reference
         cp -r target/doc/* docs/api_reference
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    - name: Build and export to Docker
-      uses: docker/build-push-action@v5
-      with:
-        context: docs/
-        load: true
-        tags: pavex-docs
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+    - name: Install the project
+      run: uv sync --locked
     - name: Build docs
       run: |
-        docker run --rm -v ${PWD}:/docs pavex-docs build --strict
-    - uses: actions/upload-artifact@v4
+        uv run mkdocs build --strict
+    - uses: actions/upload-artifact@v5
       with:
         name: docs
         path: site/
     - name: Fix base
       run: |
         # Convert all "absolute" guide links in the reference to relative links so that we can scan for dead links
-        sudo find . -type f -exec sed -i "s#https://pavex.dev/docs/#file:///${PWD}/site/#g" {} +
-        sudo find . -type f -exec sed -i "s#https://pavex.dev/#file:///${PWD}/site/#g" {} +
+        sudo find ./site -type f -exec sed -i "s#https://pavex.dev/docs/#file:///${PWD}/site/#g" {} +
+        sudo find ./site -type f -exec sed -i "s#https://pavex.dev/#file:///${PWD}/site/#g" {} +
     - name: Link Checker
       uses: lycheeverse/lychee-action@v2
       with:
@@ -1753,6 +1747,7 @@ jobs:
           --exclude-path="site/api_reference/pavex/time"
           --exclude-path="site/api_reference/help.html"
           --exclude-path="site/api_reference/settings.html"
+          --exclude-path="site/404.html"
           --exclude=".*crate#per-style$"
           --exclude="https://doc.rust-lang.org/*"
           --exclude="https://stackoverflow.com/*"
@@ -1773,9 +1768,6 @@ jobs:
 
   format_docs:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      checks: write
     # Run if it's a PR on the official repo or a push to `main`
     if: |
       (github.event_name == 'repository_dispatch' &&
@@ -1785,6 +1777,9 @@ jobs:
         github.event.client_payload.slash_command.args.named.sha
       )) ||
       (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    permissions:
+      pull-requests: write
+      checks: write
     steps:
     - name: Checkout repository from source repo
       if: |
