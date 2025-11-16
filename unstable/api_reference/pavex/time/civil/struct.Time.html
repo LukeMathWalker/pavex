@@ -298,7 +298,7 @@ fractional part as a nanosecond:</p>
 <p>This shows how the fractional nanosecond part of a <code>Time</code> value
 manifests from a specific timestamp.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil, Timestamp};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Timestamp;
 
 <span class="comment">// 1,234 nanoseconds after the Unix epoch.
 </span><span class="kw">let </span>zdt = Timestamp::new(<span class="number">0</span>, <span class="number">1_234</span>)<span class="question-mark">?</span>.in_tz(<span class="string">"UTC"</span>)<span class="question-mark">?</span>;

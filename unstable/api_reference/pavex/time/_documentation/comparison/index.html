@@ -78,7 +78,7 @@ Unlike <code>chrono-tz</code>, the <code>tzfile</code> crate will try to read ti
 your system’s copy of the Time Zone Database.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anyhow::Context;
-<span class="kw">use </span>chrono::{NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+<span class="kw">use </span>chrono::TimeZone;
 <span class="kw">use </span>tzfile::Tz;
 
 <span class="attr">#[cfg(unix)]
@@ -726,7 +726,7 @@ because they don’t take time zone rules into account and thus do not provide
 DST safe arithmetic. Instead, the code above should be written like this
 (unless you have a very specific reason to do otherwise):</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil::date, Unit, Zoned};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil::date, Unit};
 
 <span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
     <span class="comment">// Can also use `.to_zoned(TimeZone::system())` to use your system's
@@ -762,7 +762,7 @@ their use.</p>
 <h4 id="jiff-provides-support-for-calendar-arithmetic"><a class="doc-anchor" href="#jiff-provides-support-for-calendar-arithmetic">§</a>Jiff provides support for calendar arithmetic</h4>
 <p>With Jiff, you can add durations with calendar units:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil::date, ToSpan, Unit};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil::date, ToSpan};
 
 <span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>zdt1 = date(<span class="number">2024</span>, <span class="number">7</span>, <span class="number">11</span>).at(<span class="number">21</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>).in_tz(<span class="string">"America/New_York"</span>)<span class="question-mark">?</span>;

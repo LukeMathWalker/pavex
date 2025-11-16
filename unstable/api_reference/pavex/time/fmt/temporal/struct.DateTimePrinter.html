@@ -3,7 +3,7 @@
 type to a machine (but also human) readable format. Using this printer, one
 can convert <a href="../../struct.Zoned.html" title="struct pavex::time::Zoned"><code>Zoned</code></a>, <a href="../../struct.Timestamp.html" title="struct pavex::time::Timestamp"><code>Timestamp</code></a>, <a href="../../civil/struct.DateTime.html" title="struct pavex::time::civil::DateTime"><code>civil::DateTime</code></a>, <a href="../../civil/struct.Date.html" title="struct pavex::time::civil::Date"><code>civil::Date</code></a>
 or <a href="../../civil/struct.Time.html" title="struct pavex::time::civil::Time"><code>civil::Time</code></a> values to a string. Note that all of those types provide
-<a href="https://doc.rust-lang.org/1.91.1/core/fmt/trait.Display.html" title="trait core::fmt::Display"><code>Diplay</code></a> implementations that utilize the default
+<a href="https://doc.rust-lang.org/1.91.1/core/fmt/trait.Display.html" title="trait core::fmt::Display"><code>Display</code></a> implementations that utilize the default
 configuration of this printer. However, this printer can be configured to
 behave differently and can also print directly to anything that implements
 the <a href="../trait.Write.html" title="trait pavex::time::fmt::Write"><code>fmt::Write</code></a> trait.</p>
@@ -241,7 +241,7 @@ occurs is when <code>TimeZone</code> is a user’s system time zone derived from
 be found. This can occur, for example, when <code>/etc/localtime</code> is not
 symlinked to an entry in <code>/usr/share/zoneinfo</code>.</p>
 <h5 id="example-10"><a class="doc-anchor" href="#example-10">§</a>Example</h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{fmt::temporal::DateTimePrinter, tz::{<span class="self">self</span>, TimeZone}};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{fmt::temporal::DateTimePrinter, tz::TimeZone};
 
 <span class="kw">const </span>PRINTER: DateTimePrinter = DateTimePrinter::new();
 

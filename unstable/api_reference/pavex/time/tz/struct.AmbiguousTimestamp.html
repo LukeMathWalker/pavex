@@ -115,7 +115,7 @@ actually ambiguous.</p>
 <p>This occurs precisely in cases when the offset is <em>not</em>
 <a href="enum.AmbiguousOffset.html#variant.Unambiguous" title="variant pavex::time::tz::AmbiguousOffset::Unambiguous"><code>AmbiguousOffset::Unambiguous</code></a>.</p>
 <h5 id="example-3"><a class="doc-anchor" href="#example-3">§</a>Example</h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil::date, tz::{<span class="self">self</span>, AmbiguousOffset}};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil::date, tz};
 
 <span class="kw">let </span>tz = tz::db().get(<span class="string">"America/New_York"</span>)<span class="question-mark">?</span>;
 

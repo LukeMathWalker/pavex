@@ -148,7 +148,7 @@ to an English speaking end user, precision below one half hour might be “too
 much detail.” You can remove this by rounding the <code>Span</code> to the nearest half
 hour before printing:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil, RoundMode, ToSpan, Unit, ZonedDifference};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{civil, RoundMode, Unit, ZonedDifference};
 
 <span class="kw">let </span>commented_at = civil::date(<span class="number">2024</span>, <span class="number">8</span>, <span class="number">1</span>).at(<span class="number">19</span>, <span class="number">29</span>, <span class="number">13</span>, <span class="number">123_456_789</span>).in_tz(<span class="string">"US/Eastern"</span>)<span class="question-mark">?</span>;
 <span class="kw">let </span>now = civil::date(<span class="number">2024</span>, <span class="number">12</span>, <span class="number">26</span>).at(<span class="number">12</span>, <span class="number">49</span>, <span class="number">0</span>, <span class="number">0</span>).in_tz(<span class="string">"US/Eastern"</span>)<span class="question-mark">?</span>;

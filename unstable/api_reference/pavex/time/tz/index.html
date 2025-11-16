@@ -28,7 +28,7 @@ work with a <code>TimeZone</code> directly. For example, if one has a <code>Time
 conversion from a <a href="../struct.Timestamp.html" title="struct pavex::time::Timestamp"><code>Timestamp</code></a> to a <a href="../struct.Zoned.html" title="struct pavex::time::Zoned"><code>Zoned</code></a>
 is infallible:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{tz::TimeZone, Timestamp, Zoned};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{tz::TimeZone, Timestamp};
 
 <span class="kw">let </span>tz = TimeZone::get(<span class="string">"America/New_York"</span>)<span class="question-mark">?</span>;
 <span class="kw">let </span>ts = Timestamp::UNIX_EPOCH;

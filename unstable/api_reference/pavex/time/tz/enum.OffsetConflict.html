@@ -258,7 +258,7 @@ rounding:</p>
 <p>Rounding does not occur when the parsed offset itself contains
 sub-minute precision. In that case, exact equality is used:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{tz::Offset, Zoned};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Zoned;
 
 <span class="kw">let </span>result = <span class="string">"1970-06-01T00-00:45:00[Africa/Monrovia]"</span>.parse::&lt;Zoned&gt;();
 <span class="macro">assert_eq!</span>(

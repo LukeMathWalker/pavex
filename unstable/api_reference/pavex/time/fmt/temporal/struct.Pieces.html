@@ -744,7 +744,7 @@ pieces = pieces.with_time_zone_annotation(
 through the data it contains, even if it doesn’t make sense.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.into_owned" class="method"><h4 class="code-header">pub fn <a href="#method.into_owned" class="fn">into_owned</a>(self) -&gt; <a class="struct" href="struct.Pieces.html" title="struct pavex::time::fmt::temporal::Pieces">Pieces</a>&lt;'static&gt;</h4></section></summary><div class="docblock"><p>Converts this <code>Pieces</code> into an “owned” value whose lifetime is
 <code>'static</code>.</p>
-<p>Ths “owned” value in this context refers to the time zone annotation
+<p>The “owned” value in this context refers to the time zone annotation
 name, if present. For example, <code>Canada/Yukon</code> in
 <code>2025-01-03T07:55-07[Canada/Yukon]</code>. When parsing into a <code>Pieces</code>,
 the time zone annotation name is borrowed. But callers may find it more

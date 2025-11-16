@@ -173,7 +173,7 @@ in the corresponding month. So for example, <code>2024-02-29</code> is valid but
 <span class="macro">assert_eq!</span>(d.month(), <span class="number">2</span>);
 <span class="macro">assert_eq!</span>(d.day(), <span class="number">29</span>);</code></pre></div></div></details><details class="toggle method-toggle" open><summary><section id="method.from_iso_week_date" class="method"><h4 class="code-header">pub fn <a href="#method.from_iso_week_date" class="fn">from_iso_week_date</a>(weekdate: <a class="struct" href="struct.ISOWeekDate.html" title="struct pavex::time::civil::ISOWeekDate">ISOWeekDate</a>) -&gt; <a class="struct" href="struct.Date.html" title="struct pavex::time::civil::Date">Date</a></h4></section></summary><div class="docblock"><p>Construct a Gregorian date from an <a href="https://en.wikipedia.org/wiki/ISO_week_date">ISO 8601 week date</a>.</p>
 <p>The <a href="struct.ISOWeekDate.html" title="struct pavex::time::civil::ISOWeekDate"><code>ISOWeekDate</code></a> type describes itself in more detail, but in
-breif, the ISO week date calendar system eschews months in favor of
+brief, the ISO week date calendar system eschews months in favor of
 weeks.</p>
 <p>The minimum and maximum values of an <code>ISOWeekDate</code> correspond
 precisely to the minimum and maximum values of a <code>Date</code>. Therefore,

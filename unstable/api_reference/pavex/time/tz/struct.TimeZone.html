@@ -50,13 +50,14 @@ precise instant in time:</p>
 </code></pre></div><h2 id="the-system-time-zone"><a class="doc-anchor" href="#the-system-time-zone">§</a>The system time zone</h2>
 <p>The system time zone can be retrieved via <a href="struct.TimeZone.html#method.system" title="associated function pavex::time::tz::TimeZone::system"><code>TimeZone::system</code></a>. If it
 couldn’t be detected or if the <code>tz-system</code> crate feature is not enabled,
-then <a href="struct.TimeZone.html#associatedconstant.UTC" title="associated constant pavex::time::tz::TimeZone::UTC"><code>TimeZone::UTC</code></a> is returned. <code>TimeZone::system</code> is what’s used
+then <a href="struct.TimeZone.html#method.unknown" title="associated function pavex::time::tz::TimeZone::unknown"><code>TimeZone::unknown</code></a> is returned. <code>TimeZone::system</code> is what’s used
 internally for retrieving the current zoned datetime via <a href="../struct.Zoned.html#method.now" title="associated function pavex::time::Zoned::now"><code>Zoned::now</code></a>.</p>
 <p>While there is no platform independent way to detect your system’s
 “default” time zone, Jiff employs best-effort heuristics to determine it.
-(For example, by examining <code>/etc/localtime</code> on Unix systems.) When the
-heuristics fail, Jiff will emit a <code>WARN</code> level log. It can be viewed by
-installing a <code>log</code> compatible logger, such as <a href="https://docs.rs/env_logger"><code>env_logger</code></a>.</p>
+(For example, by examining <code>/etc/localtime</code> on Unix systems or the <code>TZ</code>
+environment variable.) When the heuristics fail, Jiff will emit a <code>WARN</code>
+level log. It can be viewed by installing a <code>log</code> compatible logger, such
+as <a href="https://docs.rs/env_logger"><code>env_logger</code></a>.</p>
 <h2 id="custom-time-zones"><a class="doc-anchor" href="#custom-time-zones">§</a>Custom time zones</h2>
 <p>At present, Jiff doesn’t provide any APIs for manually constructing a
 custom time zone. However, <a href="struct.TimeZone.html#method.tzif" title="associated function pavex::time::tz::TimeZone::tzif"><code>TimeZone::tzif</code></a> is provided for reading
@@ -70,10 +71,10 @@ disk. The only way such changes can be observed is by re-requesting the
 <code>TimeZone</code> from a <code>TimeZoneDatabase</code>. (Or, in the case of the system time
 zone, by calling <code>TimeZone::system</code>.)</p>
 <h2 id="a-timezone-is-cheap-to-clone"><a class="doc-anchor" href="#a-timezone-is-cheap-to-clone">§</a>A <code>TimeZone</code> is cheap to clone</h2>
-<p>A <code>TimeZone</code> can be cheaply cloned. It uses automic reference counting
+<p>A <code>TimeZone</code> can be cheaply cloned. It uses automatic reference counting
 internally. When <code>alloc</code> is disabled, cloning a <code>TimeZone</code> is still cheap
 because POSIX time zones and TZif time zones are unsupported. Therefore,
-cloning a time zone does a deep copy (since automic reference counting is
+cloning a time zone does a deep copy (since automatic reference counting is
 not available), but the data being copied is small.</p>
 <h2 id="time-zone-equality"><a class="doc-anchor" href="#time-zone-equality">§</a>Time zone equality</h2>
 <p><code>TimeZone</code> provides an imperfect notion of equality. That is, when two time
@@ -337,7 +338,7 @@ of using custom time zones with Jiff.</p>
 <h5 id="errors-2"><a class="doc-anchor" href="#errors-2">§</a>Errors</h5>
 <p>This returns an error if the given data was not recognized as valid
 TZif.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.unknown" class="method"><h4 class="code-header">pub const fn <a href="#method.unknown" class="fn">unknown</a>() -&gt; <a class="struct" href="struct.TimeZone.html" title="struct pavex::time::tz::TimeZone">TimeZone</a></h4></section></summary><div class="docblock"><p>Returns a <code>TimeZone</code> that is specifially marked as “unknown.”</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.unknown" class="method"><h4 class="code-header">pub const fn <a href="#method.unknown" class="fn">unknown</a>() -&gt; <a class="struct" href="struct.TimeZone.html" title="struct pavex::time::tz::TimeZone">TimeZone</a></h4></section></summary><div class="docblock"><p>Returns a <code>TimeZone</code> that is specifically marked as “unknown.”</p>
 <p>This corresponds to the Unicode CLDR identifier <code>Etc/Unknown</code>, which
 is guaranteed to never be a valid IANA time zone identifier (as of
 the <code>2025a</code> release of tzdb).</p>
@@ -406,7 +407,7 @@ civil time if necessary.</p>
 </code></pre></div>
 <p>As mentioned above, consider using <code>Zoned</code> instead:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{tz::TimeZone, Timestamp};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Timestamp;
 
 <span class="kw">let </span>zdt = Timestamp::UNIX_EPOCH.in_tz(<span class="string">"Europe/Rome"</span>)<span class="question-mark">?</span>;
 <span class="macro">assert_eq!</span>(zdt.datetime().to_string(), <span class="string">"1970-01-01T01:00:00"</span>);
@@ -421,7 +422,7 @@ create a civil datetime from a timestamp.</p>
 “daylight saving time,” as well as the abbreviation for the time zone
 at this time.</p>
 <h5 id="example-7"><a class="doc-anchor" href="#example-7">§</a>Example</h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{tz::{<span class="self">self</span>, Dst, TimeZone}, Timestamp};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{tz::{<span class="self">self</span>, TimeZone}, Timestamp};
 
 <span class="kw">let </span>tz = TimeZone::get(<span class="string">"America/New_York"</span>)<span class="question-mark">?</span>;
 

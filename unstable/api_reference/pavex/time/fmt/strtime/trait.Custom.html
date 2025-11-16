@@ -36,7 +36,7 @@
 <p>Each method on this trait comes with a default implementation corresponding
 to the behavior of <a href="struct.DefaultCustom.html" title="struct pavex::time::fmt::strtime::DefaultCustom"><code>DefaultCustom</code></a>. More methods on this trait may be
 added in the future.</p>
-<p>Implementors of this trait can be attached to a <a href="struct.Config.html" title="struct pavex::time::fmt::strtime::Config"><code>Config</code></a> which can then
+<p>Implementers of this trait can be attached to a <a href="struct.Config.html" title="struct pavex::time::fmt::strtime::Config"><code>Config</code></a> which can then
 be passed to <a href="struct.BrokenDownTime.html#method.format_with_config" title="method pavex::time::fmt::strtime::BrokenDownTime::format_with_config"><code>BrokenDownTime::format_with_config</code></a> or
 <a href="struct.BrokenDownTime.html#method.to_string_with_config" title="method pavex::time::fmt::strtime::BrokenDownTime::to_string_with_config"><code>BrokenDownTime::to_string_with_config</code></a>.</p>
 <p>New methods with default implementations may be added to this trait in
@@ -66,7 +66,7 @@ examples in the <code>icu::datetime</code> API for formatting datetimes.</p>
 <h2 id="unsupported-behavior"><a class="doc-anchor" href="#unsupported-behavior">§</a>Unsupported behavior</h2>
 <p>This trait currently does not support parsing based on locale in any way.</p>
 <p>This trait also does not support locale specific behavior for <code>%a</code>/<code>%A</code>
-(day of the week), <code>%b/</code>%B<code>(name of the month) or</code>%p<code>/</code>%P` (AM or PM).
+(day of the week), <code>%b</code>/<code>%B</code> (name of the month) or <code>%p</code>/<code>%P</code> (AM or PM).
 Supporting these is problematic with modern localization APIs, since
 modern APIs do not expose options to localize these things independent of
 anything else. Instead, they are subsumed most holistically into, e.g.,

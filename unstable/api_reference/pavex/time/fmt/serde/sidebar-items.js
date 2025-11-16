@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["duration","span","timestamp","tz"]};
+window.SIDEBAR_ITEMS = {"mod":["duration","span","timestamp","tz","unsigned_duration"]};

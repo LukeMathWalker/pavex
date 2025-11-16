@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Convenience routines for serializing `std::time::Duration` values."><title>pavex::time::fmt::serde::unsigned_duration - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="pavex" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.1 (ed61e7d7e 2025-11-07)" data-channel="1.91.1" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module unsigned_duration</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../../pavex/index.html">pavex</a><span class="version">0.2.10</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module unsigned_<wbr>duration</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example-maximally-interoperable-serialization" title="Example: maximally interoperable serialization">Example: maximally interoperable serialization</a></li><li><a href="#example-round-tripping-stdtimeduration" title="Example: Round-tripping `std::time::Duration`">Example: Round-tripping <code>std::time::Duration</code></a></li><li><a href="#example-custom-friendly-format-options" title="Example: custom “friendly” format options">Example: custom “friendly” format options</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In pavex::<wbr>time::<wbr>fmt::<wbr>serde</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../../../index.html">pavex</a>::<wbr><a href="../../../index.html">time</a>::<wbr><a href="../../index.html">fmt</a>::<wbr><a href="../index.html">serde</a></div><h1>Module <span>unsigned_<wbr>duration</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Convenience routines for serializing <a href="https://doc.rust-lang.org/1.91.1/core/time/struct.Duration.html" title="struct core::time::Duration"><code>std::time::Duration</code></a> values.</p>
+<p>The principal helpers in this module are the
+<a href="required/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::required"><code>required</code></a>
+and
+<a href="optional/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::optional"><code>optional</code></a> sub-modules.
+Either may be used with Serde’s <code>with</code> attribute. Each sub-module
+provides both a serialization and a deserialization routine for
+<a href="https://doc.rust-lang.org/1.91.1/core/time/struct.Duration.html" title="struct core::time::Duration"><code>std::time::Duration</code></a>. Deserialization supports either ISO 8601 or the
+“<a href="../../friendly/index.html" title="mod pavex::time::fmt::friendly">friendly</a>” format. Serialization always uses ISO
+8601 for reasons of increased interoperability. These helpers are meant to
+approximate the <code>Deserialize</code> and <code>Serialize</code> trait implementations for
+Jiff’s own <a href="../../../struct.SignedDuration.html" title="struct pavex::time::SignedDuration"><code>SignedDuration</code></a>.</p>
+<p>If you want to serialize a <code>std::time::Duration</code> using the
+<a href="../../friendly/index.html" title="mod pavex::time::fmt::friendly">friendly</a>, then you can make use of the
+helpers in
+<a href="friendly/compact/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::friendly::compact"><code>friendly::compact</code></a>,
+also via Serde’s <code>with</code> attribute. These helpers change their serialization
+to the “friendly” format using compact unit designators. Their deserialization
+remains the same as the top-level helpers (that is, both ISO 8601 and
+friendly formatted duration strings are parsed).</p>
+<p>Unlike Jiff’s own <a href="../../../struct.SignedDuration.html" title="struct pavex::time::SignedDuration"><code>SignedDuration</code></a>, deserializing
+a <code>std::time::Duration</code> does not support negative durations. If a negative
+duration is found, then deserialization will fail. Moreover, as an unsigned
+type, a <code>std::time::Duration</code> can represent larger durations than a
+<code>SignedDuration</code>. This means that a <code>SignedDuration</code> cannot deserialize
+all valid values of a <code>std::time::Duration</code>. In other words, be careful not
+to mix them.</p>
+<h2 id="example-maximally-interoperable-serialization"><a class="doc-anchor" href="#example-maximally-interoperable-serialization">§</a>Example: maximally interoperable serialization</h2>
+<p>This example shows how to achieve Serde integration for <code>std::time::Duration</code>
+in a way that mirrors <a href="../../../struct.SignedDuration.html" title="struct pavex::time::SignedDuration"><code>SignedDuration</code></a>. In
+particular, this supports deserializing ISO 8601 or “friendly” format
+duration strings. In order to be maximally interoperable, this serializes
+only in the ISO 8601 format.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::time::Duration;
+
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="attr">#[derive(Debug, PartialEq, Serialize, Deserialize)]
+</span><span class="kw">struct </span>Task {
+    name: String,
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::unsigned_duration::required"</span>)]
+    </span>timeout: Duration,
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::unsigned_duration::optional"</span>)]
+    </span>retry_delay: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
+}
+
+<span class="kw">let </span>task = Task {
+    name: <span class="string">"Task 1"</span>.to_string(),
+    <span class="comment">// 1 hour 30 minutes
+    </span>timeout: Duration::from_secs(<span class="number">60 </span>* <span class="number">60 </span>+ <span class="number">30 </span>* <span class="number">60</span>),
+    <span class="comment">// 2 seconds 500 milliseconds
+    </span>retry_delay: <span class="prelude-val">Some</span>(Duration::from_millis(<span class="number">2500</span>)),
+};
+
+<span class="kw">let </span>expected_json = <span class="string">r#"{"name":"Task 1","timeout":"PT1H30M","retry_delay":"PT2.5S"}"#</span>;
+<span class="kw">let </span>actual_json = serde_json::to_string(<span class="kw-2">&amp;</span>task)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(actual_json, expected_json);
+
+<span class="kw">let </span>deserialized_task: Task = serde_json::from_str(<span class="kw-2">&amp;</span>actual_json)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(deserialized_task, task);
+
+<span class="comment">// Example with None for optional field
+</span><span class="kw">let </span>task_no_retry = Task {
+    name: <span class="string">"Task 2"</span>.to_string(),
+    timeout: Duration::from_secs(<span class="number">5</span>),
+    retry_delay: <span class="prelude-val">None</span>,
+};
+<span class="kw">let </span>expected_json_no_retry = <span class="string">r#"{"name":"Task 2","timeout":"PT5S","retry_delay":null}"#</span>;
+<span class="kw">let </span>actual_json_no_retry = serde_json::to_string(<span class="kw-2">&amp;</span>task_no_retry)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(actual_json_no_retry, expected_json_no_retry);
+
+<span class="kw">let </span>deserialized_task_no_retry: Task = serde_json::from_str(<span class="kw-2">&amp;</span>actual_json_no_retry)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(deserialized_task_no_retry, task_no_retry);
+</code></pre></div><h2 id="example-round-tripping-stdtimeduration"><a class="doc-anchor" href="#example-round-tripping-stdtimeduration">§</a>Example: Round-tripping <code>std::time::Duration</code></h2>
+<p>This example demonstrates how to serialize and deserialize a
+<code>std::time::Duration</code> field using the helpers from this module. In
+particular, this serializes durations in the more human readable
+“friendly” format, but can still deserialize ISO 8601 duration strings.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::time::Duration;
+
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="attr">#[derive(Debug, PartialEq, Serialize, Deserialize)]
+</span><span class="kw">struct </span>Task {
+    name: String,
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::unsigned_duration::friendly::compact::required"</span>)]
+    </span>timeout: Duration,
+    <span class="attr">#[serde(with = <span class="string">"jiff::fmt::serde::unsigned_duration::friendly::compact::optional"</span>)]
+    </span>retry_delay: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
+}
+
+<span class="kw">let </span>task = Task {
+    name: <span class="string">"Task 1"</span>.to_string(),
+    <span class="comment">// 1 hour 30 minutes
+    </span>timeout: Duration::from_secs(<span class="number">60 </span>* <span class="number">60 </span>+ <span class="number">30 </span>* <span class="number">60</span>),
+    <span class="comment">// 2 seconds 500 milliseconds
+    </span>retry_delay: <span class="prelude-val">Some</span>(Duration::from_millis(<span class="number">2500</span>)),
+};
+
+<span class="kw">let </span>expected_json = <span class="string">r#"{"name":"Task 1","timeout":"1h 30m","retry_delay":"2s 500ms"}"#</span>;
+<span class="kw">let </span>actual_json = serde_json::to_string(<span class="kw-2">&amp;</span>task)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(actual_json, expected_json);
+
+<span class="kw">let </span>deserialized_task: Task = serde_json::from_str(<span class="kw-2">&amp;</span>actual_json)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(deserialized_task, task);
+
+<span class="comment">// Example with None for optional field
+</span><span class="kw">let </span>task_no_retry = Task {
+    name: <span class="string">"Task 2"</span>.to_string(),
+    timeout: Duration::from_secs(<span class="number">5</span>),
+    retry_delay: <span class="prelude-val">None</span>,
+};
+<span class="kw">let </span>expected_json_no_retry = <span class="string">r#"{"name":"Task 2","timeout":"5s","retry_delay":null}"#</span>;
+<span class="kw">let </span>actual_json_no_retry = serde_json::to_string(<span class="kw-2">&amp;</span>task_no_retry)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(actual_json_no_retry, expected_json_no_retry);
+
+<span class="kw">let </span>deserialized_task_no_retry: Task = serde_json::from_str(<span class="kw-2">&amp;</span>actual_json_no_retry)<span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(deserialized_task_no_retry, task_no_retry);
+</code></pre></div><h2 id="example-custom-friendly-format-options"><a class="doc-anchor" href="#example-custom-friendly-format-options">§</a>Example: custom “friendly” format options</h2>
+<p>When using
+<a href="friendly/compact/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::friendly::compact"><code>friendly::compact</code></a>,
+the serialization implementation uses a fixed friendly format
+configuration. To use your own configuration, you’ll need to write your own
+serialization function:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::time::Duration;
+
+<span class="attr">#[derive(Debug, serde::Deserialize, serde::Serialize)]
+</span><span class="kw">struct </span>Data {
+    <span class="attr">#[serde(serialize_with = <span class="string">"custom_friendly"</span>)]
+    </span><span class="comment">// We can reuse an existing deserialization helper so that you
+    // don't have to write your own.
+    </span><span class="attr">#[serde(deserialize_with = <span class="string">"jiff::fmt::serde::unsigned_duration::required::deserialize"</span>)]
+    </span>duration: Duration,
+}
+
+<span class="kw">let </span>json = <span class="string">r#"{"duration": "36 hours 1100ms"}"#</span>;
+<span class="kw">let </span>got: Data = serde_json::from_str(<span class="kw-2">&amp;</span>json).unwrap();
+<span class="macro">assert_eq!</span>(got.duration, Duration::new(<span class="number">36 </span>* <span class="number">60 </span>* <span class="number">60 </span>+ <span class="number">1</span>, <span class="number">100_000_000</span>));
+
+<span class="kw">let </span>expected = <span class="string">r#"{"duration":"36:00:01.100"}"#</span>;
+<span class="macro">assert_eq!</span>(serde_json::to_string(<span class="kw-2">&amp;</span>got).unwrap(), expected);
+
+<span class="kw">fn </span>custom_friendly&lt;S: serde::Serializer&gt;(
+    duration: <span class="kw-2">&amp;</span>Duration,
+    se: S,
+) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt; {
+    <span class="kw">struct </span>Custom&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Duration);
+
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; std::fmt::Display <span class="kw">for </span>Custom&lt;<span class="lifetime">'a</span>&gt; {
+        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter) -&gt; std::fmt::Result {
+            <span class="kw">use </span>jiff::fmt::{friendly::SpanPrinter, StdFmtWrite};
+
+            <span class="kw">static </span>PRINTER: SpanPrinter = SpanPrinter::new()
+                .hours_minutes_seconds(<span class="bool-val">true</span>)
+                .precision(<span class="prelude-val">Some</span>(<span class="number">3</span>));
+
+            PRINTER
+                .print_unsigned_duration(<span class="self">self</span>.<span class="number">0</span>, StdFmtWrite(f))
+                .map_err(|<span class="kw">_</span>| core::fmt::Error)
+        }
+    }
+
+    se.collect_str(<span class="kw-2">&amp;</span>Custom(duration))
+}</code></pre></div></div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="friendly/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::friendly">friendly</a></dt><dd>(De)serialize a <code>std::time::Duration</code>
+in the <a href="../../friendly/index.html" title="mod pavex::time::fmt::friendly"><code>friendly</code></a> duration format.</dd><dt><a class="mod" href="optional/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::optional">optional</a></dt><dd>(De)serialize an optional ISO 8601 or friendly duration from a
+<a href="https://doc.rust-lang.org/1.91.1/core/time/struct.Duration.html" title="struct core::time::Duration"><code>std::time::Duration</code></a>.</dd><dt><a class="mod" href="required/index.html" title="mod pavex::time::fmt::serde::unsigned_duration::required">required</a></dt><dd>(De)serialize a required ISO 8601 or friendly duration from a
+<a href="https://doc.rust-lang.org/1.91.1/core/time/struct.Duration.html" title="struct core::time::Duration"><code>std::time::Duration</code></a>.</dd></dl></section></div></main></body></html>

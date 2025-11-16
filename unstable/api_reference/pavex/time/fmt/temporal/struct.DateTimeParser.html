@@ -341,7 +341,7 @@ is valid but doesn’t fit in the datetime range supported by Jiff.</p>
 <span class="kw">let </span>timestamp = PARSER.parse_timestamp(<span class="string">"2024-03-10T02:05-04"</span>)<span class="question-mark">?</span>;
 <span class="macro">assert_eq!</span>(timestamp.to_string(), <span class="string">"2024-03-10T06:05:00Z"</span>);
 </code></pre></div><h5 id="example-parsing-a-timestamp-from-a-datetime-with-a-time-zone"><a class="doc-anchor" href="#example-parsing-a-timestamp-from-a-datetime-with-a-time-zone">§</a>Example: parsing a timestamp from a datetime with a time zone</h5>
-<p>A timestamp can also be parsed fron a time zone aware datetime string.
+<p>A timestamp can also be parsed from a time zone aware datetime string.
 The time zone is ignored and the offset is always used.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::fmt::temporal::DateTimeParser;
@@ -511,7 +511,7 @@ zone database given instead of the implicit global time zone database.</p>
 <li>A POSIX time zone string. For example, <code>EST5EDT,M3.2.0,M11.1.0</code>.</li>
 </ol>
 <h5 id="example-8"><a class="doc-anchor" href="#example-8">§</a>Example</h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{fmt::temporal::DateTimeParser, tz::{<span class="self">self</span>, TimeZone}};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::{fmt::temporal::DateTimeParser, tz::TimeZone};
 
 <span class="kw">static </span>PARSER: DateTimeParser = DateTimeParser::new();
 

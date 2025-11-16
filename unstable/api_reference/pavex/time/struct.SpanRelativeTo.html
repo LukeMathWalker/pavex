@@ -7,11 +7,11 @@ should be interpreted. For example, the span “1 month” does not have a
 fixed meaning. One month from <code>2024-03-01</code> is 31 days, but one month from
 <code>2024-04-01</code> is 30 days. Similar for years.</p>
 <p>When a relative datetime in time zone aware (i.e., it is a <code>Zoned</code>), then
-a <code>Span</code> will also consider its day units to be variable in length. For
-example, <code>2024-03-10</code> in <code>America/New_York</code> was only 23 hours long, where
-as <code>2024-11-03</code> in <code>America/New_York</code> was 25 hours long. When a relative
-datetime is civil, then days are considered to always be of a fixed 24
-hour length.</p>
+operations on a <code>Span</code> will also consider its day units to be variable in
+length. For example, <code>2024-03-10</code> in <code>America/New_York</code> was only 23 hours
+long, where as <code>2024-11-03</code> in <code>America/New_York</code> was 25 hours long. When
+a relative datetime is civil, then days are considered to always be of a
+fixed 24 hour length.</p>
 <p>This type is principally used as an input to one of several different
 <a href="struct.Span.html" title="struct pavex::time::Span"><code>Span</code></a> APIs:</p>
 <ul>
@@ -21,7 +21,7 @@ rounded without providing a relative datetime.)</li>
 <li>Span arithmetic via <a href="struct.Span.html#method.checked_add" title="method pavex::time::Span::checked_add"><code>Span::checked_add</code></a> and <a href="struct.Span.html#method.checked_sub" title="method pavex::time::Span::checked_sub"><code>Span::checked_sub</code></a>.
 A relative datetime is needed when adding or subtracting spans with
 calendar units.</li>
-<li>Span comarisons via <a href="struct.Span.html#method.compare" title="method pavex::time::Span::compare"><code>Span::compare</code></a> require a relative datetime when
+<li>Span comparisons via <a href="struct.Span.html#method.compare" title="method pavex::time::Span::compare"><code>Span::compare</code></a> require a relative datetime when
 comparing spans with calendar units.</li>
 <li>Computing the “total” duration as a single floating point number via
 <a href="struct.Span.html#method.total" title="method pavex::time::Span::total"><code>Span::total</code></a> also requires a relative datetime when dealing with
@@ -67,7 +67,7 @@ permits the APIs above to assume days are always 24 hours.</p>
 <code>Span</code> APIs. Previously, some APIs (like <a href="struct.Timestamp.html#method.checked_add" title="method pavex::time::Timestamp::checked_add"><code>Timestamp::checked_add</code></a>)
 would always return an error if the <code>Span</code> given had non-zero
 units of days or greater. On the other hand, other APIs (like
-<a href="struct.Span.html#method.checked_add" title="method pavex::time::Span::checked_add"><code>Span::checked_add</code></a>) would autoamtically assume days were always
+<a href="struct.Span.html#method.checked_add" title="method pavex::time::Span::checked_add"><code>Span::checked_add</code></a>) would automatically assume days were always
 24 hours if no relative reference time was given and either span had
 non-zero units of days. With this marker, APIs <em>never</em> assume days are
 always 24 hours automatically.</li>
