@@ -59,12 +59,12 @@ jobs:
       run: |
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pavex_cli_linux
         path: target/release/pavex
     - name: Store pavexc CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pavexc_cli_linux
         path: target/release/pavexc
@@ -181,12 +181,12 @@ jobs:
     - name: Install cargo-px
       run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -287,12 +287,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -386,12 +386,12 @@ jobs:
     - name: Install cargo-px
       run: cargo binstall -y --force --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px --version="^0.1.15"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -506,12 +506,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -618,12 +618,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -700,12 +700,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -864,12 +864,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
@@ -946,12 +946,12 @@ jobs:
       run: |
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pavex_cli_macos
         path: target/release/pavex
     - name: Store pavexc CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pavexc_cli_macos
         path: target/release/pavexc
@@ -1013,12 +1013,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_macos
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_macos
         path: ~/.cargo/bin
@@ -1177,12 +1177,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_macos
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_macos
         path: ~/.cargo/bin
@@ -1259,12 +1259,12 @@ jobs:
       run: |
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pavex_cli_windows
         path: target/release/pavex.exe
     - name: Store pavexc CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pavexc_cli_windows
         path: target/release/pavexc.exe
@@ -1326,12 +1326,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_windows
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_windows
         path: ~/.cargo/bin
@@ -1484,12 +1484,12 @@ jobs:
         components: rustfmt
         rustflags: ""
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_windows
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_windows
         path: ~/.cargo/bin
@@ -1562,7 +1562,7 @@ jobs:
         cd docs/tools/pxh
         cargo build
     - name: Store CLI artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: pxh
         path: docs/tools/pxh/target/debug/pxh
@@ -1628,17 +1628,17 @@ jobs:
         components: rustfmt
         cache-workspaces: "./docs/examples -> ./target"
     - name: Download pavex CLI artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: pavex_cli_linux
         path: ~/.cargo/bin
     - name: Download pavexc CLI artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: pavexc_cli_linux
         path: ~/.cargo/bin
     - name: Download pxh CLI artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: pxh
         path: ~/.cargo/bin
@@ -1718,7 +1718,7 @@ jobs:
         mkdir -p docs/api_reference
         cp -r target/doc/* docs/api_reference
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@v7
     - name: Install the project
       run: uv sync --locked
     - name: Build docs
