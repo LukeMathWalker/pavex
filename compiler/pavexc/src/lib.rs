@@ -14,4 +14,4 @@ mod utils;
 
 /// The Rust toolchain used by `pavexc` to generate JSON docs, unless
 /// overridden by the user.
-pub static DEFAULT_DOCS_TOOLCHAIN: &str = "nightly-2025-08-04";
+pub static DEFAULT_DOCS_TOOLCHAIN: &str = "nightly-2025-11-15";
