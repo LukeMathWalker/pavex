@@ -1,10 +1,10 @@
 - name: Download pavex CLI artifact
-  uses: actions/download-artifact@v4
+  uses: actions/download-artifact@v6
   with:
     name: pavex_cli_<< target >>
     path: ~/.cargo/bin
 - name: Download pavexc CLI artifact
-  uses: actions/download-artifact@v4
+  uses: actions/download-artifact@v6
   with:
     name: pavexc_cli_<< target >>
     path: ~/.cargo/bin
