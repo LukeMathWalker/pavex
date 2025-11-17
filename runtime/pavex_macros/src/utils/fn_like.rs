@@ -149,9 +149,5 @@ fn reemit_with_input(
         crate::utils::PxStripper.visit_trait_item_fn_mut(&mut trait_fn);
         return quote! { #error_tokens #trait_fn }.into();
     }
-    if let Ok(mut foreign_fn) = syn::parse2::<syn::ForeignItemFn>(input.clone()) {
-        crate::utils::PxStripper.visit_foreign_item_fn_mut(&mut foreign_fn);
-        return quote! { #error_tokens #foreign_fn }.into();
-    }
     quote! { #error_tokens #input }.into()
 }

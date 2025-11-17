@@ -85,11 +85,6 @@ impl VisitMut for PxStripper {
         strip_pavex_attrs(&mut node.attrs);
         visit_mut::visit_trait_item_fn_mut(self, node);
     }
-
-    fn visit_foreign_item_fn_mut(&mut self, node: &mut ForeignItemFn) {
-        strip_pavex_attrs(&mut node.attrs);
-        visit_mut::visit_foreign_item_fn_mut(self, node);
-    }
 }
 
 fn strip_pavex_attrs(attrs: &mut Vec<Attribute>) {
