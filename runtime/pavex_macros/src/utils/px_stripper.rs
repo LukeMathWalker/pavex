@@ -1,6 +1,6 @@
 use syn::{
-    Attribute, Field, FieldValue, FnArg, ItemEnum, ItemImpl, ItemMod, ItemStruct, ItemTrait,
-    TraitItem, Variant,
+    Attribute, Field, FieldValue, FnArg, ImplItemFn, ItemEnum, ItemImpl, ItemMod,
+    ItemStruct, ItemTrait, TraitItem, TraitItemFn, Variant,
     visit_mut::{self, VisitMut},
 };
 
@@ -75,6 +75,28 @@ impl VisitMut for PxStripper {
         attrs.retain(not_px_attr);
         visit_mut::visit_fn_arg_mut(self, node);
     }
+
+    fn visit_impl_item_fn_mut(&mut self, node: &mut ImplItemFn) {
+        strip_pavex_attrs(&mut node.attrs);
+        visit_mut::visit_impl_item_fn_mut(self, node);
+    }
+
+    fn visit_trait_item_fn_mut(&mut self, node: &mut TraitItemFn) {
+        strip_pavex_attrs(&mut node.attrs);
+        visit_mut::visit_trait_item_fn_mut(self, node);
+    }
+}
+
+fn strip_pavex_attrs(attrs: &mut Vec<Attribute>) {
+    attrs.retain(|a| !is_user_pavex_attr(a) && not_px_attr(a));
+}
+
+fn is_user_pavex_attr(a: &Attribute) -> bool {
+    a.path()
+        .segments
+        .first()
+        .map(|s| s.ident == "pavex")
+        .unwrap_or(false)
 }
 
 fn not_px_attr(a: &Attribute) -> bool {
