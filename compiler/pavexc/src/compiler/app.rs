@@ -7,6 +7,7 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexMap;
 
 use pavex_bp_schema::Blueprint;
+use persist_if_changed::persist_if_changed;
 
 use crate::compiler::analyses::application_config::ApplicationConfig;
 use crate::compiler::analyses::application_state::ApplicationState;
@@ -291,22 +292,17 @@ pub struct AppDiagnostics {
 impl AppDiagnostics {
     /// Save all diagnostics in a single file.
     pub fn persist_flat(&self, filepath: &Path) -> Result<(), anyhow::Error> {
-        let file = fs_err::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(filepath)?;
-        let mut file = BufWriter::new(file);
-
+        let mut buffer = Vec::new();
         for handler_graphs in &self.handlers {
             for handler_graph in handler_graphs {
-                file.write_all(handler_graph.as_bytes())?;
+                buffer.write_all(handler_graph.as_bytes())?;
                 // Add a newline between graphs for readability
-                file.write_all("\n".as_bytes())?;
+                buffer.write_all("\n".as_bytes())?;
             }
         }
-        file.write_all(self.application_state.as_bytes())?;
-        file.flush()?;
+        buffer.write_all(self.application_state.as_bytes())?;
+
+        persist_if_changed(filepath, &buffer)?;
         Ok(())
     }
 }
