@@ -685,7 +685,7 @@ impl TestData {
             fs_err::create_dir_all(&application_src_dir).context(
                 "Failed to create the runtime directory for the generated application when setting up the test runtime environment",
             )?;
-            persist_if_changed(&application_src_dir.join("lib.rs"), b"")?;
+            create_file_if_missing(&application_src_dir.join("lib.rs"), b"")?;
 
             let mut cargo_toml = toml! {
                 [package]
@@ -700,8 +700,8 @@ impl TestData {
             cargo_toml["package"]["name"] = format!("application_{}", self.name_hash).into();
             cargo_toml["package"]["metadata"]["px"]["generate"]["generator_name"] =
                 format!("app_{}", self.name_hash).into();
-            persist_if_changed(
-                &application_dir.join("Cargo.toml"),
+            create_file_if_missing(
+                &application_src_dir.join("Cargo.toml"),
                 toml::to_string(&cargo_toml)?.as_bytes(),
             )?;
         }
@@ -1023,4 +1023,17 @@ fn enrich_failure_message(config: &TestConfig, error: impl AsRef<str>) -> String
         style("What is the test about:").cyan().dim().bold(),
         style("What went wrong:").red().bold(),
     )
+}
+
+fn create_file_if_missing(path: &Path, content: &[u8]) -> Result<(), anyhow::Error> {
+    if !path.exists() {
+        if let Some(parent) = path.parent() {
+            fs_err::create_dir_all(parent).with_context(|| {
+                format!("Failed to create parent directories for {}", path.display())
+            })?;
+        }
+        fs_err::write(path, content)
+            .with_context(|| format!("Failed to create file at {}", path.display()))?;
+    }
+    Ok(())
 }
