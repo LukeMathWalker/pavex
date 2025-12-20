@@ -47,6 +47,14 @@ pub fn get_test_name(tests_parent_folder: &Path, test_folder: &Path) -> String {
         .join("::")
 }
 
+/// All `cargo` commands in the test runner use this helper function to
+/// compose command invocations.
+/// Whenever you want to set a particular `cargo` flag across all invocations
+/// (e.g. `-Zbuild-analysis`), do it here.
+fn cargo_cmd() -> std::process::Command {
+    Command::new("cargo")
+}
+
 /// Create a test case for each folder in `definition_directory`.
 ///
 /// Each test will get a separate runtime environment—a sub-folder of `runtime_directory`. The
@@ -247,7 +255,7 @@ fn compile_generated_apps(
         return Ok((Vec::new(), BTreeMap::new()));
     }
     println!("Compiling {} generated crates", generated_crate_names.len());
-    let mut cmd = Command::new("cargo");
+    let mut cmd = cargo_cmd();
     cmd.arg("check").arg("--message-format").arg("json");
     for name in &generated_crate_names {
         cmd.arg("-p").arg(name);
@@ -371,7 +379,7 @@ fn warm_up_target_dir(
 
     let timer = std::time::Instant::now();
     println!("Warming up the target directory");
-    let mut cmd = Command::new("cargo");
+    let mut cmd = cargo_cmd();
     cmd.arg("build");
     for data in test_name2test_data.values() {
         cmd.arg("-p").arg(data.blueprint_crate_name());
@@ -950,7 +958,7 @@ fn build_integration_tests(test_dir: &Path, test_name2test_data: &BTreeMap<Strin
 
     let timer = std::time::Instant::now();
     println!("Building {n_integration_tests} integration tests, without running them");
-    let mut cmd = std::process::Command::new("cargo");
+    let mut cmd = cargo_cmd();
     cmd.arg("test").arg("--no-run");
     for test in test_name2test_data.values() {
         cmd.arg("-p").arg(format!("integration_{}", test.name_hash));
@@ -970,7 +978,7 @@ fn build_integration_tests(test_dir: &Path, test_name2test_data: &BTreeMap<Strin
 }
 
 fn application_integration_test(test: &TestData) -> Result<(), anyhow::Error> {
-    let output = std::process::Command::new("cargo")
+    let output = cargo_cmd()
         // .env("RUSTFLAGS", "-Awarnings")
         .arg("t")
         .arg("-p")
