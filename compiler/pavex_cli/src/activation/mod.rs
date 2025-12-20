@@ -1,3 +1,4 @@
+#![allow(unused_assignments)] // False positive due to fields only used in the Diagnostic/Display impl derived by the miette macro.
 use crate::activation::token::ValidatedClaims;
 use crate::command::Command;
 use crate::locator::PavexLocator;

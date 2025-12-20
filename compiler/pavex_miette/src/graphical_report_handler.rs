@@ -824,7 +824,6 @@ impl GraphicalReportHandler {
                         };
                         for _ in 0..n_leading_whitespaces {
                             write!(f, " ")?;
-                            curr_offset += 1;
                         }
 
                         let label_line = if i == 0 {
