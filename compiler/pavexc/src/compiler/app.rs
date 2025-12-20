@@ -1,5 +1,5 @@
 use std::collections::BTreeSet;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::path::Path;
 
 use ahash::{HashMap, HashMapExt};

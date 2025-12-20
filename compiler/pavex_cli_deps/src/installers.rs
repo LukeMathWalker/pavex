@@ -1,3 +1,4 @@
+#![allow(unused_assignments)] // False positives due to fields only used in Display impls.
 use crate::commands::{
     install_rustdoc_json, install_rustup_toolchain, is_cargo_px_installed,
     is_rustdoc_json_installed, is_rustup_installed, is_rustup_toolchain_installed,
