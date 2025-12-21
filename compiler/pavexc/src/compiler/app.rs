@@ -340,7 +340,7 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .id();
     let matchit = package_graph
         .packages()
-        .find(|p| p.name() == "matchit" && p.version().major == 0 && p.version().minor == 8)
+        .find(|p| p.name() == "matchit" && p.version().major == 0 && p.version().minor == 9)
         .expect("Expected to find `matchit@0.8` in the package graph, but it was not there.")
         .id();
     let serde = package_graph

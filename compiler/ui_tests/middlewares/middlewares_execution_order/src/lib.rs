@@ -181,7 +181,7 @@ pub async fn early_return_pre(spy: &Spy) -> pavex::middleware::Processing {
     pavex::middleware::Processing::EarlyReturn(Response::ok())
 }
 
-#[pavex::pre_process]
+#[pavex::pre_process(id = "FAILING_PRE")]
 pub async fn failing_pre_(spy: &Spy) -> Result<pavex::middleware::Processing, pavex::Error> {
     spy.push("failing_pre".to_string()).await;
     Err(pavex::Error::new("failing_pre"))
