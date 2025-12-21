@@ -1,0 +1,17 @@
+[package]
+name = "application_ea979460"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "app_ea979460"
+
+[dependencies]
+app_ea979460 = { version = "0.1", path = "..", default-features = false }
+http = { version = "1", default-features = false }
+hyper = { version = "1", default-features = false }
+matchit = { version = "0.9", default-features = false }
+pavex = { version = "0.2", path = "../../../../../../runtime/pavex", default-features = false }
+serde = { version = "1", default-features = false }
+thiserror = { version = "2", default-features = false }
