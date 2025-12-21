@@ -3148,6 +3148,7 @@ version = "0.2.10"
 dependencies = [
  "ahash",
  "anyhow",
+ "cargo-like-utils",
  "cargo_metadata",
  "console 0.16.2",
  "fs-err",
@@ -3159,6 +3160,7 @@ dependencies = [
  "num_cpus",
  "object-pool",
  "once_cell",
+ "pavex_cli_shell",
  "pavexc",
  "persist_if_changed",
  "px_workspace_hack",

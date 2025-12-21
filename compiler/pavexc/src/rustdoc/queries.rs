@@ -220,30 +220,42 @@ impl CrateCollection {
             self.package_graph.workspace().root().as_std_path(),
         )?;
 
-        for (package_id, krate) in results {
-            let n_diagnostics = self.diagnostic_sink.len();
-            let krate = Crate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
+        let package_graph = self.package_graph();
+        let diagnostic_sink = &self.diagnostic_sink;
+        for partial in results
+            .into_par_iter()
+            .map(move |(package_id, krate)| {
+                let n_diagnostics = diagnostic_sink.len();
+                let krate = Crate::index_raw(krate, package_id.to_owned(), diagnostic_sink);
 
-            // No issues arose in the indexing phase.
-            // Let's make sure to store them in the on-disk cache for next time.
-            let cache_indexes = n_diagnostics == self.diagnostic_sink.len();
-            let cache_key = RustdocCacheKey::new(&package_id, &self.package_graph);
-            if let Err(e) =
-                self.disk_cache
-                    .insert(&cache_key, &krate, cache_indexes, &self.package_graph)
-            {
-                log_error!(
-                    *e,
-                    level: tracing::Level::WARN,
-                    package_id = package_id.repr(),
-                    "Failed to store the computed JSON docs in the on-disk cache",
-                );
+                // No issues arose in the indexing phase.
+                // Let's make sure to store them in the on-disk cache for next time.
+                //
+                // TODO: Since we're indexing in parallel, the counter may have been incremented
+                //  by a different thread, signaling an issue with indexes for another crate.
+                //  It'd be enough to keep a thread-local counter to get an accurate yes/no,
+                //  but since we don't get false negatives it isn't a big deal.
+                let cache_indexes = n_diagnostics == diagnostic_sink.len();
+                (package_id, Box::new(krate), cache_indexes)
+            })
+            .collect_vec_list()
+        {
+            for (package_id, krate, cache_indexes) in partial {
+                let cache_key = RustdocCacheKey::new(&package_id, package_graph);
+                if let Err(e) =
+                    self.disk_cache
+                        .insert(&cache_key, &krate, cache_indexes, package_graph)
+                {
+                    log_error!(
+                        *e,
+                        level: tracing::Level::WARN,
+                        package_id = package_id.repr(),
+                        "Failed to store the computed JSON docs in the on-disk cache",
+                    );
+                }
+                self.package_id2krate.insert(package_id, krate);
             }
-
-            self.package_id2krate
-                .insert(package_id.to_owned(), Box::new(krate));
         }
-
         Ok(())
     }
 
