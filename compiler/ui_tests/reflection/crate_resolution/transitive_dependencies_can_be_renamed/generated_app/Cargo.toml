@@ -1,0 +1,19 @@
+[package]
+name = "application_a0f4586a"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "app_a0f4586a"
+
+[dependencies]
+dep_a0f4586a = { version = "0.1", path = "../ephemeral_deps/dep", default-features = false }
+http_0_1 = { version = "0.1", default-features = false, package = "http" }
+http_0_2 = { version = "0.2", default-features = false, package = "http" }
+http_1 = { version = "1", default-features = false, package = "http" }
+hyper = { version = "1", default-features = false }
+matchit = { version = "0.9", default-features = false }
+pavex = { version = "0.2", path = "../../../../../../runtime/pavex", default-features = false }
+serde = { version = "1", default-features = false }
+thiserror = { version = "2", default-features = false }

@@ -1,4 +1,4 @@
 target
 metadata.json
-**/generated_app/
+**/generated_app/blueprint.ron
 Cargo.lock

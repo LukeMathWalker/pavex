@@ -1,0 +1,11 @@
+[package]
+name = "application_5bd8bb6b"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "app_5bd8bb6b"
+
+[dependencies]
+workspace_hack = { version = "0.1", path = "../../../../workspace_hack" }
