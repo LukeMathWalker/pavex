@@ -100,23 +100,8 @@ pub fn run_tests(
     if !arguments.list {
         warm_up_target_dir(&tests_directory, &test_name2test_data)?;
 
-        let metadata = guppy::MetadataCommand::new()
-            .current_dir(&tests_directory)
-            .exec()
-            .context("Failed to invoke `cargo metadata`")?;
-
         let metadata_path = tests_directory.join("metadata.json");
-
-        {
-            use std::io::Write as _;
-
-            let mut file = BufWriter::new(fs_err::File::create(&metadata_path)?);
-            metadata
-                .serialize(&mut file)
-                .context("Failed to serialize Cargo's metadata to disk")?;
-            file.flush()
-                .context("Failed to serialize Cargo's metadata to disk")?;
-        }
+        let metadata = precompute_cargo_metadata(&tests_directory, &metadata_path)?;
 
         let package_graph = metadata
             .build_graph()
@@ -240,6 +225,37 @@ fn increase_open_file_descriptor_limit() -> std::io::Result<()> {
         rlimit::Resource::NOFILE.set(target, hard)?;
     }
     Ok(())
+}
+
+/// Invoke `cargo metadata` once and cache the result on disk, thus avoiding needless
+/// recomputations in every single code generation task performed by UI tests.
+fn precompute_cargo_metadata(
+    tests_directory: &Path,
+    metadata_path: &Path,
+) -> Result<guppy::CargoMetadata, anyhow::Error> {
+    let timer = std::time::Instant::now();
+    println!("Precomputing `cargo` metadata");
+    let metadata = guppy::MetadataCommand::new()
+        .current_dir(tests_directory)
+        .exec()
+        .context("Failed to invoke `cargo metadata`")?;
+
+    {
+        use std::io::Write as _;
+
+        let mut file = BufWriter::new(fs_err::File::create(metadata_path)?);
+        metadata
+            .serialize(&mut file)
+            .context("Failed to serialize Cargo's metadata to disk")?;
+        file.flush()
+            .context("Failed to serialize Cargo's metadata to disk")?;
+    }
+    println!(
+        "Precomputed `cargo metadata` in {} seconds",
+        timer.elapsed().as_secs()
+    );
+
+    Ok(metadata)
 }
 
 fn compile_generated_apps(
