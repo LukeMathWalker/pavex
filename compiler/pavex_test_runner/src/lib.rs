@@ -6,11 +6,13 @@ use std::process::{Command, Output};
 
 use ahash::HashSet;
 use anyhow::Context;
+use cargo_like_utils::shell::Shell;
 use cargo_metadata::diagnostic::DiagnosticLevel;
 use console::style;
 use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
+use pavex_cli_shell::try_init_shell;
 use pavexc::rustdoc::CrateCollection;
 use pavexc::{DEFAULT_DOCS_TOOLCHAIN, DiagnosticSink};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
@@ -112,6 +114,7 @@ pub fn run_tests(
         // acquire the global target directory lock. If multiple tests end up
         // doing this at the same time, their execution will be serialized,
         // which would have a major impact on the overall test suite runtime.
+        try_init_shell(Shell::new());
         warm_up_rustdoc_cache(&package_graph, &test_name2test_data)?;
 
         // First battery of UI tests.
@@ -426,7 +429,6 @@ fn warm_up_rustdoc_cache(
     // We want to ensure that all invocations of `pavexc generate` hit the cache
     // thus avoiding the need to invoke `rustdoc` and acquire a contentious
     // lock over the target directory.
-    println!("Pre-computing JSON documentation for relevant crates");
     let crate_collection = CrateCollection::new(
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
         package_graph.clone(),
@@ -443,14 +445,20 @@ fn warm_up_rustdoc_cache(
         .workspace()
         .iter()
         .filter(|p| {
-            !(p.name().starts_with("application_")
+            !(
+                // Avoid computing JOSN docs for:
+                // - Generated code
+                p.name().starts_with("application_")
+                // - Integration test crates
                 || p.name().starts_with("integration_")
+                // - The workspace hack package
                 || p.name() == "workspace_hack"
-                || (p.name().starts_with("app_") && !app_names.contains(p.name())))
+                // - Tests that have been filtered out of this run
+                || (p.name().starts_with("app_") && !app_names.contains(p.name()))
+            )
         })
         .map(|p| p.name().to_owned())
         .collect();
-    crates.remove("workspace_hack");
     // Toolchain docs
     crates.insert("core".into());
     crates.insert("alloc".into());
@@ -471,16 +479,19 @@ fn warm_up_rustdoc_cache(
     crates.insert("yansi".into());
     crates.insert("serde".into());
     crates.insert("zerocopy".into());
-    let package_ids = crate_collection
+    let package_ids: Vec<_> = crate_collection
         .package_graph()
         .packages()
         .filter(|p| crates.contains(p.name()))
-        .map(|p| p.id().to_owned());
+        .map(|p| p.id().to_owned())
+        .collect();
+    let n_packages = package_ids.len();
+    println!("Pre-computing JSON documentation for {n_packages} crates",);
     crate_collection
-        .batch_compute_crates(package_ids)
+        .batch_compute_crates(package_ids.into_iter())
         .context("Failed to warm rustdoc JSON cache")?;
     println!(
-        "Pre-computed JSON documentation in {} seconds",
+        "Pre-computed JSON documentation for {n_packages} crates in {} seconds",
         timer.elapsed().as_secs()
     );
 
