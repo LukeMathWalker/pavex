@@ -853,20 +853,20 @@ impl<'a> CacheEntry<'a> {
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
     pub(super) fn hydrate(self, package_id: PackageId) -> Result<RustdocCacheEntry, anyhow::Error> {
-        let span = tracing::trace_span!("Deserialize delimiters");
-        let _guard = span.enter();
-        let item_id2delimiters =
-            bincode::serde::decode_from_slice(&self.item_id2delimiters, BINCODE_CONFIG)
-                .context("Failed to deserialize item_id2delimiters")?
-                .0;
-        drop(_guard);
-
-        let span = tracing::trace_span!("Deserialize paths");
-        let _guard = span.enter();
-        let paths = bincode::serde::decode_from_slice(&self.paths, BINCODE_CONFIG)
-            .context("Failed to deserialize paths")?
-            .0;
-        drop(_guard);
+        let (item_id2delimiters, paths) = rayon::join(
+            || {
+                tracing::trace_span!("Deserialize delimiters")
+                    .in_scope(|| {
+                        bincode::serde::decode_from_slice(&self.item_id2delimiters, BINCODE_CONFIG)
+                    })
+                    .context("Failed to deserialize item_id2delimiters")
+            },
+            || {
+                tracing::trace_span!("Deserialize paths")
+                    .in_scope(|| bincode::serde::decode_from_slice(&self.paths, BINCODE_CONFIG))
+                    .context("Failed to deserialize paths")
+            },
+        );
 
         let crate_data = CrateData {
             root_item_id: rustdoc_types::Id(self.root_item_id.to_owned()),
@@ -876,11 +876,11 @@ impl<'a> CacheEntry<'a> {
             )
             .context("Failed to deserialize external_crates")?
             .0,
-            paths,
+            paths: paths?.0,
             format_version: self.format_version.try_into()?,
             index: CrateItemIndex::Lazy(LazyCrateItemIndex {
                 items: self.items.into_owned(),
-                item_id2delimiters,
+                item_id2delimiters: item_id2delimiters?.0,
             }),
         };
         let Some(secondary_indexes) = self.secondary_indexes else {
@@ -892,22 +892,29 @@ impl<'a> CacheEntry<'a> {
             krate: crate_data,
         };
 
-        let span = tracing::trace_span!("Deserialize import_path2id");
-        let _guard = span.enter();
-        let import_path2id =
-            bincode::serde::decode_from_slice(&secondary_indexes.import_path2id, BINCODE_CONFIG)
-                .context("Failed to deserialize import_path2id")?
-                .0;
-        drop(_guard);
+        let (import_path2id, import_index) = rayon::join(
+            || {
+                tracing::trace_span!("Deserialize import_path2id")
+                    .in_scope(|| {
+                        bincode::serde::decode_from_slice(
+                            &secondary_indexes.import_path2id,
+                            BINCODE_CONFIG,
+                        )
+                    })
+                    .context("Failed to deserialize import_path2id")
+            },
+            || {
+                bincode::serde::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
+                    .context("Failed to deserialize import_index")
+            },
+        );
+
+        let import_path2id = import_path2id?.0;
+        let import_index = import_index?.0;
 
         let re_exports =
             bincode::serde::decode_from_slice(&secondary_indexes.re_exports, BINCODE_CONFIG)
                 .context("Failed to deserialize re-exports")?
-                .0;
-
-        let import_index =
-            bincode::serde::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
-                .context("Failed to deserialize import_index")?
                 .0;
 
         let annotated_items = if let Some(data) = secondary_indexes.annotated_items {
