@@ -8,6 +8,7 @@ mod format;
 mod toolchain;
 
 use ahash::{HashMap, HashMapExt};
+pub(super) use cache::CacheEntry;
 pub(crate) use cache::{RustdocCacheKey, RustdocGlobalFsCache};
 
 use anyhow::Context;

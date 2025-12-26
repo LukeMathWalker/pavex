@@ -3,12 +3,13 @@ use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use ahash::HashMap;
+use ahash::{HashMap, HashSet, HashSetExt};
 use anyhow::{Context, anyhow};
 use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
+use rayon::iter::IntoParallelRefIterator;
 use rustc_hash::FxHashMap;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
@@ -17,6 +18,7 @@ use tracing_log_error::log_error;
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
 use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id};
+use crate::rustdoc::compute::CacheEntry;
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
@@ -224,9 +226,14 @@ impl CrateCollection {
             self.package_graph.workspace().root().as_std_path(),
         )?;
 
+        // We then have to perform two more expensive operations: indexing of all the items in each
+        // crate and conversion of the "raw" JSON format into our optimised cache entry format.
+        // We perform both in parallel, since they're CPU-intensive.
+        //
+        // First indexing:
         let package_graph = self.package_graph();
         let diagnostic_sink = &self.diagnostic_sink;
-        for partial in results
+        let indexed_krates = results
             .into_par_iter()
             .map(move |(package_id, krate)| {
                 let n_diagnostics = diagnostic_sink.len();
@@ -240,24 +247,60 @@ impl CrateCollection {
                 //  It'd be enough to keep a thread-local counter to get an accurate yes/no,
                 //  but since we don't get false negatives it isn't a big deal.
                 let cache_indexes = n_diagnostics == diagnostic_sink.len();
-                (package_id, Box::new(krate), cache_indexes)
+                (package_id, krate, cache_indexes)
             })
-            .collect_vec_list()
-        {
-            for (package_id, krate, cache_indexes) in partial {
-                let cache_key = RustdocCacheKey::new(&package_id, package_graph);
-                if let Err(e) =
-                    self.disk_cache
-                        .insert(&cache_key, &krate, cache_indexes, package_graph)
-                {
-                    log_error!(
-                        *e,
-                        level: tracing::Level::WARN,
-                        package_id = package_id.repr(),
-                        "Failed to store the computed JSON docs in the on-disk cache",
-                    );
+            .collect::<Vec<_>>();
+        // Then conversion to the desired cache format:
+        let mut cache_entries: HashMap<_, _> = indexed_krates
+            .par_iter()
+            .filter_map(|(package_id, krate, cache_indexes)| {
+                let data = if *cache_indexes {
+                    CacheEntry::new(&krate)
+                } else {
+                    CacheEntry::raw(&krate)
+                };
+                match data {
+                    Ok(v) => Some((package_id, v)),
+                    Err(e) => {
+                        log_error!(
+                            *e,
+                            level: tracing::Level::WARN,
+                            package_id = package_id.repr(),
+                            "Failed to convert the computed JSON docs into the format used by the on-disk cache",
+                        );
+                        None
+                    }
                 }
-                self.package_id2krate.insert(package_id, krate);
+            })
+            .collect();
+
+        let mut to_be_inserted = HashSet::with_capacity(indexed_krates.len());
+        for (package_id, _, _) in &indexed_krates {
+            let cache_key = RustdocCacheKey::new(&package_id, package_graph);
+            let Some(cache_data) = cache_entries.remove(&package_id) else {
+                continue;
+            };
+            if let Err(e) = self
+                .disk_cache
+                .insert(&cache_key, cache_data, package_graph)
+            {
+                log_error!(
+                    *e,
+                    level: tracing::Level::WARN,
+                    package_id = package_id.repr(),
+                    "Failed to store the computed JSON docs in the on-disk cache",
+                );
+            }
+            // If we tried to insert into the in-memory cache directly, we'd get a borrow-checker
+            // error since `cache_data` borrows from `krate`.
+            // We keep track of what needs to be inserted and do it later once the on-disk
+            // cache has been taken care of.
+            to_be_inserted.insert(package_id.to_owned());
+        }
+
+        for (package_id, krate, _) in indexed_krates {
+            if to_be_inserted.contains(&package_id) {
+                self.package_id2krate.insert(package_id, Box::new(krate));
             }
         }
         Ok(())
@@ -312,10 +355,12 @@ impl CrateCollection {
         // No issues arose in the indexing phase.
         // Let's make sure to store them in the on-disk cache for next time.
         let cache_indexes = n_diagnostics == self.diagnostic_sink.len();
-        if let Err(e) =
-            self.disk_cache
-                .insert(&cache_key, &krate, cache_indexes, &self.package_graph)
-        {
+        if let Err(e) = self.disk_cache.convert_and_insert(
+            &cache_key,
+            &krate,
+            cache_indexes,
+            &self.package_graph,
+        ) {
             log_error!(
                 *e,
                 level: tracing::Level::WARN,
