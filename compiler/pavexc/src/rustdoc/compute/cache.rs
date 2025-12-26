@@ -99,13 +99,14 @@ impl RustdocGlobalFsCache {
     pub(crate) fn new(
         toolchain_name: &str,
         cache_workspace_package_docs: bool,
+        package_graph: &PackageGraph,
     ) -> Result<Self, anyhow::Error> {
         let cargo_fingerprint = cargo_fingerprint(toolchain_name)?;
         let pool = Self::setup_database()?;
 
         let connection = pool.get()?;
         let third_party_cache =
-            ThirdPartyCrateCache::new(&connection, cache_workspace_package_docs)?;
+            ThirdPartyCrateCache::new(&connection, cache_workspace_package_docs, package_graph)?;
         let toolchain_cache = ToolchainCache::new(&connection)?;
         Ok(Self {
             cargo_fingerprint,
@@ -421,8 +422,12 @@ impl ThirdPartyCrateCache {
     fn new(
         connection: &rusqlite::Connection,
         cache_workspace_packages: bool,
+        package_graph: &PackageGraph,
     ) -> Result<Self, anyhow::Error> {
         Self::setup_table(connection)?;
+        // Force the creation of the feature graph ahead of our queries.
+        // It'll be cached internally by the `package_graph`.
+        let _ = package_graph.feature_graph();
         Ok(Self {
             cache_workspace_packages,
         })
@@ -923,10 +928,13 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
         } else {
             None
         };
-        let features = package_metadata
-            .to_feature_set(StandardFeatures::Default)
+        let feature_graph = package_graph.feature_graph();
+        let feature_set = feature_graph
+            .query_workspace(StandardFeatures::Default)
+            .resolve();
+        let features = feature_set
             .features_for(package_metadata.id())
-            .unwrap();
+            .expect("Failed to determine cargo features");
         let (default_feature_is_enabled, mut active_named_features) = match features {
             Some(f) => (f.has_base(), f.named_features().collect()),
             None => (false, vec![]),
@@ -940,7 +948,7 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
             cargo_fingerprint,
             default_feature_is_enabled,
             // SQLite doesn't support arrays, so we have to serialize these two collections as strings.
-            // This is well defined, since the order is well-defined.
+            // This is well defined, since we sorted features and the order of options is well-defined.
             rustdoc_options: rustdoc_options().join(" "),
             active_named_features: active_named_features.join(" "),
         };

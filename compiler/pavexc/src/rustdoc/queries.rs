@@ -89,7 +89,11 @@ impl CrateCollection {
         cache_workspace_package_docs: bool,
         diagnostic_sink: DiagnosticSink,
     ) -> Result<Self, anyhow::Error> {
-        let disk_cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
+        let disk_cache = RustdocGlobalFsCache::new(
+            &toolchain_name,
+            cache_workspace_package_docs,
+            &package_graph,
+        )?;
         Ok(Self {
             package_id2krate: FrozenMap::new(),
             package_graph,
