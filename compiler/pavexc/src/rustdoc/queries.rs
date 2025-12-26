@@ -257,8 +257,9 @@ impl CrateCollection {
                 } else {
                     CacheEntry::raw(&krate)
                 };
+                let cache_key = RustdocCacheKey::new(&package_id, package_graph);
                 match data {
-                    Ok(v) => Some((package_id, v)),
+                    Ok(v) => Some((package_id, (cache_key, v))),
                     Err(e) => {
                         log_error!(
                             *e,
@@ -274,8 +275,7 @@ impl CrateCollection {
 
         let mut to_be_inserted = HashSet::with_capacity(indexed_krates.len());
         for (package_id, _, _) in &indexed_krates {
-            let cache_key = RustdocCacheKey::new(&package_id, package_graph);
-            let Some(cache_data) = cache_entries.remove(&package_id) else {
+            let Some((cache_key, cache_data)) = cache_entries.remove(&package_id) else {
                 continue;
             };
             if let Err(e) = self
