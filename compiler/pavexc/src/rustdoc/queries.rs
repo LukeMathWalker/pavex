@@ -648,6 +648,11 @@ pub struct Crate {
     /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
     /// for each of them.
     pub(crate) import_index: ImportIndex,
+    /// An internal cache to avoid traversing the package graph every time we need to
+    /// translate a crate id into a package id via [`Self::compute_package_id_for_crate_id`]
+    /// or [`Self::compute_package_id_for_crate_id_with_hint`].
+    pub(super) crate_id2package_id:
+        Arc<std::sync::RwLock<HashMap<(u32, Option<String>), PackageId>>>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -1064,6 +1069,7 @@ impl Crate {
             import_index,
             external_re_exports,
             annotated_items: AnnotatedItems::default(),
+            crate_id2package_id: Default::default(),
         };
 
         let annotated_items = annotations::process_queue(annotation_queue, &self_, diagnostics);
@@ -1098,8 +1104,7 @@ impl Crate {
         crate_id: u32,
         collection: &CrateCollection,
     ) -> Result<PackageId, anyhow::Error> {
-        self.core
-            .compute_package_id_for_crate_id(crate_id, collection, None)
+        self.compute_package_id_for_crate_id_with_hint(crate_id, collection, None)
     }
 
     /// Given a crate id, return the corresponding [`PackageId`].
@@ -1123,8 +1128,31 @@ impl Crate {
         collection: &CrateCollection,
         maybe_dependent_crate_name: Option<&str>,
     ) -> Result<PackageId, anyhow::Error> {
-        self.core
-            .compute_package_id_for_crate_id(crate_id, collection, maybe_dependent_crate_name)
+        // Check the cache first.
+        if let Some(package_id) = self
+            .crate_id2package_id
+            .read()
+            .unwrap()
+            .get(&(crate_id, maybe_dependent_crate_name.map(|s| s.to_owned())))
+        {
+            return Ok(package_id.to_owned());
+        }
+
+        // If we don't have a cached entry, perform the graph traversal.
+        let outcome = self.core.compute_package_id_for_crate_id(
+            crate_id,
+            collection,
+            maybe_dependent_crate_name,
+        );
+
+        // If successful, cache the outcome.
+        if let Ok(outcome) = &outcome {
+            self.crate_id2package_id.write().unwrap().insert(
+                (crate_id, maybe_dependent_crate_name.map(|s| s.to_owned())),
+                outcome.to_owned(),
+            );
+        }
+        outcome
     }
 
     pub fn get_item_id_by_path(

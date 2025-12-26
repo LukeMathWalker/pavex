@@ -924,6 +924,7 @@ impl<'a> CacheEntry<'a> {
             import_path2id,
             external_re_exports: re_exports,
             import_index,
+            crate_id2package_id: Default::default(),
         };
         Ok(RustdocCacheEntry::Processed(krate))
     }
