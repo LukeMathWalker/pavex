@@ -937,7 +937,7 @@ impl CrateItemIndex {
             Self::Eager(index) => index.index.get(id).map(Cow::Borrowed),
             Self::Lazy(index) => {
                 let (start, end) = index.item_id2delimiters.get(id)?;
-                let bytes = index.items[*start..*end].to_vec();
+                let bytes = &index.items[*start..*end];
                 let (item, _) =
                     bincode::serde::decode_from_slice(&bytes, bincode::config::standard()).expect(
                         "Failed to deserialize an item from a lazy `rustdoc` index. This is a bug.",
