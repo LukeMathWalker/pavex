@@ -935,9 +935,10 @@ impl CrateItemIndex {
             Self::Lazy(index) => {
                 let (start, end) = index.item_id2delimiters.get(id)?;
                 let bytes = index.items[*start..*end].to_vec();
-                let item = serde_json::from_slice(&bytes).expect(
-                    "Failed to deserialize an item from a lazy `rustdoc` index. This is a bug.",
-                );
+                let (item, _) =
+                    bincode::serde::decode_from_slice(&bytes, bincode::config::standard()).expect(
+                        "Failed to deserialize an item from a lazy `rustdoc` index. This is a bug.",
+                    );
                 Some(Cow::Owned(item))
             }
         }

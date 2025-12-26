@@ -798,7 +798,6 @@ pub(in crate::rustdoc) struct SecondaryIndexes<'a> {
 impl<'a> CacheEntry<'a> {
     pub fn new(krate: &'a crate::rustdoc::Crate) -> Result<CacheEntry<'a>, anyhow::Error> {
         let mut cached = Self::raw(krate)?;
-
         let import_index = bincode::serde::encode_to_vec(&krate.import_index, BINCODE_CONFIG)?;
         let annotated_items =
             bincode::serde::encode_to_vec(&krate.annotated_items, BINCODE_CONFIG)?;
@@ -827,7 +826,7 @@ impl<'a> CacheEntry<'a> {
         let mut item_id2delimiters = HashMap::new();
         for (item_id, item) in &index.index {
             let start = items.len();
-            serde_json::to_writer(&mut items, item)?;
+            bincode::serde::encode_into_std_write(item, &mut items, bincode::config::standard())?;
             let end = items.len();
             item_id2delimiters.insert(item_id.0, (start, end));
         }
