@@ -168,8 +168,8 @@ impl CrateCollection {
     {
         fn get_if_cached(
             package_id: PackageId,
-            package_graph: PackageGraph,
-            cache: RustdocGlobalFsCache,
+            package_graph: &PackageGraph,
+            cache: &RustdocGlobalFsCache,
             diagnostic_sink: &DiagnosticSink,
         ) -> (PackageId, Option<Crate>) {
             let cache_key = RustdocCacheKey::new(&package_id, &package_graph);
@@ -198,14 +198,12 @@ impl CrateCollection {
 
         // It can take a while to deserialize the JSON docs for a crate from the cache,
         // so we parallelize the operation.
-        let package_graph = self.package_graph.clone();
-        let cache = self.disk_cache.clone();
-        let sink = self.diagnostic_sink.clone();
+        let package_graph = &self.package_graph;
+        let cache = &self.disk_cache;
+        let sink = &self.diagnostic_sink;
         let tracing_span = Span::current();
-        let map_op = move |id| {
-            tracing_span
-                .in_scope(|| get_if_cached(id, package_graph.clone(), cache.clone(), &sink.clone()))
-        };
+        let map_op =
+            move |id| tracing_span.in_scope(|| get_if_cached(id, &package_graph, cache, &sink));
 
         let mut to_be_computed = vec![];
 
