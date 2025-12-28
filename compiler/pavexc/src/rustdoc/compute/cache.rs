@@ -363,10 +363,7 @@ impl ToolchainCache {
         let paths = row.get_ref_unwrap(2).as_bytes()?;
         let format_version = row.get_ref_unwrap(3).as_i64()?;
 
-        let span = tracing::trace_span!("Copy items bytes buffer");
-        let guard = span.enter();
-        let items: Vec<u8> = row.get_unwrap(4);
-        drop(guard);
+        let items = row.get_ref_unwrap(4).as_bytes()?;
 
         let item_id2delimiters = row.get_ref_unwrap(5).as_bytes()?;
         let import_index = row.get_ref_unwrap(6).as_bytes()?;
@@ -378,7 +375,7 @@ impl ToolchainCache {
             external_crates: Cow::Borrowed(external_crates),
             paths: Cow::Borrowed(paths),
             format_version,
-            items: Cow::Owned(items),
+            items: Cow::Borrowed(items),
             item_id2delimiters: Cow::Borrowed(item_id2delimiters),
             secondary_indexes: Some(SecondaryIndexes {
                 import_index: Cow::Borrowed(import_index),
