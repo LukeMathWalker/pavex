@@ -655,7 +655,9 @@ pub struct Crate {
         Arc<std::sync::RwLock<HashMap<(u32, Option<String>), PackageId>>>,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
+)]
 /// Track re-exports of types (or entire modules!) from other crates.
 pub struct ExternalReExports {
     /// Key: the path of the re-exported type in the current crate.
@@ -750,7 +752,7 @@ impl ExternalReExports {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode)]
 /// Information about a type (or module) re-exported from another crate.
 pub struct ExternalReExport {
     /// The path of the re-exported type in the crate it was re-exported from.
@@ -763,7 +765,9 @@ pub struct ExternalReExport {
     external_crate_id: u32,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
+)]
 pub struct ImportIndex {
     /// A mapping that keeps track of all modules defined in the current crate.
     ///
@@ -779,7 +783,9 @@ pub struct ImportIndex {
 }
 
 /// An entry in [`ImportIndex`].
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
+)]
 pub struct ImportIndexEntry {
     /// All the public paths that can be used to import the item.
     pub public_paths: BTreeSet<SortablePath>,
@@ -866,7 +872,16 @@ impl ImportIndexEntry {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    bincode::Encode,
+    bincode::Decode,
+)]
 #[serde(transparent)]
 pub struct SortablePath(pub Vec<String>);
 
@@ -938,8 +953,8 @@ impl CrateItemIndex {
             Self::Lazy(index) => {
                 let (start, end) = index.item_id2delimiters.get(id)?;
                 let bytes = &index.items[*start..*end];
-                let (item, _) =
-                    bincode::serde::decode_from_slice(&bytes, bincode::config::standard()).expect(
+                let (item, _) = bincode::decode_from_slice(bytes, bincode::config::standard())
+                    .expect(
                         "Failed to deserialize an item from a lazy `rustdoc` index. This is a bug.",
                     );
                 Some(Cow::Owned(item))

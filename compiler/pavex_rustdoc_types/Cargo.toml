@@ -1,0 +1,22 @@
+[package]
+name = "pavex_rustdoc_types"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+serde = {version="1.0.186"}
+serde_derive = {version="1.0.186"}
+rustc-hash = {version="2", optional=true}
+bincode = "2"
+
+[features]
+default = []
+
+# Switch the hashmaps used in rustdoc-types to the FxHashMap from rustc-hash.
+#
+# This might improve performace if your are reading the rustdoc JSON from large
+# crates like aws_sdk_ec2
+rustc-hash = ["dep:rustc-hash"]

@@ -2918,6 +2918,7 @@ dependencies = [
 name = "pavex_bp_schema"
 version = "0.2.10"
 dependencies = [
+ "bincode",
  "px_workspace_hack",
  "serde",
 ]
@@ -3071,6 +3072,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavex_rustdoc_types"
+version = "0.2.10"
+dependencies = [
+ "bincode",
+ "rustc-hash",
+ "serde",
+ "serde_derive",
+]
+
+[[package]]
 name = "pavex_session"
 version = "0.2.10"
 dependencies = [
@@ -3217,6 +3228,7 @@ dependencies = [
  "pavex_bp_schema",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
+ "pavex_rustdoc_types",
  "pavexc_attr_parser",
  "persist_if_changed",
  "petgraph",
@@ -3230,7 +3242,6 @@ dependencies = [
  "relative-path",
  "rusqlite",
  "rustc-hash",
- "rustdoc-types",
  "semver",
  "serde",
  "serde_json",
@@ -3251,6 +3262,7 @@ dependencies = [
 name = "pavexc_attr_parser"
 version = "0.2.10"
 dependencies = [
+ "bincode",
  "darling 0.23.0",
  "insta",
  "itertools 0.14.0",
@@ -4135,17 +4147,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
 dependencies = [
  "semver",
-]
-
-[[package]]
-name = "rustdoc-types"
-version = "0.57.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97a32214c8a67cec971ddea507040fb3d8ac485a2cbf29ecb0a502264ab3a873"
-dependencies = [
- "rustc-hash",
- "serde",
- "serde_derive",
 ]
 
 [[package]]

@@ -18,6 +18,7 @@ itertools = { workspace = true }
 thiserror = { workspace = true }
 darling = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
+bincode = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
