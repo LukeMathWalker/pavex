@@ -2,6 +2,7 @@ use std::{borrow::Cow, collections::BTreeSet};
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
+use bincode::{Decode, Encode};
 use camino::Utf8Path;
 use guppy::{
     PackageId,
@@ -273,13 +274,31 @@ impl RustdocGlobalFsCache {
         // We can improve this in the future, if needed.
         let cache_path = cache_dir.join(format!("{pavex_fingerprint}.db"));
 
-        let manager = SqliteConnectionManager::file(cache_dir.join(cache_path));
+        #[derive(Debug)]
+        struct SqlitePragmas;
+
+        impl r2d2::CustomizeConnection<rusqlite::Connection, rusqlite::Error> for SqlitePragmas {
+            fn on_acquire(&self, conn: &mut rusqlite::Connection) -> Result<(), rusqlite::Error> {
+                conn.execute_batch(
+                    // 250MB memory-mapped, more than enough.
+                    "PRAGMA mmap_size=262144000;",
+                )?;
+                Ok(())
+            }
+        }
+
+        let manager = SqliteConnectionManager::file(cache_path);
         let pool = r2d2::Pool::builder()
             .max_size(num_cpus::get() as u32)
+            .connection_customizer(Box::new(SqlitePragmas))
             .build(manager)
             .context("Failed to open/create a SQLite database to store the contents of pavex's rustdoc cache")?;
 
         let connection = pool.get()?;
+        connection.execute_batch(
+            "PRAGMA journal_mode=WAL;
+            PRAGMA synchronous=NORMAL;",
+        )?;
         connection.execute(
             "CREATE TABLE IF NOT EXISTS project2package_id_access_log (
                 project_fingerprint TEXT NOT NULL,
@@ -785,7 +804,7 @@ pub(in crate::rustdoc) struct CacheEntry<'a> {
     secondary_indexes: Option<SecondaryIndexes<'a>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 /// Data that can be computed starting from the raw JSON documentation for a crate,
 /// without having to re-invoke `rustdoc`.
 pub(in crate::rustdoc) struct SecondaryIndexes<'a> {
@@ -826,7 +845,7 @@ impl<'a> CacheEntry<'a> {
         let mut item_id2delimiters = HashMap::new();
         for (item_id, item) in &index.index {
             let start = items.len();
-            bincode::serde::encode_into_std_write(item, &mut items, bincode::config::standard())?;
+            bincode::encode_into_std_write(item, &mut items, bincode::config::standard())?;
             let end = items.len();
             item_id2delimiters.insert(item_id.0, (start, end));
         }
@@ -853,34 +872,25 @@ impl<'a> CacheEntry<'a> {
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
     pub(super) fn hydrate(self, package_id: PackageId) -> Result<RustdocCacheEntry, anyhow::Error> {
-        let (item_id2delimiters, paths) = rayon::join(
-            || {
-                tracing::trace_span!("Deserialize delimiters")
-                    .in_scope(|| {
-                        bincode::serde::decode_from_slice(&self.item_id2delimiters, BINCODE_CONFIG)
-                    })
-                    .context("Failed to deserialize item_id2delimiters")
-            },
-            || {
-                tracing::trace_span!("Deserialize paths")
-                    .in_scope(|| bincode::serde::decode_from_slice(&self.paths, BINCODE_CONFIG))
-                    .context("Failed to deserialize paths")
-            },
-        );
+        let paths = tracing::trace_span!("Deserialize paths")
+            .in_scope(|| bincode::decode_from_slice(&self.paths, BINCODE_CONFIG))
+            .context("Failed to deserialize paths")?
+            .0;
+        let item_id2delimiters = tracing::trace_span!("Deserialize delimiters")
+            .in_scope(|| bincode::decode_from_slice(&self.item_id2delimiters, BINCODE_CONFIG))
+            .context("Failed to deserialize item_id2delimiters")?
+            .0;
 
         let crate_data = CrateData {
             root_item_id: rustdoc_types::Id(self.root_item_id.to_owned()),
-            external_crates: bincode::serde::decode_from_slice(
-                &self.external_crates,
-                BINCODE_CONFIG,
-            )
-            .context("Failed to deserialize external_crates")?
-            .0,
-            paths: paths?.0,
+            external_crates: bincode::decode_from_slice(&self.external_crates, BINCODE_CONFIG)
+                .context("Failed to deserialize external_crates")?
+                .0,
+            paths,
             format_version: self.format_version.try_into()?,
             index: CrateItemIndex::Lazy(LazyCrateItemIndex {
                 items: self.items.into_owned(),
-                item_id2delimiters: item_id2delimiters?.0,
+                item_id2delimiters,
             }),
         };
         let Some(secondary_indexes) = self.secondary_indexes else {
@@ -892,33 +902,24 @@ impl<'a> CacheEntry<'a> {
             krate: crate_data,
         };
 
-        let (import_path2id, import_index) = rayon::join(
-            || {
-                tracing::trace_span!("Deserialize import_path2id")
-                    .in_scope(|| {
-                        bincode::serde::decode_from_slice(
-                            &secondary_indexes.import_path2id,
-                            BINCODE_CONFIG,
-                        )
-                    })
-                    .context("Failed to deserialize import_path2id")
-            },
-            || {
-                bincode::serde::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
-                    .context("Failed to deserialize import_index")
-            },
-        );
+        let import_path2id = tracing::trace_span!("Deserialize import_path2id")
+            .in_scope(|| {
+                bincode::decode_from_slice(&secondary_indexes.import_path2id, BINCODE_CONFIG)
+            })
+            .context("Failed to deserialize import_path2id")?
+            .0;
 
-        let import_path2id = import_path2id?.0;
-        let import_index = import_index?.0;
-
-        let re_exports =
-            bincode::serde::decode_from_slice(&secondary_indexes.re_exports, BINCODE_CONFIG)
-                .context("Failed to deserialize re-exports")?
+        let import_index =
+            bincode::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
+                .context("Failed to deserialize import_index")?
                 .0;
 
+        let re_exports = bincode::decode_from_slice(&secondary_indexes.re_exports, BINCODE_CONFIG)
+            .context("Failed to deserialize re-exports")?
+            .0;
+
         let annotated_items = if let Some(data) = secondary_indexes.annotated_items {
-            bincode::serde::decode_from_slice(&data, BINCODE_CONFIG)
+            bincode::decode_from_slice(&data, BINCODE_CONFIG)
                 .context("Failed to deserialize annotated_items")?
                 .0
         } else {

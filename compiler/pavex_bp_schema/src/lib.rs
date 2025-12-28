@@ -285,7 +285,18 @@ pub struct Domain {
     pub registered_at: Location,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    bincode::Encode,
+    bincode::Decode,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Lifecycle {
     Singleton,
@@ -303,7 +314,18 @@ impl fmt::Display for Lifecycle {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    bincode::Encode,
+    bincode::Decode,
+)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum CloningPolicy {
@@ -315,7 +337,17 @@ pub enum CloningPolicy {
 }
 
 #[derive(
-    Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, serde::Serialize, serde::Deserialize,
+    Debug,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    Ord,
+    PartialOrd,
+    serde::Serialize,
+    serde::Deserialize,
+    bincode::Encode,
+    bincode::Decode,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum MethodGuard {

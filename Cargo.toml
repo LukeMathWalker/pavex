@@ -36,6 +36,8 @@ pavexc = { path = "compiler/pavexc", version = "0.2.10" }
 pavexc_attr_parser = { path = "compiler/pavexc_attr_parser", version = "0.2.10" }
 pavexc_cli_client = { path = "compiler/pavexc_cli_client", version = "0.2.10" }
 persist_if_changed = { path = "compiler/persist_if_changed", version = "0.2.10" }
+# Our own fork of `rustdoc-types` to minimise (de)ser overhead.
+rustdoc-types = { path = "compiler/pavex_rustdoc_types", version = "0.2.10", features = ["rustc-hash"], package = "pavex_rustdoc_types" }
 
 vergen-gitcl = { version = "1.0.8", features = ["build"] }
 ahash = "0.8"
@@ -125,7 +127,6 @@ rlimit = "0.10.2"
 ron = "0.12"
 rustc-hash = "2"
 rusqlite = "0.32"
-rustdoc-types = { version = "0.57.0", features = ["rustc-hash"] }
 sanitize-filename = "0.6"
 self-replace = "1.5.0"
 secrecy = "0.10.3"
