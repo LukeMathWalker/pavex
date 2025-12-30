@@ -1,6 +1,6 @@
 use syn::{
-    Attribute, Field, FieldValue, FnArg, ImplItemFn, ItemEnum, ItemImpl, ItemMod,
-    ItemStruct, ItemTrait, TraitItem, TraitItemFn, Variant,
+    Attribute, Field, FieldValue, FnArg, ImplItemFn, ItemEnum, ItemImpl, ItemMod, ItemStruct,
+    ItemTrait, TraitItem, TraitItemFn, Variant,
     visit_mut::{self, VisitMut},
 };
 
