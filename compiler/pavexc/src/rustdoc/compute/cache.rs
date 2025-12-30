@@ -102,18 +102,26 @@ impl RustdocGlobalFsCache {
         cache_workspace_package_docs: bool,
         package_graph: &PackageGraph,
     ) -> Result<Self, anyhow::Error> {
-        let cargo_fingerprint = cargo_fingerprint(toolchain_name)?;
-        let pool = Self::setup_database()?;
+        std::thread::scope(|scope| {
+            let handle = scope.spawn(|| cargo_fingerprint(toolchain_name));
 
-        let connection = pool.get()?;
-        let third_party_cache =
-            ThirdPartyCrateCache::new(&connection, cache_workspace_package_docs, package_graph)?;
-        let toolchain_cache = ToolchainCache::new(&connection)?;
-        Ok(Self {
-            cargo_fingerprint,
-            connection_pool: pool,
-            third_party_cache,
-            toolchain_cache,
+            let pool = Self::setup_database()?;
+            let connection = pool.get()?;
+            let third_party_cache = ThirdPartyCrateCache::new(
+                &connection,
+                cache_workspace_package_docs,
+                package_graph,
+            )?;
+            let toolchain_cache = ToolchainCache::new(&connection)?;
+            let cargo_fingerprint = handle
+                .join()
+                .expect("Failed to compute on `cargo`'s fingerprint")?;
+            Ok(Self {
+                cargo_fingerprint,
+                connection_pool: pool,
+                third_party_cache,
+                toolchain_cache,
+            })
         })
     }
 
