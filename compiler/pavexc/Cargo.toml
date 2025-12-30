@@ -66,6 +66,7 @@ camino = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh64"] }
 rustc-hash = { workspace = true }
 globwalk = { workspace = true }
+rkyv = { workspace = true }
 
 # Sqlite cache
 xdg-home = { workspace = true }

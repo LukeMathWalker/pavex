@@ -1,6 +1,5 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
-use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
 use bincode::{Decode, Encode};
 use camino::Utf8Path;
@@ -10,7 +9,8 @@ use guppy::{
 };
 use itertools::Itertools;
 use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::params;
+use rkyv::util::AlignedVec;
+use rusqlite::{ToSql, params, types::ToSqlOutput};
 use tracing::instrument;
 use tracing_log_error::log_error;
 
@@ -342,7 +342,6 @@ impl ToolchainCache {
                 paths,
                 format_version,
                 items,
-                item_id2delimiters,
                 import_index,
                 import_path2id,
                 re_exports
@@ -365,18 +364,16 @@ impl ToolchainCache {
 
         let items = row.get_ref_unwrap(4).as_bytes()?;
 
-        let item_id2delimiters = row.get_ref_unwrap(5).as_bytes()?;
-        let import_index = row.get_ref_unwrap(6).as_bytes()?;
-        let import_path2id = row.get_ref_unwrap(7).as_bytes()?;
-        let re_exports = row.get_ref_unwrap(8).as_bytes()?;
+        let import_index = row.get_ref_unwrap(5).as_bytes()?;
+        let import_path2id = row.get_ref_unwrap(6).as_bytes()?;
+        let re_exports = row.get_ref_unwrap(7).as_bytes()?;
 
         let krate = CacheEntry {
             root_item_id,
             external_crates: Cow::Borrowed(external_crates),
             paths: Cow::Borrowed(paths),
             format_version,
-            items: Cow::Borrowed(items),
-            item_id2delimiters: Cow::Borrowed(item_id2delimiters),
+            items: CachedItems::Borrowed(items),
             secondary_indexes: Some(SecondaryIndexes {
                 import_index: Cow::Borrowed(import_index),
                 // Standard library crates don't have Pavex annotations.
@@ -421,11 +418,10 @@ impl ToolchainCache {
                 paths,
                 format_version,
                 items,
-                item_id2delimiters,
                 import_index,
                 import_path2id,
                 re_exports
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )?;
         stmt.execute(params![
             name,
@@ -435,7 +431,6 @@ impl ToolchainCache {
             cache_entry.paths,
             cache_entry.format_version,
             cache_entry.items,
-            cache_entry.item_id2delimiters,
             cache_entry
                 .secondary_indexes
                 .as_ref()
@@ -465,7 +460,6 @@ impl ToolchainCache {
                 paths BLOB NOT NULL,
                 format_version INTEGER NOT NULL,
                 items BLOB NOT NULL,
-                item_id2delimiters BLOB NOT NULL,
                 import_index BLOB NOT NULL,
                 import_path2id BLOB NOT NULL,
                 re_exports BLOB NOT NULL,
@@ -535,7 +529,6 @@ impl ThirdPartyCrateCache {
                         paths,
                         format_version,
                         items,
-                        item_id2delimiters,
                         import_index,
                         import_path2id,
                         re_exports,
@@ -574,17 +567,11 @@ impl ThirdPartyCrateCache {
             let external_crates = row.get_ref_unwrap(1).as_bytes()?;
             let paths = row.get_ref_unwrap(2).as_bytes()?;
             let format_version = row.get_ref_unwrap(3).as_i64()?;
-
-            let span = tracing::trace_span!("Copy items bytes buffer");
-            let guard = span.enter();
-            let items: Vec<u8> = row.get_unwrap(4);
-            drop(guard);
-
-            let item_id2delimiters = row.get_ref_unwrap(5).as_bytes()?;
-            let import_index = row.get_ref_unwrap(6).as_bytes_or_null()?;
-            let import_path2id = row.get_ref_unwrap(7).as_bytes_or_null()?;
-            let re_exports = row.get_ref_unwrap(8).as_bytes_or_null()?;
-            let annotated_items = row.get_ref_unwrap(9).as_bytes_or_null()?;
+            let items = row.get_ref_unwrap(4).as_bytes()?;
+            let import_index = row.get_ref_unwrap(5).as_bytes_or_null()?;
+            let import_path2id = row.get_ref_unwrap(6).as_bytes_or_null()?;
+            let re_exports = row.get_ref_unwrap(7).as_bytes_or_null()?;
+            let annotated_items = row.get_ref_unwrap(8).as_bytes_or_null()?;
 
             let secondary_indexes =
                 match (import_index, import_path2id, re_exports, annotated_items) {
@@ -607,8 +594,7 @@ impl ThirdPartyCrateCache {
                 external_crates: Cow::Borrowed(external_crates),
                 paths: Cow::Borrowed(paths),
                 format_version,
-                items: Cow::Owned(items),
-                item_id2delimiters: Cow::Borrowed(item_id2delimiters),
+                items: CachedItems::Borrowed(items),
                 secondary_indexes,
             }
             .hydrate(package_metadata.id().to_owned())
@@ -715,12 +701,11 @@ impl ThirdPartyCrateCache {
                 paths,
                 format_version,
                 items,
-                item_id2delimiters,
                 import_index,
                 import_path2id,
                 re_exports,
                 annotated_items
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )?;
         stmt.execute(params![
             cache_key.crate_name,
@@ -739,7 +724,6 @@ impl ThirdPartyCrateCache {
             cached_data.paths,
             cached_data.format_version,
             cached_data.items,
-            cached_data.item_id2delimiters,
             cached_data
                 .secondary_indexes
                 .as_ref()
@@ -776,7 +760,6 @@ impl ThirdPartyCrateCache {
                 paths BLOB NOT NULL,
                 format_version INTEGER NOT NULL,
                 items BLOB NOT NULL,
-                item_id2delimiters BLOB NOT NULL,
                 annotated_items BLOB,
                 import_index BLOB,
                 import_path2id BLOB,
@@ -796,9 +779,38 @@ pub(in crate::rustdoc) struct CacheEntry<'a> {
     external_crates: Cow<'a, [u8]>,
     paths: Cow<'a, [u8]>,
     format_version: i64,
-    items: Cow<'a, [u8]>,
-    item_id2delimiters: Cow<'a, [u8]>,
+    items: CachedItems<'a>,
     secondary_indexes: Option<SecondaryIndexes<'a>>,
+}
+
+#[derive(Debug)]
+/// `rkyv`-serialized `HashMap<Id, Item>`.
+pub(in crate::rustdoc) enum CachedItems<'a> {
+    Borrowed(&'a [u8]),
+    Owned(AlignedVec),
+}
+
+impl ToSql for CachedItems<'_> {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        let s = match self {
+            CachedItems::Borrowed(items) => items,
+            CachedItems::Owned(s) => s.as_slice(),
+        };
+        Ok(ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Blob(s)))
+    }
+}
+
+impl<'a> CachedItems<'a> {
+    pub fn into_owned(self) -> AlignedVec {
+        match self {
+            CachedItems::Borrowed(items) => {
+                let mut v = AlignedVec::with_capacity(items.len());
+                v.extend_from_slice(items);
+                v
+            }
+            CachedItems::Owned(aligned_vec) => aligned_vec,
+        }
+    }
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -838,14 +850,11 @@ impl<'a> CacheEntry<'a> {
                 the same crate twice? This is a bug."
             );
         };
-        let mut items = Vec::new();
-        let mut item_id2delimiters = HashMap::new();
-        for (item_id, item) in &index.index {
-            let start = items.len();
-            bincode::encode_into_std_write(item, &mut items, bincode::config::standard())?;
-            let end = items.len();
-            item_id2delimiters.insert(item_id.0, (start, end));
-        }
+
+        // Serialize the items HashMap using rkyv for zero-copy deserialization later.
+        let items = rkyv::to_bytes::<rkyv::rancor::Error>(&index.index)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize items with rkyv: {e}"))?;
+
         let external_crates =
             bincode::serde::encode_to_vec(&crate_data.external_crates, BINCODE_CONFIG)?;
         let paths = bincode::serde::encode_to_vec(&crate_data.paths, BINCODE_CONFIG)?;
@@ -855,11 +864,7 @@ impl<'a> CacheEntry<'a> {
             external_crates: Cow::Owned(external_crates),
             paths: Cow::Owned(paths),
             format_version: crate_data.format_version as i64,
-            items: Cow::Owned(items),
-            item_id2delimiters: Cow::Owned(bincode::serde::encode_to_vec(
-                &item_id2delimiters,
-                BINCODE_CONFIG,
-            )?),
+            items: CachedItems::Owned(items),
             secondary_indexes: None,
         })
     }
@@ -868,14 +873,11 @@ impl<'a> CacheEntry<'a> {
     ///
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
+    /// The item index is stored as rkyv-serialized bytes for zero-copy access.
     pub(super) fn hydrate(self, package_id: PackageId) -> Result<RustdocCacheEntry, anyhow::Error> {
         let paths = tracing::trace_span!("Deserialize paths")
             .in_scope(|| bincode::decode_from_slice(&self.paths, BINCODE_CONFIG))
             .context("Failed to deserialize paths")?
-            .0;
-        let item_id2delimiters = tracing::trace_span!("Deserialize delimiters")
-            .in_scope(|| bincode::decode_from_slice(&self.item_id2delimiters, BINCODE_CONFIG))
-            .context("Failed to deserialize item_id2delimiters")?
             .0;
 
         let crate_data = CrateData {
@@ -886,8 +888,7 @@ impl<'a> CacheEntry<'a> {
             paths,
             format_version: self.format_version.try_into()?,
             index: CrateItemIndex::Lazy(LazyCrateItemIndex {
-                items: self.items.into_owned(),
-                item_id2delimiters,
+                bytes: self.items.into_owned(),
             }),
         };
         let Some(secondary_indexes) = self.secondary_indexes else {

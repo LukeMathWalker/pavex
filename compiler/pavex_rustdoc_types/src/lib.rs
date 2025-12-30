@@ -57,7 +57,7 @@ pub const FORMAT_VERSION: u32 = 57;
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Crate {
     /// The id of the root [`Module`] item of the local crate.
     pub root: Id,
@@ -93,7 +93,7 @@ pub struct Crate {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Target {
     /// The target triple for which this documentation was generated
     pub triple: String,
@@ -136,7 +136,7 @@ pub struct Target {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct TargetFeature {
     /// The name of this target feature.
     pub name: String,
@@ -174,7 +174,7 @@ pub struct TargetFeature {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct ExternalCrate {
     /// The name of the crate.
     ///
@@ -216,7 +216,7 @@ pub struct ExternalCrate {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct ItemSummary {
     /// Can be used to look up the name and html_root_url of the crate this item came from in the
     /// `external_crates` map.
@@ -250,7 +250,7 @@ pub struct ItemSummary {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Item {
     /// The unique identifier of this item. Can be used to find this item in various mappings.
     pub id: Id,
@@ -301,6 +301,7 @@ pub struct Item {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 /// An attribute, e.g. `#[repr(C)]`
 ///
@@ -360,6 +361,7 @@ pub enum Attribute {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 
 /// The contents of a `#[repr(...)]` attribute.
 ///
@@ -392,6 +394,7 @@ pub struct AttributeRepr {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 /// The kind of `#[repr]`.
 ///
@@ -424,7 +427,7 @@ pub enum ReprKind {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Span {
     /// The path to the source file for this span relative to the path `rustdoc` was invoked with.
     #[rkyv(with = rkyv::with::AsString)]
@@ -450,7 +453,7 @@ pub struct Span {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Deprecation {
     /// Usually a version number when this [`Item`] first became deprecated.
     pub since: Option<String>,
@@ -473,6 +476,7 @@ pub struct Deprecation {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum Visibility {
     /// Explicitly public visibility set with `pub`.
@@ -509,7 +513,7 @@ pub enum Visibility {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct DynTrait {
     /// All the traits implemented. One of them is the vtable, and the rest must be auto traits.
     pub traits: Vec<PolyTrait>,
@@ -538,7 +542,7 @@ pub struct DynTrait {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct PolyTrait {
     /// The path to the trait.
     #[serde(rename = "trait")]
@@ -571,6 +575,7 @@ pub struct PolyTrait {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[rkyv(
     serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
     deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
@@ -618,6 +623,7 @@ pub enum GenericArgs {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum GenericArg {
     /// A lifetime argument.
@@ -661,7 +667,7 @@ pub enum GenericArg {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Constant {
     /// The stringified expression of this constant. Note that its mapping to the original
     /// source code is unstable and it's not guaranteed that it'll match the source code.
@@ -694,6 +700,7 @@ pub struct Constant {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[rkyv(
     serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
     deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
@@ -723,6 +730,7 @@ pub struct AssocItemConstraint {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum AssocItemConstraintKind {
     /// The required value/type is specified exactly. e.g.
@@ -789,6 +797,7 @@ pub struct Id(pub u32);
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum ItemKind {
     /// A module declaration, e.g. `mod foo;` or `mod foo {}`
@@ -877,6 +886,7 @@ pub enum ItemKind {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum ItemEnum {
     /// A module declaration, e.g. `mod foo;` or `mod foo {}`
@@ -1005,7 +1015,7 @@ pub enum ItemEnum {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Module {
     /// Whether this is the root item of a crate.
     ///
@@ -1034,7 +1044,7 @@ pub struct Module {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Union {
     /// The generic parameters and where clauses on this union.
     pub generics: Generics,
@@ -1065,7 +1075,7 @@ pub struct Union {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Struct {
     /// The kind of the struct (e.g. unit, tuple-like or struct-like) and the data specific to it,
     /// i.e. fields.
@@ -1092,6 +1102,7 @@ pub struct Struct {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum StructKind {
     /// A struct with no fields and no parentheses.
@@ -1142,7 +1153,7 @@ pub enum StructKind {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Enum {
     /// Information about the type parameters and `where` clauses of the enum.
     pub generics: Generics,
@@ -1171,7 +1182,7 @@ pub struct Enum {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Variant {
     /// Whether the variant is plain, a tuple-like, or struct-like. Contains the fields.
     pub kind: VariantKind,
@@ -1194,6 +1205,7 @@ pub struct Variant {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum VariantKind {
     /// A variant with no parentheses
@@ -1250,7 +1262,7 @@ pub enum VariantKind {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Discriminant {
     /// The expression that produced the discriminant.
     ///
@@ -1282,7 +1294,7 @@ pub struct Discriminant {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct FunctionHeader {
     /// Is this function marked as `const`?
     pub is_const: bool,
@@ -1316,7 +1328,7 @@ pub struct FunctionHeader {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub enum Abi {
     // We only have a concrete listing here for stable ABI's because there are so many
     // See rustc_ast_passes::feature_gate::PostExpansionVisitor::check_abi for the list
@@ -1357,7 +1369,7 @@ pub enum Abi {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Function {
     /// Information about the function signature, or declaration.
     pub sig: FunctionSignature,
@@ -1384,7 +1396,7 @@ pub struct Function {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Generics {
     /// A list of generic parameter definitions (e.g. `<T: Clone + Hash, U: Copy>`).
     pub params: Vec<GenericParamDef>,
@@ -1407,7 +1419,7 @@ pub struct Generics {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct GenericParamDef {
     /// Name of the parameter.
     /// ```rust
@@ -1435,6 +1447,7 @@ pub struct GenericParamDef {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[rkyv(
     serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
     deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
@@ -1528,6 +1541,7 @@ pub enum GenericParamDefKind {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum WherePredicate {
     /// A type is expected to comply with a set of bounds
@@ -1587,6 +1601,7 @@ pub enum WherePredicate {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum GenericBound {
     /// A trait bound.
@@ -1631,6 +1646,7 @@ pub enum GenericBound {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum TraitBoundModifier {
     /// Marks the absence of a modifier.
@@ -1659,6 +1675,7 @@ pub enum TraitBoundModifier {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum PreciseCapturingArg {
     /// A lifetime.
@@ -1689,6 +1706,7 @@ pub enum PreciseCapturingArg {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum Term {
     /// A type.
@@ -1726,6 +1744,7 @@ pub enum Term {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[rkyv(
     serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
     deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
@@ -1839,6 +1858,7 @@ pub enum Type {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[rkyv(
     serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
     deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
@@ -1885,7 +1905,7 @@ pub struct Path {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct FunctionPointer {
     /// The signature of the function.
     pub sig: FunctionSignature,
@@ -1915,7 +1935,7 @@ pub struct FunctionPointer {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct FunctionSignature {
     /// List of argument names and their type.
     ///
@@ -1947,7 +1967,7 @@ pub struct FunctionSignature {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Trait {
     /// Whether the trait is marked `auto` and is thus implemented automatically
     /// for all applicable types.
@@ -1985,7 +2005,7 @@ pub struct Trait {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct TraitAlias {
     /// Information about the type parameters and `where` clauses of the alias.
     pub generics: Generics,
@@ -2008,7 +2028,7 @@ pub struct TraitAlias {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Impl {
     /// Whether this impl is for an unsafe trait.
     pub is_unsafe: bool,
@@ -2060,6 +2080,7 @@ pub struct Impl {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub struct Use {
     /// The full path being imported.
@@ -2091,7 +2112,7 @@ pub struct Use {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct ProcMacro {
     /// How this macro is supposed to be called: `foo!()`, `#[foo]` or `#[derive(foo)]`
     pub kind: MacroKind,
@@ -2129,6 +2150,7 @@ pub struct ProcMacro {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug))]
 #[serde(rename_all = "snake_case")]
 pub enum MacroKind {
     /// A bang macro `foo!()`.
@@ -2154,7 +2176,7 @@ pub enum MacroKind {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct TypeAlias {
     /// The type referred to by this alias.
     #[serde(rename = "type")]
@@ -2178,7 +2200,7 @@ pub struct TypeAlias {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Static {
     /// The type of the static.
     #[serde(rename = "type")]
@@ -2222,7 +2244,7 @@ pub struct Static {
     rkyv::Serialize,
     rkyv::Deserialize,
 )]
-
+#[rkyv(derive(Debug))]
 pub struct Primitive {
     /// The name of the type.
     pub name: String,
