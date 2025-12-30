@@ -12,7 +12,9 @@ use indexmap::IndexSet;
 use rayon::iter::IntoParallelRefIterator;
 use rkyv::collections::swiss_table::ArchivedHashMap;
 use rkyv::rancor::Panic;
+use rkyv::string::ArchivedString;
 use rkyv::util::AlignedVec;
+use rkyv::vec::ArchivedVec;
 use rustc_hash::FxHashMap;
 use rustdoc_types::{
     ArchivedId, ArchivedItem, ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility,
@@ -643,7 +645,7 @@ pub struct Crate {
     /// The index does NOT contain macros, since macros and types live in two
     /// different namespaces and can contain items with the same name.
     /// E.g. `core::clone::Clone` is both a trait and a derive macro.
-    pub(super) import_path2id: HashMap<Vec<String>, rustdoc_types::Id>,
+    pub(super) import_path2id: ImportPath2Id,
     /// Types (or modules!) re-exported from other crates.
     pub(crate) external_re_exports: ExternalReExports,
     /// All the items in this crate that have been annotated with an attribute from the `diagnostic::pavex::*` namespace.
@@ -658,6 +660,68 @@ pub struct Crate {
     /// or [`Self::compute_package_id_for_crate_id_with_hint`].
     pub(super) crate_id2package_id:
         Arc<std::sync::RwLock<HashMap<(u32, Option<String>), PackageId>>>,
+}
+
+#[derive(Debug, Clone)]
+/// An index to lookup the id of a type given one of its import paths, either
+/// public or private.
+///
+/// The index does NOT contain macros, since macros and types live in two
+/// different namespaces and can contain items with the same name.
+/// E.g. `core::clone::Clone` is both a trait and a derive macro.
+///
+/// Since the index can be quite large, we try to avoid deserializing it all at once.
+///
+/// The `Eager` variant contains the entire index, fully deserialized. This is what we get
+/// when we have had to index the documentation for the crate on the fly.
+///
+/// The `Lazy` variant contains the index as a byte array, with entries deserialized on demand.
+pub(crate) enum ImportPath2Id {
+    Eager(EagerImportPath2Id),
+    Lazy(LazyImportPath2Id),
+}
+
+impl ImportPath2Id {
+    pub fn get(&self, path: &[String]) -> Option<rustdoc_types::Id> {
+        match self {
+            ImportPath2Id::Eager(m) => m.0.get(path).cloned(),
+            ImportPath2Id::Lazy(m) => m.get_deserialized(path),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+/// See [`ImportPath2Id`] for more information.
+pub(crate) struct EagerImportPath2Id(pub HashMap<Vec<String>, rustdoc_types::Id>);
+
+/// See [`ImportPath2Id`] for more information.
+///
+/// Stores rkyv-serialized bytes of a `HashMap<Vec<String>, Id>` and provides zero-copy access.
+#[derive(Debug, Clone)]
+pub(crate) struct LazyImportPath2Id(pub AlignedVec);
+
+impl LazyImportPath2Id {
+    #[inline]
+    fn archived(&self) -> &ArchivedHashMap<ArchivedVec<ArchivedString>, ArchivedId> {
+        unsafe {
+            rkyv::access_unchecked::<ArchivedHashMap<ArchivedVec<ArchivedString>, ArchivedId>>(
+                &self.0,
+            )
+        }
+    }
+
+    pub fn get(&self, path: &[String]) -> Option<&ArchivedId> {
+        let path_vec: Vec<String> = path.to_vec();
+        let bytes = rkyv::to_bytes::<Panic>(&path_vec).ok()?;
+
+        let archived_key = unsafe { rkyv::access_unchecked::<ArchivedVec<ArchivedString>>(&bytes) };
+        self.archived().get(archived_key)
+    }
+
+    pub fn get_deserialized(&self, path: &[String]) -> Option<rustdoc_types::Id> {
+        let archived = self.get(path)?;
+        Some(rkyv::deserialize::<_, Panic>(archived).unwrap())
+    }
 }
 
 #[derive(
@@ -1103,7 +1167,7 @@ impl Crate {
 
         let mut self_ = Self {
             core: CrateCore { package_id, krate },
-            import_path2id,
+            import_path2id: ImportPath2Id::Eager(EagerImportPath2Id(import_path2id)),
             import_index,
             external_re_exports,
             annotated_items: AnnotatedItems::default(),
@@ -1199,10 +1263,7 @@ impl Crate {
         krate_collection: &CrateCollection,
     ) -> Result<Result<GlobalItemId, UnknownItemPath>, CannotGetCrateData> {
         if let Some(id) = self.import_path2id.get(path) {
-            return Ok(Ok(GlobalItemId::new(
-                id.to_owned(),
-                self.core.package_id.to_owned(),
-            )));
+            return Ok(Ok(GlobalItemId::new(id, self.core.package_id.to_owned())));
         }
 
         for (
