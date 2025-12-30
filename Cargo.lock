@@ -3261,6 +3261,7 @@ dependencies = [
  "r2d2_sqlite",
  "rayon",
  "relative-path",
+ "rkyv",
  "rusqlite",
  "rustc-hash",
  "semver",

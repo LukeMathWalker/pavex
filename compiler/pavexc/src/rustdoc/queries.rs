@@ -10,8 +10,13 @@ use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use rayon::iter::IntoParallelRefIterator;
+use rkyv::collections::swiss_table::ArchivedHashMap;
+use rkyv::rancor::Panic;
+use rkyv::util::AlignedVec;
 use rustc_hash::FxHashMap;
-use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
+use rustdoc_types::{
+    ArchivedId, ArchivedItem, ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility,
+};
 use tracing::Span;
 use tracing_log_error::log_error;
 
@@ -951,12 +956,7 @@ impl CrateItemIndex {
         match self {
             Self::Eager(index) => index.index.get(id).map(Cow::Borrowed),
             Self::Lazy(index) => {
-                let (start, end) = index.item_id2delimiters.get(id)?;
-                let bytes = &index.items[*start..*end];
-                let (item, _) = bincode::decode_from_slice(bytes, bincode::config::standard())
-                    .expect(
-                        "Failed to deserialize an item from a lazy `rustdoc` index. This is a bug.",
-                    );
+                let item = index.get_deserialized(id)?;
                 Some(Cow::Owned(item))
             }
         }
@@ -970,11 +970,34 @@ pub(crate) struct EagerCrateItemIndex {
     pub index: FxHashMap<rustdoc_types::Id, Item>,
 }
 
-#[derive(Debug, Clone)]
 /// See [`CrateItemIndex`] for more information.
+///
+/// Stores rkyv-serialized bytes of a `HashMap<Id, Item>` and provides zero-copy access.
+#[derive(Debug, Clone)]
 pub(crate) struct LazyCrateItemIndex {
-    pub(super) items: Vec<u8>,
-    pub(super) item_id2delimiters: HashMap<rustdoc_types::Id, (usize, usize)>,
+    /// The rkyv-serialized bytes containing a `HashMap<Id, Item>`.
+    pub(super) bytes: AlignedVec,
+}
+
+impl LazyCrateItemIndex {
+    /// Get zero-copy access to the archived HashMap.
+    #[inline]
+    fn archived(&self) -> &ArchivedHashMap<ArchivedId, ArchivedItem> {
+        // SAFETY: The bytes were serialized by rkyv from a valid HashMap<Id, Item>.
+        // We trust the cache to contain valid data.
+        unsafe { rkyv::access_unchecked::<ArchivedHashMap<ArchivedId, ArchivedItem>>(&self.bytes) }
+    }
+
+    /// Get an item by its ID, returning a reference to the archived item.
+    pub fn get(&self, id: &rustdoc_types::Id) -> Option<&ArchivedItem> {
+        self.archived().get(&ArchivedId(id.0.into()))
+    }
+
+    /// Deserialize an item by its ID.
+    pub fn get_deserialized(&self, id: &rustdoc_types::Id) -> Option<Item> {
+        let archived = self.get(id)?;
+        Some(rkyv::deserialize::<Item, Panic>(archived).unwrap())
+    }
 }
 
 impl CrateCore {
