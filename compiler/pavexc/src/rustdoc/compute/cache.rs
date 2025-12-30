@@ -1,7 +1,6 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
 use anyhow::Context;
-use bincode::{Decode, Encode};
 use camino::Utf8Path;
 use guppy::{
     PackageId,
@@ -18,7 +17,9 @@ use crate::{
     DiagnosticSink,
     rustdoc::{
         annotations::AnnotatedItems,
-        queries::{CrateData, CrateItemIndex, LazyCrateItemIndex},
+        queries::{
+            CrateData, CrateItemIndex, ImportPath2Id, LazyCrateItemIndex, LazyImportPath2Id,
+        },
     },
 };
 
@@ -381,12 +382,12 @@ impl ToolchainCache {
             external_crates: Cow::Borrowed(external_crates),
             paths: Cow::Borrowed(paths),
             format_version,
-            items: CachedItems::Borrowed(items),
+            items: RkyvCowBytes::Borrowed(items),
             secondary_indexes: Some(SecondaryIndexes {
                 import_index: Cow::Borrowed(import_index),
                 // Standard library crates don't have Pavex annotations.
                 annotated_items: None,
-                import_path2id: Cow::Borrowed(import_path2id),
+                import_path2id: RkyvCowBytes::Borrowed(import_path2id),
                 re_exports: Cow::Borrowed(re_exports),
             }),
         }
@@ -590,7 +591,7 @@ impl ThirdPartyCrateCache {
                         Some(annotated_items),
                     ) => Some(SecondaryIndexes {
                         import_index: Cow::Borrowed(import_index),
-                        import_path2id: Cow::Borrowed(import_path2id),
+                        import_path2id: RkyvCowBytes::Borrowed(import_path2id),
                         re_exports: Cow::Borrowed(re_exports),
                         annotated_items: Some(Cow::Borrowed(annotated_items)),
                     }),
@@ -602,7 +603,7 @@ impl ThirdPartyCrateCache {
                 external_crates: Cow::Borrowed(external_crates),
                 paths: Cow::Borrowed(paths),
                 format_version,
-                items: CachedItems::Borrowed(items),
+                items: RkyvCowBytes::Borrowed(items),
                 secondary_indexes,
             }
             .hydrate(package_metadata.id().to_owned())
@@ -787,47 +788,56 @@ pub(in crate::rustdoc) struct CacheEntry<'a> {
     external_crates: Cow<'a, [u8]>,
     paths: Cow<'a, [u8]>,
     format_version: i64,
-    items: CachedItems<'a>,
+    items: RkyvCowBytes<'a>,
     secondary_indexes: Option<SecondaryIndexes<'a>>,
 }
 
 #[derive(Debug)]
-/// `rkyv`-serialized `HashMap<Id, Item>`.
-pub(in crate::rustdoc) enum CachedItems<'a> {
+/// A `Cow` variant to work with `rkyv`'s `AlignedVec`.
+pub(in crate::rustdoc) enum RkyvCowBytes<'a> {
     Borrowed(&'a [u8]),
     Owned(AlignedVec),
 }
 
-impl ToSql for CachedItems<'_> {
+impl ToSql for RkyvCowBytes<'_> {
     fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
         let s = match self {
-            CachedItems::Borrowed(items) => items,
-            CachedItems::Owned(s) => s.as_slice(),
+            RkyvCowBytes::Borrowed(items) => items,
+            RkyvCowBytes::Owned(s) => s.as_slice(),
         };
         Ok(ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Blob(s)))
     }
 }
 
-impl<'a> CachedItems<'a> {
+impl<'a> RkyvCowBytes<'a> {
     pub fn into_owned(self) -> AlignedVec {
         match self {
-            CachedItems::Borrowed(items) => {
+            RkyvCowBytes::Borrowed(items) => {
                 let mut v = AlignedVec::with_capacity(items.len());
                 v.extend_from_slice(items);
                 v
             }
-            CachedItems::Owned(aligned_vec) => aligned_vec,
+            RkyvCowBytes::Owned(aligned_vec) => aligned_vec,
         }
     }
 }
 
-#[derive(Debug, Encode, Decode)]
+impl<'a> AsRef<[u8]> for RkyvCowBytes<'a> {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            RkyvCowBytes::Borrowed(items) => items,
+            RkyvCowBytes::Owned(aligned_vec) => aligned_vec.as_slice(),
+        }
+    }
+}
+
+#[derive(Debug)]
 /// Data that can be computed starting from the raw JSON documentation for a crate,
 /// without having to re-invoke `rustdoc`.
 pub(in crate::rustdoc) struct SecondaryIndexes<'a> {
     import_index: Cow<'a, [u8]>,
     annotated_items: Option<Cow<'a, [u8]>>,
-    import_path2id: Cow<'a, [u8]>,
+    import_path2id: RkyvCowBytes<'a>,
     re_exports: Cow<'a, [u8]>,
 }
 
@@ -837,13 +847,24 @@ impl<'a> CacheEntry<'a> {
         let import_index = bincode::serde::encode_to_vec(&krate.import_index, BINCODE_CONFIG)?;
         let annotated_items =
             bincode::serde::encode_to_vec(&krate.annotated_items, BINCODE_CONFIG)?;
-        let import_path2id = bincode::serde::encode_to_vec(&krate.import_path2id, BINCODE_CONFIG)?;
         let re_exports = bincode::serde::encode_to_vec(&krate.external_re_exports, BINCODE_CONFIG)?;
+
+        // Serialize the items HashMap using rkyv for zero-copy deserialization later.
+        let ImportPath2Id::Eager(import_path2id) = &krate.import_path2id else {
+            anyhow::bail!(
+                "The crate's import path<>id map is not deserialized. Are we trying to cache \
+                the same crate twice? This is a bug."
+            );
+        };
+        let import_path2id =
+            rkyv::to_bytes::<rkyv::rancor::Error>(&import_path2id.0).map_err(|e| {
+                anyhow::anyhow!(e).context("Failed to serialize import path<>id map with rkyv")
+            })?;
 
         cached.secondary_indexes = Some(SecondaryIndexes {
             import_index: Cow::Owned(import_index),
             annotated_items: Some(Cow::Owned(annotated_items)),
-            import_path2id: Cow::Owned(import_path2id),
+            import_path2id: RkyvCowBytes::Owned(import_path2id),
             re_exports: Cow::Owned(re_exports),
         });
         Ok(cached)
@@ -861,7 +882,7 @@ impl<'a> CacheEntry<'a> {
 
         // Serialize the items HashMap using rkyv for zero-copy deserialization later.
         let items = rkyv::to_bytes::<rkyv::rancor::Error>(&index.index)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize items with rkyv: {e}"))?;
+            .map_err(|e| anyhow::anyhow!(e).context("Failed to serialize crate items with rkyv"))?;
 
         let external_crates =
             bincode::serde::encode_to_vec(&crate_data.external_crates, BINCODE_CONFIG)?;
@@ -872,7 +893,7 @@ impl<'a> CacheEntry<'a> {
             external_crates: Cow::Owned(external_crates),
             paths: Cow::Owned(paths),
             format_version: crate_data.format_version as i64,
-            items: CachedItems::Owned(items),
+            items: RkyvCowBytes::Owned(items),
             secondary_indexes: None,
         })
     }
@@ -908,13 +929,6 @@ impl<'a> CacheEntry<'a> {
             krate: crate_data,
         };
 
-        let import_path2id = tracing::trace_span!("Deserialize import_path2id")
-            .in_scope(|| {
-                bincode::decode_from_slice(&secondary_indexes.import_path2id, BINCODE_CONFIG)
-            })
-            .context("Failed to deserialize import_path2id")?
-            .0;
-
         let import_index =
             bincode::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
                 .context("Failed to deserialize import_index")?
@@ -935,7 +949,9 @@ impl<'a> CacheEntry<'a> {
         let krate = crate::rustdoc::Crate {
             core,
             annotated_items,
-            import_path2id,
+            import_path2id: ImportPath2Id::Lazy(LazyImportPath2Id(
+                secondary_indexes.import_path2id.into_owned(),
+            )),
             external_re_exports: re_exports,
             import_index,
             crate_id2package_id: Default::default(),
