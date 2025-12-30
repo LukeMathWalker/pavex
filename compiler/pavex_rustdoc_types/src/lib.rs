@@ -44,7 +44,20 @@ pub const FORMAT_VERSION: u32 = 57;
 /// It contains all type/documentation information
 /// about the language items in the local crate, as well as info about external items to allow
 /// tools to find or link to them.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Crate {
     /// The id of the root [`Module`] item of the local crate.
     pub root: Id,
@@ -67,7 +80,20 @@ pub struct Crate {
 }
 
 /// Information about a target
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Target {
     /// The target triple for which this documentation was generated
     pub triple: String,
@@ -97,7 +123,20 @@ pub struct Target {
 ///
 /// [1]: https://doc.rust-lang.org/stable/reference/attributes/codegen.html#the-target_feature-attribute
 /// [2]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_feature
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct TargetFeature {
     /// The name of this target feature.
     pub name: String,
@@ -121,7 +160,21 @@ pub struct TargetFeature {
 }
 
 /// Metadata of a crate, either the same crate on which `rustdoc` was invoked, or its dependency.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct ExternalCrate {
     /// The name of the crate.
     ///
@@ -139,6 +192,7 @@ pub struct ExternalCrate {
     ///
     /// This will typically be a `.rlib` or `.rmeta`. It can be used to determine which crate
     /// this was in terms of whatever build-system invoked rustc.
+    #[rkyv(with = rkyv::with::AsString)]
     pub path: PathBuf,
 }
 
@@ -148,7 +202,21 @@ pub struct ExternalCrate {
 /// information. This struct should contain enough to generate a link/reference to the item in
 /// question, or can be used by a tool that takes the json output of multiple crates to find
 /// the actual item definition with all the relevant info.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct ItemSummary {
     /// Can be used to look up the name and html_root_url of the crate this item came from in the
     /// `external_crates` map.
@@ -169,7 +237,20 @@ pub struct ItemSummary {
 ///
 /// The `Item` data type holds fields that can apply to any of these,
 /// and leaves kind-specific details (like function args or enum variants) to the `inner` field.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Item {
     /// The unique identifier of this item. Can be used to find this item in various mappings.
     pub id: Id,
@@ -207,7 +288,19 @@ pub struct Item {
     pub inner: ItemEnum,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 /// An attribute, e.g. `#[repr(C)]`
 ///
@@ -254,7 +347,20 @@ pub enum Attribute {
     Other(String),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 /// The contents of a `#[repr(...)]` attribute.
 ///
 /// Used in [`Attribute::Repr`].
@@ -273,7 +379,19 @@ pub struct AttributeRepr {
     pub int: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 /// The kind of `#[repr]`.
 ///
@@ -292,9 +410,24 @@ pub enum ReprKind {
 }
 
 /// A range of source code.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Span {
     /// The path to the source file for this span relative to the path `rustdoc` was invoked with.
+    #[rkyv(with = rkyv::with::AsString)]
     pub filename: PathBuf,
     /// One indexed Line and Column of the first character of the `Span`.
     pub begin: (usize, usize),
@@ -303,7 +436,21 @@ pub struct Span {
 }
 
 /// Information about the deprecation of an [`Item`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Deprecation {
     /// Usually a version number when this [`Item`] first became deprecated.
     pub since: Option<String>,
@@ -312,7 +459,20 @@ pub struct Deprecation {
 }
 
 /// Visibility of an [`Item`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Visibility {
     /// Explicitly public visibility set with `pub`.
@@ -335,7 +495,21 @@ pub enum Visibility {
 }
 
 /// Dynamic trait object type (`dyn Trait`).
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct DynTrait {
     /// All the traits implemented. One of them is the vtable, and the rest must be auto traits.
     pub traits: Vec<PolyTrait>,
@@ -350,7 +524,21 @@ pub struct DynTrait {
 }
 
 /// A trait and potential HRTBs
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct PolyTrait {
     /// The path to the trait.
     #[serde(rename = "trait")]
@@ -369,7 +557,24 @@ pub struct PolyTrait {
 /// std::option::Option<u32>
 ///                    ^^^^^
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+#[rkyv(
+    serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
+    deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
+)]
 #[serde(rename_all = "snake_case")]
 pub enum GenericArgs {
     /// `<'a, 32, B: Copy, C = u32>`
@@ -386,8 +591,10 @@ pub enum GenericArgs {
     /// `Fn(A, B) -> C`
     Parenthesized {
         /// The input types, enclosed in parentheses.
+        #[rkyv(omit_bounds)]
         inputs: Vec<Type>,
         /// The output type provided after the `->`, if present.
+        #[rkyv(omit_bounds)]
         output: Option<Type>,
     },
     /// `T::method(..)`
@@ -397,7 +604,20 @@ pub enum GenericArgs {
 /// One argument in a list of generic arguments to a path segment.
 ///
 /// Part of [`GenericArgs`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum GenericArg {
     /// A lifetime argument.
@@ -427,7 +647,21 @@ pub enum GenericArg {
 }
 
 /// A constant.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Constant {
     /// The stringified expression of this constant. Note that its mapping to the original
     /// source code is unstable and it's not guaranteed that it'll match the source code.
@@ -446,18 +680,49 @@ pub struct Constant {
 /// IntoIterator<Item = u32, IntoIter: Clone>
 ///              ^^^^^^^^^^  ^^^^^^^^^^^^^^^
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+#[rkyv(
+    serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
+    deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
+)]
 pub struct AssocItemConstraint {
     /// The name of the associated type/constant.
     pub name: String,
     /// Arguments provided to the associated type/constant.
+    #[rkyv(omit_bounds)]
     pub args: Option<Box<GenericArgs>>,
     /// The kind of bound applied to the associated type/constant.
     pub binding: AssocItemConstraintKind,
 }
 
 /// The way in which an associate type/constant is bound.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum AssocItemConstraintKind {
     /// The required value/type is specified exactly. e.g.
@@ -486,15 +751,44 @@ pub enum AssocItemConstraintKind {
 /// should treat them as opaque keys to lookup items, and avoid attempting
 /// to parse them, or otherwise depend on any implementation details.
 #[derive(
-    Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Encode, Decode,
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
 )]
+#[rkyv(derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash))]
 // FIXME(aDotInTheVoid): Consider making this non-public in rustdoc-types.
 pub struct Id(pub u32);
 
 /// The fundamental kind of an item. Unlike [`ItemEnum`], this does not carry any additional info.
 ///
 /// Part of [`ItemSummary`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ItemKind {
     /// A module declaration, e.g. `mod foo;` or `mod foo {}`
@@ -569,7 +863,20 @@ pub enum ItemKind {
 /// Specific fields of an item.
 ///
 /// Part of [`Item`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ItemEnum {
     /// A module declaration, e.g. `mod foo;` or `mod foo {}`
@@ -684,7 +991,21 @@ pub enum ItemEnum {
 }
 
 /// A module declaration, e.g. `mod foo;` or `mod foo {}`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Module {
     /// Whether this is the root item of a crate.
     ///
@@ -699,7 +1020,21 @@ pub struct Module {
 }
 
 /// A `union`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Union {
     /// The generic parameters and where clauses on this union.
     pub generics: Generics,
@@ -716,7 +1051,21 @@ pub struct Union {
 }
 
 /// A `struct`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Struct {
     /// The kind of the struct (e.g. unit, tuple-like or struct-like) and the data specific to it,
     /// i.e. fields.
@@ -729,7 +1078,20 @@ pub struct Struct {
 }
 
 /// The kind of a [`Struct`] and the data specific to it, i.e. fields.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum StructKind {
     /// A struct with no fields and no parentheses.
@@ -766,7 +1128,21 @@ pub enum StructKind {
 }
 
 /// An `enum`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Enum {
     /// Information about the type parameters and `where` clauses of the enum.
     pub generics: Generics,
@@ -781,7 +1157,21 @@ pub struct Enum {
 }
 
 /// A variant of an enum.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Variant {
     /// Whether the variant is plain, a tuple-like, or struct-like. Contains the fields.
     pub kind: VariantKind,
@@ -790,7 +1180,20 @@ pub struct Variant {
 }
 
 /// The kind of an [`Enum`] [`Variant`] and the data specific to it, i.e. fields.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum VariantKind {
     /// A variant with no parentheses
@@ -833,7 +1236,21 @@ pub enum VariantKind {
 }
 
 /// The value that distinguishes a variant in an [`Enum`] from other variants.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Discriminant {
     /// The expression that produced the discriminant.
     ///
@@ -851,7 +1268,21 @@ pub struct Discriminant {
 }
 
 /// A set of fundamental properties of a function.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct FunctionHeader {
     /// Is this function marked as `const`?
     pub is_const: bool,
@@ -871,7 +1302,21 @@ pub struct FunctionHeader {
 ///
 /// See the [Rustonomicon section](https://doc.rust-lang.org/nightly/nomicon/ffi.html#ffi-and-unwinding)
 /// on unwinding for more info.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub enum Abi {
     // We only have a concrete listing here for stable ABI's because there are so many
     // See rustc_ast_passes::feature_gate::PostExpansionVisitor::check_abi for the list
@@ -898,7 +1343,21 @@ pub enum Abi {
 }
 
 /// A function declaration (including methods and other associated functions).
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Function {
     /// Information about the function signature, or declaration.
     pub sig: FunctionSignature,
@@ -911,7 +1370,21 @@ pub struct Function {
 }
 
 /// Generic parameters accepted by an item and `where` clauses imposed on it and the parameters.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Generics {
     /// A list of generic parameter definitions (e.g. `<T: Clone + Hash, U: Copy>`).
     pub params: Vec<GenericParamDef>,
@@ -920,7 +1393,21 @@ pub struct Generics {
 }
 
 /// One generic parameter accepted by an item.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct GenericParamDef {
     /// Name of the parameter.
     /// ```rust
@@ -934,7 +1421,24 @@ pub struct GenericParamDef {
 }
 
 /// The kind of a [`GenericParamDef`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+#[rkyv(
+    serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
+    deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
+)]
 #[serde(rename_all = "snake_case")]
 pub enum GenericParamDefKind {
     /// Denotes a lifetime parameter.
@@ -957,6 +1461,7 @@ pub enum GenericParamDefKind {
         /// fn default2<T: Default>() -> [T; 2] where T: Clone { todo!() }
         /// //             ^^^^^^^
         /// ```
+        #[rkyv(omit_bounds)]
         bounds: Vec<GenericBound>,
         /// The default type for this parameter, if provided, e.g.
         ///
@@ -964,6 +1469,7 @@ pub enum GenericParamDefKind {
         /// trait PartialEq<Rhs = Self> {}
         /// //                    ^^^^
         /// ```
+        #[rkyv(omit_bounds)]
         default: Option<Type>,
         /// This is normally `false`, which means that this generic parameter is
         /// declared in the Rust source text.
@@ -995,6 +1501,7 @@ pub enum GenericParamDefKind {
     Const {
         /// The type of the constant as declared.
         #[serde(rename = "type")]
+        #[rkyv(omit_bounds)]
         type_: Type,
         /// The stringified expression for the default value, if provided. It's not guaranteed that
         /// it'll match the actual source code for the default value.
@@ -1007,7 +1514,20 @@ pub enum GenericParamDefKind {
 /// fn default<T>() -> T where T: Default { T::default() }
 /// //                         ^^^^^^^^^^
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum WherePredicate {
     /// A type is expected to comply with a set of bounds
@@ -1053,7 +1573,20 @@ pub enum WherePredicate {
 }
 
 /// Either a trait bound or a lifetime bound.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum GenericBound {
     /// A trait bound.
@@ -1083,7 +1616,21 @@ pub enum GenericBound {
 }
 
 /// A set of modifiers applied to a trait.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum TraitBoundModifier {
     /// Marks the absence of a modifier.
@@ -1098,7 +1645,20 @@ pub enum TraitBoundModifier {
 }
 
 /// One precise capturing argument. See [the rust reference](https://doc.rust-lang.org/reference/types/impl-trait.html#precise-capturing).
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum PreciseCapturingArg {
     /// A lifetime.
@@ -1115,7 +1675,20 @@ pub enum PreciseCapturingArg {
 
 /// Either a type or a constant, usually stored as the right-hand side of an equation in places like
 /// [`AssocItemConstraint`]
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Term {
     /// A type.
@@ -1139,7 +1712,24 @@ pub enum Term {
 }
 
 /// A type.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+#[rkyv(
+    serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
+    deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
     /// Structs, enums, unions and type aliases, e.g. `std::option::Option<u32>`
@@ -1151,15 +1741,16 @@ pub enum Type {
     /// Built-in numeric types (e.g. `u32`, `f32`), `bool`, `char`.
     Primitive(String),
     /// A function pointer type, e.g. `fn(u32) -> u32`, `extern "C" fn() -> *const u8`
-    FunctionPointer(Box<FunctionPointer>),
+    FunctionPointer(#[rkyv(omit_bounds)] Box<FunctionPointer>),
     /// A tuple type, e.g. `(String, u32, Box<usize>)`
-    Tuple(Vec<Type>),
+    Tuple(#[rkyv(omit_bounds)] Vec<Type>),
     /// An unsized slice type, e.g. `[u32]`.
-    Slice(Box<Type>),
+    Slice(#[rkyv(omit_bounds)] Box<Type>),
     /// An array type, e.g. `[u32; 15]`
     Array {
         /// The type of the contained element.
         #[serde(rename = "type")]
+        #[rkyv(omit_bounds)]
         type_: Box<Type>,
         /// The stringified expression that is the length of the array.
         ///
@@ -1172,6 +1763,7 @@ pub enum Type {
     Pat {
         /// The base type, e.g. the `u32` in `u32 is 1..`
         #[serde(rename = "type")]
+        #[rkyv(omit_bounds)]
         type_: Box<Type>,
         #[doc(hidden)]
         __pat_unstable_do_not_use: String,
@@ -1186,6 +1778,7 @@ pub enum Type {
         is_mutable: bool,
         /// The type of the pointee.
         #[serde(rename = "type")]
+        #[rkyv(omit_bounds)]
         type_: Box<Type>,
     },
     /// `&'a mut String`, `&str`, etc.
@@ -1196,6 +1789,7 @@ pub enum Type {
         is_mutable: bool,
         /// The type of the pointee, e.g. the `i32` in `&'a mut i32`
         #[serde(rename = "type")]
+        #[rkyv(omit_bounds)]
         type_: Box<Type>,
     },
     /// Associated types like `<Type as Trait>::Name` and `T::Item` where
@@ -1214,6 +1808,7 @@ pub enum Type {
         /// <core::slice::IterMut<'static, u32> as BetterIterator>::Item<'static>
         /// //                                                          ^^^^^^^^^
         /// ```
+        #[rkyv(omit_bounds)]
         args: Option<Box<GenericArgs>>,
         /// The type with which this type is associated.
         ///
@@ -1221,6 +1816,7 @@ pub enum Type {
         /// <core::array::IntoIter<u32, 42> as Iterator>::Item
         /// // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         /// ```
+        #[rkyv(omit_bounds)]
         self_type: Box<Type>,
         /// `None` iff this is an *inherent* associated type.
         #[serde(rename = "trait")]
@@ -1229,7 +1825,24 @@ pub enum Type {
 }
 
 /// A type that has a simple path to it. This is the kind of type of structs, unions, enums, etc.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+#[rkyv(
+    serialize_bounds(__S: rkyv::ser::Writer + rkyv::ser::Allocator, __S::Error: rkyv::rancor::Source),
+    deserialize_bounds(__D: rkyv::de::Pooling, __D::Error: rkyv::rancor::Source),
+)]
 pub struct Path {
     /// The path of the type.
     ///
@@ -1253,11 +1866,26 @@ pub struct Path {
     /// std::borrow::Cow<'static, str>
     /// //              ^^^^^^^^^^^^^^
     /// ```
+    #[rkyv(omit_bounds)]
     pub args: Option<Box<GenericArgs>>,
 }
 
 /// A type that is a function pointer.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct FunctionPointer {
     /// The signature of the function.
     pub sig: FunctionSignature,
@@ -1273,7 +1901,21 @@ pub struct FunctionPointer {
 }
 
 /// The signature of a function.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct FunctionSignature {
     /// List of argument names and their type.
     ///
@@ -1291,7 +1933,21 @@ pub struct FunctionSignature {
 }
 
 /// A `trait` declaration.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Trait {
     /// Whether the trait is marked `auto` and is thus implemented automatically
     /// for all applicable types.
@@ -1315,7 +1971,21 @@ pub struct Trait {
 /// A trait alias declaration, e.g. `trait Int = Add + Sub + Mul + Div;`
 ///
 /// See [the tracking issue](https://github.com/rust-lang/rust/issues/41517)
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct TraitAlias {
     /// Information about the type parameters and `where` clauses of the alias.
     pub generics: Generics,
@@ -1324,7 +1994,21 @@ pub struct TraitAlias {
 }
 
 /// An `impl` block.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Impl {
     /// Whether this impl is for an unsafe trait.
     pub is_unsafe: bool,
@@ -1362,7 +2046,20 @@ pub struct Impl {
 }
 
 /// A `use` statement.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub struct Use {
     /// The full path being imported.
@@ -1380,7 +2077,21 @@ pub struct Use {
 }
 
 /// A procedural macro.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct ProcMacro {
     /// How this macro is supposed to be called: `foo!()`, `#[foo]` or `#[derive(foo)]`
     pub kind: MacroKind,
@@ -1403,7 +2114,21 @@ pub struct ProcMacro {
 }
 
 /// The way a [`ProcMacro`] is declared to be used.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum MacroKind {
     /// A bang macro `foo!()`.
@@ -1415,7 +2140,21 @@ pub enum MacroKind {
 }
 
 /// A type alias declaration, e.g. `type Pig = std::borrow::Cow<'static, str>;`
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct TypeAlias {
     /// The type referred to by this alias.
     #[serde(rename = "type")]
@@ -1425,7 +2164,21 @@ pub struct TypeAlias {
 }
 
 /// A `static` declaration.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Static {
     /// The type of the static.
     #[serde(rename = "type")]
@@ -1455,7 +2208,21 @@ pub struct Static {
 }
 
 /// A primitive type declaration. Declarations of this kind can only come from the core library.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Encode, Decode)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Encode,
+    Decode,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
+
 pub struct Primitive {
     /// The name of the type.
     pub name: String,
