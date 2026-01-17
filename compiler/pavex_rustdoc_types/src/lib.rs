@@ -798,6 +798,8 @@ pub struct Id(pub u32);
     rkyv::Deserialize,
 )]
 #[rkyv(derive(Debug))]
+#[rkyv(compare(PartialEq))]
+#[repr(u8)]
 #[serde(rename_all = "snake_case")]
 pub enum ItemKind {
     /// A module declaration, e.g. `mod foo;` or `mod foo {}`
