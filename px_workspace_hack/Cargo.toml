@@ -21,6 +21,7 @@ ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
 bincode = { version = "2", features = ["serde"] }
+bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -101,6 +102,7 @@ ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
 bincode = { version = "2", features = ["serde"] }
+bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }

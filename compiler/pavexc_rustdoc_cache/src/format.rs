@@ -7,7 +7,7 @@ struct CrateMeta {
 }
 
 /// Check that the JSON docs we are working with using the expected format version.
-pub(super) fn check_format<R: Read>(raw_json: R) -> Result<(), anyhow::Error> {
+pub fn check_format<R: Read>(raw_json: R) -> Result<(), anyhow::Error> {
     let Ok(min_krate) = serde_json::from_reader::<R, CrateMeta>(raw_json) else {
         anyhow::bail!(
             "Failed to deserialize the `format_version` of the generated JSON docs. Is it actually the JSON documentation for a crate?"

@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::sync::{Arc, RwLock};
 
@@ -10,34 +9,30 @@ use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use rayon::iter::IntoParallelRefIterator;
-use rkyv::collections::swiss_table::ArchivedHashMap;
-use rkyv::hash::FxHasher64;
-use rkyv::rancor::Panic;
-use rkyv::string::ArchivedString;
-use rkyv::util::AlignedVec;
-use rkyv::vec::ArchivedVec;
 use rustc_hash::FxHashMap;
-use rustdoc_types::{
-    ArchivedId, ArchivedItem, ArchivedItemSummary, ExternalCrate, Item, ItemEnum, ItemKind,
-    ItemSummary, Visibility,
-};
+use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 use tracing::Span;
 use tracing_log_error::log_error;
+
+// Import types from the cache crate
+pub use pavexc_rustdoc_cache::{
+    AnnotatedItems, CacheEntry, CrateData, CrateItemIndex, CrateItemPaths,
+    EagerCrateItemIndex, EagerCrateItemPaths, EagerImportPath2Id, EntryVisibility,
+    ExternalReExport, ExternalReExports, ImportIndex, ImportIndexEntry, ImportPath2Id,
+};
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
 use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id};
-use crate::rustdoc::compute::CacheEntry;
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
 
 use super::AnnotatedItem;
 use super::annotations::{
-    self, AnnotatedItems, AnnotationCoordinates, QueueItem, invalid_diagnostic_attribute,
-    parse_pavex_attributes,
+    self, AnnotationCoordinates, QueueItem, invalid_diagnostic_attribute, parse_pavex_attributes,
 };
-use super::compute::{RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
+use super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -262,9 +257,9 @@ impl CrateCollection {
             .par_iter()
             .filter_map(|(package_id, krate, cache_indexes)| {
                 let data = if *cache_indexes {
-                    CacheEntry::new(krate)
+                    <CacheEntry as CacheEntryExt>::from_crate(krate)
                 } else {
-                    CacheEntry::raw(krate)
+                    <CacheEntry as CacheEntryExt>::from_crate_raw(krate)
                 };
                 let cache_key = RustdocCacheKey::new(package_id, package_graph);
                 match data {
@@ -671,150 +666,30 @@ pub struct CrateIdNeedle {
     maybe_dependent_crate_name: Option<String>,
 }
 
-#[derive(Debug, Clone)]
-/// An index to lookup the id of a type given one of its import paths, either
-/// public or private.
-///
-/// The index does NOT contain macros, since macros and types live in two
-/// different namespaces and can contain items with the same name.
-/// E.g. `core::clone::Clone` is both a trait and a derive macro.
-///
-/// Since the index can be quite large, we try to avoid deserializing it all at once.
-///
-/// The `Eager` variant contains the entire index, fully deserialized. This is what we get
-/// when we have had to index the documentation for the crate on the fly.
-///
-/// The `Lazy` variant contains the index as a byte array, with entries deserialized on demand.
-pub(crate) enum ImportPath2Id {
-    Eager(EagerImportPath2Id),
-    Lazy(LazyImportPath2Id),
-}
-
-impl ImportPath2Id {
-    pub fn get(&self, path: &[String]) -> Option<rustdoc_types::Id> {
-        match self {
-            ImportPath2Id::Eager(m) => m.0.get(path).cloned(),
-            ImportPath2Id::Lazy(m) => m.get_deserialized(path),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-/// See [`ImportPath2Id`] for more information.
-pub(crate) struct EagerImportPath2Id(pub HashMap<Vec<String>, rustdoc_types::Id>);
-
-/// See [`ImportPath2Id`] for more information.
-///
-/// Stores rkyv-serialized bytes of a `HashMap<Vec<String>, Id>` and provides zero-copy access.
-#[derive(Debug, Clone)]
-pub(crate) struct LazyImportPath2Id(pub AlignedVec);
-
-impl LazyImportPath2Id {
-    #[inline]
-    fn archived(&self) -> &ArchivedHashMap<ArchivedVec<ArchivedString>, ArchivedId> {
-        unsafe {
-            rkyv::access_unchecked::<ArchivedHashMap<ArchivedVec<ArchivedString>, ArchivedId>>(
-                &self.0,
-            )
-        }
-    }
-
-    pub fn get(&self, path: &[String]) -> Option<&ArchivedId> {
-        let path_vec: Vec<String> = path.to_vec();
-        let bytes = rkyv::to_bytes::<Panic>(&path_vec).ok()?;
-
-        let archived_key = unsafe { rkyv::access_unchecked::<ArchivedVec<ArchivedString>>(&bytes) };
-        self.archived().get(archived_key)
-    }
-
-    pub fn get_deserialized(&self, path: &[String]) -> Option<rustdoc_types::Id> {
-        let archived = self.get(path)?;
-        Some(rkyv::deserialize::<_, Panic>(archived).unwrap())
-    }
-}
-
-#[derive(
-    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
-/// Track re-exports of types (or entire modules!) from other crates.
-pub struct ExternalReExports {
-    /// Key: the path of the re-exported type in the current crate.
-    /// Value: the id of the `rustdoc` item of kind `use` that performed the re-export.
-    ///
-    /// E.g. `pub use hyper::server as sx;` in `lib.rs` would use `vec!["my_crate", "sx"]`
-    /// as key in this map.
-    target_path2use_id: HashMap<Vec<String>, rustdoc_types::Id>,
-    /// Key: the id of the `rustdoc` item of kind `use` that performed the re-export.
-    /// Value: metadata about the re-export.
-    use_id2re_export: HashMap<rustdoc_types::Id, ExternalReExport>,
-}
-
-impl ExternalReExports {
-    /// Iteratore over the external re-exports that have been collected.
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<Item = (&Vec<String>, rustdoc_types::Id, &ExternalReExport)> {
-        self.target_path2use_id
-            .iter()
-            .map(|(target_path, id)| (target_path, *id, &self.use_id2re_export[id]))
-    }
-
-    /// Add another re-export to the database.
-    pub fn insert(
-        &mut self,
-        krate: &CrateData,
-        use_item: &rustdoc_types::Item,
-        current_path: &[String],
-    ) {
-        let ItemEnum::Use(use_) = &use_item.inner else {
-            unreachable!()
-        };
-        let imported_id = use_.id.expect("Import doesn't have an associated id");
-        let Some(imported_summary) = krate.paths.get(&imported_id) else {
-            // TODO: this is firing for std's JSON docs. File a bug report.
-            // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)
-            return;
-        };
-        debug_assert!(imported_summary.crate_id != 0);
-        // We are looking at a public re-export of another crate
-        // (e.g. `pub use hyper;`), one of its modules or one of its items.
-        // Due to how re-exports are handled in `rustdoc`, the re-exported
-        // items inside that foreign module will not be found in the `index`
-        // for this crate.
-        // We intentionally add foreign items to the index to get a "complete"
-        // picture of all the types available in this crate.
-        let external_crate_id = imported_summary.crate_id;
-        let source_path = imported_summary.path.to_owned();
-        let re_exported_path = {
-            let mut p = current_path.to_owned();
-            if !use_.is_glob {
-                p.push(use_.name.clone());
-            }
-            p
-        };
-        let re_export = ExternalReExport {
-            source_path,
-            external_crate_id,
-        };
-
-        self.target_path2use_id
-            .insert(re_exported_path, use_item.id);
-        self.use_id2re_export.insert(use_item.id, re_export);
-    }
-
+/// Extension trait for [`ExternalReExports`] that adds methods depending on pavexc types.
+pub trait ExternalReExportsExt {
     /// Retrieve the re-exported item from the crate it was defined into.
     ///
     /// # Panics
     ///
     /// Panics if the provided `use_id` doesn't exist as a key in the re-export registry.
-    pub fn get_target_item_id(
+    fn get_target_item_id(
         &self,
         // The crate associated with these re-exports.
         re_exported_from: &Crate,
         krate_collection: &CrateCollection,
         use_id: rustdoc_types::Id,
+    ) -> Result<Option<GlobalItemId>, CannotGetCrateData>;
+}
+
+impl ExternalReExportsExt for ExternalReExports {
+    fn get_target_item_id(
+        &self,
+        re_exported_from: &Crate,
+        krate_collection: &CrateCollection,
+        use_id: rustdoc_types::Id,
     ) -> Result<Option<GlobalItemId>, CannotGetCrateData> {
-        let re_export = &self.use_id2re_export[&use_id];
+        let re_export = self.get(&use_id).expect("use_id not found in re-export registry");
         let source_package_id = re_exported_from
             .core
             .compute_package_id_for_crate_id(re_export.external_crate_id, krate_collection, None)
@@ -830,155 +705,6 @@ impl ExternalReExports {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode)]
-/// Information about a type (or module) re-exported from another crate.
-pub struct ExternalReExport {
-    /// The path of the re-exported type in the crate it was re-exported from.
-    ///
-    /// E.g. `pub use hyper::server as sx;` in `lib.rs` would set `source_path` to
-    /// `vec!["hyper", "server"]`.
-    source_path: Vec<String>,
-    /// The id of the source crate in the `external_crates` section of the JSON
-    /// documentation of the crate that re-exported it.
-    external_crate_id: u32,
-}
-
-#[derive(
-    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
-pub struct ImportIndex {
-    /// A mapping that keeps track of all modules defined in the current crate.
-    ///
-    /// We track modules separately because their names are allowed to collide with
-    /// type and function names.
-    pub modules: HashMap<rustdoc_types::Id, ImportIndexEntry>,
-    /// A mapping that keeps track of traits, structs, enums and functions
-    /// defined in the current crate.
-    pub items: HashMap<rustdoc_types::Id, ImportIndexEntry>,
-    /// A mapping that associates the id of each re-export (`pub use ...`) to the id
-    /// of the module it was re-exported from.
-    pub re_export2parent_module: HashMap<rustdoc_types::Id, rustdoc_types::Id>,
-}
-
-/// An entry in [`ImportIndex`].
-#[derive(
-    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
-pub struct ImportIndexEntry {
-    /// All the public paths that can be used to import the item.
-    pub public_paths: BTreeSet<SortablePath>,
-    /// All the private paths that can be used to import the item.
-    pub private_paths: BTreeSet<SortablePath>,
-    /// The path where the item was originally defined.
-    ///
-    /// It may be set to `None` if we can't access the original definition.
-    /// E.g. an item defined in a private module of `std`, where we only have access
-    /// to the public API.
-    pub defined_at: Option<Vec<String>>,
-}
-
-/// The visibility of a path inside [`ImportIndexEntry`].
-pub enum EntryVisibility {
-    /// The item can be imported from outside the crate where it was defined.
-    Public,
-    /// The item can only be imported from within the crate where it was defined.
-    Private,
-}
-
-impl ImportIndexEntry {
-    /// A private constructor.
-    fn empty() -> Self {
-        Self {
-            public_paths: BTreeSet::new(),
-            private_paths: BTreeSet::new(),
-            defined_at: None,
-        }
-    }
-
-    /// Create a new entry from a path.
-    pub fn new(path: Vec<String>, visibility: EntryVisibility, is_definition: bool) -> Self {
-        let mut entry = Self::empty();
-        if is_definition {
-            entry.defined_at = Some(path.clone());
-        }
-        match visibility {
-            EntryVisibility::Public => entry.public_paths.insert(SortablePath(path)),
-            EntryVisibility::Private => entry.private_paths.insert(SortablePath(path)),
-        };
-        entry
-    }
-
-    /// Add a new private path for this item.
-    pub fn insert_private(&mut self, path: Vec<String>) {
-        self.private_paths.insert(SortablePath(path));
-    }
-
-    /// Add a new path for this item.
-    pub fn insert(&mut self, path: Vec<String>, visibility: EntryVisibility) {
-        match visibility {
-            EntryVisibility::Public => self.public_paths.insert(SortablePath(path)),
-            EntryVisibility::Private => self.private_paths.insert(SortablePath(path)),
-        };
-    }
-
-    /// Types can be exposed under multiple paths.
-    /// This method returns a "canonical" importable path—i.e. the shortest importable path
-    /// pointing at the type you specified.
-    ///
-    /// If the type is public, this method returns the shortest public path.
-    /// If the type is private, this method returns the shortest private path.
-    pub fn canonical_path(&self) -> &[String] {
-        if let Some(SortablePath(p)) = self.public_paths.first() {
-            return p;
-        }
-        if let Some(SortablePath(p)) = self.private_paths.first() {
-            return p;
-        }
-        unreachable!("There must be at least one path associated to an import index entry")
-    }
-
-    /// Returns all paths associated with the type, both public and private.
-    pub fn paths(&self) -> impl Iterator<Item = &[String]> {
-        self.public_paths
-            .iter()
-            .map(|SortablePath(p)| p.as_slice())
-            .chain(
-                self.private_paths
-                    .iter()
-                    .map(|SortablePath(p)| p.as_slice()),
-            )
-    }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    serde::Serialize,
-    serde::Deserialize,
-    bincode::Encode,
-    bincode::Decode,
-)]
-#[serde(transparent)]
-pub struct SortablePath(pub Vec<String>);
-
-impl Ord for SortablePath {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.0.len().cmp(&other.0.len()) {
-            // Compare lexicographically if lengths are equal
-            Ordering::Equal => self.0.cmp(&other.0),
-            other => other,
-        }
-    }
-}
-
-impl PartialOrd for SortablePath {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 #[derive(Debug, Clone)]
 pub(crate) struct CrateCore {
     /// The `PackageId` for the corresponding crate within the dependency tree
@@ -986,209 +712,6 @@ pub(crate) struct CrateCore {
     pub(crate) package_id: PackageId,
     /// The JSON documentation for the crate.
     pub(super) krate: CrateData,
-}
-
-#[derive(Debug, Clone)]
-/// The JSON documentation for a crate.
-pub(crate) struct CrateData {
-    /// The id of the root item for the crate.
-    pub root_item_id: rustdoc_types::Id,
-    /// A mapping from the id of an external crate to the information about it.
-    #[allow(clippy::disallowed_types)]
-    pub external_crates: FxHashMap<u32, ExternalCrate>,
-    /// A mapping from the id of a type to its fully qualified path.
-    /// Primarily useful for foreign items that are being re-exported by this crate.
-    pub paths: CrateItemPaths,
-    /// The version of the JSON format used by rustdoc.
-    pub format_version: u32,
-    /// The index of all the items in the crate.
-    pub index: CrateItemIndex,
-}
-
-#[derive(Debug, Clone)]
-/// A mapping from the id of a type to its fully qualified path.
-///
-/// Primarily useful for foreign items that are being re-exported by this crate.
-pub(crate) enum CrateItemPaths {
-    Eager(EagerCrateItemPaths),
-    Lazy(LazyCrateItemPaths),
-}
-
-impl CrateItemPaths {
-    /// Retrieve an item summary from the index given its id.
-    pub fn get(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, ItemSummary>> {
-        match self {
-            Self::Eager(m) => m.paths.get(id).map(Cow::Borrowed),
-            Self::Lazy(m) => {
-                let item = m.get_deserialized(id)?;
-                Some(Cow::Owned(item))
-            }
-        }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (rustdoc_types::Id, ItemSummaryRef<'_>)> {
-        match self {
-            CrateItemPaths::Eager(paths) => CrateItemPathsIter::Eager(paths.paths.iter()),
-            CrateItemPaths::Lazy(paths) => CrateItemPathsIter::Lazy(paths.archived().iter()),
-        }
-    }
-}
-
-pub enum CrateItemPathsIter<'a> {
-    Eager(std::collections::hash_map::Iter<'a, rustdoc_types::Id, ItemSummary>),
-    Lazy(
-        rkyv::collections::swiss_table::map::Iter<'a, ArchivedId, ArchivedItemSummary, FxHasher64>,
-    ),
-}
-
-pub enum ItemSummaryRef<'a> {
-    Eager(&'a ItemSummary),
-    Lazy(&'a ArchivedItemSummary),
-}
-
-impl<'a> ItemSummaryRef<'a> {
-    pub fn crate_id(&self) -> u32 {
-        match self {
-            ItemSummaryRef::Eager(s) => s.crate_id,
-            ItemSummaryRef::Lazy(s) => s.crate_id.to_native(),
-        }
-    }
-
-    pub fn kind(&self) -> ItemKind {
-        match self {
-            ItemSummaryRef::Eager(s) => s.kind,
-            ItemSummaryRef::Lazy(s) => {
-                // Safe to do since the enum is repr(u8)
-                rkyv::deserialize::<_, rkyv::rancor::Infallible>(&s.kind).unwrap()
-            }
-        }
-    }
-
-    pub fn path(&self) -> Cow<'_, [String]> {
-        match self {
-            ItemSummaryRef::Eager(s) => Cow::Borrowed(&s.path),
-            ItemSummaryRef::Lazy(s) => {
-                Cow::Owned(s.path.iter().map(|s| s.as_str().to_owned()).collect())
-            }
-        }
-    }
-}
-
-impl<'a> Iterator for CrateItemPathsIter<'a> {
-    type Item = (rustdoc_types::Id, ItemSummaryRef<'a>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Self::Eager(iter) => iter.next().map(|(k, v)| (*k, ItemSummaryRef::Eager(v))),
-            Self::Lazy(iter) => iter
-                .next()
-                .map(|(k, v)| (rustdoc_types::Id(k.0.to_native()), ItemSummaryRef::Lazy(v))),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-/// See [`CrateItemPaths`] for more information.
-pub(crate) struct EagerCrateItemPaths {
-    #[allow(clippy::disallowed_types)]
-    pub paths: FxHashMap<rustdoc_types::Id, ItemSummary>,
-}
-
-/// See [`CrateItemPaths`] for more information.
-#[derive(Debug, Clone)]
-pub(crate) struct LazyCrateItemPaths {
-    pub(super) bytes: AlignedVec,
-}
-
-impl LazyCrateItemPaths {
-    /// Get zero-copy access to the archived HashMap.
-    #[inline]
-    fn archived(&self) -> &ArchivedHashMap<ArchivedId, ArchivedItemSummary> {
-        // SAFETY: The bytes were serialized by rkyv from a valid HashMap<Id, ItemSummary>.
-        // We trust the cache to contain valid data.
-        unsafe {
-            rkyv::access_unchecked::<ArchivedHashMap<ArchivedId, ArchivedItemSummary>>(&self.bytes)
-        }
-    }
-
-    /// Get an item by its ID, returning a reference to the archived summary.
-    pub fn get(&self, id: &rustdoc_types::Id) -> Option<&ArchivedItemSummary> {
-        self.archived().get(&ArchivedId(id.0.into()))
-    }
-
-    /// Deserialize a summary by its ID.
-    pub fn get_deserialized(&self, id: &rustdoc_types::Id) -> Option<ItemSummary> {
-        let archived = self.get(id)?;
-        Some(rkyv::deserialize::<ItemSummary, Panic>(archived).unwrap())
-    }
-}
-
-#[derive(Debug, Clone)]
-/// The index of all the items in the crate.
-///
-/// Since the index can be quite large, we try to avoid deserializing it all at once.
-///
-/// The `Eager` variant contains the entire index, fully deserialized. This is what we get
-/// when we have had to compute the documentation for the crate on the fly.
-///
-/// The `Lazy` variant contains the index as a byte array. There is a mapping from the
-/// id of an item to the start and end index of the item's bytes in the byte array.
-/// We can therefore deserialize the item only if we need to access it.
-/// Since we only access a tiny portion of the items in the index (especially for large crates),
-/// this translates in a significant performance improvement.
-pub(crate) enum CrateItemIndex {
-    Eager(EagerCrateItemIndex),
-    Lazy(LazyCrateItemIndex),
-}
-
-impl CrateItemIndex {
-    /// Retrieve an item from the index given its id.
-    pub fn get(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, Item>> {
-        match self {
-            Self::Eager(index) => index.index.get(id).map(Cow::Borrowed),
-            Self::Lazy(index) => {
-                let item = index.get_deserialized(id)?;
-                Some(Cow::Owned(item))
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-/// See [`CrateItemIndex`] for more information.
-pub(crate) struct EagerCrateItemIndex {
-    #[allow(clippy::disallowed_types)]
-    pub index: FxHashMap<rustdoc_types::Id, Item>,
-}
-
-/// See [`CrateItemIndex`] for more information.
-///
-/// Stores rkyv-serialized bytes of a `HashMap<Id, Item>` and provides zero-copy access.
-#[derive(Debug, Clone)]
-pub(crate) struct LazyCrateItemIndex {
-    /// The rkyv-serialized bytes containing a `HashMap<Id, Item>`.
-    pub(super) bytes: AlignedVec,
-}
-
-impl LazyCrateItemIndex {
-    /// Get zero-copy access to the archived HashMap.
-    #[inline]
-    fn archived(&self) -> &ArchivedHashMap<ArchivedId, ArchivedItem> {
-        // SAFETY: The bytes were serialized by rkyv from a valid HashMap<Id, Item>.
-        // We trust the cache to contain valid data.
-        unsafe { rkyv::access_unchecked::<ArchivedHashMap<ArchivedId, ArchivedItem>>(&self.bytes) }
-    }
-
-    /// Get an item by its ID, returning a reference to the archived item.
-    pub fn get(&self, id: &rustdoc_types::Id) -> Option<&ArchivedItem> {
-        self.archived().get(&ArchivedId(id.0.into()))
-    }
-
-    /// Deserialize an item by its ID.
-    pub fn get_deserialized(&self, id: &rustdoc_types::Id) -> Option<Item> {
-        let archived = self.get(id)?;
-        Some(rkyv::deserialize::<Item, Panic>(archived).unwrap())
-    }
 }
 
 impl CrateCore {

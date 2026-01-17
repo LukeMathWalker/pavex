@@ -1,5 +1,4 @@
 mod diagnostic;
-mod items;
 mod parser;
 mod queue;
 
@@ -12,7 +11,7 @@ use rustdoc_types::{Enum, ItemEnum, Struct, Trait};
 use std::collections::BTreeSet;
 
 pub(crate) use diagnostic::invalid_diagnostic_attribute;
-pub use items::{AnnotatedItem, AnnotatedItems, ImplInfo};
+pub use pavexc_rustdoc_cache::{AnnotatedItem, AnnotatedItems, ImplInfo};
 pub(crate) use parser::parse_pavex_attributes;
 pub(crate) use queue::QueueItem;
 
