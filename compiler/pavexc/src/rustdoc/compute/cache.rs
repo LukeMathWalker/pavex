@@ -18,7 +18,8 @@ use crate::{
     rustdoc::{
         annotations::AnnotatedItems,
         queries::{
-            CrateData, CrateItemIndex, ImportPath2Id, LazyCrateItemIndex, LazyImportPath2Id,
+            CrateData, CrateItemIndex, CrateItemPaths, ImportPath2Id, LazyCrateItemIndex,
+            LazyCrateItemPaths, LazyImportPath2Id,
         },
     },
 };
@@ -380,7 +381,7 @@ impl ToolchainCache {
         let krate = CacheEntry {
             root_item_id,
             external_crates: Cow::Borrowed(external_crates),
-            paths: Cow::Borrowed(paths),
+            paths: RkyvCowBytes::Borrowed(paths),
             format_version,
             items: RkyvCowBytes::Borrowed(items),
             secondary_indexes: Some(SecondaryIndexes {
@@ -601,7 +602,7 @@ impl ThirdPartyCrateCache {
             let krate = CacheEntry {
                 root_item_id,
                 external_crates: Cow::Borrowed(external_crates),
-                paths: Cow::Borrowed(paths),
+                paths: RkyvCowBytes::Borrowed(paths),
                 format_version,
                 items: RkyvCowBytes::Borrowed(items),
                 secondary_indexes,
@@ -786,7 +787,7 @@ impl ThirdPartyCrateCache {
 pub(in crate::rustdoc) struct CacheEntry<'a> {
     root_item_id: u32,
     external_crates: Cow<'a, [u8]>,
-    paths: Cow<'a, [u8]>,
+    paths: RkyvCowBytes<'a>,
     format_version: i64,
     items: RkyvCowBytes<'a>,
     secondary_indexes: Option<SecondaryIndexes<'a>>,
@@ -879,19 +880,26 @@ impl<'a> CacheEntry<'a> {
                 the same crate twice? This is a bug."
             );
         };
+        let CrateItemPaths::Eager(paths) = &crate_data.paths else {
+            anyhow::bail!(
+                "The crate item paths is not deserialized. Are we trying to cache \
+                the same crate twice? This is a bug."
+            );
+        };
 
-        // Serialize the items HashMap using rkyv for zero-copy deserialization later.
         let items = rkyv::to_bytes::<rkyv::rancor::Error>(&index.index)
             .map_err(|e| anyhow::anyhow!(e).context("Failed to serialize crate items with rkyv"))?;
 
         let external_crates =
             bincode::serde::encode_to_vec(&crate_data.external_crates, BINCODE_CONFIG)?;
-        let paths = bincode::serde::encode_to_vec(&crate_data.paths, BINCODE_CONFIG)?;
+        let paths = rkyv::to_bytes::<rkyv::rancor::Error>(&paths.paths).map_err(|e| {
+            anyhow::anyhow!(e).context("Failed to serialize item summaries with rkyv")
+        })?;
 
         Ok(CacheEntry {
             root_item_id: crate_data.root_item_id.0,
             external_crates: Cow::Owned(external_crates),
-            paths: Cow::Owned(paths),
+            paths: RkyvCowBytes::Owned(paths),
             format_version: crate_data.format_version as i64,
             items: RkyvCowBytes::Owned(items),
             secondary_indexes: None,
@@ -904,17 +912,14 @@ impl<'a> CacheEntry<'a> {
     /// since it can be quite large and deserialization can be slow for large crates.
     /// The item index is stored as rkyv-serialized bytes for zero-copy access.
     pub(super) fn hydrate(self, package_id: PackageId) -> Result<RustdocCacheEntry, anyhow::Error> {
-        let paths = tracing::trace_span!("Deserialize paths")
-            .in_scope(|| bincode::decode_from_slice(&self.paths, BINCODE_CONFIG))
-            .context("Failed to deserialize paths")?
-            .0;
-
         let crate_data = CrateData {
             root_item_id: rustdoc_types::Id(self.root_item_id.to_owned()),
             external_crates: bincode::decode_from_slice(&self.external_crates, BINCODE_CONFIG)
                 .context("Failed to deserialize external_crates")?
                 .0,
-            paths,
+            paths: CrateItemPaths::Lazy(LazyCrateItemPaths {
+                bytes: self.paths.into_owned(),
+            }),
             format_version: self.format_version.try_into()?,
             index: CrateItemIndex::Lazy(LazyCrateItemIndex {
                 bytes: self.items.into_owned(),
