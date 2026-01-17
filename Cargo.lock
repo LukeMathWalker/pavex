@@ -3096,6 +3096,7 @@ name = "pavex_rustdoc_types"
 version = "0.2.10"
 dependencies = [
  "bincode",
+ "px_workspace_hack",
  "rkyv",
  "rustc-hash",
  "serde",
@@ -3627,6 +3628,7 @@ dependencies = [
  "ahash",
  "aho-corasick",
  "base64",
+ "bincode",
  "byteorder",
  "clap",
  "clap_builder",
@@ -4120,12 +4122,12 @@ dependencies = [
 
 [[package]]
 name = "rkyv"
-version = "0.8.12"
+version = "0.8.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35a640b26f007713818e9a9b65d34da1cf58538207b052916a83d80e43f3ffa4"
+checksum = "360b333c61ae24e5af3ae7c8660bd6b21ccd8200dbbc5d33c2454421e85b9c69"
 dependencies = [
  "bytes",
- "hashbrown 0.15.5",
+ "hashbrown 0.16.1",
  "indexmap",
  "munge",
  "ptr_meta",
@@ -4138,9 +4140,9 @@ dependencies = [
 
 [[package]]
 name = "rkyv_derive"
-version = "0.8.12"
+version = "0.8.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd83f5f173ff41e00337d97f6572e416d022ef8a19f371817259ae960324c482"
+checksum = "7c02f8cdd12b307ab69fe0acf4cd2249c7460eb89dce64a0febadf934ebb6a9e"
 dependencies = [
  "proc-macro2",
  "quote",

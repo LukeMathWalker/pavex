@@ -446,7 +446,7 @@ fn warm_up_rustdoc_cache(
         .iter()
         .filter(|p| {
             !(
-                // Avoid computing JOSN docs for:
+                // Avoid computing JSON docs for:
                 // - Generated code
                 p.name().starts_with("application_")
                 // - Integration test crates

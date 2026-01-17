@@ -1,5 +1,5 @@
 [default]
-extend-words = { befores = "befores" }
+extend-words = { befores = "befores", bimap = "bimap" }
 extend-ignore-words-re = ["\\b[a-zA-Z]{2}\\b"]
 
 [files]

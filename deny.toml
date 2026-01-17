@@ -16,6 +16,8 @@ ignore = [
     # is available. The risk is acceptable for server-side usage where timing
     # attacks are difficult to execute.
     "RUSTSEC-2023-0071",
+    # `bincode` is unmaintained, but otherwise perfectly functional.
+    "RUSTSEC-2025-0141"
 ]
 
 [licenses]
