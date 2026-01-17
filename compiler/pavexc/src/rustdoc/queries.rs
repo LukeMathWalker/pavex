@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use ahash::{HashMap, HashSet, HashSetExt};
 use anyhow::{Context, anyhow};
@@ -181,8 +181,8 @@ impl CrateCollection {
             cache: &RustdocGlobalFsCache,
             diagnostic_sink: &DiagnosticSink,
         ) -> (PackageId, Option<Crate>) {
-            let cache_key = RustdocCacheKey::new(&package_id, &package_graph);
-            match cache.get(&cache_key, &package_graph) {
+            let cache_key = RustdocCacheKey::new(&package_id, package_graph);
+            match cache.get(&cache_key, package_graph) {
                 Ok(None) => (package_id, None),
                 Ok(Some(entry)) => (
                     package_id.clone(),
@@ -212,7 +212,7 @@ impl CrateCollection {
         let sink = &self.diagnostic_sink;
         let tracing_span = Span::current();
         let map_op =
-            move |id| tracing_span.in_scope(|| get_if_cached(id, &package_graph, cache, &sink));
+            move |id| tracing_span.in_scope(|| get_if_cached(id, package_graph, cache, sink));
 
         let mut to_be_computed = vec![];
 
@@ -262,11 +262,11 @@ impl CrateCollection {
             .par_iter()
             .filter_map(|(package_id, krate, cache_indexes)| {
                 let data = if *cache_indexes {
-                    CacheEntry::new(&krate)
+                    CacheEntry::new(krate)
                 } else {
-                    CacheEntry::raw(&krate)
+                    CacheEntry::raw(krate)
                 };
-                let cache_key = RustdocCacheKey::new(&package_id, package_graph);
+                let cache_key = RustdocCacheKey::new(package_id, package_graph);
                 match data {
                     Ok(v) => Some((package_id, (cache_key, v))),
                     Err(e) => {
@@ -660,8 +660,15 @@ pub struct Crate {
     /// An internal cache to avoid traversing the package graph every time we need to
     /// translate a crate id into a package id via [`Self::compute_package_id_for_crate_id`]
     /// or [`Self::compute_package_id_for_crate_id_with_hint`].
-    pub(super) crate_id2package_id:
-        Arc<std::sync::RwLock<HashMap<(u32, Option<String>), PackageId>>>,
+    pub(super) crate_id2package_id: Arc<RwLock<HashMap<CrateIdNeedle, PackageId>>>,
+}
+
+/// The information used by [`Self::compute_package_id_for_crate_id_with_hint`] to
+/// map a `crate_id` to a `package_id`.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CrateIdNeedle {
+    crate_id: u32,
+    maybe_dependent_crate_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -1350,13 +1357,12 @@ impl Crate {
         collection: &CrateCollection,
         maybe_dependent_crate_name: Option<&str>,
     ) -> Result<PackageId, anyhow::Error> {
+        let needle = CrateIdNeedle {
+            crate_id,
+            maybe_dependent_crate_name: maybe_dependent_crate_name.map(|s| s.to_owned()),
+        };
         // Check the cache first.
-        if let Some(package_id) = self
-            .crate_id2package_id
-            .read()
-            .unwrap()
-            .get(&(crate_id, maybe_dependent_crate_name.map(|s| s.to_owned())))
-        {
+        if let Some(package_id) = self.crate_id2package_id.read().unwrap().get(&needle) {
             return Ok(package_id.to_owned());
         }
 
@@ -1369,10 +1375,10 @@ impl Crate {
 
         // If successful, cache the outcome.
         if let Ok(outcome) = &outcome {
-            self.crate_id2package_id.write().unwrap().insert(
-                (crate_id, maybe_dependent_crate_name.map(|s| s.to_owned())),
-                outcome.to_owned(),
-            );
+            self.crate_id2package_id
+                .write()
+                .unwrap()
+                .insert(needle, outcome.to_owned());
         }
         outcome
     }

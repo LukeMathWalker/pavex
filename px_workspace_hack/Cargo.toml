@@ -20,6 +20,7 @@ license.workspace = true
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
+bincode = { version = "2", features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -99,6 +100,7 @@ zeroize = { version = "1" }
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
+bincode = { version = "2", features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }

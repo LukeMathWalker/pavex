@@ -12,6 +12,7 @@ serde_derive = {version="1.0.186"}
 rustc-hash = {version="2", optional=true}
 bincode = "2"
 rkyv = { version = "0.8", default-features = false, features = ["std"] }
+px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
 
 [features]
 default = []

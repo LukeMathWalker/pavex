@@ -362,7 +362,6 @@ pub enum Attribute {
     rkyv::Deserialize,
 )]
 #[rkyv(derive(Debug))]
-
 /// The contents of a `#[repr(...)]` attribute.
 ///
 /// Used in [`Attribute::Repr`].
@@ -375,7 +374,7 @@ pub struct AttributeRepr {
     /// Alignment in bytes, if explicitly specified by `#[repr(packed(...)]]`.
     pub packed: Option<u64>,
 
-    /// The integer type for an enum descriminant, if explicitly specified.
+    /// The integer type for an enum discriminant, if explicitly specified.
     ///
     /// e.g. `"i32"`, for `#[repr(C, i32)]`
     pub int: Option<String>,
