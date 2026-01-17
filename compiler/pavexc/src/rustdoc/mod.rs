@@ -7,7 +7,9 @@ use once_cell::sync::Lazy;
 
 pub(crate) use annotations::{AnnotatedItem, AnnotationCoordinates, ImplInfo};
 pub use compute::CannotGetCrateData;
-pub use queries::{Crate, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt};
+pub use queries::{
+    Crate, CrateCollection, ExternalReExportsExt, GlobalItemId, ResolvedItem, RustdocKindExt,
+};
 
 mod annotations;
 mod compute;

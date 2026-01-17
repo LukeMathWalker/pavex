@@ -3,28 +3,23 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod cache;
-mod checksum;
-mod format;
-mod toolchain;
 
 use ahash::{HashMap, HashMapExt};
-pub(super) use cache::CacheEntry;
-pub(crate) use cache::{RustdocCacheKey, RustdocGlobalFsCache};
+pub(super) use cache::CacheEntryExt;
+pub(crate) use cache::{PavexRustdocCache as RustdocGlobalFsCache, RustdocCacheKey};
 
 use anyhow::Context;
-use format::check_format;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use itertools::Itertools as _;
 use pavex_cli_shell::SHELL;
+use pavexc_rustdoc_cache::{check_format, get_toolchain_crate_docs, rustdoc_options};
 use serde::Deserialize;
 
 use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::utils::normalize_crate_name;
-
-use self::toolchain::get_toolchain_crate_docs;
 
 #[derive(Debug, thiserror::Error, Clone)]
 #[error(
@@ -199,21 +194,6 @@ where
         }
     }
     Ok(results)
-}
-
-/// Return the options to pass to `rustdoc` in order to generate JSON documentation.
-///
-/// We isolate this logic in a separate function in order to be able to refer to these
-/// options from various places in the codebase and maintain a single source of truth.
-///
-/// In particular, they do affect our caching logic (see the `cache` module).
-pub(super) fn rustdoc_options() -> [&'static str; 4] {
-    [
-        "--document-private-items",
-        "-Zunstable-options",
-        "-wjson",
-        "--document-hidden-items",
-    ]
 }
 
 #[tracing::instrument(skip_all, fields(package_id_specs, cmd))]

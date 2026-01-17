@@ -12,7 +12,7 @@ use camino::Utf8Path;
 /// 1. Determine which files are in scope.
 /// 2. Calculate the checksum of everything that was discovered, including the file names.
 #[tracing::instrument("Checksum crate files", level = tracing::Level::DEBUG)]
-pub(super) fn checksum_crate(root_path: &Utf8Path) -> Result<u64, anyhow::Error> {
+pub fn checksum_crate(root_path: &Utf8Path) -> Result<u64, anyhow::Error> {
     let paths = get_file_paths(root_path)?;
 
     let mut hasher = xxhash_rust::xxh64::Xxh64::new(24);

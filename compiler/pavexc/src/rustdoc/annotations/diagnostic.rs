@@ -6,7 +6,7 @@ use pavex_cli_diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet}
 use pavexc_attr_parser::{AnnotationKind, errors::AttributeParserError};
 use rustdoc_types::Item;
 
-use super::items::IdConflict;
+use pavexc_rustdoc_cache::IdConflict;
 
 pub(crate) fn invalid_diagnostic_attribute(
     e: AttributeParserError,

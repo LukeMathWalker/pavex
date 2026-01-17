@@ -3,7 +3,7 @@ use once_cell::sync::OnceCell;
 use rustdoc_types::ItemKind;
 use std::path::PathBuf;
 
-use crate::rustdoc::compute::format::check_format;
+use crate::format::check_format;
 
 #[tracing::instrument(
     skip_all,
@@ -11,7 +11,7 @@ use crate::rustdoc::compute::format::check_format;
         crate.name = name,
     )
 )]
-pub(crate) fn get_toolchain_crate_docs(
+pub fn get_toolchain_crate_docs(
     name: &str,
     toolchain_name: &str,
 ) -> Result<rustdoc_types::Crate, anyhow::Error> {
@@ -22,16 +22,16 @@ pub(crate) fn get_toolchain_crate_docs(
     let mut krate = match serde_json::from_str::<rustdoc_types::Crate>(&json) {
         Ok(krate) => krate,
         Err(e) => {
-            return match check_format(std::io::Cursor::new(json)) { Err(format_err) => {
-                Err(format_err).with_context(|| {
+            return match check_format(std::io::Cursor::new(json)) {
+                Err(format_err) => Err(format_err).with_context(|| {
                     format!(
-                        "The JSON docs for {name} are not in the expected format. Are you using the right version of the `nightly` toolchain, `{}`, to generate the JSON docs?",
-                        crate::DEFAULT_DOCS_TOOLCHAIN
+                        "The JSON docs for {name} are not in the expected format. \
+                        Are you using the right version of the `nightly` toolchain, `{toolchain_name}`, \
+                        to generate the JSON docs?"
                     )
-                })
-            } _ => {
-                Err(e).with_context(|| format!("Failed to deserialize the JSON docs for {name}"))
-            }};
+                }),
+                _ => Err(e).with_context(|| format!("Failed to deserialize the JSON docs for {name}")),
+            };
         }
     };
 
@@ -72,7 +72,7 @@ fn get_toolchain_root_folder_via_rustup(name: &str) -> Result<PathBuf, anyhow::E
 /// The path to the `cargo` binary used by the toolchain we rely on to build JSON docs.
 static DOCS_TOOLCHAIN_CARGO: OnceCell<PathBuf> = OnceCell::new();
 
-pub(super) fn get_cargo_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {
+pub fn get_cargo_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {
     fn compute_cargo_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {
         let mut cmd = std::process::Command::new("rustup");
         cmd.arg("which")
