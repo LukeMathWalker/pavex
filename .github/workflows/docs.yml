@@ -59,12 +59,12 @@ jobs:
       run: |
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pavex_cli_linux
         path: target/release/pavex
     - name: Store pavexc CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pavexc_cli_linux
         path: target/release/pavexc
@@ -946,12 +946,12 @@ jobs:
       run: |
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pavex_cli_macos
         path: target/release/pavex
     - name: Store pavexc CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pavexc_cli_macos
         path: target/release/pavexc
@@ -1259,12 +1259,12 @@ jobs:
       run: |
         cargo build --bin pavex --bin pavexc --release
     - name: Store pavex CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pavex_cli_windows
         path: target/release/pavex.exe
     - name: Store pavexc CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pavexc_cli_windows
         path: target/release/pavexc.exe
@@ -1562,7 +1562,7 @@ jobs:
         cd docs/tools/pxh
         cargo build
     - name: Store CLI artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: pxh
         path: docs/tools/pxh/target/debug/pxh
@@ -1724,7 +1724,7 @@ jobs:
     - name: Build docs
       run: |
         uv run mkdocs build --strict
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v6
       with:
         name: docs
         path: site/
