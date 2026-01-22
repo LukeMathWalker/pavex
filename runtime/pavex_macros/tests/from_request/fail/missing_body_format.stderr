@@ -1,0 +1,6 @@
+error: You must specify the expected body encoding via `format`.
+       For example, `#[body(format = "json")]`.
+ --> tests/from_request/fail/missing_body_format.rs:5:7
+  |
+5 |     #[body]
+  |       ^^^^

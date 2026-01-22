@@ -1,0 +1,17 @@
+error: There are no additional parameters for `#[path_params]`.
+ --> tests/from_request/fail/unexpected_source_params.rs:5:7
+  |
+5 |     #[path_params(name = "a1")]
+  |       ^^^^^^^^^^^
+
+error: There are no additional parameters for `#[query_params]`.
+ --> tests/from_request/fail/unexpected_source_params.rs:8:7
+  |
+8 |     #[query_params(name = "b1")]
+  |       ^^^^^^^^^^^^
+
+error: There are no additional parameters for `#[headers]`.
+  --> tests/from_request/fail/unexpected_source_params.rs:11:7
+   |
+11 |     #[headers(name = "c1")]
+   |       ^^^^^^^

@@ -45,6 +45,8 @@ pub mod time {
 }
 pub mod tls;
 
+pub use pavex_macros::FromRequest;
+
 /// Define a [prebuilt type](https://pavex.dev/docs/guide/dependency_injection/prebuilt_types/).
 ///
 /// Prebuilt types are constructed outside of Pavex's dependency injection framework
