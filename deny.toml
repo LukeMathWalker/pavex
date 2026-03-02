@@ -4,10 +4,6 @@ no-default-features = false
 
 [advisories]
 ignore = [
-    # `instant` crate is unmaintained, but we depend on it transitively,
-    # so no easy way to remove it until all intermediate crates get rid of it.
-    # Since it isn't vulnerable, we'll ignore the advisory for now.
-    "RUSTSEC-2024-0384",
     # `paste` is unmaintained, but it's a small utility for macro-writing.
     # There are no known vulnerabilities, so we'll ignore the advisory for now.
     "RUSTSEC-2024-0436",
