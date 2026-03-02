@@ -25,6 +25,8 @@ debug_assertions = []
 
 [dependencies]
 pavex = { workspace = true }
+pavex_rustdoc_ext = { path = "../pavex_rustdoc_ext", version = "=0.2.10" }
+pavexc_annotations = { path = "../pavexc_annotations", version = "=0.2.10" }
 pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.2.10" }
 pavexc_rustdoc_cache = { path = "../pavexc_rustdoc_cache", version = "=0.2.10" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.10" }

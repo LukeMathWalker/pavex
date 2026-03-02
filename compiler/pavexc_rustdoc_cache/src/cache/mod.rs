@@ -12,7 +12,7 @@ use itertools::Itertools;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 
-use crate::annotations::AnnotatedItems;
+use pavexc_annotations::AnnotatedItems;
 use crate::types::{CacheEntry, CrateData, ExternalReExports, ImportIndex, ImportPath2Id};
 use crate::TOOLCHAIN_CRATES;
 
