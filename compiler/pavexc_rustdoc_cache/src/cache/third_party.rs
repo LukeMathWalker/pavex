@@ -45,20 +45,20 @@ impl ThirdPartyCrateCache {
         level=tracing::Level::DEBUG,
         fields(crate.id = %package_metadata.id(), cache_key = tracing::field::Empty, hit = tracing::field::Empty)
     )]
-    pub(super) fn get(
+    pub(super) fn get<A: bincode::Decode<()> + Default>(
         &self,
         package_metadata: &PackageMetadata,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
         package_graph: &PackageGraph,
-    ) -> Result<Option<HydratedCacheEntry>, anyhow::Error> {
-        fn _get(
+    ) -> Result<Option<HydratedCacheEntry<A>>, anyhow::Error> {
+        fn _get<A: bincode::Decode<()> + Default>(
             package_metadata: &PackageMetadata,
             cargo_fingerprint: &str,
             connection: &rusqlite::Connection,
             cache_workspace_packages: bool,
             package_graph: &PackageGraph,
-        ) -> Result<Option<HydratedCacheEntry>, anyhow::Error> {
+        ) -> Result<Option<HydratedCacheEntry<A>>, anyhow::Error> {
             let Some(cache_key) = ThirdPartyCrateCacheKey::build(
                 package_graph,
                 package_metadata,
@@ -144,12 +144,12 @@ impl ThirdPartyCrateCache {
                 items: RkyvCowBytes::Borrowed(items),
                 secondary_indexes,
             }
-            .hydrate(package_metadata.id().to_owned())
+            .hydrate::<A>(package_metadata.id().to_owned())
             .context("Failed to re-hydrate the stored docs")?;
 
             Ok(Some(krate))
         }
-        let outcome = _get(
+        let outcome = _get::<A>(
             package_metadata,
             cargo_fingerprint,
             connection,

@@ -6,7 +6,6 @@ use guppy::PackageId;
 use rusqlite::params;
 use tracing::instrument;
 
-use pavexc_annotations::AnnotatedItems;
 use crate::types::{
     CacheEntry, CrateData, CrateItemIndex, CrateItemPaths, ImportPath2Id, LazyCrateItemIndex,
     LazyCrateItemPaths, LazyImportPath2Id, RkyvCowBytes, SecondaryIndexes,
@@ -30,12 +29,12 @@ impl ToolchainCache {
         level=tracing::Level::DEBUG,
         fields(crate.name = %name)
     )]
-    pub(super) fn get(
+    pub(super) fn get<A: bincode::Decode<()> + Default>(
         &self,
         name: &str,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
-    ) -> Result<Option<HydratedCacheEntry>, anyhow::Error> {
+    ) -> Result<Option<HydratedCacheEntry<A>>, anyhow::Error> {
         // Retrieve from rustdoc's output from cache, if available.
         let mut stmt = connection.prepare_cached(
             "SELECT
@@ -78,13 +77,13 @@ impl ToolchainCache {
             items: RkyvCowBytes::Borrowed(items),
             secondary_indexes: Some(SecondaryIndexes {
                 import_index: Cow::Borrowed(import_index),
-                // Standard library crates don't have Pavex annotations.
+                // Standard library crates don't have annotations.
                 annotated_items: None,
                 import_path2id: RkyvCowBytes::Borrowed(import_path2id),
                 re_exports: Cow::Borrowed(re_exports),
             }),
         }
-        .hydrate(PackageId::new(name))?;
+        .hydrate::<A>(PackageId::new(name))?;
 
         Ok(Some(krate))
     }
@@ -166,7 +165,7 @@ impl CacheEntry<'_> {
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
     /// The item index is stored as rkyv-serialized bytes for zero-copy access.
-    pub fn hydrate(self, package_id: PackageId) -> Result<HydratedCacheEntry, anyhow::Error> {
+    pub fn hydrate<A: bincode::Decode<()> + Default>(self, package_id: PackageId) -> Result<HydratedCacheEntry<A>, anyhow::Error> {
         use anyhow::Context;
 
         let crate_data = CrateData {
@@ -195,12 +194,12 @@ impl CacheEntry<'_> {
             .context("Failed to deserialize re-exports")?
             .0;
 
-        let annotated_items = if let Some(data) = secondary_indexes.annotated_items {
+        let annotated_items: A = if let Some(data) = secondary_indexes.annotated_items {
             bincode::decode_from_slice(&data, BINCODE_CONFIG)
                 .context("Failed to deserialize annotated_items")?
                 .0
         } else {
-            AnnotatedItems::default()
+            A::default()
         };
 
         let processed = ProcessedCacheEntry {

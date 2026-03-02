@@ -1,12 +1,11 @@
 [package]
 name = "pavexc_rustdoc_cache"
-description = "JSON documentation caching for the Pavex compiler"
+description = "SQLite-based caching for rustdoc JSON documentation"
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 version.workspace = true
-keywords = ["pavex"]
 
 [lints]
 clippy = { large_enum_variant = "allow", result_large_err = "allow" }
@@ -14,15 +13,12 @@ clippy = { large_enum_variant = "allow", result_large_err = "allow" }
 [dependencies]
 # Core dependencies
 rustdoc-types = { workspace = true }
-pavexc_annotations = { path = "../pavexc_annotations", version = "=0.2.10" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.10" }
 
 # Package graph
 guppy = { workspace = true }
 camino = { workspace = true }
 
 # SQLite cache
-xdg-home = { workspace = true }
 rusqlite = { workspace = true, features = ["bundled"] }
 r2d2_sqlite = { workspace = true }
 r2d2 = { workspace = true }

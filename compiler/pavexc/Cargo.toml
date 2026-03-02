@@ -68,6 +68,7 @@ persist_if_changed = { workspace = true }
 matchit = { workspace = true }
 relative-path = { workspace = true }
 camino = { workspace = true }
+xdg-home = { workspace = true }
 rustc-hash = { workspace = true }
 rkyv = { workspace = true }
 bincode = { workspace = true, features = ["serde"] }
