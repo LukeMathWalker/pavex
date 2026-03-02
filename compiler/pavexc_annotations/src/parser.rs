@@ -1,3 +1,5 @@
+//! Parsing Pavex attributes from rustdoc items.
+
 use pavexc_attr_parser::{AnnotationProperties, errors::AttributeParserError};
 use rustdoc_types::Attribute;
 

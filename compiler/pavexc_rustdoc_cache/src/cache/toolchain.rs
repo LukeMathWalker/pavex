@@ -6,7 +6,7 @@ use guppy::PackageId;
 use rusqlite::params;
 use tracing::instrument;
 
-use crate::annotations::AnnotatedItems;
+use pavexc_annotations::AnnotatedItems;
 use crate::types::{
     CacheEntry, CrateData, CrateItemIndex, CrateItemPaths, ImportPath2Id, LazyCrateItemIndex,
     LazyCrateItemPaths, LazyImportPath2Id, RkyvCowBytes, SecondaryIndexes,

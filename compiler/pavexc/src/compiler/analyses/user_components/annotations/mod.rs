@@ -36,10 +36,10 @@ use crate::{
         ResolvedType,
     },
     rustdoc::{
-        AnnotationCoordinates, Crate, CrateCollection, ExternalReExportsExt, GlobalItemId,
-        ImplInfo, RustdocKindExt,
+        AnnotationCoordinates, Crate, CrateCollection, ExternalReExportsExt, GlobalItemId, ImplInfo,
     },
 };
+use pavex_rustdoc_ext::RustdocKindExt;
 use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{GenericArgs, Item, ItemEnum};

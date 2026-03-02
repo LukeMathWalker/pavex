@@ -8,6 +8,7 @@ use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
+use pavex_rustdoc_ext::RustdocKindExt;
 use rayon::iter::IntoParallelRefIterator;
 use rustc_hash::FxHashMap;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
@@ -16,10 +17,12 @@ use tracing_log_error::log_error;
 
 // Import types from the cache crate
 pub use pavexc_rustdoc_cache::{
-    AnnotatedItems, CacheEntry, CrateData, CrateItemIndex, CrateItemPaths,
-    EagerCrateItemIndex, EagerCrateItemPaths, EagerImportPath2Id, EntryVisibility,
-    ExternalReExport, ExternalReExports, ImportIndex, ImportIndexEntry, ImportPath2Id,
+    CacheEntry, CrateData, CrateItemIndex, CrateItemPaths, EagerCrateItemIndex,
+    EagerCrateItemPaths, EagerImportPath2Id, EntryVisibility, ExternalReExport, ExternalReExports,
+    ImportIndex, ImportIndexEntry, ImportPath2Id,
 };
+
+pub use super::annotations::AnnotatedItems;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
@@ -1342,48 +1345,6 @@ impl std::fmt::Display for UnknownItemPath {
             f,
             "I could not find '{path}' in the auto-generated documentation for '{krate}'."
         )
-    }
-}
-
-pub trait RustdocKindExt {
-    /// Return a string representation of this item's kind (e.g. `a function`).
-    fn kind(&self) -> &'static str;
-}
-
-impl RustdocKindExt for ItemEnum {
-    fn kind(&self) -> &'static str {
-        match self {
-            ItemEnum::Module(_) => "a module",
-            ItemEnum::ExternCrate { .. } => "an external crate",
-            ItemEnum::Use(_) => "an import",
-            ItemEnum::Union(_) => "a union",
-            ItemEnum::Struct(_) => "a struct",
-            ItemEnum::StructField(_) => "a struct field",
-            ItemEnum::Enum(_) => "an enum",
-            ItemEnum::Variant(_) => "an enum variant",
-            ItemEnum::Function(func) => {
-                let mut func_kind = "a function";
-                if let Some((param, _)) = func.sig.inputs.first()
-                    && param == "self"
-                {
-                    func_kind = "a method";
-                }
-
-                func_kind
-            }
-            ItemEnum::Trait(_) => "a trait",
-            ItemEnum::TraitAlias(_) => "a trait alias",
-            ItemEnum::Impl(_) => "an impl block",
-            ItemEnum::TypeAlias(_) => "a type alias",
-            ItemEnum::Constant { .. } => "a constant",
-            ItemEnum::Static(_) => "a static",
-            ItemEnum::ExternType => "a foreign type",
-            ItemEnum::Macro(_) => "a macro",
-            ItemEnum::ProcMacro(_) => "a procedural macro",
-            ItemEnum::Primitive(_) => "a primitive type",
-            ItemEnum::AssocConst { .. } => "an associated constant",
-            ItemEnum::AssocType { .. } => "an associated type",
-        }
     }
 }
 

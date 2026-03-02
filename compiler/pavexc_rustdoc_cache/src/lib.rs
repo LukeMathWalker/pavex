@@ -3,14 +3,12 @@
 //!
 //! The cache is stored in a SQLite database at `~/.pavex/rustdoc/cache/{fingerprint}.db`.
 
-pub mod annotations;
 mod cache;
 mod checksum;
 mod format;
 mod toolchain;
 mod types;
 
-pub use annotations::{AnnotatedItem, AnnotatedItems, IdConflict, ImplInfo};
 pub use cache::{
     ProcessedCacheEntry, HydratedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache,
     cargo_fingerprint,

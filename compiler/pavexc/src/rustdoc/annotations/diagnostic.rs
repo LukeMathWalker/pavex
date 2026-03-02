@@ -1,25 +1,26 @@
 use crate::{
     diagnostic::{ComponentKind, DiagnosticSink, Registration, TargetSpan},
-    rustdoc::{Crate, RustdocKindExt},
+    rustdoc::Crate,
 };
 use pavex_cli_diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
+use pavex_rustdoc_ext::ItemKindExt;
+use pavexc_annotations::IdConflict;
 use pavexc_attr_parser::{AnnotationKind, errors::AttributeParserError};
-use rustdoc_types::Item;
+use rustdoc_types::{ItemKind, Span};
 
-use pavexc_rustdoc_cache::IdConflict;
-
-pub(crate) fn invalid_diagnostic_attribute(
+pub(super) fn invalid_diagnostic_attribute(
     e: AttributeParserError,
-    item: &Item,
+    item_name: Option<&str>,
+    item_span: Option<&Span>,
     diagnostics: &DiagnosticSink,
 ) {
-    let source = item.span.as_ref().and_then(|s| {
+    let source = item_span.and_then(|s| {
         diagnostics.annotated(
             TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
             "The annotated item",
         )
     });
-    let err_msg = match &item.name {
+    let err_msg = match item_name {
         Some(name) => {
             format!("`{name}` is annotated with a malformed `diagnostic::pavex::*` attribute.",)
         }
@@ -37,17 +38,18 @@ pub(crate) fn invalid_diagnostic_attribute(
 
 pub(super) fn missing_methods_attribute(
     kind: AnnotationKind,
-    impl_item: &Item,
-    item: &Item,
+    item_name: Option<&str>,
+    item_span: Option<&Span>,
+    impl_span: Option<&Span>,
     diagnostics: &DiagnosticSink,
 ) {
-    let source = item.span.as_ref().and_then(|s| {
+    let source = item_span.and_then(|s| {
         diagnostics.annotated(
             TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
             format!("The {kind}"),
         )
     });
-    let err_msg = match &item.name {
+    let err_msg = match item_name {
         Some(name) => {
             format!(
                 "Missing `#[pavex::methods]` attribute on the `impl` block that defines `{name}`, a Pavex {kind}.",
@@ -60,7 +62,7 @@ pub(super) fn missing_methods_attribute(
         }
     };
 
-    let help_annotation = impl_item.span.as_ref().and_then(|s| {
+    let help_annotation = impl_span.and_then(|s| {
         diagnostics.annotated(
             TargetSpan::Impl(&Registration::attribute(s)),
             "Add #[pavex::methods] right above this line",
@@ -79,21 +81,27 @@ pub(super) fn missing_methods_attribute(
     diagnostics.push(diagnostic);
 }
 
-pub(super) fn unsupported_item_kind(attribute: &str, item: &Item, diagnostics: &DiagnosticSink) {
-    let source = item.span.as_ref().and_then(|s| {
+pub(super) fn unsupported_item_kind(
+    attribute: &str,
+    item_name: Option<&str>,
+    item_kind: ItemKind,
+    item_span: Option<&Span>,
+    diagnostics: &DiagnosticSink,
+) {
+    let source = item_span.and_then(|s| {
         diagnostics.annotated(
             TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
             "The annotated item",
         )
     });
-    let err = match &item.name {
+    let kind_str = item_kind.plural();
+    let err = match item_name {
         Some(name) => {
             format!(
-                "`{name}` is annotated with `{attribute}`, but `{attribute}` is not supported on {}.",
-                item.inner.kind()
+                "`{name}` is annotated with `{attribute}`, but `{attribute}` is not supported on {kind_str}.",
             )
         }
-        None => format!("`{attribute}` is not supported on {}.", item.inner.kind()),
+        None => format!("`{attribute}` is not supported on {kind_str}."),
     };
     let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err))
         .optional_source(source)
@@ -104,20 +112,20 @@ pub(super) fn unsupported_item_kind(attribute: &str, item: &Item, diagnostics: &
     diagnostics.push(diagnostic);
 }
 
-pub(super) fn id_conflict(e: IdConflict, krate: &Crate, diagnostics: &DiagnosticSink) {
-    let Some(first) = krate.maybe_get_item_by_local_type_id(&e.first) else {
-        return;
-    };
-    let Some(second) = krate.maybe_get_item_by_local_type_id(&e.second) else {
-        return;
-    };
-    let first_source = first.span.as_ref().and_then(|s| {
+pub(super) fn id_conflict(
+    e: IdConflict,
+    first_span: Option<&Span>,
+    second_span: Option<&Span>,
+    _krate: &Crate,
+    diagnostics: &DiagnosticSink,
+) {
+    let first_source = first_span.and_then(|s| {
         diagnostics.annotated(
             TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
             "The first component",
         )
     });
-    let second_source = second.span.as_ref().and_then(|s| {
+    let second_source = second_span.and_then(|s| {
         diagnostics.annotated(
             TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
             "The second component",

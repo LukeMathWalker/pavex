@@ -3092,6 +3092,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavex_rustdoc_ext"
+version = "0.2.10"
+dependencies = [
+ "pavex_rustdoc_types",
+ "px_workspace_hack",
+]
+
+[[package]]
 name = "pavex_rustdoc_types"
 version = "0.2.10"
 dependencies = [
@@ -3249,7 +3257,9 @@ dependencies = [
  "pavex_bp_schema",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
+ "pavex_rustdoc_ext",
  "pavex_rustdoc_types",
+ "pavexc_annotations",
  "pavexc_attr_parser",
  "pavexc_rustdoc_cache",
  "persist_if_changed",
@@ -3274,6 +3284,19 @@ dependencies = [
  "tracing",
  "tracing_log_error",
  "xxhash-rust",
+]
+
+[[package]]
+name = "pavexc_annotations"
+version = "0.2.10"
+dependencies = [
+ "bincode",
+ "pavex_bp_schema",
+ "pavex_rustdoc_ext",
+ "pavex_rustdoc_types",
+ "pavexc_attr_parser",
+ "px_workspace_hack",
+ "serde",
 ]
 
 [[package]]
@@ -3357,7 +3380,7 @@ dependencies = [
  "once_cell",
  "pavex_bp_schema",
  "pavex_rustdoc_types",
- "pavexc_attr_parser",
+ "pavexc_annotations",
  "px_workspace_hack",
  "r2d2",
  "r2d2_sqlite",

@@ -17,9 +17,8 @@ use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, 
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
-use crate::rustdoc::{
-    CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt,
-};
+use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
+use pavex_rustdoc_ext::RustdocKindExt;
 
 use super::krate_name::CrateNameResolutionError;
 use super::krate2package_id;

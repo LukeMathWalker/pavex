@@ -1,5 +1,8 @@
+//! Types for annotated items.
+
 use std::collections::BTreeMap;
 
+use pavex_bp_schema::CreatedAt;
 use pavexc_attr_parser::AnnotationProperties;
 
 /// All the annotated items for a given package.
@@ -51,6 +54,8 @@ impl AnnotatedItems {
     }
 }
 
+/// Error returned when two items have the same annotation ID.
+#[derive(Debug)]
 pub struct IdConflict {
     pub first: rustdoc_types::Id,
     pub second: rustdoc_types::Id,
@@ -77,4 +82,33 @@ pub struct ImplInfo {
     pub attached_to: rustdoc_types::Id,
     /// The `id` of the `impl` block that this item belongs to.
     pub impl_: rustdoc_types::Id,
+}
+
+/// Enough information to locate an annotated component in the
+/// package where it was defined.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AnnotationCoordinates {
+    pub id: String,
+    pub created_at: CreatedAt,
+}
+
+/// An item in the processing queue.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
+pub enum QueueItem {
+    /// The `id` of an enum, struct, trait or function.
+    Standalone(rustdoc_types::Id),
+    Impl {
+        /// The `id` of the `Self` type for this `impl` block.
+        self_: rustdoc_types::Id,
+        /// The `id` of the `impl` block item.
+        id: rustdoc_types::Id,
+    },
+    ImplItem {
+        /// The `id` of the `Self` type for this `impl` block.
+        self_: rustdoc_types::Id,
+        /// The `id` of the `impl` block that this item belongs to.
+        impl_: rustdoc_types::Id,
+        /// The `id` of the `impl` block item.
+        id: rustdoc_types::Id,
+    },
 }
