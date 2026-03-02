@@ -28,6 +28,7 @@ rustls = { version = "0.23", default-features = false, features = ["logging", "r
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
+slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
@@ -47,6 +48,7 @@ rustls = { version = "0.23", default-features = false, features = ["logging", "r
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
+slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
