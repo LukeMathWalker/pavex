@@ -7,6 +7,7 @@ use guppy::graph::PackageGraph;
 use rkyv::rancor::Panic;
 use rkyv::util::AlignedVec;
 
+use pavexc_annotations::AnnotatedItems;
 pub use pavexc_rustdoc_cache::{
     CacheEntry, EagerCrateItemIndex, EagerCrateItemPaths, EagerImportPath2Id, RkyvCowBytes,
     RustdocCacheKey, RustdocGlobalFsCache, SecondaryIndexes,
@@ -124,7 +125,7 @@ pub(crate) enum RustdocCacheEntry {
     /// This happens when the indexing phase emitted one or more diagnostics,
     /// thus forcing to go through that step (and report those errors)
     /// every single time we attempt a compilation.
-    Raw(CacheEntryInner),
+    Raw(CacheEntryInner<AnnotatedItems>),
     /// The cache holds both the raw `rustdoc` output and our secondary indexes.
     /// It's ready to be used as is!
     Processed(crate::rustdoc::Crate),
@@ -132,10 +133,10 @@ pub(crate) enum RustdocCacheEntry {
 
 impl RustdocCacheEntry {
     /// Convert a cache entry from the rustdoc_cache crate to our internal representation.
-    pub fn from_cache_inner(inner: CacheEntryInner) -> Self {
+    pub fn from_cache_inner(inner: CacheEntryInner<AnnotatedItems>) -> Self {
         match inner {
-            CacheEntryInner::Raw(crate_data) => RustdocCacheEntry::Raw(CacheEntryInner::Raw(crate_data)),
-            CacheEntryInner::Processed(processed) => {
+            CacheEntryInner::<AnnotatedItems>::Raw(crate_data) => RustdocCacheEntry::Raw(CacheEntryInner::Raw(crate_data)),
+            CacheEntryInner::<AnnotatedItems>::Processed(processed) => {
                 let krate = crate::rustdoc::Crate {
                     core: CrateCore {
                         package_id: processed.package_id,
@@ -156,10 +157,10 @@ impl RustdocCacheEntry {
         match self {
             RustdocCacheEntry::Raw(inner) => {
                 match inner {
-                    CacheEntryInner::Raw(crate_data) => {
+                    CacheEntryInner::<AnnotatedItems>::Raw(crate_data) => {
                         crate::rustdoc::Crate::index(crate_data, package_id, sink)
                     }
-                    CacheEntryInner::Processed(processed) => {
+                    CacheEntryInner::<AnnotatedItems>::Processed(processed) => {
                         // This shouldn't happen since we check above, but handle it gracefully
                         crate::rustdoc::Crate {
                             core: CrateCore {
@@ -182,7 +183,7 @@ impl RustdocCacheEntry {
 
 /// Wrapper around [`RustdocGlobalFsCache`] that integrates with pavexc's caching fingerprint.
 pub(crate) struct PavexRustdocCache {
-    inner: RustdocGlobalFsCache,
+    inner: RustdocGlobalFsCache<AnnotatedItems>,
 }
 
 impl std::fmt::Debug for PavexRustdocCache {
@@ -218,11 +219,15 @@ impl PavexRustdocCache {
         package_graph: &PackageGraph,
     ) -> Result<Self, anyhow::Error> {
         let fingerprint = Self::cache_fingerprint();
+        let cache_dir = xdg_home::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get the user's home directory"))?
+            .join(".pavex/rustdoc/cache");
         let inner = RustdocGlobalFsCache::new(
             &fingerprint,
             toolchain_name,
             cache_workspace_package_docs,
             package_graph,
+            &cache_dir,
         )?;
         Ok(Self { inner })
     }

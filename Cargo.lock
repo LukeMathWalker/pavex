@@ -3283,6 +3283,7 @@ dependencies = [
  "toml_edit 0.24.0+spec-1.1.0",
  "tracing",
  "tracing_log_error",
+ "xdg-home",
  "xxhash-rust",
 ]
 
@@ -3378,9 +3379,7 @@ dependencies = [
  "itertools 0.14.0",
  "num_cpus",
  "once_cell",
- "pavex_bp_schema",
  "pavex_rustdoc_types",
- "pavexc_annotations",
  "px_workspace_hack",
  "r2d2",
  "r2d2_sqlite",
@@ -3394,7 +3393,6 @@ dependencies = [
  "toml 0.9.10+spec-1.1.0",
  "tracing",
  "tracing_log_error",
- "xdg-home",
  "xxhash-rust",
 ]
 
