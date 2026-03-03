@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 
-use pavex_rustdoc_ext::ItemEnumExt;
+use rustdoc_ext::ItemEnumExt;
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_types::{Enum, Item, ItemEnum, Struct, Trait};
 

@@ -8,7 +8,7 @@ use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
-use pavex_rustdoc_ext::RustdocKindExt;
+use rustdoc_ext::RustdocKindExt;
 use rayon::iter::IntoParallelRefIterator;
 use rustc_hash::FxHashMap;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
@@ -16,7 +16,7 @@ use tracing::Span;
 use tracing_log_error::log_error;
 
 // Import types from the cache crate
-pub use pavexc_rustdoc_cache::{
+pub use rustdoc_cache::{
     CacheEntry, CrateData, CrateItemIndex, CrateItemPaths, EagerCrateItemIndex,
     EagerCrateItemPaths, EagerImportPath2Id, EntryVisibility, ExternalReExport, ExternalReExports,
     ImportIndex, ImportIndexEntry, ImportPath2Id,

@@ -1,7 +1,7 @@
-//! Extension traits for types in `pavex_rustdoc_types`.
+//! Extension traits for types in `rustdoc_types`.
 //!
 //! This crate provides utility traits that augment the types from our fork of `rustdoc-types`.
-//! We keep these extensions separate to maintain `pavex_rustdoc_types` as close to upstream
+//! We keep these extensions separate to maintain `rustdoc_types` as close to upstream
 //! as possible.
 
 use rustdoc_types::{ItemEnum, ItemKind, MacroKind};

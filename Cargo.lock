@@ -3092,26 +3092,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pavex_rustdoc_ext"
-version = "0.2.10"
-dependencies = [
- "pavex_rustdoc_types",
- "px_workspace_hack",
-]
-
-[[package]]
-name = "pavex_rustdoc_types"
-version = "0.2.10"
-dependencies = [
- "bincode",
- "px_workspace_hack",
- "rkyv",
- "rustc-hash",
- "serde",
- "serde_derive",
-]
-
-[[package]]
 name = "pavex_session"
 version = "0.2.10"
 dependencies = [
@@ -3257,11 +3237,8 @@ dependencies = [
  "pavex_bp_schema",
  "pavex_cli_diagnostic",
  "pavex_cli_shell",
- "pavex_rustdoc_ext",
- "pavex_rustdoc_types",
  "pavexc_annotations",
  "pavexc_attr_parser",
- "pavexc_rustdoc_cache",
  "persist_if_changed",
  "petgraph",
  "prettyplease",
@@ -3272,6 +3249,9 @@ dependencies = [
  "relative-path",
  "rkyv",
  "rustc-hash",
+ "rustdoc_cache",
+ "rustdoc_ext",
+ "rustdoc_types",
  "semver",
  "serde",
  "serde_json",
@@ -3293,10 +3273,10 @@ version = "0.2.10"
 dependencies = [
  "bincode",
  "pavex_bp_schema",
- "pavex_rustdoc_ext",
- "pavex_rustdoc_types",
  "pavexc_attr_parser",
  "px_workspace_hack",
+ "rustdoc_ext",
+ "rustdoc_types",
  "serde",
 ]
 
@@ -3363,37 +3343,6 @@ dependencies = [
  "pavex",
  "px_workspace_hack",
  "thiserror 2.0.17",
-]
-
-[[package]]
-name = "pavexc_rustdoc_cache"
-version = "0.2.10"
-dependencies = [
- "ahash",
- "anyhow",
- "bincode",
- "camino",
- "fs-err",
- "globwalk",
- "guppy",
- "itertools 0.14.0",
- "num_cpus",
- "once_cell",
- "pavex_rustdoc_types",
- "px_workspace_hack",
- "r2d2",
- "r2d2_sqlite",
- "rkyv",
- "rusqlite",
- "rustc-hash",
- "serde",
- "serde_json",
- "serde_stacker",
- "thiserror 2.0.17",
- "toml 0.9.10+spec-1.1.0",
- "tracing",
- "tracing_log_error",
- "xxhash-rust",
 ]
 
 [[package]]
@@ -4286,6 +4235,57 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
 dependencies = [
  "semver",
+]
+
+[[package]]
+name = "rustdoc_cache"
+version = "0.2.10"
+dependencies = [
+ "ahash",
+ "anyhow",
+ "bincode",
+ "camino",
+ "fs-err",
+ "globwalk",
+ "guppy",
+ "itertools 0.14.0",
+ "num_cpus",
+ "once_cell",
+ "px_workspace_hack",
+ "r2d2",
+ "r2d2_sqlite",
+ "rkyv",
+ "rusqlite",
+ "rustc-hash",
+ "rustdoc_types",
+ "serde",
+ "serde_json",
+ "serde_stacker",
+ "thiserror 2.0.17",
+ "toml 0.9.10+spec-1.1.0",
+ "tracing",
+ "tracing_log_error",
+ "xxhash-rust",
+]
+
+[[package]]
+name = "rustdoc_ext"
+version = "0.2.10"
+dependencies = [
+ "px_workspace_hack",
+ "rustdoc_types",
+]
+
+[[package]]
+name = "rustdoc_types"
+version = "0.2.10"
+dependencies = [
+ "bincode",
+ "px_workspace_hack",
+ "rkyv",
+ "rustc-hash",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]

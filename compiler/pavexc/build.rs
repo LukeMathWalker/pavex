@@ -4,13 +4,13 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 pub fn main() -> Result<()> {
-    // Compute checksum of pavexc_rustdoc_cache and its local dependencies.
+    // Compute checksum of rustdoc_cache and its local dependencies.
     // This checksum is used as part of the cache fingerprint to ensure
     // the cache invalidates when the caching logic or serialized types change.
     let base_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
-    let cache_crate_path = base_path.join("pavexc_rustdoc_cache");
+    let cache_crate_path = base_path.join("../rustdoc/rustdoc_cache");
 
-    // Find all local crates that pavexc_rustdoc_cache depends on (transitively)
+    // Find all local crates that rustdoc_cache depends on (transitively)
     let crates_to_checksum = collect_local_dependencies(&cache_crate_path)?;
 
     let mut combined_hasher = xxhash_rust::xxh64::Xxh64::new(24);

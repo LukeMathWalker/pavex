@@ -16,7 +16,7 @@ use crate::language::{
     ResolvedType, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
-use pavex_rustdoc_ext::RustdocKindExt;
+use rustdoc_ext::RustdocKindExt;
 
 #[derive(Default)]
 pub(crate) struct GenericBindings {
