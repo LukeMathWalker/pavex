@@ -14,7 +14,7 @@ use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use itertools::Itertools as _;
 use pavex_cli_shell::SHELL;
-use pavexc_rustdoc_cache::{check_format, get_toolchain_crate_docs, rustdoc_options};
+use rustdoc_cache::{check_format, get_toolchain_crate_docs, rustdoc_options};
 use serde::Deserialize;
 
 use crate::rustdoc::TOOLCHAIN_CRATES;

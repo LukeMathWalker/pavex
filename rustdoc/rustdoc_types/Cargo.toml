@@ -1,5 +1,5 @@
 [package]
-name = "pavex_rustdoc_types"
+name = "rustdoc_types"
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true

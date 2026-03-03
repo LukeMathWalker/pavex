@@ -1,12 +1,11 @@
 [package]
-name = "pavex_rustdoc_ext"
-description = "Extension traits for pavex_rustdoc_types"
+name = "rustdoc_ext"
+description = "Extension traits for rustdoc_types"
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 version.workspace = true
-keywords = ["pavex"]
 
 [dependencies]
 rustdoc-types = { workspace = true }

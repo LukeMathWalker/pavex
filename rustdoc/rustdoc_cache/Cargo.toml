@@ -1,5 +1,5 @@
 [package]
-name = "pavexc_rustdoc_cache"
+name = "rustdoc_cache"
 description = "SQLite-based caching for rustdoc JSON documentation"
 edition.workspace = true
 repository.workspace = true

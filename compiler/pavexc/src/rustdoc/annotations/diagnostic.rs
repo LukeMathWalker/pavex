@@ -3,7 +3,7 @@ use crate::{
     rustdoc::Crate,
 };
 use pavex_cli_diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
-use pavex_rustdoc_ext::ItemKindExt;
+use rustdoc_ext::ItemKindExt;
 use pavexc_annotations::IdConflict;
 use pavexc_attr_parser::{AnnotationKind, errors::AttributeParserError};
 use rustdoc_types::{ItemKind, Span};

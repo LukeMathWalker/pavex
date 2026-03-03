@@ -5,9 +5,9 @@ members = [
     "compiler/pavex*",
     "compiler/generate_from_path",
     "compiler/persist_if_changed",
+    "rustdoc/*",
     "px_workspace_hack",
 ]
-# Note: pavex_rustdoc_ext is included via "compiler/pavex*" glob
 resolver = "3"
 
 [workspace.package]
@@ -36,11 +36,11 @@ pavex_test_runner = { path = "compiler/pavex_test_runner", version = "0.2.7" }
 pavexc = { path = "compiler/pavexc", version = "0.2.10" }
 pavexc_attr_parser = { path = "compiler/pavexc_attr_parser", version = "0.2.10" }
 pavexc_cli_client = { path = "compiler/pavexc_cli_client", version = "0.2.10" }
-pavexc_rustdoc_cache = { path = "compiler/pavexc_rustdoc_cache", version = "0.2.10" }
+rustdoc_cache = { path = "rustdoc/rustdoc_cache", version = "0.2.10" }
 pavexc_annotations = { path = "compiler/pavexc_annotations", version = "0.2.10" }
 persist_if_changed = { path = "compiler/persist_if_changed", version = "0.2.10" }
 # Our own fork of `rustdoc-types` to minimise (de)ser overhead.
-rustdoc-types = { path = "compiler/pavex_rustdoc_types", version = "0.2.10", features = ["rustc-hash"], package = "pavex_rustdoc_types" }
+rustdoc-types = { path = "rustdoc/rustdoc_types", version = "0.2.10", features = ["rustc-hash"], package = "rustdoc_types" }
 
 vergen-gitcl = { version = "1.0.8", features = ["build"] }
 ahash = "0.8"
