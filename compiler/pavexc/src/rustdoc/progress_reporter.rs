@@ -14,10 +14,7 @@ impl rustdoc_cache::ComputeProgress for ShellProgress {
                 let Ok(meta) = package_graph.metadata(package_id) else {
                     continue;
                 };
-                let _ = shell.status(
-                    "Documenting",
-                    format!("{}@{}", meta.name(), meta.version()),
-                );
+                let _ = shell.status("Documenting", format!("{}@{}", meta.name(), meta.version()));
             }
         }
     }

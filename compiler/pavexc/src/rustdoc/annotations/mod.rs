@@ -8,8 +8,10 @@ use rustdoc_types::Item;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 
-pub use pavexc_annotations::{AnnotatedItem, AnnotatedItems, AnnotationCoordinates, ImplInfo, QueueItem};
 pub(crate) use pavexc_annotations::parse_pavex_attributes;
+pub use pavexc_annotations::{
+    AnnotatedItem, AnnotatedItems, AnnotationCoordinates, ImplInfo, QueueItem,
+};
 
 /// Report an error for an invalid diagnostic attribute on an item.
 pub(crate) fn invalid_diagnostic_attribute(
@@ -17,7 +19,12 @@ pub(crate) fn invalid_diagnostic_attribute(
     item: &Item,
     diagnostics: &DiagnosticSink,
 ) {
-    diagnostic::invalid_diagnostic_attribute(e, item.name.as_deref(), item.span.as_ref(), diagnostics);
+    diagnostic::invalid_diagnostic_attribute(
+        e,
+        item.name.as_deref(),
+        item.span.as_ref(),
+        diagnostics,
+    );
 }
 
 /// Adapter that implements `ItemProvider` for our `Crate` type.

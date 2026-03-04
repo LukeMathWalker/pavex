@@ -5,9 +5,7 @@ use indexmap::IndexSet;
 use rustdoc_types::{ItemEnum, Visibility};
 
 use crate::diagnostic::DiagnosticSink;
-use rustdoc_cache::{
-    CrateData, EntryVisibility, ExternalReExports, ImportIndex, ImportIndexEntry,
-};
+use rustdoc_cache::{CrateData, EntryVisibility, ExternalReExports, ImportIndex, ImportIndexEntry};
 
 use super::super::annotations::{QueueItem, invalid_diagnostic_attribute, parse_pavex_attributes};
 

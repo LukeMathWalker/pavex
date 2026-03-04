@@ -20,7 +20,10 @@ pub fn main() -> Result<()> {
 
         // Rerun if any of these crates change
         println!("cargo::rerun-if-changed={}/src", crate_path.display());
-        println!("cargo::rerun-if-changed={}/Cargo.toml", crate_path.display());
+        println!(
+            "cargo::rerun-if-changed={}/Cargo.toml",
+            crate_path.display()
+        );
     }
 
     let checksum = combined_hasher.digest();

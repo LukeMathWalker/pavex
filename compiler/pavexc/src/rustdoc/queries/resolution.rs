@@ -6,7 +6,7 @@ use rustc_hash::FxHashMap;
 use rustdoc_types::ExternalCrate;
 use tracing_log_error::log_error;
 
-use rustdoc_cache::{VersionMatcher, normalize_crate_name, TOOLCHAIN_CRATES};
+use rustdoc_cache::{TOOLCHAIN_CRATES, VersionMatcher, normalize_crate_name};
 
 /// The information used by [`Crate::compute_package_id_for_crate_id_with_hint`](super::krate::Crate::compute_package_id_for_crate_id_with_hint)
 /// to map a `crate_id` to a `package_id`.

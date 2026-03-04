@@ -39,9 +39,9 @@ use crate::{
         AnnotationCoordinates, Crate, CrateCollection, ExternalReExportsExt, GlobalItemId, ImplInfo,
     },
 };
-use rustdoc_ext::RustdocKindExt;
 use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
+use rustdoc_ext::RustdocKindExt;
 use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
 /// An id pointing at the coordinates of an annotated component.
@@ -106,10 +106,7 @@ pub(super) fn register_imported_components(
             continue;
         }
 
-        let annotated_items = &krate_collection
-            .get_crate_by_package_id(package_id)
-            .unwrap()
-            .annotated_items;
+        let annotated_items = krate_collection.get_annotated_items(package_id).unwrap();
         for (id, annotation) in annotated_items.iter() {
             // Not all components are auto-registered via imports.
             // In particular, those that are position-sensitive *must* be

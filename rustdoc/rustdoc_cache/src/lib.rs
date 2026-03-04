@@ -11,16 +11,16 @@ mod utils;
 mod version_matcher;
 
 pub use cache::{
-    ProcessedCacheEntry, HydratedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache,
+    HydratedCacheEntry, ProcessedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache,
     cargo_fingerprint,
 };
 pub use checksum::checksum_crate;
 pub use compute::{
-    compute_crate_docs, CannotGetCrateData, ComputeProgress, NoProgress, PackageIdSpecification,
+    CannotGetCrateData, ComputeProgress, NoProgress, PackageIdSpecification, compute_crate_docs,
 };
+pub use types::*;
 pub use utils::normalize_crate_name;
 pub use version_matcher::VersionMatcher;
-pub use types::*;
 
 /// Crate version - used as part of cache fingerprint.
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");

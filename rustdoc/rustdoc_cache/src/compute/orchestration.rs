@@ -14,9 +14,9 @@ use super::format::check_format;
 use super::package_id_spec::PackageIdSpecification;
 use super::progress::ComputeProgress;
 use super::toolchain::get_toolchain_crate_docs;
+use crate::TOOLCHAIN_CRATES;
 use crate::rustdoc_options;
 use crate::utils::normalize_crate_name;
-use crate::TOOLCHAIN_CRATES;
 
 #[derive(Debug, thiserror::Error, Clone)]
 #[error(

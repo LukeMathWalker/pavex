@@ -12,9 +12,7 @@ use tracing_log_error::log_error;
 
 use crate::checksum::checksum_crate;
 use crate::rustdoc_options;
-use crate::types::{
-    CacheEntry, RkyvCowBytes, SecondaryIndexes, ThirdPartyCrateCacheKey,
-};
+use crate::types::{CacheEntry, RkyvCowBytes, SecondaryIndexes, ThirdPartyCrateCacheKey};
 
 use super::HydratedCacheEntry;
 
