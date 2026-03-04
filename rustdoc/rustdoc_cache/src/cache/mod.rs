@@ -93,6 +93,22 @@ pub struct ProcessedCacheEntry<A> {
     pub annotated_items: A,
 }
 
+impl<A> ProcessedCacheEntry<A> {
+    /// Convert this cache entry into a `Crate` and its associated annotation data.
+    pub fn into_crate(self) -> (crate::types::Crate, A) {
+        let krate = crate::types::Crate::new(
+            crate::types::CrateCore {
+                package_id: self.package_id,
+                krate: self.crate_data,
+            },
+            self.import_path2id,
+            self.external_re_exports,
+            self.import_index,
+        );
+        (krate, self.annotated_items)
+    }
+}
+
 impl<'a> RustdocCacheKey<'a> {
     pub fn new(package_id: &'a PackageId, package_graph: &'a PackageGraph) -> RustdocCacheKey<'a> {
         if TOOLCHAIN_CRATES.contains(&package_id.repr()) {

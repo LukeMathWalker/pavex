@@ -36,7 +36,7 @@ use crate::{
         ResolvedType,
     },
     rustdoc::{
-        AnnotationCoordinates, Crate, CrateCollection, ExternalReExportsExt, GlobalItemId, ImplInfo,
+        AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo,
     },
 };
 use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};

@@ -15,8 +15,6 @@ pub use rustdoc_cache::{
 };
 
 use crate::DiagnosticSink;
-use crate::rustdoc::queries::CrateCore;
-
 /// Extension trait to create `CacheEntry` from `&Crate`.
 pub trait CacheEntryExt<'a> {
     /// Create a cache entry from a crate, including secondary indexes.
@@ -143,17 +141,7 @@ impl RustdocCacheEntry {
                 RustdocCacheEntry::Raw(CacheEntryInner::Raw(crate_data))
             }
             CacheEntryInner::<AnnotatedItems>::Processed(processed) => {
-                let annotations = processed.annotated_items;
-                let krate = crate::rustdoc::Crate {
-                    core: CrateCore {
-                        package_id: processed.package_id,
-                        krate: processed.crate_data,
-                    },
-                    import_path2id: processed.import_path2id,
-                    import_index: processed.import_index,
-                    external_re_exports: processed.external_re_exports,
-                    crate_id2package_id: Default::default(),
-                };
+                let (krate, annotations) = processed.into_crate();
                 RustdocCacheEntry::Processed(krate, annotations)
             }
         }
@@ -168,22 +156,11 @@ impl RustdocCacheEntry {
             RustdocCacheEntry::Raw(inner) => {
                 match inner {
                     CacheEntryInner::<AnnotatedItems>::Raw(crate_data) => {
-                        crate::rustdoc::Crate::index(crate_data, package_id, sink)
+                        super::super::queries::index(crate_data, package_id, sink)
                     }
                     CacheEntryInner::<AnnotatedItems>::Processed(processed) => {
                         // This shouldn't happen since we check above, but handle it gracefully
-                        let annotations = processed.annotated_items;
-                        let krate = crate::rustdoc::Crate {
-                            core: CrateCore {
-                                package_id: processed.package_id,
-                                krate: processed.crate_data,
-                            },
-                            import_path2id: processed.import_path2id,
-                            import_index: processed.import_index,
-                            external_re_exports: processed.external_re_exports,
-                            crate_id2package_id: Default::default(),
-                        };
-                        (krate, annotations)
+                        processed.into_crate()
                     }
                 }
             }
