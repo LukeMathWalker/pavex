@@ -8,11 +8,11 @@ use rkyv::rancor::Panic;
 use rkyv::util::AlignedVec;
 
 use pavexc_annotations::AnnotatedItems;
+use rustdoc_cache::HydratedCacheEntry as CacheEntryInner;
 pub use rustdoc_cache::{
     CacheEntry, EagerCrateItemIndex, EagerCrateItemPaths, EagerImportPath2Id, RkyvCowBytes,
     RustdocCacheKey, RustdocGlobalFsCache, SecondaryIndexes,
 };
-use rustdoc_cache::HydratedCacheEntry as CacheEntryInner;
 
 use crate::DiagnosticSink;
 use crate::rustdoc::queries::CrateCore;
@@ -20,13 +20,19 @@ use crate::rustdoc::queries::CrateCore;
 /// Extension trait to create `CacheEntry` from `&Crate`.
 pub trait CacheEntryExt<'a> {
     /// Create a cache entry from a crate, including secondary indexes.
-    fn from_crate(krate: &'a crate::rustdoc::Crate) -> Result<CacheEntry<'a>, anyhow::Error>;
+    fn from_crate(
+        krate: &'a crate::rustdoc::Crate,
+        annotations: &'a AnnotatedItems,
+    ) -> Result<CacheEntry<'a>, anyhow::Error>;
     /// Create a raw cache entry from a crate (no secondary indexes).
     fn from_crate_raw(krate: &'a crate::rustdoc::Crate) -> Result<CacheEntry<'a>, anyhow::Error>;
 }
 
 impl<'a> CacheEntryExt<'a> for CacheEntry<'a> {
-    fn from_crate(krate: &'a crate::rustdoc::Crate) -> Result<CacheEntry<'a>, anyhow::Error> {
+    fn from_crate(
+        krate: &'a crate::rustdoc::Crate,
+        annotations: &'a AnnotatedItems,
+    ) -> Result<CacheEntry<'a>, anyhow::Error> {
         // Serialize the crate data
         let external_crates = bincode::serde::encode_to_vec(
             &krate.core.krate.external_crates,
@@ -61,11 +67,9 @@ impl<'a> CacheEntryExt<'a> for CacheEntry<'a> {
         let import_index =
             bincode::serde::encode_to_vec(&krate.import_index, bincode::config::standard())?;
         let annotated_items =
-            bincode::serde::encode_to_vec(&krate.annotated_items, bincode::config::standard())?;
-        let re_exports = bincode::serde::encode_to_vec(
-            &krate.external_re_exports,
-            bincode::config::standard(),
-        )?;
+            bincode::serde::encode_to_vec(annotations, bincode::config::standard())?;
+        let re_exports =
+            bincode::serde::encode_to_vec(&krate.external_re_exports, bincode::config::standard())?;
 
         let secondary_indexes = SecondaryIndexes {
             import_index: Cow::Owned(import_index),
@@ -128,15 +132,18 @@ pub(crate) enum RustdocCacheEntry {
     Raw(CacheEntryInner<AnnotatedItems>),
     /// The cache holds both the raw `rustdoc` output and our secondary indexes.
     /// It's ready to be used as is!
-    Processed(crate::rustdoc::Crate),
+    Processed(crate::rustdoc::Crate, AnnotatedItems),
 }
 
 impl RustdocCacheEntry {
     /// Convert a cache entry from the rustdoc_cache crate to our internal representation.
     pub fn from_cache_inner(inner: CacheEntryInner<AnnotatedItems>) -> Self {
         match inner {
-            CacheEntryInner::<AnnotatedItems>::Raw(crate_data) => RustdocCacheEntry::Raw(CacheEntryInner::Raw(crate_data)),
+            CacheEntryInner::<AnnotatedItems>::Raw(crate_data) => {
+                RustdocCacheEntry::Raw(CacheEntryInner::Raw(crate_data))
+            }
             CacheEntryInner::<AnnotatedItems>::Processed(processed) => {
+                let annotations = processed.annotated_items;
                 let krate = crate::rustdoc::Crate {
                     core: CrateCore {
                         package_id: processed.package_id,
@@ -145,15 +152,18 @@ impl RustdocCacheEntry {
                     import_path2id: processed.import_path2id,
                     import_index: processed.import_index,
                     external_re_exports: processed.external_re_exports,
-                    annotated_items: processed.annotated_items,
                     crate_id2package_id: Default::default(),
                 };
-                RustdocCacheEntry::Processed(krate)
+                RustdocCacheEntry::Processed(krate, annotations)
             }
         }
     }
 
-    pub fn process(self, package_id: PackageId, sink: &DiagnosticSink) -> crate::rustdoc::Crate {
+    pub fn process(
+        self,
+        package_id: PackageId,
+        sink: &DiagnosticSink,
+    ) -> (crate::rustdoc::Crate, AnnotatedItems) {
         match self {
             RustdocCacheEntry::Raw(inner) => {
                 match inner {
@@ -162,7 +172,8 @@ impl RustdocCacheEntry {
                     }
                     CacheEntryInner::<AnnotatedItems>::Processed(processed) => {
                         // This shouldn't happen since we check above, but handle it gracefully
-                        crate::rustdoc::Crate {
+                        let annotations = processed.annotated_items;
+                        let krate = crate::rustdoc::Crate {
                             core: CrateCore {
                                 package_id: processed.package_id,
                                 krate: processed.crate_data,
@@ -170,13 +181,13 @@ impl RustdocCacheEntry {
                             import_path2id: processed.import_path2id,
                             import_index: processed.import_index,
                             external_re_exports: processed.external_re_exports,
-                            annotated_items: processed.annotated_items,
                             crate_id2package_id: Default::default(),
-                        }
+                        };
+                        (krate, annotations)
                     }
                 }
             }
-            RustdocCacheEntry::Processed(c) => c,
+            RustdocCacheEntry::Processed(c, a) => (c, a),
         }
     }
 }
@@ -260,11 +271,12 @@ impl PavexRustdocCache {
         &self,
         cache_key: &RustdocCacheKey,
         krate: &crate::rustdoc::Crate,
+        annotations: &AnnotatedItems,
         cache_indexes: bool,
         package_graph: &PackageGraph,
     ) -> Result<(), anyhow::Error> {
         let cache_entry = if cache_indexes {
-            <CacheEntry as CacheEntryExt>::from_crate(krate)
+            <CacheEntry as CacheEntryExt>::from_crate(krate, annotations)
         } else {
             <CacheEntry as CacheEntryExt>::from_crate_raw(krate)
         }?;
@@ -278,7 +290,8 @@ impl PavexRustdocCache {
         package_ids: &std::collections::BTreeSet<PackageId>,
         project_fingerprint: &str,
     ) -> Result<(), anyhow::Error> {
-        self.inner.persist_access_log(package_ids, project_fingerprint)
+        self.inner
+            .persist_access_log(package_ids, project_fingerprint)
     }
 
     /// Retrieve the list of package IDs that were accessed during the last time we processed the

@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use ahash::{HashMap, HashSet, HashSetExt};
 use elsa::FrozenMap;
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
+use guppy::graph::PackageGraph;
 use rustdoc_types::{Item, ItemEnum};
 use tracing::Span;
 use tracing_log_error::log_error;
@@ -19,10 +19,12 @@ use rustdoc_cache::compute_crate_docs;
 use rustdoc_ext::RustdocKindExt;
 
 use super::super::AnnotatedItem;
-use super::super::annotations::AnnotationCoordinates;
+use super::super::annotations::{AnnotatedItems, AnnotationCoordinates};
 use super::super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache};
 use super::super::progress_reporter::ShellProgress;
-use super::krate::{Crate, GlobalItemId, UnknownItemPath};
+use rustdoc_cache::{GlobalItemId, UnknownItemPath};
+
+use super::krate::Crate;
 
 use rayon::iter::IntoParallelRefIterator;
 use rustdoc_cache::CacheEntry;
@@ -36,6 +38,9 @@ use rustdoc_cache::CacheEntry;
 ///   re-exports or star re-exports).
 pub struct CrateCollection {
     package_id2krate: FrozenMap<PackageId, Box<Crate>>,
+    /// Pavex-specific annotations extracted from each crate, stored as a side map
+    /// to keep `Crate` itself Pavex-agnostic.
+    annotated_items: FrozenMap<PackageId, Box<AnnotatedItems>>,
     pub(super) package_graph: PackageGraph,
     disk_cache: RustdocGlobalFsCache,
     /// An opaque string that uniquely identifies the current project (i.e. the current
@@ -95,6 +100,7 @@ impl CrateCollection {
         )?;
         Ok(Self {
             package_id2krate: FrozenMap::new(),
+            annotated_items: FrozenMap::new(),
             package_graph,
             diagnostic_sink,
             disk_cache,
@@ -168,7 +174,7 @@ impl CrateCollection {
             package_graph: &PackageGraph,
             cache: &RustdocGlobalFsCache,
             diagnostic_sink: &DiagnosticSink,
-        ) -> (PackageId, Option<Crate>) {
+        ) -> (PackageId, Option<(Crate, AnnotatedItems)>) {
             let cache_key = RustdocCacheKey::new(&package_id, package_graph);
             match cache.get(&cache_key, package_graph) {
                 Ok(None) => (package_id, None),
@@ -206,7 +212,9 @@ impl CrateCollection {
 
         use rayon::prelude::{IntoParallelIterator, ParallelIterator};
         for (package_id, cached) in missing_ids.into_par_iter().map(map_op).collect::<Vec<_>>() {
-            if let Some(krate) = cached {
+            if let Some((krate, annotations)) = cached {
+                self.annotated_items
+                    .insert(package_id.clone(), Box::new(annotations));
                 self.package_id2krate.insert(package_id, Box::new(krate));
                 continue;
             }
@@ -233,7 +241,8 @@ impl CrateCollection {
             .into_par_iter()
             .map(move |(package_id, krate)| {
                 let n_diagnostics = diagnostic_sink.len();
-                let krate = Crate::index_raw(krate, package_id.to_owned(), diagnostic_sink);
+                let (krate, annotations) =
+                    Crate::index_raw(krate, package_id.to_owned(), diagnostic_sink);
 
                 // No issues arose in the indexing phase.
                 // Let's make sure to store them in the on-disk cache for next time.
@@ -243,15 +252,15 @@ impl CrateCollection {
                 //  It'd be enough to keep a thread-local counter to get an accurate yes/no,
                 //  but since we don't get false negatives it isn't a big deal.
                 let cache_indexes = n_diagnostics == diagnostic_sink.len();
-                (package_id, krate, cache_indexes)
+                (package_id, krate, annotations, cache_indexes)
             })
             .collect::<Vec<_>>();
         // Then conversion to the desired cache format:
         let mut cache_entries: HashMap<_, _> = indexed_krates
             .par_iter()
-            .filter_map(|(package_id, krate, cache_indexes)| {
+            .filter_map(|(package_id, krate, annotations, cache_indexes)| {
                 let data = if *cache_indexes {
-                    <CacheEntry as CacheEntryExt>::from_crate(krate)
+                    <CacheEntry as CacheEntryExt>::from_crate(krate, annotations)
                 } else {
                     <CacheEntry as CacheEntryExt>::from_crate_raw(krate)
                 };
@@ -272,7 +281,7 @@ impl CrateCollection {
             .collect();
 
         let mut to_be_inserted = HashSet::with_capacity(indexed_krates.len());
-        for (package_id, _, _) in &indexed_krates {
+        for (package_id, _, _, _) in &indexed_krates {
             let Some((cache_key, cache_data)) = cache_entries.remove(&package_id) else {
                 continue;
             };
@@ -294,8 +303,10 @@ impl CrateCollection {
             to_be_inserted.insert(package_id.to_owned());
         }
 
-        for (package_id, krate, _) in indexed_krates {
+        for (package_id, krate, annotations, _) in indexed_krates {
             if to_be_inserted.contains(&package_id) {
+                self.annotated_items
+                    .insert(package_id.clone(), Box::new(annotations));
                 self.package_id2krate.insert(package_id, Box::new(krate));
             }
         }
@@ -319,8 +330,10 @@ impl CrateCollection {
         // If not, let's try to retrieve them from the on-disk cache.
         let cache_key = RustdocCacheKey::new(package_id, &self.package_graph);
         match self.disk_cache.get(&cache_key, &self.package_graph) {
-            Ok(Some(krate)) => {
-                let krate = krate.process(package_id.clone(), &self.diagnostic_sink);
+            Ok(Some(entry)) => {
+                let (krate, annotations) = entry.process(package_id.clone(), &self.diagnostic_sink);
+                self.annotated_items
+                    .insert(package_id.to_owned(), Box::new(annotations));
                 self.package_id2krate
                     .insert(package_id.to_owned(), Box::new(krate));
                 return Ok(self.get_crate_by_package_id(package_id).unwrap());
@@ -347,7 +360,8 @@ impl CrateCollection {
         .unwrap();
 
         let n_diagnostics = self.diagnostic_sink.len();
-        let krate = Crate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
+        let (krate, annotations) =
+            Crate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
 
         // No issues arose in the indexing phase.
         // Let's make sure to store them in the on-disk cache for next time.
@@ -355,6 +369,7 @@ impl CrateCollection {
         if let Err(e) = self.disk_cache.convert_and_insert(
             &cache_key,
             &krate,
+            &annotations,
             cache_indexes,
             &self.package_graph,
         ) {
@@ -366,6 +381,8 @@ impl CrateCollection {
             );
         }
 
+        self.annotated_items
+            .insert(package_id.to_owned(), Box::new(annotations));
         self.package_id2krate
             .insert(package_id.to_owned(), Box::new(krate));
         Ok(self.get_crate_by_package_id(package_id).unwrap())
@@ -379,11 +396,15 @@ impl CrateCollection {
         self.package_id2krate.get(package_id)
     }
 
+    /// Retrieve the annotations for a specific package, if available.
+    pub fn get_annotated_items(&self, package_id: &PackageId) -> Option<&AnnotatedItems> {
+        self.annotated_items.get(package_id)
+    }
+
     /// Retrieve the annotation associated with the given item, if any.
     pub fn annotation(&self, item_id: &GlobalItemId) -> Option<&AnnotatedItem> {
-        let krate = self.get_crate_by_package_id(&item_id.package_id)?;
-        krate
-            .annotated_items
+        self.annotated_items
+            .get(&item_id.package_id)?
             .get_by_item_id(item_id.rustdoc_item_id)
     }
 
@@ -402,9 +423,9 @@ impl CrateCollection {
             Err(e) => return Ok(Err(e)),
         };
         let krate = self.get_or_compute_crate_by_package_id(&package_id)?;
-        Ok(Ok(krate
-            .annotated_items
-            .get_by_annotation_id(&c.id)
+        let annotations = self.annotated_items.get(&package_id);
+        Ok(Ok(annotations
+            .and_then(|a| a.get_by_annotation_id(&c.id))
             .map(|item| (krate, item))))
     }
 

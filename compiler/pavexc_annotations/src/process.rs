@@ -3,8 +3,8 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 
-use rustdoc_ext::ItemEnumExt;
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
+use rustdoc_ext::ItemEnumExt;
 use rustdoc_types::{Enum, Item, ItemEnum, Struct, Trait};
 
 use crate::errors::AnnotationError;
@@ -88,9 +88,12 @@ pub fn process_queue<P: ItemProvider>(
                         impl_: None,
                     },
                 ) {
-                    let first_span = provider.maybe_get_item(&e.first).and_then(|i| i.span.clone());
-                    let second_span =
-                        provider.maybe_get_item(&e.second).and_then(|i| i.span.clone());
+                    let first_span = provider
+                        .maybe_get_item(&e.first)
+                        .and_then(|i| i.span.clone());
+                    let second_span = provider
+                        .maybe_get_item(&e.second)
+                        .and_then(|i| i.span.clone());
                     errors.push(AnnotationError::IdConflict {
                         conflict: e,
                         first_span,
@@ -169,9 +172,12 @@ pub fn process_queue<P: ItemProvider>(
                         }),
                     },
                 ) {
-                    let first_span = provider.maybe_get_item(&e.first).and_then(|i| i.span.clone());
-                    let second_span =
-                        provider.maybe_get_item(&e.second).and_then(|i| i.span.clone());
+                    let first_span = provider
+                        .maybe_get_item(&e.first)
+                        .and_then(|i| i.span.clone());
+                    let second_span = provider
+                        .maybe_get_item(&e.second)
+                        .and_then(|i| i.span.clone());
                     errors.push(AnnotationError::IdConflict {
                         conflict: e,
                         first_span,

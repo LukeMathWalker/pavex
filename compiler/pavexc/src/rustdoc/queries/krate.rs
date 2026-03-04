@@ -3,15 +3,16 @@ use std::sync::{Arc, RwLock};
 
 use ahash::HashMap;
 use anyhow::anyhow;
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
+use guppy::graph::PackageGraph;
 use rustdoc_types::ItemKind;
 
 use crate::diagnostic::DiagnosticSink;
 use crate::rustdoc::CannotGetCrateData;
 use rustdoc_cache::{
     CrateData, CrateItemIndex, CrateItemPaths, EagerCrateItemIndex, EagerCrateItemPaths,
-    EagerImportPath2Id, ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id,
+    EagerImportPath2Id, ExternalReExport, ExternalReExports, GlobalItemId, ImportIndex,
+    ImportPath2Id, UnknownItemPath,
 };
 
 use super::super::annotations::{self, AnnotatedItems, QueueItem};
@@ -19,9 +20,9 @@ use super::collection::CrateCollection;
 use super::indexing::index_local_types;
 use super::resolution::{CrateIdNeedle, compute_package_id_for_crate_id};
 
-use std::borrow::Cow;
 use indexmap::IndexSet;
 use rustdoc_types::Item;
+use std::borrow::Cow;
 
 /// Extension trait for [`ExternalReExports`] that adds methods depending on pavexc types.
 pub trait ExternalReExportsExt {
@@ -46,10 +47,16 @@ impl ExternalReExportsExt for ExternalReExports {
         krate_collection: &CrateCollection,
         use_id: rustdoc_types::Id,
     ) -> Result<Option<GlobalItemId>, CannotGetCrateData> {
-        let re_export = self.get(&use_id).expect("use_id not found in re-export registry");
+        let re_export = self
+            .get(&use_id)
+            .expect("use_id not found in re-export registry");
         let source_package_id = re_exported_from
             .core
-            .compute_package_id_for_crate_id(re_export.external_crate_id, krate_collection, None)
+            .compute_package_id_for_crate_id(
+                re_export.external_crate_id,
+                &krate_collection.package_graph,
+                None,
+            )
             .expect("Failed to compute the package id for a given external crate id");
         let source_krate =
             krate_collection.get_or_compute_crate_by_package_id(&source_package_id)?;
@@ -80,8 +87,6 @@ pub struct Crate {
     pub(in crate::rustdoc) import_path2id: ImportPath2Id,
     /// Types (or modules!) re-exported from other crates.
     pub(crate) external_re_exports: ExternalReExports,
-    /// All the items in this crate that have been annotated with an attribute from the `diagnostic::pavex::*` namespace.
-    pub(crate) annotated_items: AnnotatedItems,
     /// An in-memory index of all modules, traits, structs, enums, and functions that were defined in the current crate.
     ///
     /// It can be used to retrieve all publicly visible items as well as computing a "canonical path"
@@ -121,7 +126,7 @@ impl CrateCore {
     pub fn compute_package_id_for_crate_id(
         &self,
         crate_id: u32,
-        collection: &CrateCollection,
+        package_graph: &PackageGraph,
         maybe_dependent_crate_name: Option<&str>,
     ) -> Result<PackageId, anyhow::Error> {
         compute_package_id_for_crate_id(
@@ -129,7 +134,7 @@ impl CrateCore {
             &self.krate.external_crates,
             crate_id,
             maybe_dependent_crate_name,
-            &collection.package_graph,
+            package_graph,
         )
     }
 }
@@ -139,7 +144,7 @@ impl Crate {
         krate: rustdoc_types::Crate,
         package_id: PackageId,
         diagnostics: &DiagnosticSink,
-    ) -> Self {
+    ) -> (Self, AnnotatedItems) {
         let crate_data = CrateData {
             root_item_id: krate.root,
             index: CrateItemIndex::Eager(EagerCrateItemIndex { index: krate.index }),
@@ -155,7 +160,7 @@ impl Crate {
         krate: CrateData,
         package_id: PackageId,
         diagnostics: &DiagnosticSink,
-    ) -> Self {
+    ) -> (Self, AnnotatedItems) {
         let mut import_path2id: HashMap<_, _> = krate
             .paths
             .iter()
@@ -203,18 +208,16 @@ impl Crate {
             }
         }
 
-        let mut self_ = Self {
+        let self_ = Self {
             core: CrateCore { package_id, krate },
             import_path2id: ImportPath2Id::Eager(EagerImportPath2Id(import_path2id)),
             import_index,
             external_re_exports,
-            annotated_items: AnnotatedItems::default(),
             crate_id2package_id: Default::default(),
         };
 
         let annotated_items = annotations::process_queue(annotation_queue, &self_, diagnostics);
-        self_.annotated_items = annotated_items;
-        self_
+        (self_, annotated_items)
     }
 
     /// The name of the crate.
@@ -280,7 +283,7 @@ impl Crate {
         // If we don't have a cached entry, perform the graph traversal.
         let outcome = self.core.compute_package_id_for_crate_id(
             crate_id,
-            collection,
+            &collection.package_graph,
             maybe_dependent_crate_name,
         );
 
@@ -324,7 +327,11 @@ impl Crate {
 
                 let source_package_id = self
                     .core
-                    .compute_package_id_for_crate_id(*external_crate_id, krate_collection, None)
+                    .compute_package_id_for_crate_id(
+                        *external_crate_id,
+                        &krate_collection.package_graph,
+                        None,
+                    )
                     .unwrap();
                 let source_krate = krate_collection
                     .get_or_compute_crate_by_package_id(&source_package_id)
@@ -381,7 +388,10 @@ impl Crate {
     /// Types can be exposed under multiple paths.
     /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
-    pub(super) fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
+    pub(super) fn get_canonical_path(
+        &self,
+        type_id: &GlobalItemId,
+    ) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id
             && let Some(entry) = self.import_index.items.get(&type_id.rustdoc_item_id)
         {
@@ -393,41 +403,5 @@ impl Crate {
             type_id,
             self.core.package_id.repr()
         ))
-    }
-}
-
-/// An identifier that unequivocally points to a type within a [`CrateCollection`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct GlobalItemId {
-    pub(crate) rustdoc_item_id: rustdoc_types::Id,
-    pub(crate) package_id: PackageId,
-}
-
-impl GlobalItemId {
-    pub fn new(rustdoc_item_id: rustdoc_types::Id, package_id: PackageId) -> Self {
-        Self {
-            rustdoc_item_id,
-            package_id,
-        }
-    }
-
-    pub fn package_id(&self) -> &PackageId {
-        &self.package_id
-    }
-}
-
-#[derive(thiserror::Error, Debug)]
-pub struct UnknownItemPath {
-    pub path: Vec<String>,
-}
-
-impl std::fmt::Display for UnknownItemPath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let path = self.path.join("::").replace(' ', "");
-        let krate = self.path.first().unwrap();
-        write!(
-            f,
-            "I could not find '{path}' in the auto-generated documentation for '{krate}'."
-        )
     }
 }

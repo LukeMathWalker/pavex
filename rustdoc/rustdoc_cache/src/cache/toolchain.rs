@@ -11,7 +11,7 @@ use crate::types::{
     LazyCrateItemPaths, LazyImportPath2Id, RkyvCowBytes, SecondaryIndexes,
 };
 
-use super::{ProcessedCacheEntry, HydratedCacheEntry, BINCODE_CONFIG};
+use super::{BINCODE_CONFIG, HydratedCacheEntry, ProcessedCacheEntry};
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -165,7 +165,10 @@ impl CacheEntry<'_> {
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
     /// The item index is stored as rkyv-serialized bytes for zero-copy access.
-    pub fn hydrate<A: bincode::Decode<()> + Default>(self, package_id: PackageId) -> Result<HydratedCacheEntry<A>, anyhow::Error> {
+    pub fn hydrate<A: bincode::Decode<()> + Default>(
+        self,
+        package_id: PackageId,
+    ) -> Result<HydratedCacheEntry<A>, anyhow::Error> {
         use anyhow::Context;
 
         let crate_data = CrateData {

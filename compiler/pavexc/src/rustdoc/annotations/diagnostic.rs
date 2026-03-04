@@ -3,9 +3,9 @@ use crate::{
     rustdoc::Crate,
 };
 use pavex_cli_diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
-use rustdoc_ext::ItemKindExt;
 use pavexc_annotations::IdConflict;
 use pavexc_attr_parser::{AnnotationKind, errors::AttributeParserError};
+use rustdoc_ext::ItemKindExt;
 use rustdoc_types::{ItemKind, Span};
 
 pub(super) fn invalid_diagnostic_attribute(

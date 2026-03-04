@@ -7,14 +7,14 @@ use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
 use anyhow::Context;
-use guppy::graph::{PackageGraph, PackageMetadata};
 use guppy::PackageId;
+use guppy::graph::{PackageGraph, PackageMetadata};
 use itertools::Itertools;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 
-use crate::types::{CacheEntry, CrateData, ExternalReExports, ImportIndex, ImportPath2Id};
 use crate::TOOLCHAIN_CRATES;
+use crate::types::{CacheEntry, CrateData, ExternalReExports, ImportIndex, ImportPath2Id};
 
 use third_party::ThirdPartyCrateCache;
 use toolchain::ToolchainCache;
@@ -182,8 +182,7 @@ impl<A> RustdocGlobalFsCache<A> {
                 ) else {
                     return Ok(());
                 };
-                self.third_party_cache
-                    .insert(key, &connection, cache_entry)
+                self.third_party_cache.insert(key, &connection, cache_entry)
             }
             RustdocCacheKey::ToolchainCrate(name) => {
                 self.toolchain_cache

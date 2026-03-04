@@ -1,5 +1,5 @@
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
+use guppy::graph::PackageGraph;
 
 /// Callback for reporting progress during `cargo rustdoc` invocations.
 pub trait ComputeProgress {
