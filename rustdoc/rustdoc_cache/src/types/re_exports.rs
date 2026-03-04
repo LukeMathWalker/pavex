@@ -2,7 +2,11 @@
 
 use ahash::HashMap;
 
+use crate::CannotGetCrateData;
 use super::CrateData;
+use super::GlobalItemId;
+use super::krate::Crate;
+use super::registry::CrateRegistry;
 
 /// Track re-exports of types (or entire modules!) from other crates.
 #[derive(
@@ -49,6 +53,38 @@ impl ExternalReExports {
     ) {
         self.target_path2use_id.insert(target_path, use_id);
         self.use_id2re_export.insert(use_id, re_export);
+    }
+
+    /// Retrieve the re-exported item from the crate it was defined into.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided `use_id` doesn't exist as a key in the re-export registry.
+    pub fn get_target_item_id(
+        &self,
+        // The crate associated with these re-exports.
+        re_exported_from: &Crate,
+        registry: &impl CrateRegistry,
+        use_id: rustdoc_types::Id,
+    ) -> Result<Option<GlobalItemId>, CannotGetCrateData> {
+        let re_export = self
+            .get(&use_id)
+            .expect("use_id not found in re-export registry");
+        let source_package_id = re_exported_from
+            .core
+            .compute_package_id_for_crate_id(
+                re_export.external_crate_id,
+                registry.package_graph(),
+                None,
+            )
+            .expect("Failed to compute the package id for a given external crate id");
+        let source_krate = registry.get_or_compute_crate(&source_package_id)?;
+        let Ok(Ok(source_id)) =
+            source_krate.get_item_id_by_path(&re_export.source_path, registry)
+        else {
+            return Ok(None);
+        };
+        Ok(Some(source_id))
     }
 
     /// Add another re-export to the database.

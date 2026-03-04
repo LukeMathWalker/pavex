@@ -6,14 +6,14 @@ use rustc_hash::FxHashMap;
 use rustdoc_types::ExternalCrate;
 use tracing_log_error::log_error;
 
-use rustdoc_cache::{TOOLCHAIN_CRATES, VersionMatcher, normalize_crate_name};
+use crate::{TOOLCHAIN_CRATES, VersionMatcher, normalize_crate_name};
 
 /// The information used by [`Crate::compute_package_id_for_crate_id_with_hint`](super::krate::Crate::compute_package_id_for_crate_id_with_hint)
 /// to map a `crate_id` to a `package_id`.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CrateIdNeedle {
-    pub(super) crate_id: u32,
-    pub(super) maybe_dependent_crate_name: Option<String>,
+    pub crate_id: u32,
+    pub maybe_dependent_crate_name: Option<String>,
 }
 
 fn get_external_crate_version(external_crate: &ExternalCrate) -> Option<Version> {

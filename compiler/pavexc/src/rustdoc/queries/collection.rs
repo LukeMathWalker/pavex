@@ -22,9 +22,7 @@ use super::super::AnnotatedItem;
 use super::super::annotations::{AnnotatedItems, AnnotationCoordinates};
 use super::super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache};
 use super::super::progress_reporter::ShellProgress;
-use rustdoc_cache::{GlobalItemId, UnknownItemPath};
-
-use super::krate::Crate;
+use rustdoc_cache::{Crate, CrateRegistry, GlobalItemId, UnknownItemPath};
 
 use rayon::iter::IntoParallelRefIterator;
 use rustdoc_cache::CacheEntry;
@@ -242,7 +240,7 @@ impl CrateCollection {
             .map(move |(package_id, krate)| {
                 let n_diagnostics = diagnostic_sink.len();
                 let (krate, annotations) =
-                    Crate::index_raw(krate, package_id.to_owned(), diagnostic_sink);
+                    super::krate::index_raw(krate, package_id.to_owned(), diagnostic_sink);
 
                 // No issues arose in the indexing phase.
                 // Let's make sure to store them in the on-disk cache for next time.
@@ -361,7 +359,7 @@ impl CrateCollection {
 
         let n_diagnostics = self.diagnostic_sink.len();
         let (krate, annotations) =
-            Crate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
+            super::krate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
 
         // No issues arose in the indexing phase.
         // Let's make sure to store them in the on-disk cache for next time.
@@ -617,6 +615,16 @@ impl CrateCollection {
         let type_id = definition_krate.get_item_id_by_path(&path, self)??;
         let canonical_path = self.get_canonical_path_by_global_type_id(&type_id)?;
         Ok((type_id.clone(), canonical_path))
+    }
+}
+
+impl CrateRegistry for CrateCollection {
+    fn package_graph(&self) -> &PackageGraph {
+        &self.package_graph
+    }
+
+    fn get_or_compute_crate(&self, package_id: &PackageId) -> Result<&Crate, CannotGetCrateData> {
+        self.get_or_compute_crate_by_package_id(package_id)
     }
 }
 

@@ -9,7 +9,7 @@ pub use rustdoc_cache::{
 };
 
 pub(crate) use annotations::{AnnotatedItem, AnnotationCoordinates, ImplInfo};
-pub use queries::{Crate, CrateCollection, ExternalReExportsExt, GlobalItemId, ResolvedItem};
+pub use queries::{Crate, CrateCollection, CrateRegistry, GlobalItemId, ResolvedItem};
 pub use rustdoc_cache::CannotGetCrateData;
 
 mod annotations;
