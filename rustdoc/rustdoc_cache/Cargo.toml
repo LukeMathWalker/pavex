@@ -30,6 +30,11 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["unbounded_depth"] }
 serde_stacker = { workspace = true }
 
+# Compute
+semver = { workspace = true }
+indexmap = { workspace = true }
+rayon = { workspace = true }
+
 # Utilities
 anyhow = { workspace = true }
 fs-err = { workspace = true }

@@ -1,18 +1,18 @@
 use semver::{Comparator, Op, Version, VersionReq};
 
 /// Given an exact semver version, returns a matcher that matches any semver-compatible
-/// version.  
+/// version.
 /// In the end, `cargo` is in charge of resolving the actual version, so we don't need to
 /// be too strict here.
 ///
 /// This is a good defense against crates setting a stale `#![doc(html_root_url = "...")]`
 /// (e.g. https://github.com/hyperium/http/pull/688).
-pub(super) struct VersionMatcher {
+pub struct VersionMatcher {
     req: VersionReq,
 }
 
 impl VersionMatcher {
-    pub(super) fn new(version: &Version) -> VersionMatcher {
+    pub fn new(version: &Version) -> VersionMatcher {
         let mut comparator = Comparator {
             op: Op::Caret,
             major: version.major,
@@ -40,7 +40,7 @@ impl VersionMatcher {
         VersionMatcher { req }
     }
 
-    pub(super) fn matches(&self, version: &Version) -> bool {
+    pub fn matches(&self, version: &Version) -> bool {
         self.req.matches(version)
     }
 }

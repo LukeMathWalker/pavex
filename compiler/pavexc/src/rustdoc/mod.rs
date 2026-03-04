@@ -4,29 +4,17 @@
 //! [`CrateCollection`] is the key entrypoint.
 use guppy::PackageId;
 use once_cell::sync::Lazy;
+pub use rustdoc_cache::{STD_PACKAGE_ID_REPR, CORE_PACKAGE_ID_REPR, ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 
 pub(crate) use annotations::{AnnotatedItem, AnnotationCoordinates, ImplInfo};
-pub use compute::CannotGetCrateData;
+pub use rustdoc_cache::CannotGetCrateData;
 pub use queries::{Crate, CrateCollection, ExternalReExportsExt, GlobalItemId, ResolvedItem};
 
 mod annotations;
 mod compute;
-mod package_id_spec;
+mod progress_reporter;
 mod queries;
-mod utils;
-mod version_matcher;
 
-pub const STD_PACKAGE_ID_REPR: &str = "std";
 pub static STD_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(STD_PACKAGE_ID_REPR));
-
-pub const CORE_PACKAGE_ID_REPR: &str = "core";
 pub static CORE_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(CORE_PACKAGE_ID_REPR));
-
-pub const ALLOC_PACKAGE_ID_REPR: &str = "alloc";
 pub static ALLOC_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(ALLOC_PACKAGE_ID_REPR));
-
-pub const TOOLCHAIN_CRATES: [&str; 3] = [
-    STD_PACKAGE_ID_REPR,
-    CORE_PACKAGE_ID_REPR,
-    ALLOC_PACKAGE_ID_REPR,
-];

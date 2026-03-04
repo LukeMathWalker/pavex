@@ -27,15 +27,16 @@ pub use super::annotations::AnnotatedItems;
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
 use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id};
-use crate::rustdoc::version_matcher::VersionMatcher;
+use rustdoc_cache::{VersionMatcher, normalize_crate_name, compute_crate_docs, TOOLCHAIN_CRATES};
+use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
-use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES, utils};
 
 use super::AnnotatedItem;
 use super::annotations::{
     self, AnnotationCoordinates, QueueItem, invalid_diagnostic_attribute, parse_pavex_attributes,
 };
-use super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache, compute_crate_docs};
+use super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache};
+use super::progress_reporter::ShellProgress;
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -229,6 +230,7 @@ impl CrateCollection {
             &self.package_graph,
             to_be_computed.into_iter(),
             self.package_graph.workspace().root().as_std_path(),
+            &ShellProgress,
         )?;
 
         // We then have to perform two more expensive operations: indexing of all the items in each
@@ -346,6 +348,7 @@ impl CrateCollection {
             &self.package_graph,
             std::iter::once(package_id.to_owned()),
             self.package_graph.workspace().root().as_std_path(),
+            &ShellProgress,
         )
         .map_err(|e| CannotGetCrateData {
             package_spec: package_id.to_string(),
@@ -1426,10 +1429,10 @@ pub fn compute_package_id_for_crate_id(
                 )
             })?
             .resolve();
-        let expected_link_name = utils::normalize_crate_name(name);
+        let expected_link_name = normalize_crate_name(name);
         let package_candidates: IndexSet<_> = transitive_dependencies
             .links(guppy::graph::DependencyDirection::Forward)
-            .filter(|link| utils::normalize_crate_name(link.to().name()) == expected_link_name)
+            .filter(|link| normalize_crate_name(link.to().name()) == expected_link_name)
             .map(|link| {
                 let l = link.to();
                 PackageLinkMetadata {
