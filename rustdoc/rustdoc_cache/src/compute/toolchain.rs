@@ -3,7 +3,7 @@ use once_cell::sync::OnceCell;
 use rustdoc_types::ItemKind;
 use std::path::PathBuf;
 
-use crate::format::check_format;
+use super::format::check_format;
 
 #[tracing::instrument(
     skip_all,
@@ -11,7 +11,7 @@ use crate::format::check_format;
         crate.name = name,
     )
 )]
-pub fn get_toolchain_crate_docs(
+pub(super) fn get_toolchain_crate_docs(
     name: &str,
     toolchain_name: &str,
 ) -> Result<rustdoc_types::Crate, anyhow::Error> {
@@ -72,7 +72,7 @@ fn get_toolchain_root_folder_via_rustup(name: &str) -> Result<PathBuf, anyhow::E
 /// The path to the `cargo` binary used by the toolchain we rely on to build JSON docs.
 static DOCS_TOOLCHAIN_CARGO: OnceCell<PathBuf> = OnceCell::new();
 
-pub fn get_cargo_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {
+fn get_cargo_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {
     fn compute_cargo_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {
         let mut cmd = std::process::Command::new("rustup");
         cmd.arg("which")

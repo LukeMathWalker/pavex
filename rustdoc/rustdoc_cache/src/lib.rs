@@ -5,17 +5,21 @@
 
 mod cache;
 mod checksum;
-mod format;
-mod toolchain;
+mod compute;
 mod types;
+mod utils;
+mod version_matcher;
 
 pub use cache::{
     ProcessedCacheEntry, HydratedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache,
     cargo_fingerprint,
 };
 pub use checksum::checksum_crate;
-pub use format::check_format;
-pub use toolchain::get_toolchain_crate_docs;
+pub use compute::{
+    compute_crate_docs, CannotGetCrateData, ComputeProgress, NoProgress, PackageIdSpecification,
+};
+pub use utils::normalize_crate_name;
+pub use version_matcher::VersionMatcher;
 pub use types::*;
 
 /// Crate version - used as part of cache fingerprint.

@@ -8,9 +8,9 @@ use guppy::{PackageId, Version};
 /// It is used as argument to the `-p`/`--package` flag in `cargo`'s commands.
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct PackageIdSpecification {
-    pub(super) source: Option<String>,
-    pub(super) name: String,
-    pub(super) version: Option<Version>,
+    pub source: Option<String>,
+    pub name: String,
+    pub version: Option<Version>,
 }
 
 impl PackageIdSpecification {
