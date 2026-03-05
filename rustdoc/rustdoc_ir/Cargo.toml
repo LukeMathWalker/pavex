@@ -1,7 +1,11 @@
 [package]
 name = "rustdoc_ir"
-version.workspace = true
+description = "An IR for Rust types and functions"
 edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
 
 [dependencies]
 ahash = { workspace = true }
@@ -14,3 +18,4 @@ syn = { workspace = true }
 rustdoc-types = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
