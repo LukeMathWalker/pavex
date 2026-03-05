@@ -228,6 +228,16 @@ pub(crate) fn implements_trait(
             }
             // TODO: handle Unpin + other traits
         }
+        Type::RawPointer(_) => {
+            // Raw pointers are `Copy` and `Clone`, but not `Send` or `Sync`.
+            if expected_trait.base_type == COPY_TRAIT_PATH
+                || expected_trait.base_type == CLONE_TRAIT_PATH
+                || expected_trait.base_type == UNPIN_TRAIT_PATH
+            {
+                return Ok(true);
+            }
+            // TODO: handle other traits
+        }
         Type::Generic(_) => {
             // TODO: handle blanket implementations. As a first approximation,
             //   we assume that if the type is generic, it implements all traits.

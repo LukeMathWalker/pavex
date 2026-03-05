@@ -4,6 +4,7 @@ pub(crate) mod generics_equivalence;
 mod lifetime;
 mod named_lifetime;
 mod path_type;
+mod raw_pointer;
 pub(crate) mod render;
 mod scalar_primitive;
 mod slice;
@@ -16,6 +17,7 @@ pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
 pub use named_lifetime::NamedLifetime;
 pub use lifetime::Lifetime;
 pub use path_type::PathType;
+pub use raw_pointer::RawPointer;
 pub use scalar_primitive::{ScalarPrimitive, UnknownPrimitive};
 pub use slice::Slice;
 pub use tuple::Tuple;
@@ -34,6 +36,8 @@ pub enum Type {
     ScalarPrimitive(ScalarPrimitive),
     /// A slice type, e.g. `[u8]`.
     Slice(Slice),
+    /// A raw pointer type, e.g. `*const u8` or `*mut u8`.
+    RawPointer(RawPointer),
     /// An unassigned generic type parameter, e.g. `T`.
     Generic(Generic),
 }
