@@ -19,7 +19,7 @@ use super::{
 };
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
-    language::{Callable, GenericArgument, InvocationStyle, PathTypeExt, ResolvedType},
+    language::{Callable, GenericArgument, InvocationStyle, PathTypeExt, Type},
     rustdoc::CrateCollection,
 };
 use indexmap::{IndexMap, IndexSet};
@@ -33,8 +33,8 @@ use std::{collections::BTreeMap, ops::Deref};
 /// serving requests.
 pub struct ApplicationState {
     #[allow(unused)]
-    type2id: IndexSet<(ResolvedType, ComponentId)>,
-    bindings: BiHashMap<syn::Ident, ResolvedType>,
+    type2id: IndexSet<(Type, ComponentId)>,
+    bindings: BiHashMap<syn::Ident, Type>,
 }
 
 impl ApplicationState {
@@ -91,8 +91,8 @@ impl ApplicationState {
     /// - If there are still conflicts, we use the singleton's full path as the field name, replacing
     ///   all `::` with `_`
     fn assign_field_names(
-        type2id: &IndexSet<(ResolvedType, ComponentId)>,
-    ) -> BiHashMap<syn::Ident, ResolvedType> {
+        type2id: &IndexSet<(Type, ComponentId)>,
+    ) -> BiHashMap<syn::Ident, Type> {
         let mut name_map = BiHashMap::new();
 
         let mut candidate2positions: BTreeMap<String, Vec<usize>> = BTreeMap::new();
@@ -208,7 +208,7 @@ impl ApplicationState {
     }
 
     /// Return a bi-directional map between field names and their types.
-    pub fn bindings(&self) -> &BiHashMap<syn::Ident, ResolvedType> {
+    pub fn bindings(&self) -> &BiHashMap<syn::Ident, Type> {
         &self.bindings
     }
 }
@@ -221,15 +221,15 @@ enum NamingStrategy {
     FullPath,
 }
 
-fn field_name_candidate(ty_: &ResolvedType, strategy: NamingStrategy) -> String {
+fn field_name_candidate(ty_: &Type, strategy: NamingStrategy) -> String {
     let mut candidate = String::new();
     _field_name_candidate(ty_, strategy, &mut candidate);
     candidate
 }
 
-fn _field_name_candidate(ty_: &ResolvedType, strategy: NamingStrategy, candidate: &mut String) {
+fn _field_name_candidate(ty_: &Type, strategy: NamingStrategy, candidate: &mut String) {
     match ty_ {
-        ResolvedType::ResolvedPath(path_type) => match strategy {
+        Type::Path(path_type) => match strategy {
             NamingStrategy::LastSegment => {
                 let last = path_type
                     .base_type
@@ -273,13 +273,13 @@ fn _field_name_candidate(ty_: &ResolvedType, strategy: NamingStrategy, candidate
                 );
             }
         },
-        ResolvedType::Reference(type_reference) => {
+        Type::Reference(type_reference) => {
             // We never have both a reference and an owned version of the same
             // type in the application state, so we can just use the owned version
             // of the type for naming purposes.
             _field_name_candidate(&type_reference.inner, strategy, candidate);
         }
-        ResolvedType::Tuple(tuple) => {
+        Type::Tuple(tuple) => {
             // Please don't have tuples in the application state, they're ugly.
             for (i, ty_) in tuple.elements.iter().enumerate() {
                 if i > 0 {
@@ -288,15 +288,15 @@ fn _field_name_candidate(ty_: &ResolvedType, strategy: NamingStrategy, candidate
                 _field_name_candidate(ty_, strategy, candidate);
             }
         }
-        ResolvedType::ScalarPrimitive(scalar_primitive) => {
+        Type::ScalarPrimitive(scalar_primitive) => {
             candidate.push_str(scalar_primitive.as_str());
             candidate.push('_');
         }
-        ResolvedType::Slice(slice) => {
+        Type::Slice(slice) => {
             // Same reasoning as for references.
             _field_name_candidate(&slice.element_type, strategy, candidate);
         }
-        ResolvedType::Generic(generic) => {
+        Type::Generic(generic) => {
             // We don't have unassigned generics in the application state, so this should never happen.
             // But, should it happen, there's really no other way to name it.
             candidate.push_str(&generic.name.to_case(convert_case::Case::Snake));
@@ -309,14 +309,14 @@ fn extract_runtime_singletons<'a>(
     framework_item_db: &FrameworkItemDb,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
-) -> IndexSet<(ResolvedType, ComponentId)> {
+) -> IndexSet<(Type, ComponentId)> {
     let mut type2id = IndexSet::new();
     for handler_pipeline in handler_pipelines {
         for graph in handler_pipeline.graph_iter() {
             let root_component_id = graph.root_component_id;
             let root_component_scope_id = component_db.scope_id(root_component_id);
             for required_input in graph.call_graph.required_input_types() {
-                let required_input = if let ResolvedType::Reference(t) = &required_input {
+                let required_input = if let Type::Reference(t) = &required_input {
                     if !t.lifetime.is_static() {
                         // We can't store non-'static references in the application state, so we expect
                         // to see the referenced type in there.

@@ -11,7 +11,7 @@ use crate::{
         utils::resolve_type_path,
     },
     diagnostic::{CompilerDiagnostic, ComponentKind},
-    language::ResolvedType,
+    language::Type,
     rustdoc::CrateCollection,
 };
 
@@ -19,7 +19,7 @@ use crate::{
 /// This is required since Pavex runs on a multi-threaded `tokio` runtime.
 #[tracing::instrument(name = "Verify `Send` and `Sync` for runtime singletons", skip_all)]
 pub(crate) fn runtime_singletons_are_thread_safe(
-    runtime_singletons: &IndexSet<(ResolvedType, ComponentId)>,
+    runtime_singletons: &IndexSet<(Type, ComponentId)>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     krate_collection: &CrateCollection,
@@ -29,7 +29,7 @@ pub(crate) fn runtime_singletons_are_thread_safe(
     let sync = resolve_type_path("core::marker::Sync", krate_collection);
     for (singleton_type, component_id) in runtime_singletons {
         for trait_ in [&send, &sync] {
-            let ResolvedType::ResolvedPath(trait_) = trait_ else {
+            let Type::Path(trait_) = trait_ else {
                 unreachable!()
             };
             if let Err(e) = assert_trait_is_implemented(krate_collection, singleton_type, trait_) {

@@ -24,7 +24,7 @@ use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
     Callable, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType, PathTypeExt,
-    ResolvedType,
+    Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -114,7 +114,7 @@ pub(crate) fn application_state_call_graph(
         }
         map
     };
-    let error_types: IndexSet<ResolvedType> = error_type2err_match_ids
+    let error_types: IndexSet<Type> = error_type2err_match_ids
         .iter()
         .map(|(e, _)| e.to_owned())
         .collect();
@@ -333,5 +333,5 @@ pub(crate) fn application_state_call_graph(
 
 pub(crate) struct ApplicationStateCallGraph {
     pub(crate) call_graph: OrderedCallGraph,
-    pub(crate) error_variants: IndexMap<String, ResolvedType>,
+    pub(crate) error_variants: IndexMap<String, Type>,
 }

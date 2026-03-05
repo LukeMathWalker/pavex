@@ -18,7 +18,7 @@ use crate::diagnostic::{
     self, CallableDefSource, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile,
 };
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
-use crate::language::{Callable, ResolvedType};
+use crate::language::{Callable, Type};
 use crate::rustdoc::CrateCollection;
 
 use super::framework_items::FrameworkItemDb;
@@ -162,7 +162,7 @@ impl ConstructibleDb {
             let scope_id = component_db.scope_id(component_id);
             let resolved_component = component_db.hydrated_component(component_id, computation_db);
             let input_types = {
-                let mut input_types: Vec<Option<ResolvedType>> = resolved_component
+                let mut input_types: Vec<Option<Type>> = resolved_component
                     .input_types()
                     .iter()
                     .map(|i| Some(i.to_owned()))
@@ -209,12 +209,12 @@ impl ConstructibleDb {
                 // Both `T` and `&T` are always constructibles, when looking at generic constructors that take them
                 // as input. The actual check will happen when they are bound to a specific type.
                 match input {
-                    ResolvedType::Reference(ref_) => {
-                        if let ResolvedType::Generic(_) = ref_.inner.as_ref() {
+                    Type::Reference(ref_) => {
+                        if let Type::Generic(_) = ref_.inner.as_ref() {
                             continue;
                         }
                     }
-                    ResolvedType::Generic(_) => {
+                    Type::Generic(_) => {
                         continue;
                     }
                     _ => {}
@@ -397,7 +397,7 @@ impl ConstructibleDb {
                         .build()
                 } else {
                     fn get_help_snippet(
-                        type_: &ResolvedType,
+                        type_: &Type,
                         common_ancestor_id: ScopeId,
                         scope_graph: &ScopeGraph,
                         diagnostics: &crate::diagnostic::DiagnosticSink,
@@ -522,7 +522,7 @@ impl ConstructibleDb {
                     if i == eo.error_input_index {
                         return None;
                     }
-                    Some((input.to_owned(), IndexSet::<ResolvedType>::new()))
+                    Some((input.to_owned(), IndexSet::<Type>::new()))
                 })
                 .collect_vec();
             'inner: while let Some((input, mut dependency_chain)) = queue.pop() {
@@ -577,7 +577,7 @@ impl ConstructibleDb {
     pub(crate) fn get(
         &self,
         scope_id: ScopeId,
-        type_: &ResolvedType,
+        type_: &Type,
         scope_graph: &ScopeGraph,
     ) -> Option<(ComponentId, ConsumptionMode)> {
         let mut fifo = VecDeque::with_capacity(1);
@@ -625,7 +625,7 @@ impl ConstructibleDb {
     pub(crate) fn get_or_try_bind(
         &mut self,
         scope_id: ScopeId,
-        type_: &ResolvedType,
+        type_: &Type,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
@@ -652,7 +652,7 @@ impl ConstructibleDb {
         &self,
         id: UserComponentId,
         db: &UserComponentDb,
-        unconstructible_type: &ResolvedType,
+        unconstructible_type: &Type,
         unconstructible_type_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
@@ -707,7 +707,7 @@ impl ConstructibleDb {
     fn mut_ref_to_singleton(
         id: UserComponentId,
         db: &UserComponentDb,
-        singleton_input_type: &ResolvedType,
+        singleton_input_type: &Type,
         singleton_input_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
@@ -750,7 +750,7 @@ impl ConstructibleDb {
     fn mut_ref_to_transient(
         id: UserComponentId,
         db: &UserComponentDb,
-        transient_input_type: &ResolvedType,
+        transient_input_type: &Type,
         transient_input_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
@@ -792,7 +792,7 @@ impl ConstructibleDb {
     fn mut_ref_to_cloneable_request_scoped(
         id: UserComponentId,
         db: &UserComponentDb,
-        scoped_input_type: &ResolvedType,
+        scoped_input_type: &Type,
         scoped_input_index: usize,
         krate_collection: &CrateCollection,
         computation_db: &ComputationDb,
@@ -817,7 +817,7 @@ impl ConstructibleDb {
 
         let definition_snippet =
             get_snippet(&computation_db[id], krate_collection, scoped_input_index);
-        let ResolvedType::Reference(ref_) = scoped_input_type else {
+        let Type::Reference(ref_) = scoped_input_type else {
             unreachable!()
         };
         let error = anyhow::anyhow!(
@@ -880,7 +880,7 @@ impl ConstructibleDb {
 
     fn error_observers_must_be_infallible(
         error_observer_id: ComponentId,
-        dependency_chain: IndexSet<ResolvedType>,
+        dependency_chain: IndexSet<Type>,
         fallible_id: ComponentId,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
@@ -932,7 +932,7 @@ impl ConstructibleDb {
 /// That's a much larger set, because it includes all types that can be constructed in this
 /// scope as well as any of its parent scopes.
 struct ConstructiblesInScope {
-    type2constructor_id: HashMap<ResolvedType, ComponentId>,
+    type2constructor_id: HashMap<Type, ComponentId>,
     /// Every time we encounter a constructible type that contains an unassigned generic type
     /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
     ///
@@ -943,7 +943,7 @@ struct ConstructiblesInScope {
     /// `generic_base_types` to see if there is a constructor that returns `Vec<T>`.
     ///
     /// Specialization, in a nutshell!
-    templated_constructors: IndexSet<ResolvedType>,
+    templated_constructors: IndexSet<Type>,
 }
 
 impl ConstructiblesInScope {
@@ -956,13 +956,13 @@ impl ConstructiblesInScope {
     }
 
     /// Retrieve the constructor for a given type, if it exists.
-    fn get(&self, type_: &ResolvedType) -> Option<(ComponentId, ConsumptionMode)> {
+    fn get(&self, type_: &Type) -> Option<(ComponentId, ConsumptionMode)> {
         if let Some(constructor_id) = self.type2constructor_id.get(type_).copied() {
             return Some((constructor_id, ConsumptionMode::Move));
         }
 
         match type_ {
-            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() => {
+            Type::Reference(ref_) if !ref_.lifetime.is_static() => {
                 if let Some(constructor_id) = self.type2constructor_id.get(&ref_.inner).copied() {
                     return Some((
                         constructor_id,
@@ -986,7 +986,7 @@ impl ConstructiblesInScope {
     /// that can be specialized to construct the given type.
     fn get_or_try_bind(
         &mut self,
-        type_: &ResolvedType,
+        type_: &Type,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
@@ -1022,7 +1022,7 @@ impl ConstructiblesInScope {
         }
 
         match type_ {
-            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() => {
+            Type::Reference(ref_) if !ref_.lifetime.is_static() => {
                 let (component_id, _) = self.get_or_try_bind(
                     &ref_.inner,
                     component_db,
@@ -1056,7 +1056,7 @@ impl ConstructiblesInScope {
     }
 
     /// Register a type and its constructor.
-    fn insert(&mut self, output: ResolvedType, component_id: ComponentId) {
+    fn insert(&mut self, output: Type, component_id: ComponentId) {
         if output.is_a_template() {
             self.templated_constructors.insert(output.clone());
         }
@@ -1072,7 +1072,7 @@ impl ConstructiblesInScope {
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
-        bindings: &HashMap<String, ResolvedType>,
+        bindings: &HashMap<String, Type>,
     ) {
         let bound_component_id = component_db.bind_generic_type_parameters(
             templated_component_id,

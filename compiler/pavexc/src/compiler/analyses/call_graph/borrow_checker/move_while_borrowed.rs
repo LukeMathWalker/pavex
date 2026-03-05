@@ -19,7 +19,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
-use crate::language::ResolvedType;
+use crate::language::Type;
 use crate::rustdoc::CrateCollection;
 
 use super::copy::CopyChecker;
@@ -76,7 +76,7 @@ pub(super) fn move_while_borrowed(
                 .iter()
                 .map(|&i| {
                     let t = &callable.inputs[i];
-                    if let ResolvedType::Reference(r) = t {
+                    if let Type::Reference(r) = t {
                         r.inner.deref().to_owned()
                     } else {
                         t.to_owned()
@@ -88,7 +88,7 @@ pub(super) fn move_while_borrowed(
                 .iter()
                 .map(|&i| {
                     let t = &callable.inputs[i];
-                    if let ResolvedType::Reference(r) = t {
+                    if let Type::Reference(r) = t {
                         r.inner.deref().to_owned()
                     } else {
                         t.to_owned()
@@ -569,7 +569,7 @@ fn get_component_id_and_type(
     node_index: NodeIndex,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
-) -> (Option<ComponentId>, ResolvedType) {
+) -> (Option<ComponentId>, Type) {
     match &call_graph[node_index] {
         CallGraphNode::Compute { component_id, .. } => (
             Some(*component_id),

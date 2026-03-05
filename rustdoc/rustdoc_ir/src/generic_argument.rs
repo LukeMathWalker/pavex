@@ -1,13 +1,13 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 
-use crate::ResolvedType;
+use crate::Type;
 
 /// A single generic argument supplied to a generic type or function.
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum GenericArgument {
     /// A generic type parameter, e.g. `u32` in `Vec<u32>` or `T` in `HashSet<T>`.
-    TypeParameter(ResolvedType),
+    TypeParameter(Type),
     /// A lifetime parameter, e.g. `'a` in `Cow<'a, str>`.
     Lifetime(GenericLifetimeParameter),
 }

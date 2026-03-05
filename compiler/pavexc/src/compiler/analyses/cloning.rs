@@ -10,7 +10,7 @@ use crate::{
         utils::resolve_type_path,
     },
     diagnostic::{CompilerDiagnostic, ComponentKind},
-    language::ResolvedType,
+    language::Type,
     rustdoc::CrateCollection,
 };
 
@@ -24,7 +24,7 @@ pub(crate) fn cloneables_can_be_cloned(
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let clone = resolve_type_path("core::clone::Clone", krate_collection);
-    let ResolvedType::ResolvedPath(clone) = clone else {
+    let Type::Path(clone) = clone else {
         unreachable!()
     };
 
@@ -59,7 +59,7 @@ pub(crate) fn cloneables_can_be_cloned(
 
 fn must_be_cloneable(
     e: MissingTraitImplementationError,
-    type_: &ResolvedType,
+    type_: &Type,
     id: ComponentId,
     db: &ComponentDb,
     computation_db: &ComputationDb,

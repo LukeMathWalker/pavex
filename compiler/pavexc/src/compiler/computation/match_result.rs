@@ -1,14 +1,14 @@
 use ahash::HashMap;
 use indexmap::IndexSet;
 
-use crate::language::{GenericArgument, ResolvedType};
+use crate::language::{GenericArgument, Type};
 
 /// A branching constructor: extract one of the variant out of a Rust enum.
 /// E.g. get a `T` (or `E`) from a `Result<T, E>`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct MatchResult {
-    pub(crate) input: ResolvedType,
-    pub(crate) output: ResolvedType,
+    pub(crate) input: Type,
+    pub(crate) output: Type,
     pub(crate) variant: MatchResultVariant,
 }
 
@@ -22,9 +22,9 @@ impl MatchResult {
     /// Return a new match-ing computation for the `Ok(T)` and the `Err(E)` variant of a `Result`.
     ///
     /// It panics if `result_type` is not an enum.
-    pub(crate) fn match_result(result_type: &ResolvedType) -> ResultMatchers {
-        let ResolvedType::ResolvedPath(inner_result_type) = result_type else {
-            panic!("Expected a ResolvedPath, got {result_type:?}")
+    pub(crate) fn match_result(result_type: &Type) -> ResultMatchers {
+        let Type::Path(inner_result_type) = result_type else {
+            panic!("Expected a Path, got {result_type:?}")
         };
         assert_eq!(
             inner_result_type.generic_arguments.len(),
@@ -58,7 +58,7 @@ impl MatchResult {
     /// concrete types specified in `bindings`.
     ///
     /// The newly "bound" match result will be returned.
-    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, Type>) -> Self {
         let input = self.input.bind_generic_type_parameters(bindings);
         let output = self.output.bind_generic_type_parameters(bindings);
         Self {

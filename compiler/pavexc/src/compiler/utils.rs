@@ -3,14 +3,14 @@ use guppy::graph::PackageGraph;
 use pavex_bp_schema::CreatedAt;
 
 use crate::compiler::resolvers::resolve_callable;
-use crate::language::{Callable, FQPath, GenericArgument, PathKind, RawIdentifiers, ResolvedType};
+use crate::language::{Callable, FQPath, GenericArgument, PathKind, RawIdentifiers, Type};
 use crate::rustdoc::CrateCollection;
 
 use super::app::PAVEX_VERSION;
 
-pub(crate) fn get_ok_variant(t: &ResolvedType) -> &ResolvedType {
+pub(crate) fn get_ok_variant(t: &Type) -> &Type {
     debug_assert!(t.is_result());
-    let ResolvedType::ResolvedPath(t) = t else {
+    let Type::Path(t) = t else {
         unreachable!();
     };
     let GenericArgument::TypeParameter(t) = &t.generic_arguments[0] else {
@@ -19,9 +19,9 @@ pub(crate) fn get_ok_variant(t: &ResolvedType) -> &ResolvedType {
     t
 }
 
-pub(crate) fn get_err_variant(t: &ResolvedType) -> &ResolvedType {
+pub(crate) fn get_err_variant(t: &Type) -> &Type {
     debug_assert!(t.is_result());
-    let ResolvedType::ResolvedPath(t) = t else {
+    let Type::Path(t) = t else {
         unreachable!();
     };
     let GenericArgument::TypeParameter(t) = &t.generic_arguments[1] else {
@@ -36,7 +36,7 @@ pub(crate) fn get_err_variant(t: &ResolvedType) -> &ResolvedType {
 pub(crate) fn resolve_type_path(
     raw_path: &str,
     krate_collection: &CrateCollection,
-) -> ResolvedType {
+) -> Type {
     let identifiers = RawIdentifiers {
         import_path: raw_path.into(),
         created_at: CreatedAt {

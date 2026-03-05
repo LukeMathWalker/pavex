@@ -5,23 +5,23 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, ResolvedType, Slice, Tuple,
+    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, Type, Slice, Tuple,
     TypeReference,
 };
 
-impl AsRef<ResolvedType> for ResolvedType {
-    fn as_ref(&self) -> &ResolvedType {
+impl AsRef<Type> for Type {
+    fn as_ref(&self) -> &Type {
         self
     }
 }
 
-impl ResolvedType {
+impl Type {
     /// The unit type `()`, represented as an empty tuple.
-    pub const UNIT_TYPE: ResolvedType = ResolvedType::Tuple(Tuple { elements: vec![] });
+    pub const UNIT_TYPE: Type = Type::Tuple(Tuple { elements: vec![] });
 
     /// Returns `true` if `t` is a `Result` type.
     pub fn is_result(&self) -> bool {
-        let ResolvedType::ResolvedPath(t) = self else {
+        let Type::Path(t) = self else {
             return false;
         };
         t.base_type == ["core", "result", "Result"]
@@ -37,10 +37,10 @@ impl ResolvedType {
     /// `t`. You are not required to bind all of them.
     pub fn bind_generic_type_parameters(
         &self,
-        bindings: &HashMap<String, ResolvedType>,
-    ) -> ResolvedType {
+        bindings: &HashMap<String, Type>,
+    ) -> Type {
         match self {
-            ResolvedType::ResolvedPath(t) => {
+            Type::Path(t) => {
                 let mut bound_generics = Vec::with_capacity(t.generic_arguments.len());
                 for generic in &t.generic_arguments {
                     let bound_generic = match generic {
@@ -51,7 +51,7 @@ impl ResolvedType {
                     };
                     bound_generics.push(bound_generic);
                 }
-                ResolvedType::ResolvedPath(PathType {
+                Type::Path(PathType {
                     package_id: t.package_id.clone(),
                     // Should we set this to `None`?
                     rustdoc_id: t.rustdoc_id,
@@ -59,29 +59,29 @@ impl ResolvedType {
                     generic_arguments: bound_generics,
                 })
             }
-            ResolvedType::Reference(r) => ResolvedType::Reference(TypeReference {
+            Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
                 inner: Box::new(r.inner.bind_generic_type_parameters(bindings)),
                 lifetime: r.lifetime.clone(),
             }),
-            ResolvedType::Tuple(t) => {
+            Type::Tuple(t) => {
                 let mut bound_elements = Vec::with_capacity(t.elements.len());
                 for inner in &t.elements {
                     bound_elements.push(inner.bind_generic_type_parameters(bindings));
                 }
-                ResolvedType::Tuple(Tuple {
+                Type::Tuple(Tuple {
                     elements: bound_elements,
                 })
             }
-            ResolvedType::ScalarPrimitive(s) => ResolvedType::ScalarPrimitive(s.clone()),
-            ResolvedType::Slice(s) => ResolvedType::Slice(Slice {
+            Type::ScalarPrimitive(s) => Type::ScalarPrimitive(s.clone()),
+            Type::Slice(s) => Type::Slice(Slice {
                 element_type: Box::new(s.element_type.bind_generic_type_parameters(bindings)),
             }),
-            ResolvedType::Generic(g) => {
+            Type::Generic(g) => {
                 if let Some(bound_type) = bindings.get(&g.name) {
                     bound_type.clone()
                 } else {
-                    ResolvedType::Generic(g.to_owned())
+                    Type::Generic(g.to_owned())
                 }
             }
         }
@@ -90,7 +90,7 @@ impl ResolvedType {
     /// Check if a type can be used as a "template"—i.e. if it has any unassigned generic parameters.
     pub fn is_a_template(&self) -> bool {
         match self {
-            ResolvedType::ResolvedPath(path) => {
+            Type::Path(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.is_a_template(),
                     GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
@@ -100,11 +100,11 @@ impl ResolvedType {
                     GenericArgument::Lifetime(GenericLifetimeParameter::Named(_)) => false,
                 })
             }
-            ResolvedType::Reference(r) => r.inner.is_a_template(),
-            ResolvedType::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
-            ResolvedType::ScalarPrimitive(_) => false,
-            ResolvedType::Slice(s) => s.element_type.is_a_template(),
-            ResolvedType::Generic(_) => true,
+            Type::Reference(r) => r.inner.is_a_template(),
+            Type::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
+            Type::ScalarPrimitive(_) => false,
+            Type::Slice(s) => s.element_type.is_a_template(),
+            Type::Generic(_) => true,
         }
     }
 
@@ -119,7 +119,7 @@ impl ResolvedType {
 
     fn _unassigned_generic_type_parameters(&self, set: &mut IndexSet<String>) {
         match self {
-            ResolvedType::ResolvedPath(path) => {
+            Type::Path(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
                         GenericArgument::TypeParameter(g) => {
@@ -129,15 +129,15 @@ impl ResolvedType {
                     }
                 }
             }
-            ResolvedType::Reference(r) => r.inner._unassigned_generic_type_parameters(set),
-            ResolvedType::Tuple(t) => {
+            Type::Reference(r) => r.inner._unassigned_generic_type_parameters(set),
+            Type::Tuple(t) => {
                 for inner in &t.elements {
                     inner._unassigned_generic_type_parameters(set);
                 }
             }
-            ResolvedType::ScalarPrimitive(_) => {}
-            ResolvedType::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
-            ResolvedType::Generic(t) => {
+            Type::ScalarPrimitive(_) => {}
+            Type::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
+            Type::Generic(t) => {
                 set.insert(t.name.clone());
             }
         }
@@ -153,8 +153,8 @@ impl ResolvedType {
     /// If impossible, this function will return `None`.
     pub fn is_a_template_for(
         &self,
-        concrete_type: &ResolvedType,
-    ) -> Option<HashMap<String, ResolvedType>> {
+        concrete_type: &Type,
+    ) -> Option<HashMap<String, Type>> {
         let mut bindings = HashMap::new();
         if self._is_a_template_for(concrete_type, &mut bindings) {
             Some(bindings)
@@ -165,15 +165,15 @@ impl ResolvedType {
 
     pub(crate) fn _is_a_template_for(
         &self,
-        concrete_type: &ResolvedType,
-        bindings: &mut HashMap<String, ResolvedType>,
+        concrete_type: &Type,
+        bindings: &mut HashMap<String, Type>,
     ) -> bool {
         if concrete_type == self {
             return true;
         }
-        use ResolvedType::*;
+        use Type::*;
         match (concrete_type, self) {
-            (ResolvedPath(concrete_path), ResolvedPath(templated_path)) => {
+            (Path(concrete_path), Path(templated_path)) => {
                 templated_path._is_a_resolved_path_type_template_for(concrete_path, bindings)
             }
             (Slice(concrete_slice), Slice(templated_slice)) => templated_slice
@@ -212,7 +212,7 @@ impl ResolvedType {
     /// If impossible, this function will return `None`.
     pub fn is_equivalent_to<'a, 'b>(
         &'a self,
-        other: &'b ResolvedType,
+        other: &'b Type,
     ) -> Option<HashMap<&'a str, &'b str>> {
         let mut self_id_gen = UnassignedIdGenerator::new();
         let mut other_id_gen = UnassignedIdGenerator::new();
@@ -231,13 +231,13 @@ impl ResolvedType {
 
     pub(crate) fn _is_equivalent_to<'a, 'b>(
         &'a self,
-        other: &'b ResolvedType,
+        other: &'b Type,
         self_id_gen: &mut UnassignedIdGenerator<'a>,
         other_id_gen: &mut UnassignedIdGenerator<'b>,
     ) -> bool {
-        use ResolvedType::*;
+        use Type::*;
         match (self, other) {
-            (ResolvedPath(self_path), ResolvedPath(other_path)) => {
+            (Path(self_path), Path(other_path)) => {
                 self_path._is_equivalent_to(other_path, self_id_gen, other_id_gen)
             }
             (Slice(self_slice), Slice(other_slice)) => self_slice.element_type._is_equivalent_to(
@@ -270,7 +270,7 @@ impl ResolvedType {
     /// E.g. `&'_ str` and `&str` would both return `true`. `&'static str` or `&'a str` wouldn't.
     pub fn has_implicit_lifetime_parameters(&self) -> bool {
         match self {
-            ResolvedType::ResolvedPath(path) => {
+            Type::Path(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
                     GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) if l == "_" => {
@@ -280,7 +280,7 @@ impl ResolvedType {
                     | GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
                 })
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 match &r.lifetime {
                     Lifetime::Named(s) if s == "_" => {
                         return true;
@@ -292,13 +292,13 @@ impl ResolvedType {
                 }
                 r.inner.has_implicit_lifetime_parameters()
             }
-            ResolvedType::Tuple(t) => t
+            Type::Tuple(t) => t
                 .elements
                 .iter()
                 .any(|t| t.has_implicit_lifetime_parameters()),
-            ResolvedType::ScalarPrimitive(_) => false,
-            ResolvedType::Slice(s) => s.element_type.has_implicit_lifetime_parameters(),
-            ResolvedType::Generic(_) => false,
+            Type::ScalarPrimitive(_) => false,
+            Type::Slice(s) => s.element_type.has_implicit_lifetime_parameters(),
+            Type::Generic(_) => false,
         }
     }
 
@@ -306,7 +306,7 @@ impl ResolvedType {
     /// the provided named lifetime.
     pub fn set_implicit_lifetimes(&mut self, inferred_lifetime: String) {
         match self {
-            ResolvedType::ResolvedPath(path) => {
+            Type::Path(path) => {
                 for arg in path.generic_arguments.iter_mut() {
                     if let GenericArgument::Lifetime(lifetime) = arg
                         && let GenericLifetimeParameter::Named(name) = lifetime
@@ -316,7 +316,7 @@ impl ResolvedType {
                     }
                 }
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 match &mut r.lifetime {
                     Lifetime::Named(s) if s == "_" => {
                         r.lifetime = Lifetime::Named(inferred_lifetime.clone());
@@ -328,12 +328,12 @@ impl ResolvedType {
                 }
                 r.inner.set_implicit_lifetimes(inferred_lifetime);
             }
-            ResolvedType::Tuple(t) => t
+            Type::Tuple(t) => t
                 .elements
                 .iter_mut()
                 .for_each(|e| e.set_implicit_lifetimes(inferred_lifetime.clone())),
-            ResolvedType::Slice(s) => s.element_type.set_implicit_lifetimes(inferred_lifetime),
-            ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
+            Type::Slice(s) => s.element_type.set_implicit_lifetimes(inferred_lifetime),
+            Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
     }
 
@@ -342,7 +342,7 @@ impl ResolvedType {
     /// You don't need to provide a mapping for lifetimes that you don't want to rename.
     pub fn rename_lifetime_parameters(&mut self, original2renamed: &IndexMap<String, String>) {
         match self {
-            ResolvedType::ResolvedPath(t) => {
+            Type::Path(t) => {
                 for arg in t.generic_arguments.iter_mut() {
                     match arg {
                         GenericArgument::TypeParameter(tp) => {
@@ -358,7 +358,7 @@ impl ResolvedType {
                     }
                 }
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 match &mut r.lifetime {
                     Lifetime::Named(l) => {
                         if let Some(new_name) = original2renamed.get(l) {
@@ -369,15 +369,15 @@ impl ResolvedType {
                 }
                 r.inner.rename_lifetime_parameters(original2renamed);
             }
-            ResolvedType::Tuple(t) => {
+            Type::Tuple(t) => {
                 for e in t.elements.iter_mut() {
                     e.rename_lifetime_parameters(original2renamed);
                 }
             }
-            ResolvedType::Slice(s) => {
+            Type::Slice(s) => {
                 s.element_type.rename_lifetime_parameters(original2renamed);
             }
-            ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
+            Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
     }
 
@@ -390,7 +390,7 @@ impl ResolvedType {
 
     fn _lifetime_parameters(&self, set: &mut IndexSet<Lifetime>) {
         match self {
-            ResolvedType::ResolvedPath(path) => {
+            Type::Path(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
                         GenericArgument::TypeParameter(g) => {
@@ -409,17 +409,17 @@ impl ResolvedType {
                     }
                 }
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 set.insert(r.lifetime.clone());
                 r.inner._lifetime_parameters(set)
             }
-            ResolvedType::Tuple(t) => {
+            Type::Tuple(t) => {
                 for inner in &t.elements {
                     inner._lifetime_parameters(set);
                 }
             }
-            ResolvedType::Slice(s) => s.element_type._lifetime_parameters(set),
-            ResolvedType::ScalarPrimitive(_) | ResolvedType::Generic(_) => {}
+            Type::Slice(s) => s.element_type._lifetime_parameters(set),
+            Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
     }
 
@@ -432,7 +432,7 @@ impl ResolvedType {
 
     fn _named_lifetime_parameters(&self, set: &mut IndexSet<String>) {
         match self {
-            ResolvedType::ResolvedPath(path) => {
+            Type::Path(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
                         GenericArgument::TypeParameter(g) => {
@@ -447,7 +447,7 @@ impl ResolvedType {
                     }
                 }
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 match &r.lifetime {
                     Lifetime::Named(l) => {
                         if l != "_" {
@@ -458,13 +458,13 @@ impl ResolvedType {
                 }
                 r.inner._named_lifetime_parameters(set)
             }
-            ResolvedType::Tuple(t) => {
+            Type::Tuple(t) => {
                 for inner in &t.elements {
                     inner._named_lifetime_parameters(set);
                 }
             }
-            ResolvedType::Slice(s) => s.element_type._named_lifetime_parameters(set),
-            ResolvedType::ScalarPrimitive(_) | ResolvedType::Generic(_) => {}
+            Type::Slice(s) => s.element_type._named_lifetime_parameters(set),
+            Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
     }
 
@@ -477,7 +477,7 @@ impl ResolvedType {
 
     fn _display_for_error<W: std::fmt::Write>(&self, buffer: &mut W) {
         match self {
-            ResolvedType::ResolvedPath(t) => {
+            Type::Path(t) => {
                 write!(buffer, "{}", t.base_type.join("::")).unwrap();
                 if !t.generic_arguments.is_empty() {
                     write!(buffer, "<").unwrap();
@@ -503,7 +503,7 @@ impl ResolvedType {
                     write!(buffer, ">").unwrap();
                 }
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 write!(buffer, "&").unwrap();
                 match &r.lifetime {
                     Lifetime::Static => {
@@ -519,7 +519,7 @@ impl ResolvedType {
                 }
                 r.inner._display_for_error(buffer);
             }
-            ResolvedType::Tuple(t) => {
+            Type::Tuple(t) => {
                 write!(buffer, "(").unwrap();
                 let mut elements = t.elements.iter().peekable();
                 while let Some(element) = elements.next() {
@@ -530,47 +530,47 @@ impl ResolvedType {
                 }
                 write!(buffer, ")").unwrap();
             }
-            ResolvedType::ScalarPrimitive(s) => {
+            Type::ScalarPrimitive(s) => {
                 write!(buffer, "{s}").unwrap();
             }
-            ResolvedType::Slice(s) => {
+            Type::Slice(s) => {
                 write!(buffer, "[").unwrap();
                 s.element_type._display_for_error(buffer);
                 write!(buffer, "]").unwrap();
             }
-            ResolvedType::Generic(t) => {
+            Type::Generic(t) => {
                 write!(buffer, "{}", t.name).unwrap();
             }
         }
     }
 }
 
-impl Debug for ResolvedType {
+impl Debug for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ResolvedType::ResolvedPath(t) => write!(f, "{t:?}"),
-            ResolvedType::Reference(r) => write!(f, "{r:?}"),
-            ResolvedType::Tuple(t) => write!(f, "{t:?}"),
-            ResolvedType::ScalarPrimitive(s) => write!(f, "{s:?}"),
-            ResolvedType::Slice(s) => write!(f, "{s:?}"),
-            ResolvedType::Generic(g) => write!(f, "{g:?}"),
+            Type::Path(t) => write!(f, "{t:?}"),
+            Type::Reference(r) => write!(f, "{r:?}"),
+            Type::Tuple(t) => write!(f, "{t:?}"),
+            Type::ScalarPrimitive(s) => write!(f, "{s:?}"),
+            Type::Slice(s) => write!(f, "{s:?}"),
+            Type::Generic(g) => write!(f, "{g:?}"),
         }
     }
 }
 
-impl From<Tuple> for ResolvedType {
+impl From<Tuple> for Type {
     fn from(value: Tuple) -> Self {
         Self::Tuple(value)
     }
 }
 
-impl From<PathType> for ResolvedType {
+impl From<PathType> for Type {
     fn from(value: PathType) -> Self {
-        Self::ResolvedPath(value)
+        Self::Path(value)
     }
 }
 
-impl From<TypeReference> for ResolvedType {
+impl From<TypeReference> for Type {
     fn from(value: TypeReference) -> Self {
         Self::Reference(value)
     }

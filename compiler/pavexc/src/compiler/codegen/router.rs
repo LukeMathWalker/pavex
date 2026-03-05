@@ -18,7 +18,7 @@ use crate::{
         processing_pipeline::CodegenedRequestHandlerPipeline,
         router::{PathRouter, Router},
     },
-    language::ResolvedType,
+    language::Type,
     utils::syn_debug_parse2,
 };
 
@@ -29,7 +29,7 @@ pub(super) fn codegen_router(
     sdk_deps: &ServerSdkDeps,
     handler_id2codegened_pipeline: &BTreeMap<ComponentId, CodegenedRequestHandlerPipeline>,
     application_state: &ApplicationState,
-    request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+    request_scoped_bindings: &BiHashMap<Ident, Type>,
     package_id2name: &BiHashMap<PackageId, String>,
     framework_items_db: &FrameworkItemDb,
 ) -> TokenStream {
@@ -78,7 +78,7 @@ fn router_impl(
     sdk_deps: &ServerSdkDeps,
     handler_id2codegened_pipeline: &BTreeMap<ComponentId, CodegenedRequestHandlerPipeline>,
     application_state: &ApplicationState,
-    request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+    request_scoped_bindings: &BiHashMap<Ident, Type>,
     package_id2name: &BiHashMap<PackageId, String>,
     framework_items_db: &FrameworkItemDb,
 ) -> TokenStream {
@@ -277,7 +277,7 @@ fn domain_router(
     domain2path_router: &BTreeMap<DomainGuard, PathRouter>,
     fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
     application_state: &ApplicationState,
-    request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+    request_scoped_bindings: &BiHashMap<Ident, Type>,
     framework_items_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
@@ -365,7 +365,7 @@ fn path_router(
     route_id2path: &BiBTreeMap<u32, String>,
     fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
     application_state: &ApplicationState,
-    request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+    request_scoped_bindings: &BiHashMap<Ident, Type>,
     framework_item_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
@@ -593,7 +593,7 @@ fn path_router(
 fn routing_failure_fallback_block(
     fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
     application_state: &ApplicationState,
-    request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+    request_scoped_bindings: &BiHashMap<Ident, Type>,
     framework_items_db: &FrameworkItemDb,
     server_state_ident: &Ident,
     package_id2name: &BiHashMap<PackageId, String>,

@@ -1,4 +1,4 @@
-use crate::language::ResolvedType;
+use crate::language::Type;
 
 /// How to handle missing values for a config type.
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Default)]
@@ -15,7 +15,7 @@ pub enum DefaultStrategy {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ConfigType {
-    ty: ResolvedType,
+    ty: Type,
     key: ConfigKey,
 }
 
@@ -58,7 +58,7 @@ impl ConfigKey {
 }
 
 impl ConfigType {
-    pub(crate) fn new(ty: ResolvedType, key: String) -> Result<Self, ConfigTypeValidationError> {
+    pub(crate) fn new(ty: Type, key: String) -> Result<Self, ConfigTypeValidationError> {
         use ConfigTypeValidationError::*;
 
         let key = ConfigKey::new(key)?;
@@ -71,7 +71,7 @@ impl ConfigType {
         Ok(Self { ty, key })
     }
 
-    pub(crate) fn ty(&self) -> &ResolvedType {
+    pub(crate) fn ty(&self) -> &Type {
         &self.ty
     }
 
@@ -80,7 +80,7 @@ impl ConfigType {
     }
 }
 
-impl From<ConfigType> for ResolvedType {
+impl From<ConfigType> for Type {
     fn from(input: ConfigType) -> Self {
         input.ty
     }
@@ -89,9 +89,9 @@ impl From<ConfigType> for ResolvedType {
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum ConfigTypeValidationError {
     #[error("Configuration types can't have any lifetime parameter.")]
-    CannotHaveAnyLifetimeParameters { ty: ResolvedType },
+    CannotHaveAnyLifetimeParameters { ty: Type },
     #[error("Configuration types can't have unassigned generic type parameters.")]
-    CannotHaveUnassignedGenericTypeParameters { ty: ResolvedType },
+    CannotHaveUnassignedGenericTypeParameters { ty: Type },
     #[error(transparent)]
     InvalidKey(#[from] ConfigKeyValidationError),
 }

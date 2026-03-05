@@ -15,7 +15,7 @@ use crate::{
         utils::resolve_type_path,
     },
     diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet},
-    language::ResolvedType,
+    language::Type,
     rustdoc::CrateCollection,
 };
 
@@ -34,11 +34,11 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
     let copy = resolve_type_path("core::marker::Copy", krate_collection);
-    let ResolvedType::ResolvedPath(copy) = copy else {
+    let Type::Path(copy) = copy else {
         unreachable!()
     };
     let clone = resolve_type_path("core::clone::Clone", krate_collection);
-    let ResolvedType::ResolvedPath(clone) = clone else {
+    let Type::Path(clone) = clone else {
         unreachable!()
     };
 
@@ -53,13 +53,13 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                         CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,
                         CallGraphNode::InputParameter { type_, source } => {
                             match type_ {
-                                ResolvedType::ScalarPrimitive(_)
-                                | ResolvedType::Reference(_)
-                                | ResolvedType::Slice(_) => {
+                                Type::ScalarPrimitive(_)
+                                | Type::Reference(_)
+                                | Type::Slice(_) => {
                                     return None;
                                 }
-                                ResolvedType::ResolvedPath(_) | ResolvedType::Tuple(_) => {}
-                                ResolvedType::Generic(_) => unreachable!(),
+                                Type::Path(_) | Type::Tuple(_) => {}
+                                Type::Generic(_) => unreachable!(),
                             };
                             let InputParameterSource::Component(id) = source else {
                                 return None;
@@ -111,7 +111,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
 }
 
 fn must_be_cloneable(
-    type_: &ResolvedType,
+    type_: &Type,
     is_clone: bool,
     component_id: ComponentId,
     consumer_id: ComponentId,

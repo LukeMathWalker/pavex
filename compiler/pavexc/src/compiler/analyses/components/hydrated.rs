@@ -4,7 +4,7 @@ use crate::compiler::component::{
     RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::Computation;
-use crate::language::ResolvedType;
+use crate::language::Type;
 use std::borrow::Cow;
 
 /// A transformation that, given a set of inputs, **constructs** a new type.
@@ -17,12 +17,12 @@ pub(crate) enum HydratedComponent<'a> {
     PostProcessingMiddleware(PostProcessingMiddleware<'a>),
     Transformer(Computation<'a>, TransformerInfo),
     ErrorObserver(ErrorObserver<'a>),
-    PrebuiltType(Cow<'a, ResolvedType>),
+    PrebuiltType(Cow<'a, Type>),
     ConfigType(ConfigType),
 }
 
 impl<'a> HydratedComponent<'a> {
-    pub(crate) fn input_types(&self) -> Cow<'_, [ResolvedType]> {
+    pub(crate) fn input_types(&self) -> Cow<'_, [Type]> {
         match self {
             HydratedComponent::Constructor(c) => c.input_types(),
             HydratedComponent::RequestHandler(r) => Cow::Borrowed(r.input_types()),
@@ -37,7 +37,7 @@ impl<'a> HydratedComponent<'a> {
         }
     }
 
-    pub(crate) fn output_type(&self) -> Option<&ResolvedType> {
+    pub(crate) fn output_type(&self) -> Option<&Type> {
         match self {
             HydratedComponent::Constructor(c) => Some(c.output_type()),
             HydratedComponent::RequestHandler(r) => Some(r.output_type()),

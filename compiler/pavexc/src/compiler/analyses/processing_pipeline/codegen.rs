@@ -14,7 +14,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::{FrameworkItemDb, FrameworkItemId};
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
-use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
+use crate::language::{GenericArgument, GenericLifetimeParameter, Type};
 
 use self::application_state::ApplicationState;
 
@@ -365,7 +365,7 @@ impl CodegenedRequestHandlerPipeline {
         application_state: &ApplicationState,
         // The name and type of each field, provided by the framework, with a
         // request-scoped lifecycle.
-        request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+        request_scoped_bindings: &BiHashMap<Ident, Type>,
         // The name of the variable that holds the application state.
         server_state_ident: &Ident,
     ) -> TokenStream {
@@ -378,7 +378,7 @@ impl CodegenedRequestHandlerPipeline {
             let mut is_shared_reference = false;
             let mut is_static_reference = false;
             let inner_type = match type_ {
-                ResolvedType::Reference(r) => {
+                Type::Reference(r) => {
                     if !r.lifetime.is_static() {
                         is_shared_reference = true;
                         &r.inner
@@ -387,11 +387,11 @@ impl CodegenedRequestHandlerPipeline {
                         type_
                     }
                 }
-                ResolvedType::Slice(_)
-                | ResolvedType::ResolvedPath(_)
-                | ResolvedType::Tuple(_)
-                | ResolvedType::ScalarPrimitive(_) => type_,
-                ResolvedType::Generic(_) => {
+                Type::Slice(_)
+                | Type::Path(_)
+                | Type::Tuple(_)
+                | Type::ScalarPrimitive(_) => type_,
+                Type::Generic(_) => {
                     unreachable!("Generic types should have been resolved by now")
                 }
             };
@@ -455,12 +455,12 @@ impl CodegenedRequestHandlerPipeline {
 
     /// Returns `true` if the first stage of the pipeline (i.e. the entrypoint) needs the specified
     /// type as input.
-    pub(crate) fn needs_input_type(&self, input_type: &ResolvedType) -> bool {
+    pub(crate) fn needs_input_type(&self, input_type: &Type) -> bool {
         self.stages[0].input_parameters.iter().any(|t| {
             if t == input_type {
                 return true;
             }
-            if let ResolvedType::Reference(r) = t {
+            if let Type::Reference(r) = t {
                 return r.inner.as_ref() == input_type;
             }
 
@@ -502,7 +502,7 @@ pub(crate) struct CodegenedFn {
     /// We use an `IndexSet` rather than a `Vec` because we know that, due to Pavex's constraints,
     /// there won't be two input parameters with the same type.
     /// This will have to be changed if we ever support multiple input parameters with the same type.
-    pub(crate) input_parameters: IndexSet<ResolvedType>,
+    pub(crate) input_parameters: IndexSet<Type>,
 }
 
 impl std::fmt::Debug for CodegenedFn {

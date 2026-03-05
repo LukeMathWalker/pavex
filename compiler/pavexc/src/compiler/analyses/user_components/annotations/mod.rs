@@ -33,7 +33,7 @@ use crate::{
     language::{
         Callable, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf, Generic,
         GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
-        ResolvedType,
+        Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
@@ -460,7 +460,7 @@ fn annotated_item2type(
     krate: &Crate,
     krate_collection: &CrateCollection,
     diagnostics: &DiagnosticSink,
-) -> Result<ResolvedType, ()> {
+) -> Result<Type, ()> {
     /// If the annotated item is a `use` statement, retrieve
     /// the definition of the re-exported item.
     fn annotated_item2def<'a>(
@@ -530,7 +530,7 @@ fn rustdoc_item_def2type(
     krate: &Crate,
     krate_collection: &CrateCollection,
     diagnostics: &DiagnosticSink,
-) -> Result<ResolvedType, ()> {
+) -> Result<Type, ()> {
     match item.inner {
         ItemEnum::Struct(_) | ItemEnum::Enum(_) => match rustdoc_new_type_def2type(item, krate) {
             Ok(t) => Ok(t),
@@ -563,7 +563,7 @@ fn rustdoc_type_alias2type(
     item: &Item,
     krate: &Crate,
     krate_collection: &CrateCollection,
-) -> Result<ResolvedType, TypeResolutionError> {
+) -> Result<Type, TypeResolutionError> {
     let ItemEnum::TypeAlias(inner) = &item.inner else {
         unreachable!(
             "Unexpected item type, `{}`. Expected a a type alias.",
@@ -588,7 +588,7 @@ fn rustdoc_type_alias2type(
 fn rustdoc_new_type_def2type(
     item: &Item,
     krate: &Crate,
-) -> Result<ResolvedType, UnsupportedConstGeneric> {
+) -> Result<Type, UnsupportedConstGeneric> {
     assert!(
         matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_)),
         "Unexpected item type, `{}`. Expected a struct or an enum.",
@@ -610,7 +610,7 @@ fn rustdoc_new_type_def2type(
             }
             rustdoc_types::GenericParamDefKind::Type { .. } => {
                 // TODO: Use the default if available.
-                GenericArgument::TypeParameter(ResolvedType::Generic(Generic {
+                GenericArgument::TypeParameter(Type::Generic(Generic {
                     name: arg.name.clone(),
                 }))
             }
@@ -619,7 +619,7 @@ fn rustdoc_new_type_def2type(
         generic_arguments.push(arg);
     }
 
-    Ok(ResolvedType::ResolvedPath(PathType {
+    Ok(Type::Path(PathType {
         package_id: krate.core.package_id.clone(),
         rustdoc_id: Some(item.id),
         base_type: path.into(),

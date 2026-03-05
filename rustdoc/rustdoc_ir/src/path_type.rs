@@ -5,7 +5,7 @@ use guppy::PackageId;
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::render::{deserialize_package_id, serialize_package_id};
-use crate::{GenericArgument, ResolvedType};
+use crate::{GenericArgument, Type};
 
 /// A named type identified by its fully-qualified path—e.g. `std::vec::Vec<u32>`.
 #[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
@@ -13,13 +13,13 @@ pub struct PathType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
     // `PackageId` doesn't implement serde::Deserialize/serde::Serialize, therefore we must
-    // manually specify deserializer and serializer to make the whole `ResolvedPathType`
+    // manually specify deserializer and serializer to make the whole `PathType`
     // (de)serializable.
     /// The id of the package that defines this type.
     pub package_id: PackageId,
     /// The id associated with this type within the (JSON) docs for `package_id`.
     ///
-    /// The id is optional to allow for flexible usage patterns—e.g. to leverage [`ResolvedType`]
+    /// The id is optional to allow for flexible usage patterns—e.g. to leverage [`Type`]
     /// to work with types that we want to code-generate into a new crate.
     pub rustdoc_id: Option<rustdoc_types::Id>,
     /// The fully-qualified path segments for this type, e.g. `["std", "vec", "Vec"]`.
@@ -32,10 +32,10 @@ impl PathType {
     pub(crate) fn _is_a_resolved_path_type_template_for(
         &self,
         concrete_type: &PathType,
-        bindings: &mut ahash::HashMap<String, ResolvedType>,
+        bindings: &mut ahash::HashMap<String, Type>,
     ) -> bool {
         // We destructure ALL fields to make sure that the compiler reminds us to update
-        // this function if we add new fields to `ResolvedPathType`.
+        // this function if we add new fields to `PathType`.
         let PathType {
             package_id: concrete_package_id,
             rustdoc_id: _,
@@ -60,14 +60,14 @@ impl PathType {
         {
             use GenericArgument::*;
             match (concrete_arg, templated_arg) {
-                (TypeParameter(ResolvedType::Generic(unassigned)), _) => {
+                (TypeParameter(Type::Generic(unassigned)), _) => {
                     // You are not allowed to specialize a type with an unassigned type parameter.
                     unreachable!(
                         "Unassigned type parameter (`{:?}`) in the 'concrete' type (`{:?}`) when checking for specialization",
                         unassigned, concrete_type
                     );
                 }
-                (TypeParameter(assigned), TypeParameter(ResolvedType::Generic(unassigned))) => {
+                (TypeParameter(assigned), TypeParameter(Type::Generic(unassigned))) => {
                     // The unassigned type parameter can be assigned to the concrete type
                     // we expect, so it is a specialization.
                     let previous_assignment =
@@ -119,7 +119,7 @@ impl PathType {
         }
         for (self_arg, other_arg) in self_args.iter().zip(other_args) {
             use GenericArgument::*;
-            use ResolvedType::*;
+            use Type::*;
             match (self_arg, other_arg) {
                 (TypeParameter(Generic(first)), TypeParameter(Generic(second))) => {
                     let first_id = self_id_gen.id(&first.name);
@@ -175,7 +175,7 @@ impl Hash for PathType {
                     state.write_u8(0);
                     lifetime.hash(state);
                 }
-                GenericArgument::TypeParameter(ResolvedType::Generic(
+                GenericArgument::TypeParameter(Type::Generic(
                     unassigned_type_parameter,
                 )) => {
                     state.write_u8(1);

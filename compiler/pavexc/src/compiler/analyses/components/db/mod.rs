@@ -23,7 +23,7 @@ use crate::compiler::utils::{
 };
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
-    Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, PathTypeExt, ResolvedType,
+    Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, PathTypeExt, Type,
     TypeReference,
 };
 use crate::rustdoc::CrateCollection;
@@ -107,15 +107,15 @@ pub(crate) struct ComponentDb {
     /// The resolved type for `pavex::Error`.
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
-    pub(crate) pavex_error: ResolvedType,
+    pub(crate) pavex_error: Type,
     /// The resolved type for `pavex::Response`.
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
-    pub(crate) pavex_response: ResolvedType,
+    pub(crate) pavex_response: Type,
     /// The resolved type for `pavex::middleware::Processing`.
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
-    pub(crate) pavex_processing: ResolvedType,
+    pub(crate) pavex_processing: Type,
     /// Users register constructors directly with a blueprint.
     /// From these user-provided constructors, we build **derived** constructors:
     /// - if a constructor is fallible,
@@ -153,7 +153,7 @@ impl ComponentDb {
         let pavex_processing = resolve_type_path("pavex::middleware::Processing", krate_collection);
         let pavex_response = resolve_type_path("pavex::Response", krate_collection);
         let pavex_error_ref = {
-            ResolvedType::Reference(TypeReference {
+            Type::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
                 inner: Box::new(pavex_error.clone()),
                 is_mutable: false,
@@ -364,7 +364,7 @@ impl ComponentDb {
 
                     // We have some error observers, so we may need to convert the concrete error type
                     // into pavex::Error.
-                    let ResolvedType::Reference(error_ref) = error_handler.error_type_ref() else {
+                    let Type::Reference(error_ref) = error_handler.error_type_ref() else {
                         unreachable!()
                     };
                     if error_ref.inner.as_ref() != &self.pavex_error {
@@ -736,7 +736,7 @@ impl ComponentDb {
                     if self.lifecycle(constructor_id) == Lifecycle::Singleton {
                         let output_type = c.output_type();
                         // We can't use references as singletons, unless they are `'static.`
-                        if let ResolvedType::Reference(ref_type) = output_type {
+                        if let Type::Reference(ref_type) = output_type {
                             if ref_type.lifetime != Lifetime::Static {
                                 Self::non_static_reference_in_singleton(
                                     output_type,
@@ -961,7 +961,7 @@ impl ComponentDb {
 
     fn process_error_observers(
         &mut self,
-        pavex_error_ref: &ResolvedType,
+        pavex_error_ref: &Type,
         computation_db: &mut ComputationDb,
         krate_collection: &CrateCollection,
         diagnostics: &crate::diagnostic::DiagnosticSink,
@@ -1106,7 +1106,7 @@ impl ComponentDb {
 
                     let error_matcher = self.hydrated_component(error_matcher_id, computation_db);
                     let fallible_error = error_matcher.output_type().unwrap();
-                    let ResolvedType::Reference(error_ref) = e.error_type_ref() else {
+                    let Type::Reference(error_ref) = e.error_type_ref() else {
                         unreachable!()
                     };
 
@@ -1271,7 +1271,7 @@ impl ComponentDb {
     ) {
         let into_response = {
             let into_response = resolve_type_path("pavex::IntoResponse", krate_collection);
-            let ResolvedType::ResolvedPath(into_response) = into_response else {
+            let Type::Path(into_response) = into_response else {
                 unreachable!()
             };
             into_response
@@ -1896,7 +1896,7 @@ impl ComponentDb {
     pub fn bind_generic_type_parameters(
         &mut self,
         id: ComponentId,
-        bindings: &HashMap<String, ResolvedType>,
+        bindings: &HashMap<String, Type>,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
     ) -> ComponentId {
@@ -2022,12 +2022,12 @@ impl ComponentDb {
                 let transformer_input_type = &computation.input_types()[info.input_index];
                 let unbound_transformed_output = match info.transformation_mode {
                     ConsumptionMode::Move => unbound_transformed_output,
-                    ConsumptionMode::SharedBorrow => ResolvedType::Reference(TypeReference {
+                    ConsumptionMode::SharedBorrow => Type::Reference(TypeReference {
                         is_mutable: false,
                         lifetime: Lifetime::Elided,
                         inner: Box::new(unbound_transformed_output),
                     }),
-                    ConsumptionMode::ExclusiveBorrow => ResolvedType::Reference(TypeReference {
+                    ConsumptionMode::ExclusiveBorrow => Type::Reference(TypeReference {
                         is_mutable: true,
                         lifetime: Lifetime::Elided,
                         inner: Box::new(unbound_transformed_output),

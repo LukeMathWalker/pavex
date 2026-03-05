@@ -3,7 +3,7 @@ use bimap::BiHashMap;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use crate::{compiler::utils::resolve_type_path, language::ResolvedType, rustdoc::CrateCollection};
+use crate::{compiler::utils::resolve_type_path, language::Type, rustdoc::CrateCollection};
 use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 /// The id for a framework item inside [`FrameworkItemDb`].
@@ -15,7 +15,7 @@ pub(crate) type FrameworkItemId = u8;
 /// These types can be used by constructors and handlers even though no constructor
 /// has been explicitly registered for them by the developer.
 pub(crate) struct FrameworkItemDb {
-    items: BiHashMap<ResolvedType, FrameworkItemId>,
+    items: BiHashMap<Type, FrameworkItemId>,
     id2metadata: HashMap<FrameworkItemId, FrameworkItemMetadata>,
 }
 
@@ -143,12 +143,12 @@ impl FrameworkItemDb {
 
     /// Return the [`FrameworkItemId`] for a type, if it's a framework item.
     /// `None` otherwise.
-    pub(crate) fn get_id(&self, type_: &ResolvedType) -> Option<FrameworkItemId> {
+    pub(crate) fn get_id(&self, type_: &Type) -> Option<FrameworkItemId> {
         self.items.get_by_left(type_).copied()
     }
 
-    /// Return the [`ResolvedType`] attached to a given [`FrameworkItemId`].
-    pub(crate) fn get_type(&self, id: FrameworkItemId) -> &ResolvedType {
+    /// Return the [`Type`] attached to a given [`FrameworkItemId`].
+    pub(crate) fn get_type(&self, id: FrameworkItemId) -> &Type {
         self.items.get_by_right(&id).unwrap()
     }
 
@@ -160,7 +160,7 @@ impl FrameworkItemDb {
     /// Return a bijective map that associates each framework type with an identifier (i.e. a variable name).
     ///
     /// This is used for code-generation.
-    pub(crate) fn bindings(&self) -> BiHashMap<Ident, ResolvedType> {
+    pub(crate) fn bindings(&self) -> BiHashMap<Ident, Type> {
         self.items
             .iter()
             .map(|(type_, id)| (self.id2metadata[id].binding.clone(), type_.to_owned()))
@@ -168,7 +168,7 @@ impl FrameworkItemDb {
     }
 
     /// Iterate over all the items in the database alongside their ids.
-    pub fn iter(&self) -> impl ExactSizeIterator<Item = (FrameworkItemId, &ResolvedType)> {
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = (FrameworkItemId, &Type)> {
         self.items.iter().map(|(t, id)| (*id, t))
     }
 }

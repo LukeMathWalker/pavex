@@ -17,7 +17,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::language::{Lifetime, ResolvedType, TypeReference};
+use crate::language::{Lifetime, Type, TypeReference};
 
 use super::dependency_graph::DependencyGraph;
 
@@ -717,7 +717,7 @@ fn take_references_as_inputs_if_they_suffice(
             continue;
         };
         match input_type {
-            ResolvedType::Reference(_) => continue,
+            Type::Reference(_) => continue,
             _ => {
                 let mut by_value = false;
                 let mut borrowed_mutably = false;
@@ -730,7 +730,7 @@ fn take_references_as_inputs_if_they_suffice(
                     }
                 }
                 if !by_value {
-                    let reference_input_type = ResolvedType::Reference(TypeReference {
+                    let reference_input_type = Type::Reference(TypeReference {
                         is_mutable: borrowed_mutably,
                         lifetime: Lifetime::Elided,
                         inner: Box::new(input_type.to_owned()),
@@ -802,7 +802,7 @@ pub(crate) enum CallGraphNode {
         /// Where we expect the input value to be sourced from.
         source: InputParameterSource,
         /// The type that will be taken as an input parameter by the generated dependency closure.
-        type_: ResolvedType,
+        type_: Type,
     },
 }
 
@@ -915,7 +915,7 @@ pub(crate) trait RawCallGraphExt {
     /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
     /// parameters—it will be used in other parts of the crate to provide instances of those types
     /// in the expected order.
-    fn required_input_types(&self) -> IndexSet<ResolvedType>;
+    fn required_input_types(&self) -> IndexSet<Type>;
     /// Return a representation of the [`CallGraph`] in graphviz's .DOT format.
     fn dot(
         &self,
@@ -932,7 +932,7 @@ pub(crate) trait RawCallGraphExt {
 }
 
 impl RawCallGraphExt for RawCallGraph {
-    fn required_input_types(&self) -> IndexSet<ResolvedType> {
+    fn required_input_types(&self) -> IndexSet<Type> {
         self.node_weights()
             .filter_map(|node| match node {
                 CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,

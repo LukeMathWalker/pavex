@@ -2,7 +2,7 @@ use indexmap::IndexSet;
 
 use crate::{
     compiler::computation::MatchResult,
-    language::{Callable, ResolvedType},
+    language::{Callable, Type},
 };
 use std::borrow::Cow;
 
@@ -30,7 +30,7 @@ impl<'a> PostProcessingMiddleware<'a> {
     /// a post-processing middleware. An error is returned if it doesn't.
     pub fn new(
         c: Cow<'a, Callable>,
-        response_type: &ResolvedType,
+        response_type: &Type,
     ) -> Result<Self, PostProcessingMiddlewareValidationError> {
         use PostProcessingMiddlewareValidationError::*;
 
@@ -40,7 +40,7 @@ impl<'a> PostProcessingMiddleware<'a> {
         if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
-            if output_type == ResolvedType::UNIT_TYPE {
+            if output_type == Type::UNIT_TYPE {
                 return Err(CannotFalliblyReturnTheUnitType);
             }
         }
@@ -71,16 +71,16 @@ impl<'a> PostProcessingMiddleware<'a> {
         Ok(Self { callable: c })
     }
 
-    pub fn output_type(&self) -> &ResolvedType {
+    pub fn output_type(&self) -> &Type {
         self.callable.output.as_ref().unwrap()
     }
 
-    pub fn input_types(&self) -> &[ResolvedType] {
+    pub fn input_types(&self) -> &[Type] {
         self.callable.inputs.as_slice()
     }
 
     /// Returns the index of the input parameter that is a `Response`.
-    pub fn response_input_index(&self, response_type: &ResolvedType) -> usize {
+    pub fn response_input_index(&self, response_type: &Type) -> usize {
         self.callable
             .inputs
             .iter()

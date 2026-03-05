@@ -7,13 +7,13 @@ use std::sync::Arc;
 use ahash::HashMap;
 use guppy::PackageId;
 use once_cell::sync::OnceCell;
-use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
+use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType};
 use tracing_log_error::log_error;
 
 use crate::language::{
     Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
     GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
-    ResolvedType, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
+    Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -22,7 +22,7 @@ use rustdoc_processor::queries::CrateRegistry;
 #[derive(Default)]
 pub(crate) struct GenericBindings {
     pub lifetimes: HashMap<String, String>,
-    pub types: HashMap<String, ResolvedType>,
+    pub types: HashMap<String, Type>,
 }
 
 impl std::fmt::Debug for GenericBindings {
@@ -48,7 +48,7 @@ impl std::fmt::Debug for GenericBindings {
 
 #[derive(Debug)]
 pub struct TypeResolutionError {
-    pub ty: Type,
+    pub ty: RustdocType,
     pub details: TypeResolutionErrorDetails,
 }
 
@@ -135,9 +135,9 @@ pub struct UnsupportedConstGeneric {
 #[derive(Debug)]
 pub struct UnsupportedFnPointer {
     /// The input types, enclosed in parentheses.
-    pub inputs: Vec<Type>,
+    pub inputs: Vec<RustdocType>,
     /// The output type provided after the `->`, if present.
-    pub output: Option<Type>,
+    pub output: Option<RustdocType>,
 }
 
 #[derive(Debug)]
@@ -159,13 +159,13 @@ pub struct GenericKindMismatch {
 }
 
 pub(crate) fn resolve_type(
-    type_: &Type,
+    type_: &RustdocType,
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection,
     generic_bindings: &GenericBindings,
-) -> Result<ResolvedType, TypeResolutionError> {
+) -> Result<Type, TypeResolutionError> {
     _resolve_type(
         type_,
         used_by_package_id,
@@ -179,15 +179,15 @@ pub(crate) fn resolve_type(
 }
 
 pub(crate) fn _resolve_type(
-    type_: &Type,
+    type_: &RustdocType,
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection,
     generic_bindings: &GenericBindings,
-) -> Result<ResolvedType, TypeResolutionErrorDetails> {
+) -> Result<Type, TypeResolutionErrorDetails> {
     match type_ {
-        Type::ResolvedPath(rustdoc_types::Path {
+        RustdocType::ResolvedPath(rustdoc_types::Path {
             id,
             args,
             path: name,
@@ -296,7 +296,7 @@ pub(crate) fn _resolve_type(
                                 }
                                 default
                             } else {
-                                ResolvedType::Generic(Generic {
+                                Type::Generic(Generic {
                                     name: generic_param_def.name.clone(),
                                 })
                             };
@@ -406,7 +406,7 @@ pub(crate) fn _resolve_type(
                                     }
                                     GenericParamDefKind::Type { default, .. } => {
                                         if let Some(GenericArg::Type(generic_type)) = args.get(i) {
-                                            if let Type::Generic(generic) = generic_type {
+                                            if let RustdocType::Generic(generic) = generic_type {
                                                 if let Some(resolved_type) =
                                                     generic_bindings.types.get(generic)
                                                 {
@@ -415,7 +415,7 @@ pub(crate) fn _resolve_type(
                                                     )
                                                 } else {
                                                     GenericArgument::TypeParameter(
-                                                        ResolvedType::Generic(Generic {
+                                                        Type::Generic(Generic {
                                                             name: generic.to_owned(),
                                                         }),
                                                     )
@@ -462,7 +462,7 @@ pub(crate) fn _resolve_type(
                                             }
                                             GenericArgument::TypeParameter(default)
                                         } else {
-                                            GenericArgument::TypeParameter(ResolvedType::Generic(
+                                            GenericArgument::TypeParameter(Type::Generic(
                                                 Generic {
                                                     name: arg_def.name.clone(),
                                                 },
@@ -501,10 +501,10 @@ pub(crate) fn _resolve_type(
                     base_type: base_type.to_vec(),
                     generic_arguments: generics,
                 };
-                Ok(ResolvedType::ResolvedPath(t))
+                Ok(Type::Path(t))
             }
         }
-        Type::BorrowedRef {
+        RustdocType::BorrowedRef {
             lifetime,
             type_,
             is_mutable,
@@ -530,14 +530,14 @@ pub(crate) fn _resolve_type(
             };
             Ok(t.into())
         }
-        Type::Generic(s) => {
+        RustdocType::Generic(s) => {
             if let Some(resolved_type) = generic_bindings.types.get(s) {
                 Ok(resolved_type.to_owned())
             } else {
-                Ok(ResolvedType::Generic(Generic { name: s.to_owned() }))
+                Ok(Type::Generic(Generic { name: s.to_owned() }))
             }
         }
-        Type::Tuple(t) => {
+        RustdocType::Tuple(t) => {
             let mut types = Vec::with_capacity(t.len());
             for (i, type_) in t.iter().enumerate() {
                 let type_ = resolve_type(
@@ -556,14 +556,14 @@ pub(crate) fn _resolve_type(
                 })?;
                 types.push(type_);
             }
-            Ok(ResolvedType::Tuple(Tuple { elements: types }))
+            Ok(Type::Tuple(Tuple { elements: types }))
         }
-        Type::Primitive(p) => Ok(ResolvedType::ScalarPrimitive(
+        RustdocType::Primitive(p) => Ok(Type::ScalarPrimitive(
             p.as_str()
                 .try_into()
                 .map_err(TypeResolutionErrorDetails::UnknownPrimitive)?,
         )),
-        Type::Slice(type_) => {
+        RustdocType::Slice(type_) => {
             let inner = resolve_type(
                 type_,
                 used_by_package_id,
@@ -579,38 +579,38 @@ pub(crate) fn _resolve_type(
                 ))
             })?;
 
-            Ok(ResolvedType::Slice(Slice {
+            Ok(Type::Slice(Slice {
                 element_type: Box::new(inner),
             }))
         }
-        Type::Array { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::Array { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "array" },
         )),
-        Type::DynTrait(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::DynTrait(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "dyn trait" },
         )),
-        Type::FunctionPointer(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::FunctionPointer(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind {
                 kind: "function pointer",
             },
         )),
-        Type::Pat { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::Pat { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "pattern" },
         )),
-        Type::ImplTrait(..) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::ImplTrait(..) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "impl trait" },
         )),
-        Type::Infer => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::Infer => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind {
                 kind: "inferred type",
             },
         )),
-        Type::RawPointer { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::RawPointer { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind {
                 kind: "raw pointer",
             },
         )),
-        Type::QualifiedPath { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+        RustdocType::QualifiedPath { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind {
                 kind: "qualified path",
             },
@@ -715,8 +715,8 @@ pub(crate) fn resolve_callable(
             // The first parameter might be `&self` or `&mut self`.
             // This is important to know for carrying out further analysis doing the line,
             // e.g. undoing lifetime elision.
-            if let Type::BorrowedRef { type_, .. } = parameter_type
-                && let Type::Generic(g) = type_.deref()
+            if let RustdocType::BorrowedRef { type_, .. } = parameter_type
+                && let RustdocType::Generic(g) = type_.deref()
                 && g == "Self"
             {
                 takes_self_as_ref = true;
@@ -904,11 +904,11 @@ fn get_trait_generic_bindings(
 pub(crate) fn resolve_type_path(
     path: &FQPath,
     krate_collection: &CrateCollection,
-) -> Result<ResolvedType, TypePathResolutionError> {
+) -> Result<Type, TypePathResolutionError> {
     fn _resolve_type_path(
         path: &FQPath,
         krate_collection: &CrateCollection,
-    ) -> Result<ResolvedType, anyhow::Error> {
+    ) -> Result<Type, anyhow::Error> {
         let item = path.find_rustdoc_item_type(krate_collection)?.1;
         resolve_type_path_with_item(path, &item, krate_collection)
     }
@@ -923,7 +923,7 @@ pub(crate) fn resolve_type_path_with_item(
     path: &FQPath,
     resolved_item: &ResolvedItem,
     krate_collection: &CrateCollection,
-) -> Result<ResolvedType, anyhow::Error> {
+) -> Result<Type, anyhow::Error> {
     let item = &resolved_item.item;
     let used_by_package_id = resolved_item.item_id.package_id();
     let (global_type_id, base_type) =
@@ -996,7 +996,7 @@ pub(crate) fn resolve_type_path_with_item(
                         }
                         GenericArgument::TypeParameter(default)
                     } else {
-                        GenericArgument::TypeParameter(ResolvedType::Generic(Generic {
+                        GenericArgument::TypeParameter(Type::Generic(Generic {
                             name: generic_def.name.clone(),
                         }))
                     }
@@ -1057,7 +1057,7 @@ pub(crate) struct UnsupportedCallableKind {
 pub(crate) struct InputParameterResolutionError {
     pub callable_path: FQPath,
     pub callable_item: rustdoc_types::Item,
-    pub parameter_type: Type,
+    pub parameter_type: RustdocType,
     pub parameter_index: usize,
     #[source]
     pub source: Arc<anyhow::Error>,
@@ -1088,7 +1088,7 @@ pub(crate) struct GenericParameterResolutionError {
 pub(crate) struct OutputTypeResolutionError {
     pub callable_path: FQPath,
     pub callable_item: rustdoc_types::Item,
-    pub output_type: Type,
+    pub output_type: RustdocType,
     #[source]
     pub source: Arc<anyhow::Error>,
 }
@@ -1098,8 +1098,8 @@ pub(crate) struct OutputTypeResolutionError {
 /// is a nightly-only type.
 /// If you spell it out, the code won't compile on stable, even though it does
 /// exactly the same thing as omitting the parameter.
-fn skip_default(krate_collection: &CrateCollection, default: &ResolvedType) -> bool {
-    static GLOBAL_ALLOCATOR: OnceCell<ResolvedType> = OnceCell::new();
+fn skip_default(krate_collection: &CrateCollection, default: &Type) -> bool {
+    static GLOBAL_ALLOCATOR: OnceCell<Type> = OnceCell::new();
 
     let alloc = GLOBAL_ALLOCATOR
         .get_or_init(|| super::utils::resolve_type_path("alloc::alloc::Global", krate_collection));

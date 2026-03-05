@@ -26,7 +26,7 @@ use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
-use crate::language::{Callable, GenericArgument, ResolvedType};
+use crate::language::{Callable, GenericArgument, Type};
 use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 
 use self::application_config::ApplicationConfig;
@@ -43,7 +43,7 @@ pub(crate) fn codegen_app(
     router: &Router,
     handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
     application_state_call_graph: &ApplicationStateCallGraph,
-    request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
+    request_scoped_framework_bindings: &BiHashMap<Ident, Type>,
     package_id2name: &BiHashMap<PackageId, String>,
     application_state: &ApplicationState,
     application_config: &ApplicationConfig,
@@ -200,7 +200,7 @@ pub(crate) fn codegen_manifest<'a, I>(
     handler_call_graphs: I,
     application_state_call_graph: &'a RawCallGraph,
     application_config: &'a ApplicationConfig,
-    request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
+    request_scoped_framework_bindings: &'a BiHashMap<Ident, Type>,
     codegen_deps: &'a HashMap<String, PackageId>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
@@ -245,7 +245,7 @@ fn compute_dependencies<'a, I>(
     handler_pipelines: I,
     application_state_call_graph: &'a RawCallGraph,
     application_config: &'a ApplicationConfig,
-    request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
+    request_scoped_framework_bindings: &'a BiHashMap<Ident, Type>,
     codegen_deps: &'a HashMap<String, PackageId>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
@@ -379,7 +379,7 @@ fn collect_package_ids<'a, I>(
     handler_pipelines: I,
     application_state_call_graph: &'a RawCallGraph,
     application_config: &'a ApplicationConfig,
-    request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
+    request_scoped_framework_bindings: &'a BiHashMap<Ident, Type>,
     codegen_deps: &'a HashMap<String, PackageId>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
@@ -457,9 +457,9 @@ fn collect_callable_package_ids(package_ids: &mut IndexSet<PackageId>, c: &Calla
     }
 }
 
-fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedType) {
+fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &Type) {
     match t {
-        ResolvedType::ResolvedPath(t) => {
+        Type::Path(t) => {
             package_ids.insert(t.package_id.clone());
             for generic in &t.generic_arguments {
                 match generic {
@@ -468,15 +468,15 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedT
                 }
             }
         }
-        ResolvedType::Reference(t) => collect_type_package_ids(package_ids, &t.inner),
-        ResolvedType::Tuple(t) => {
+        Type::Reference(t) => collect_type_package_ids(package_ids, &t.inner),
+        Type::Tuple(t) => {
             for element in &t.elements {
                 collect_type_package_ids(package_ids, element)
             }
         }
-        ResolvedType::Slice(s) => {
+        Type::Slice(s) => {
             collect_type_package_ids(package_ids, &s.element_type);
         }
-        ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
+        Type::Generic(_) | Type::ScalarPrimitive(_) => {}
     }
 }

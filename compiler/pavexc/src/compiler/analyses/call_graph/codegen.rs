@@ -24,7 +24,7 @@ use crate::compiler::codegen_utils;
 use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::language::ResolvedType;
+use crate::language::Type;
 
 /// Generate the dependency closure of the [`OrderedCallGraph`]'s root callable.
 ///
@@ -39,7 +39,7 @@ pub(crate) fn codegen_callable_closure(
     let input_parameter_types = call_graph.required_input_types();
     let mut variable_generator = VariableNameGenerator::new();
     // Assign a unique parameter name to each input parameter type.
-    let parameter_bindings: HashMap<ResolvedType, Ident> = input_parameter_types
+    let parameter_bindings: HashMap<Type, Ident> = input_parameter_types
         .iter()
         .map(|type_| {
             let parameter_name = variable_generator.generate();
@@ -204,7 +204,7 @@ impl BasicBlockVisitor {
 /// [`CallGraph`]: crate::compiler::analyses::call_graph::CallGraph
 fn codegen_callable_closure_body(
     ocg: &OrderedCallGraph,
-    parameter_bindings: &HashMap<ResolvedType, Ident>,
+    parameter_bindings: &HashMap<Type, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -267,7 +267,7 @@ fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, BTreeSet
 fn _codegen_callable_closure_body(
     target_terminals: &BTreeSet<NodeIndex>,
     call_graph: &RawCallGraph,
-    parameter_bindings: &HashMap<ResolvedType, Ident>,
+    parameter_bindings: &HashMap<Type, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -515,7 +515,7 @@ fn get_node_type_inputs<'a, 'b: 'a>(
     call_graph: &'a RawCallGraph,
     component_db: &'b ComponentDb,
     computation_db: &'b ComputationDb,
-) -> impl Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)> + 'a {
+) -> impl Iterator<Item = (NodeIndex, Type, CallGraphEdgeMetadata)> + 'a {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
         .filter_map(move |edge| {

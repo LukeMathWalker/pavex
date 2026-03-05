@@ -5,7 +5,7 @@ use indexmap::IndexSet;
 
 pub(crate) use match_result::{MatchResult, MatchResultVariant};
 
-use crate::language::{Callable, ResolvedType};
+use crate::language::{Callable, Type};
 
 mod match_result;
 
@@ -32,7 +32,7 @@ pub(crate) enum Computation<'a> {
     ///
     /// You could say that it's a bit of a hack to list this as a "computation".
     /// Open to suggestions on how to model this better!
-    PrebuiltType(Cow<'a, ResolvedType>),
+    PrebuiltType(Cow<'a, Type>),
 }
 
 impl Computation<'_> {
@@ -58,7 +58,7 @@ impl Computation<'_> {
     }
 
     /// The types required as input parameters by this computation.
-    pub fn input_types(&self) -> Cow<'_, [ResolvedType]> {
+    pub fn input_types(&self) -> Cow<'_, [Type]> {
         match self {
             Computation::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
             Computation::MatchResult(m) => Cow::Owned(vec![m.input.clone()]),
@@ -69,7 +69,7 @@ impl Computation<'_> {
     /// The type returned by this computation.
     ///
     /// This is `None` for computations that don't return a value.
-    pub fn output_type(&self) -> Option<&crate::language::ResolvedType> {
+    pub fn output_type(&self) -> Option<&crate::language::Type> {
         match self {
             Computation::Callable(c) => c.output.as_ref(),
             Computation::MatchResult(m) => Some(&m.output),
@@ -83,7 +83,7 @@ impl Computation<'_> {
     /// The newly "bound" computation will be returned.
     pub fn bind_generic_type_parameters(
         &self,
-        bindings: &HashMap<String, ResolvedType>,
+        bindings: &HashMap<String, Type>,
     ) -> Computation<'_> {
         match self {
             Computation::Callable(c) => {
