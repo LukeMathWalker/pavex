@@ -30,7 +30,13 @@ impl<'a> UnassignedIdGenerator<'a> {
         }
     }
 
-    pub(crate) fn into_iter(self) -> impl Iterator<Item = (&'a str, usize)> {
-        self.known_ids.into_iter()
+    /// Iterate over the known ids, sorted by their assigned ID (i.e. insertion order).
+    ///
+    /// This is important because `HashMap` iteration order is arbitrary,
+    /// and callers rely on pairing entries by position across two generators.
+    pub(crate) fn into_sorted_iter(self) -> impl Iterator<Item = (&'a str, usize)> {
+        let mut entries: Vec<_> = self.known_ids.into_iter().collect();
+        entries.sort_by_key(|(_, id)| *id);
+        entries.into_iter()
     }
 }
