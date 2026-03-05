@@ -6,6 +6,7 @@ use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 use crate::compiler::resolvers::resolve_type;
 use crate::language::{PathType, ResolvedType};
 use crate::rustdoc::{Crate, CrateCollection};
+use rustdoc_processor::CrateRegistry;
 
 use super::resolvers::GenericBindings;
 
