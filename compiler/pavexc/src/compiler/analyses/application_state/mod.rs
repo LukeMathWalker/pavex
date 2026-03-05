@@ -19,7 +19,7 @@ use super::{
 };
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
-    language::{Callable, GenericArgument, InvocationStyle, ResolvedType},
+    language::{Callable, GenericArgument, InvocationStyle, PathTypeExt, ResolvedType},
     rustdoc::CrateCollection,
 };
 use indexmap::{IndexMap, IndexSet};

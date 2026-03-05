@@ -5,7 +5,9 @@ use crate::compiler::analyses::components::{ConsumptionMode, InsertTransformer};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::language::{Callable, FQPath, FQPathSegment, InvocationStyle, ResolvedType};
+use crate::language::{
+    Callable, FQPath, FQPathSegment, InvocationStyle, PathTypeExt, ResolvedType,
+};
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
 /// error returned by a fallible computation.

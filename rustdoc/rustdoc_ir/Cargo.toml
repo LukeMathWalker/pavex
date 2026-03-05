@@ -1,0 +1,16 @@
+[package]
+name = "rustdoc_ir"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ahash = { workspace = true }
+anyhow = { workspace = true }
+bimap = { workspace = true }
+guppy = { workspace = true }
+indexmap = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+syn = { workspace = true }
+rustdoc-types = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

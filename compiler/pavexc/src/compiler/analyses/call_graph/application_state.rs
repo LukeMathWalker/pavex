@@ -23,7 +23,8 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType, ResolvedType,
+    Callable, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType, PathTypeExt,
+    ResolvedType,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
