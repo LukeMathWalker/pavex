@@ -18,8 +18,12 @@ use guppy::graph::PackageGraph;
 use rustdoc_types::Item;
 
 use crate::CannotGetCrateData;
+use crate::crate_data::CrateData;
 use crate::global_item_id::GlobalItemId;
-use crate::indexing::{ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id};
+use crate::indexing::{
+    EagerImportPath2Id, ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id,
+    IndexingVisitor, NoopVisitor, index_local_types,
+};
 use crate::unknown_item_path::UnknownItemPath;
 
 /// Thin wrapper around [`rustdoc_types::Crate`] to:
@@ -52,6 +56,77 @@ pub struct Crate {
 }
 
 impl Crate {
+    /// Build a fully indexed [`Crate`] from raw [`CrateData`].
+    ///
+    /// Runs [`index_local_types`] with the provided visitor, builds the
+    /// `import_path2id` map, and assembles the result.
+    #[tracing::instrument(skip_all, name = "index_crate_docs", fields(package.id = package_id.repr()))]
+    pub fn index(
+        krate: CrateData,
+        package_id: PackageId,
+        visitor: &mut impl IndexingVisitor,
+    ) -> Self {
+        use indexmap::IndexSet;
+        use rustdoc_types::ItemKind;
+
+        let mut import_path2id: HashMap<_, _> = krate
+            .paths
+            .iter()
+            .filter_map(|(id, summary)| {
+                // We only want types, no macros
+                if matches!(summary.kind(), ItemKind::Macro | ItemKind::ProcDerive) {
+                    return None;
+                }
+                // We will index local items on our own.
+                // We don't get them from `paths` because it may include private items
+                // as well, and we don't have a way to figure out if an item is private
+                // or not from the summary info.
+                if summary.crate_id() == 0 {
+                    return None;
+                }
+
+                Some((summary.path().into_owned(), id.to_owned()))
+            })
+            .collect();
+
+        let mut import_index = ImportIndex::default();
+        let mut external_re_exports = Default::default();
+        index_local_types(
+            &krate,
+            &package_id,
+            IndexSet::new(),
+            vec![],
+            &mut import_index,
+            &mut external_re_exports,
+            visitor,
+            &krate.root_item_id,
+            true,
+            None,
+            false,
+        );
+
+        import_path2id.reserve(import_index.items.len());
+        for (id, entry) in import_index.items.iter() {
+            for path in entry.public_paths.iter().chain(entry.private_paths.iter()) {
+                if !import_path2id.contains_key(&path.0) {
+                    import_path2id.insert(path.0.clone(), id.to_owned());
+                }
+            }
+        }
+
+        Crate::new(
+            CrateCore { package_id, krate },
+            ImportPath2Id::Eager(EagerImportPath2Id(import_path2id)),
+            external_re_exports,
+            import_index,
+        )
+    }
+
+    /// Index a `CrateData` without any visitor hooks.
+    pub fn index_without_visitor(krate: CrateData, package_id: PackageId) -> Self {
+        Self::index(krate, package_id, &mut NoopVisitor)
+    }
+
     /// Create a new `Crate` from its constituent parts.
     pub fn new(
         core: CrateCore,
@@ -242,7 +317,7 @@ impl Crate {
         }
         Err(anyhow::anyhow!(
             "Failed to find an importable path for the type id `{:?}` in the index I computed for `{:?}`. \
-            This is likely to be a bug in pavex's handling of rustdoc's JSON output or in rustdoc itself.",
+            This is likely to be a bug in the handling of rustdoc's JSON output or in rustdoc itself.",
             type_id,
             self.core.package_id.repr()
         ))
