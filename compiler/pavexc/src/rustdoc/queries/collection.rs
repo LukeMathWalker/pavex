@@ -556,7 +556,6 @@ impl CrateCollection {
         };
         Ok(Ok((resolved_path, resolved_item)))
     }
-
 }
 
 impl CrateRegistry for CrateCollection {

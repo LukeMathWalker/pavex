@@ -30,15 +30,15 @@ pub struct CacheEntry<'a> {
 /// It tries to capture all the information that can influence the output of the
 /// relevant `rustdoc` command.
 #[derive(Debug)]
-pub struct ThirdPartyCrateCacheKey<'a> {
-    pub crate_name: &'a str,
-    pub crate_source: Cow<'a, str>,
-    pub crate_version: String,
+pub(crate) struct ThirdPartyCrateCacheKey<'a> {
+    pub(crate) crate_name: &'a str,
+    pub(crate) crate_source: Cow<'a, str>,
+    pub(crate) crate_version: String,
     /// The hash of the crate's source code.
     /// It is only populated for path dependencies.
-    pub crate_hash: Option<String>,
-    pub cargo_fingerprint: &'a str,
-    pub rustdoc_options: String,
-    pub default_feature_is_enabled: bool,
-    pub active_named_features: String,
+    pub(crate) crate_hash: Option<String>,
+    pub(crate) cargo_fingerprint: &'a str,
+    pub(crate) rustdoc_options: String,
+    pub(crate) default_feature_is_enabled: bool,
+    pub(crate) active_named_features: String,
 }

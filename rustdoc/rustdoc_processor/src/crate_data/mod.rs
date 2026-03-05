@@ -4,9 +4,7 @@ mod item_index;
 mod item_paths;
 
 pub use item_index::{CrateItemIndex, EagerCrateItemIndex, LazyCrateItemIndex};
-pub use item_paths::{
-    CrateItemPaths, CrateItemPathsIter, EagerCrateItemPaths, ItemSummaryRef, LazyCrateItemPaths,
-};
+pub use item_paths::{CrateItemPaths, EagerCrateItemPaths, LazyCrateItemPaths};
 
 use rustc_hash::FxHashMap;
 use rustdoc_types::ExternalCrate;

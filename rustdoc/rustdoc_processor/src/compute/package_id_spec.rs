@@ -7,10 +7,10 @@ use guppy::{PackageId, Version};
 /// A selector that follows the [package ID specification](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html).
 /// It is used as argument to the `-p`/`--package` flag in `cargo`'s commands.
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
-pub struct PackageIdSpecification {
-    pub source: Option<String>,
-    pub name: String,
-    pub version: Option<Version>,
+pub(crate) struct PackageIdSpecification {
+    pub(crate) source: Option<String>,
+    pub(crate) name: String,
+    pub(crate) version: Option<Version>,
 }
 
 impl PackageIdSpecification {

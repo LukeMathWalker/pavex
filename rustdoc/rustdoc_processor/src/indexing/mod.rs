@@ -4,9 +4,11 @@ mod import_index;
 mod import_path;
 mod re_exports;
 
-pub use import_index::{EntryVisibility, ImportIndex, ImportIndexEntry, SortablePath};
+pub use import_index::ImportIndex;
+pub(crate) use import_index::{EntryVisibility, ImportIndexEntry};
 pub use import_path::{EagerImportPath2Id, ImportPath2Id, LazyImportPath2Id};
-pub use re_exports::{ExternalReExport, ExternalReExports};
+pub(crate) use re_exports::ExternalReExport;
+pub use re_exports::ExternalReExports;
 
 use guppy::PackageId;
 use indexmap::IndexSet;
@@ -23,14 +25,15 @@ pub trait IndexingVisitor {
 }
 
 /// No-op visitor for consumers that don't need hooks.
-pub struct NoopVisitor;
+pub(crate) struct NoopVisitor;
 
 impl IndexingVisitor for NoopVisitor {
     fn on_item_discovered(&mut self, _item: &rustdoc_types::Item, _item_id: rustdoc_types::Id) {}
     fn on_type_indexed(&mut self, _item_id: rustdoc_types::Id) {}
 }
 
-pub fn index_local_types<'a, V: IndexingVisitor>(
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn index_local_types<'a, V: IndexingVisitor>(
     krate: &'a CrateData,
     package_id: &'a PackageId,
     // The ordered set of modules we navigated to reach this item.

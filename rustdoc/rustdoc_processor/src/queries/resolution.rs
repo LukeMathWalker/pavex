@@ -6,14 +6,16 @@ use rustc_hash::FxHashMap;
 use rustdoc_types::ExternalCrate;
 use tracing_log_error::log_error;
 
-use crate::{TOOLCHAIN_CRATES, VersionMatcher, normalize_crate_name};
+use crate::TOOLCHAIN_CRATES;
+use crate::utils::normalize_crate_name;
+use crate::version_matcher::VersionMatcher;
 
 /// The information used by [`Crate::compute_package_id_for_crate_id_with_hint`](super::Crate::compute_package_id_for_crate_id_with_hint)
 /// to map a `crate_id` to a `package_id`.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct CrateIdNeedle {
-    pub crate_id: u32,
-    pub maybe_dependent_crate_name: Option<String>,
+pub(crate) struct CrateIdNeedle {
+    pub(crate) crate_id: u32,
+    pub(crate) maybe_dependent_crate_name: Option<String>,
 }
 
 fn get_external_crate_version(external_crate: &ExternalCrate) -> Option<Version> {
@@ -33,7 +35,7 @@ fn get_external_crate_version(external_crate: &ExternalCrate) -> Option<Version>
 /// It panics if the provided crate id doesn't appear in the JSON documentation
 /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
 #[allow(clippy::disallowed_types)]
-pub fn compute_package_id_for_crate_id(
+pub(crate) fn compute_package_id_for_crate_id(
     // The package id of the crate whose documentation we are currently processing.
     package_id: &PackageId,
     // The mapping from crate id to external crate object.

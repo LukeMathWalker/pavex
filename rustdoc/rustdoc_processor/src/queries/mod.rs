@@ -6,8 +6,8 @@ pub(crate) mod resolution;
 
 pub use self::core::CrateCore;
 pub use registry::CrateRegistry;
-pub use resolution::{CrateIdNeedle, compute_package_id_for_crate_id};
 
+use resolution::CrateIdNeedle;
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
 
@@ -52,7 +52,7 @@ pub struct Crate {
     /// An internal cache to avoid traversing the package graph every time we need to
     /// translate a crate id into a package id via [`Self::compute_package_id_for_crate_id`]
     /// or [`Self::compute_package_id_for_crate_id_with_hint`].
-    pub crate_id2package_id: Arc<RwLock<HashMap<CrateIdNeedle, PackageId>>>,
+    pub(crate) crate_id2package_id: Arc<RwLock<HashMap<CrateIdNeedle, PackageId>>>,
 }
 
 impl Crate {
