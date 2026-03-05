@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType, Type, Slice,
+    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, Type, Slice,
     Tuple, TypeReference,
 };
 
@@ -320,8 +320,8 @@ impl Type {
                     match arg {
                         GenericArgument::Lifetime(lifetime) => {
                             if matches!(lifetime, GenericLifetimeParameter::Inferred) {
-                                *lifetime = GenericLifetimeParameter::Named(
-                                    NamedLifetime::new(inferred_lifetime.clone()),
+                                *lifetime = GenericLifetimeParameter::from_name(
+                                    inferred_lifetime.clone(),
                                 );
                             }
                         }
@@ -334,10 +334,10 @@ impl Type {
             Type::Reference(r) => {
                 match &r.lifetime {
                     Lifetime::Inferred => {
-                        r.lifetime = Lifetime::Named(NamedLifetime::new(inferred_lifetime.clone()));
+                        r.lifetime = Lifetime::from_name(inferred_lifetime.clone());
                     }
                     Lifetime::Elided => {
-                        r.lifetime = Lifetime::Named(NamedLifetime::new(inferred_lifetime.clone()));
+                        r.lifetime = Lifetime::from_name(inferred_lifetime.clone());
                     }
                     Lifetime::Static | Lifetime::Named(_) => {}
                 }

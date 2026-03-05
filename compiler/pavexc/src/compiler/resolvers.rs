@@ -13,7 +13,7 @@ use tracing_log_error::log_error;
 use crate::language::{
     Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
     GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
-    ResolvedPathLifetime, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
+    Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -926,17 +926,9 @@ pub(crate) fn resolve_type_path_with_item(
                 FQGenericArgument::Type(t) => {
                     GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
-                FQGenericArgument::Lifetime(l) => match l {
-                    ResolvedPathLifetime::Static => {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Static)
-                    }
-                    ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
-                        GenericLifetimeParameter::Named(name.clone()),
-                    ),
-                    ResolvedPathLifetime::Inferred => {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Inferred)
-                    }
-                },
+                FQGenericArgument::Lifetime(l) => {
+                    GenericArgument::Lifetime(l.clone().into())
+                }
             };
             generic_arguments.push(arg);
         }
@@ -955,17 +947,9 @@ pub(crate) fn resolve_type_path_with_item(
                 FQGenericArgument::Type(t) => {
                     GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
-                FQGenericArgument::Lifetime(l) => match l {
-                    ResolvedPathLifetime::Static => {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Static)
-                    }
-                    ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
-                        GenericLifetimeParameter::Named(name.clone()),
-                    ),
-                    ResolvedPathLifetime::Inferred => {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Inferred)
-                    }
-                },
+                FQGenericArgument::Lifetime(l) => {
+                    GenericArgument::Lifetime(l.clone().into())
+                }
             }
         } else {
             match &generic_def.kind {
