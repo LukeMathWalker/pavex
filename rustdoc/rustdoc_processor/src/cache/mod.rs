@@ -1,10 +1,13 @@
 //! SQLite-based caching for rustdoc JSON documentation.
 
 pub(crate) mod checksum;
-pub(crate) mod entry;
+pub mod entry;
 mod third_party;
 mod toolchain;
-pub(crate) mod utils;
+pub mod utils;
+
+pub use entry::{CacheEntry, SecondaryIndexes};
+pub use utils::RkyvCowBytes;
 
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
@@ -17,7 +20,6 @@ use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 
 use crate::TOOLCHAIN_CRATES;
-use crate::cache::entry::CacheEntry;
 use crate::crate_data::CrateData;
 use crate::indexing::{ExternalReExports, ImportIndex, ImportPath2Id};
 

@@ -19,7 +19,7 @@ use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive,
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
-use rustdoc_processor::CrateRegistry;
+use rustdoc_processor::queries::CrateRegistry;
 
 use super::krate_name::CrateNameResolutionError;
 use super::krate2package_id;

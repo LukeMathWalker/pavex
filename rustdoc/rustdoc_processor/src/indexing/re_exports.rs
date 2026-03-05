@@ -2,7 +2,7 @@
 
 use ahash::HashMap;
 
-use crate::CannotGetCrateData;
+use crate::compute::CannotGetCrateData;
 use crate::crate_data::CrateData;
 use crate::global_item_id::GlobalItemId;
 use crate::queries::Crate;

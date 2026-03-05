@@ -5,7 +5,7 @@ use guppy::graph::PackageGraph;
 use rustdoc_types::Item;
 
 use super::Crate;
-use crate::CannotGetCrateData;
+use crate::compute::CannotGetCrateData;
 use crate::global_item_id::GlobalItemId;
 
 /// A trait providing cross-crate access during type resolution.
