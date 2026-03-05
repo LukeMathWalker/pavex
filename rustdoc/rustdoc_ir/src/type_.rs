@@ -198,7 +198,12 @@ impl Type {
                 concrete_primitive == templated_primitive
             }
             (_, Generic(parameter)) => {
-                bindings.insert(parameter.name.clone(), concrete_type.clone());
+                let previous = bindings.insert(parameter.name.clone(), concrete_type.clone());
+                if let Some(previous) = previous
+                    && &previous != concrete_type
+                {
+                    return false;
+                }
                 true
             }
             (_, _) => false,
@@ -219,8 +224,8 @@ impl Type {
         if self._is_equivalent_to(other, &mut self_id_gen, &mut other_id_gen) {
             Some(
                 self_id_gen
-                    .into_iter()
-                    .zip(other_id_gen.into_iter())
+                    .into_sorted_iter()
+                    .zip(other_id_gen.into_sorted_iter())
                     .map(|((self_name, _), (other_name, _))| (self_name, other_name))
                     .collect(),
             )
@@ -248,13 +253,18 @@ impl Type {
             (Reference(self_reference), Reference(other_reference)) => self_reference
                 .inner
                 ._is_equivalent_to(&other_reference.inner, self_id_gen, other_id_gen),
-            (Tuple(self_tuple), Tuple(other_tuple)) => self_tuple
-                .elements
-                .iter()
-                .zip(other_tuple.elements.iter())
-                .all(|(self_type, other_type)| {
-                    self_type._is_equivalent_to(other_type, self_id_gen, other_id_gen)
-                }),
+            (Tuple(self_tuple), Tuple(other_tuple)) => {
+                if self_tuple.elements.len() != other_tuple.elements.len() {
+                    return false;
+                }
+                self_tuple
+                    .elements
+                    .iter()
+                    .zip(other_tuple.elements.iter())
+                    .all(|(self_type, other_type)| {
+                        self_type._is_equivalent_to(other_type, self_id_gen, other_id_gen)
+                    })
+            }
             (ScalarPrimitive(self_p), ScalarPrimitive(other_p)) => self_p == other_p,
             (Generic(self_g), Generic(other_g)) => {
                 let first_id = self_id_gen.id(&self_g.name);
@@ -308,11 +318,18 @@ impl Type {
         match self {
             Type::Path(path) => {
                 for arg in path.generic_arguments.iter_mut() {
-                    if let GenericArgument::Lifetime(lifetime) = arg
-                        && let GenericLifetimeParameter::Named(name) = lifetime
-                        && name == "_"
-                    {
-                        *lifetime = GenericLifetimeParameter::Named(inferred_lifetime.clone());
+                    match arg {
+                        GenericArgument::Lifetime(lifetime) => {
+                            if let GenericLifetimeParameter::Named(name) = lifetime
+                                && name == "_"
+                            {
+                                *lifetime =
+                                    GenericLifetimeParameter::Named(inferred_lifetime.clone());
+                            }
+                        }
+                        GenericArgument::TypeParameter(t) => {
+                            t.set_implicit_lifetimes(inferred_lifetime.clone());
+                        }
                     }
                 }
             }
