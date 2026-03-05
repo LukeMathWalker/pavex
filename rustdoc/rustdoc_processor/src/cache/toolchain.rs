@@ -6,7 +6,8 @@ use guppy::PackageId;
 use rusqlite::params;
 use tracing::instrument;
 
-use super::entry::{CacheEntry, RkyvCowBytes, SecondaryIndexes};
+use super::entry::{CacheEntry, SecondaryIndexes};
+use super::utils::RkyvCowBytes;
 use crate::crate_data::{
     CrateData, CrateItemIndex, CrateItemPaths, LazyCrateItemIndex, LazyCrateItemPaths,
 };

@@ -1,8 +1,10 @@
 //! SQLite-based caching for rustdoc JSON documentation.
 
+pub(crate) mod checksum;
 pub(crate) mod entry;
 mod third_party;
 mod toolchain;
+pub(crate) mod utils;
 
 use std::collections::BTreeSet;
 use std::marker::PhantomData;

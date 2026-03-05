@@ -10,8 +10,9 @@ use rusqlite::params;
 use tracing::instrument;
 use tracing_log_error::log_error;
 
-use super::entry::{CacheEntry, RkyvCowBytes, SecondaryIndexes, ThirdPartyCrateCacheKey};
-use crate::checksum::checksum_crate;
+use super::checksum::checksum_crate;
+use super::entry::{CacheEntry, SecondaryIndexes, ThirdPartyCrateCacheKey};
+use super::utils::RkyvCowBytes;
 use crate::rustdoc_options;
 
 use super::HydratedCacheEntry;

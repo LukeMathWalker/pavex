@@ -12,7 +12,6 @@
 //!    cross-crate references, and retrieve canonical import paths.
 
 mod cache;
-mod checksum;
 mod compute;
 mod crate_data;
 mod global_item_id;
@@ -23,7 +22,8 @@ mod utils;
 mod version_matcher;
 
 // Cache
-pub use cache::entry::{CacheEntry, RkyvCowBytes, SecondaryIndexes, ThirdPartyCrateCacheKey};
+pub use cache::entry::{CacheEntry, SecondaryIndexes, ThirdPartyCrateCacheKey};
+pub use cache::utils::RkyvCowBytes;
 pub use cache::{
     HydratedCacheEntry, ProcessedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache,
     cargo_fingerprint,
@@ -55,7 +55,7 @@ pub use global_item_id::GlobalItemId;
 pub use unknown_item_path::UnknownItemPath;
 
 // Utilities
-pub use checksum::checksum_crate;
+pub use cache::checksum::checksum_crate;
 pub use utils::normalize_crate_name;
 pub use version_matcher::VersionMatcher;
 
