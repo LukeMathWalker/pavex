@@ -56,6 +56,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                                 Type::ScalarPrimitive(_)
                                 | Type::Reference(_)
                                 | Type::Slice(_)
+                                | Type::Array(_)
                                 | Type::RawPointer(_) => {
                                     return None;
                                 }

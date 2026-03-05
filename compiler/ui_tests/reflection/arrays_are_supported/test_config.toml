@@ -1,0 +1,4 @@
+description = "pavex supports array types as input parameters"
+
+[expectations]
+codegen = "pass"

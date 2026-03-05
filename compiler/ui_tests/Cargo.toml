@@ -289,6 +289,8 @@ members = [
   "reflection/ambiguous_dependency_version_is_handled/generated_app",
   "reflection/arc_singletons_are_supported",
   "reflection/arc_singletons_are_supported/generated_app",
+  "reflection/arrays_are_supported",
+  "reflection/arrays_are_supported/generated_app",
   "reflection/common_response_types_are_supported",
   "reflection/common_response_types_are_supported/generated_app",
   "reflection/crate_resolution/dependencies_can_register_local_items",

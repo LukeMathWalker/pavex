@@ -105,6 +105,9 @@ impl Type {
             Type::Slice(s) => {
                 write!(buffer, "[{}]", s.element_type.render_type(id2name)).unwrap();
             }
+            Type::Array(a) => {
+                write!(buffer, "[{}; {}]", a.element_type.render_type(id2name), a.len).unwrap();
+            }
             Type::RawPointer(r) => {
                 if r.is_mutable {
                     write!(buffer, "*mut ").unwrap();

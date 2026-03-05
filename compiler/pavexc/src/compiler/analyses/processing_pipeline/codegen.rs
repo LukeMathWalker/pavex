@@ -391,6 +391,7 @@ impl CodegenedRequestHandlerPipeline {
                     }
                 }
                 Type::Slice(_)
+                | Type::Array(_)
                 | Type::Path(_)
                 | Type::Tuple(_)
                 | Type::ScalarPrimitive(_)

@@ -228,6 +228,19 @@ pub(crate) fn implements_trait(
             }
             // TODO: handle Unpin + other traits
         }
+        Type::Array(a) => {
+            // Arrays implement Send/Sync/Copy/Clone/Unpin if their element type does.
+            if (expected_trait.base_type == SEND_TRAIT_PATH
+                || expected_trait.base_type == SYNC_TRAIT_PATH
+                || expected_trait.base_type == COPY_TRAIT_PATH
+                || expected_trait.base_type == CLONE_TRAIT_PATH
+                || expected_trait.base_type == UNPIN_TRAIT_PATH)
+                && implements_trait(krate_collection, &a.element_type, expected_trait)?
+            {
+                return Ok(true);
+            }
+            // TODO: handle other traits
+        }
         Type::RawPointer(_) => {
             // Raw pointers are `Copy` and `Clone`, but not `Send` or `Sync`.
             if expected_trait.base_type == COPY_TRAIT_PATH
@@ -369,6 +382,19 @@ fn is_equivalent(
                     krate_collection,
                     used_by_package_id,
                 );
+            }
+        }
+        RustdocType::Array { type_, len } => {
+            if let Type::Array(our_array) = our_type
+                && let Ok(parsed_len) = len.parse::<usize>()
+            {
+                return parsed_len == our_array.len
+                    && is_equivalent(
+                        type_,
+                        &our_array.element_type,
+                        krate_collection,
+                        used_by_package_id,
+                    );
             }
         }
         n => {

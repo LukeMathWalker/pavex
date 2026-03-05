@@ -292,6 +292,7 @@ fn must_be_a_plain_struct(
         Type::Tuple(t) => format!("`{t:?}` is a tuple"),
         Type::ScalarPrimitive(s) => format!("`{s:?}` is a primitive"),
         Type::Slice(s) => format!("`{s:?}` is a slice"),
+        Type::Array(a) => format!("`{a:?}` is an array"),
         Type::RawPointer(r) => format!("`{r:?}` is a raw pointer"),
         Type::Generic(_) => {
             unreachable!()

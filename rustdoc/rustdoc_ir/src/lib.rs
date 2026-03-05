@@ -1,3 +1,4 @@
+mod array;
 mod generic;
 mod generic_argument;
 pub(crate) mod generics_equivalence;
@@ -12,6 +13,7 @@ mod tuple;
 mod type_;
 mod type_reference;
 
+pub use array::Array;
 pub use generic::Generic;
 pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
 pub use named_lifetime::NamedLifetime;
@@ -36,6 +38,8 @@ pub enum Type {
     ScalarPrimitive(ScalarPrimitive),
     /// A slice type, e.g. `[u8]`.
     Slice(Slice),
+    /// A fixed-size array type, e.g. `[u8; 4]`.
+    Array(Array),
     /// A raw pointer type, e.g. `*const u8` or `*mut u8`.
     RawPointer(RawPointer),
     /// An unassigned generic type parameter, e.g. `T`.

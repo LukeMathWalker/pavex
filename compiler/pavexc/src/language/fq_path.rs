@@ -15,7 +15,7 @@ use rustdoc_types::ItemEnum;
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
-use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
+use crate::language::resolved_type::{Array, GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, RawPointer, Type, Tuple, TypeReference};
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -131,6 +131,7 @@ pub enum FQPathType {
     Tuple(FQTuple),
     ScalarPrimitive(ScalarPrimitive),
     Slice(FQSlice),
+    Array(FQArray),
     RawPointer(FQRawPointer),
 }
 
@@ -240,6 +241,13 @@ impl FQPathType {
                     element_type: Box::new(inner),
                 }))
             }
+            FQPathType::Array(a) => {
+                let inner = a.element.resolve(krate_collection)?;
+                Ok(Type::Array(Array {
+                    element_type: Box::new(inner),
+                    len: a.len,
+                }))
+            }
             FQPathType::RawPointer(r) => {
                 let inner = r.inner.resolve(krate_collection)?;
                 Ok(Type::RawPointer(RawPointer {
@@ -295,6 +303,10 @@ impl From<Type> for FQPathType {
             Type::Slice(s) => FQPathType::Slice(FQSlice {
                 element: Box::new((*s.element_type).into()),
             }),
+            Type::Array(a) => FQPathType::Array(FQArray {
+                element: Box::new((*a.element_type).into()),
+                len: a.len,
+            }),
             Type::RawPointer(r) => FQPathType::RawPointer(FQRawPointer {
                 is_mutable: r.is_mutable,
                 inner: Box::new((*r.inner).into()),
@@ -327,6 +339,12 @@ pub struct FQTuple {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FQSlice {
     pub element: Box<FQPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct FQArray {
+    pub element: Box<FQPathType>,
+    pub len: usize,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -817,6 +835,7 @@ impl FQPathType {
                 write!(buffer, "{s}").unwrap();
             }
             FQPathType::Slice(s) => s.render_path(id2name, buffer),
+            FQPathType::Array(a) => a.render_path(id2name, buffer),
             FQPathType::RawPointer(r) => r.render_path(id2name, buffer),
         }
     }
@@ -830,6 +849,7 @@ impl FQPathType {
                 write!(buffer, "{s}").unwrap();
             }
             FQPathType::Slice(s) => s.render_for_error(buffer),
+            FQPathType::Array(a) => a.render_for_error(buffer),
             FQPathType::RawPointer(r) => r.render_for_error(buffer),
         }
     }
@@ -846,6 +866,20 @@ impl FQSlice {
         write!(buffer, "[").unwrap();
         self.element.render_for_error(buffer);
         write!(buffer, "]").unwrap();
+    }
+}
+
+impl FQArray {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        write!(buffer, "[").unwrap();
+        self.element.render_path(id2name, buffer);
+        write!(buffer, "; {}]", self.len).unwrap();
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "[").unwrap();
+        self.element.render_for_error(buffer);
+        write!(buffer, "; {}]", self.len).unwrap();
     }
 }
 
@@ -994,6 +1028,9 @@ impl Display for FQPathType {
             FQPathType::Slice(s) => {
                 write!(f, "{s}")
             }
+            FQPathType::Array(a) => {
+                write!(f, "{a}")
+            }
             FQPathType::RawPointer(r) => {
                 write!(f, "{r}")
             }
@@ -1004,6 +1041,12 @@ impl Display for FQPathType {
 impl Display for FQSlice {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{}]", self.element)
+    }
+}
+
+impl Display for FQArray {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}; {}]", self.element, self.len)
     }
 }
 
