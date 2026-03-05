@@ -1,5 +1,4 @@
 mod collection;
-mod indexing;
 mod krate;
 
 // Public API (consumed via `rustdoc/mod.rs` re-exports)
