@@ -190,7 +190,7 @@ impl Callable {
             let Lifetime::Named(lifetime) = &ref_ty.lifetime else {
                 continue;
             };
-            if output_lifetime_parameters.contains(lifetime) {
+            if output_lifetime_parameters.contains(lifetime.as_str()) {
                 borrowed_indexes.push(i)
             }
         }

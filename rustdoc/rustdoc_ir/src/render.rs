@@ -5,7 +5,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use serde::{Deserializer, Serializer};
 
-use crate::{GenericArgument, GenericLifetimeParameter, Lifetime, Type};
+use crate::{GenericArgument, Lifetime, Type};
 
 pub(crate) fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -58,14 +58,9 @@ impl Type {
                             GenericArgument::TypeParameter(t) => {
                                 write!(buffer, "{}", t.render_type(id2name)).unwrap();
                             }
-                            GenericArgument::Lifetime(l) => match l {
-                                GenericLifetimeParameter::Static => {
-                                    write!(buffer, "'static").unwrap();
-                                }
-                                GenericLifetimeParameter::Named(l) => {
-                                    write!(buffer, "'{l}").unwrap();
-                                }
-                            },
+                            GenericArgument::Lifetime(l) => {
+                                write!(buffer, "{l}").unwrap();
+                            }
                         }
                         if arguments.peek().is_some() {
                             write!(buffer, ", ").unwrap();
@@ -81,7 +76,10 @@ impl Type {
                         write!(buffer, "'static ").unwrap();
                     }
                     Lifetime::Named(l) => {
-                        write!(buffer, "'{l} ").unwrap();
+                        write!(buffer, "'{} ", l.as_str()).unwrap();
+                    }
+                    Lifetime::Inferred => {
+                        write!(buffer, "'_ ").unwrap();
                     }
                     Lifetime::Elided => {}
                 }

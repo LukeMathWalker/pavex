@@ -32,8 +32,8 @@ use crate::{
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
         Callable, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf, Generic,
-        GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
-        Type,
+        GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
+        ResolvedPathLifetime, Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
@@ -605,8 +605,7 @@ fn rustdoc_new_type_def2type(
     for arg in params_def {
         let arg = match &arg.kind {
             rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
-                let lifetime = arg.name.strip_prefix("'").unwrap_or(&arg.name);
-                GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime.to_owned()))
+                GenericArgument::Lifetime(GenericLifetimeParameter::from_name(&arg.name))
             }
             rustdoc_types::GenericParamDefKind::Type { .. } => {
                 // TODO: Use the default if available.
@@ -789,12 +788,7 @@ fn rustdoc_method2callable(
             for arg in args {
                 let parsed_arg = match arg {
                     rustdoc_types::GenericArg::Lifetime(l) => {
-                        let l = l.strip_prefix("'").unwrap_or(l.as_str());
-                        if l == "static" {
-                            FQGenericArgument::Lifetime(ResolvedPathLifetime::Static)
-                        } else {
-                            FQGenericArgument::Lifetime(ResolvedPathLifetime::Named(l.into()))
-                        }
+                        FQGenericArgument::Lifetime(ResolvedPathLifetime::from_name(l))
                     }
                     rustdoc_types::GenericArg::Type(t) => {
                         let Ok(t) = resolve_type(

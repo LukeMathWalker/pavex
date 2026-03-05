@@ -12,8 +12,8 @@ use tracing_log_error::log_error;
 
 use crate::language::{
     Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
-    GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
-    Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
+    GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
+    ResolvedPathLifetime, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -390,19 +390,9 @@ pub(crate) fn _resolve_type(
                                         if let Some(GenericArg::Lifetime(l)) = args.get(i) {
                                             lifetime_name = l.clone();
                                         }
-                                        if lifetime_name == "'static" {
-                                            GenericArgument::Lifetime(
-                                                GenericLifetimeParameter::Static,
-                                            )
-                                        } else {
-                                            let name = lifetime_name.trim_start_matches('\'');
-                                            let lifetime = if name == "_" {
-                                                GenericLifetimeParameter::Named("_".into())
-                                            } else {
-                                                GenericLifetimeParameter::Named(name.to_owned())
-                                            };
-                                            GenericArgument::Lifetime(lifetime)
-                                        }
+                                        GenericArgument::Lifetime(
+                                            GenericLifetimeParameter::from_name(lifetime_name),
+                                        )
                                     }
                                     GenericParamDefKind::Type { default, .. } => {
                                         if let Some(GenericArg::Type(generic_type)) = args.get(i) {
@@ -940,8 +930,11 @@ pub(crate) fn resolve_type_path_with_item(
                     ResolvedPathLifetime::Static => {
                         GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                     }
-                    ResolvedPathLifetime::Named(name) => {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(name.clone()))
+                    ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
+                        GenericLifetimeParameter::Named(name.clone()),
+                    ),
+                    ResolvedPathLifetime::Inferred => {
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Inferred)
                     }
                 },
             };
@@ -966,22 +959,18 @@ pub(crate) fn resolve_type_path_with_item(
                     ResolvedPathLifetime::Static => {
                         GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                     }
-                    ResolvedPathLifetime::Named(name) => {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(name.clone()))
+                    ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
+                        GenericLifetimeParameter::Named(name.clone()),
+                    ),
+                    ResolvedPathLifetime::Inferred => {
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Inferred)
                     }
                 },
             }
         } else {
             match &generic_def.kind {
                 GenericParamDefKind::Lifetime { .. } => {
-                    let lifetime_name = generic_def.name.trim_start_matches('\'');
-                    if lifetime_name == "static" {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Static)
-                    } else {
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(
-                            lifetime_name.to_owned(),
-                        ))
-                    }
+                    GenericArgument::Lifetime(GenericLifetimeParameter::from_name(&generic_def.name))
                 }
                 GenericParamDefKind::Type { default, .. } => {
                     if let Some(default) = default {

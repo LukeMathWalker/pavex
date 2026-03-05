@@ -23,7 +23,7 @@ use rustdoc_processor::queries::CrateRegistry;
 
 use super::krate_name::CrateNameResolutionError;
 use super::krate2package_id;
-use super::resolved_type::GenericLifetimeParameter;
+use super::resolved_type::{GenericLifetimeParameter, NamedLifetime};
 
 /// A fully-qualified import path.
 ///
@@ -91,7 +91,25 @@ pub enum FQGenericArgument {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum ResolvedPathLifetime {
     Static,
-    Named(String),
+    Named(NamedLifetime),
+    Inferred,
+}
+
+impl ResolvedPathLifetime {
+    /// Construct from a lifetime name, with or without the leading `'`.
+    ///
+    /// Routes `"_"` → `Inferred`, `"static"` → `Static`, everything else → `Named`.
+    pub fn from_name(name: impl Into<String>) -> Self {
+        let mut name = name.into();
+        if let Some(stripped) = name.strip_prefix('\'') {
+            name = stripped.to_owned();
+        }
+        match name.as_str() {
+            "_" => ResolvedPathLifetime::Inferred,
+            "static" => ResolvedPathLifetime::Static,
+            _ => ResolvedPathLifetime::Named(NamedLifetime::new(name)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -148,13 +166,16 @@ impl FQPathType {
                                 ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
                                     GenericLifetimeParameter::Named(name.clone()),
                                 ),
+                                ResolvedPathLifetime::Inferred => {
+                                    GenericArgument::Lifetime(GenericLifetimeParameter::Inferred)
+                                }
                             },
                         }
                     } else {
                         match &param_def.kind {
                             rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
                                 GenericArgument::Lifetime(GenericLifetimeParameter::Named(
-                                    param_def.name.clone(),
+                                    NamedLifetime::new(param_def.name.clone()),
                                 ))
                             }
                             rustdoc_types::GenericParamDefKind::Type { default, .. } => {
@@ -241,7 +262,12 @@ impl From<Type> for FQPathType {
                                     FQGenericArgument::Lifetime(ResolvedPathLifetime::Static)
                                 }
                                 GenericLifetimeParameter::Named(name) => {
-                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Named(name))
+                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Named(
+                                        name,
+                                    ))
+                                }
+                                GenericLifetimeParameter::Inferred => {
+                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Inferred)
                                 }
                             },
                         })
@@ -392,7 +418,7 @@ impl FQPath {
                     Ok(FQGenericArgument::Lifetime(ResolvedPathLifetime::Static))
                 }
                 CallPathLifetime::Named(name) => Ok(FQGenericArgument::Lifetime(
-                    ResolvedPathLifetime::Named(name.to_owned()),
+                    ResolvedPathLifetime::from_name(name.to_owned()),
                 )),
             },
         }
@@ -819,7 +845,7 @@ impl FQGenericArgument {
                 ResolvedPathLifetime::Static => {
                     write!(buffer, "'static").unwrap();
                 }
-                ResolvedPathLifetime::Named(_) => {
+                ResolvedPathLifetime::Named(_) | ResolvedPathLifetime::Inferred => {
                     // TODO: we should have proper name mapping for lifetimes here, but we know all our current
                     //   usecases will work with lifetime elision.
                     write!(buffer, "'_").unwrap();
@@ -837,7 +863,7 @@ impl FQGenericArgument {
                 ResolvedPathLifetime::Static => {
                     write!(buffer, "'static").unwrap();
                 }
-                ResolvedPathLifetime::Named(_) => {
+                ResolvedPathLifetime::Named(_) | ResolvedPathLifetime::Inferred => {
                     // TODO: we should have proper name mapping for lifetimes here, but we know all our current
                     //   usecases will work with lifetime elision.
                     write!(buffer, "'_").unwrap();
@@ -1011,7 +1037,8 @@ impl Display for ResolvedPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ResolvedPathLifetime::Static => write!(f, "'static"),
-            ResolvedPathLifetime::Named(name) => write!(f, "{name}"),
+            ResolvedPathLifetime::Named(name) => write!(f, "'{}", name.as_str()),
+            ResolvedPathLifetime::Inferred => write!(f, "'_"),
         }
     }
 }
