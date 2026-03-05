@@ -168,7 +168,7 @@ impl Crate {
     pub fn compute_package_id_for_crate_id(
         &self,
         crate_id: u32,
-        registry: &impl CrateRegistry,
+        registry: &(impl CrateRegistry + ?Sized),
     ) -> Result<PackageId, anyhow::Error> {
         self.compute_package_id_for_crate_id_with_hint(crate_id, registry, None)
     }
@@ -191,7 +191,7 @@ impl Crate {
     pub fn compute_package_id_for_crate_id_with_hint(
         &self,
         crate_id: u32,
-        registry: &impl CrateRegistry,
+        registry: &(impl CrateRegistry + ?Sized),
         maybe_dependent_crate_name: Option<&str>,
     ) -> Result<PackageId, anyhow::Error> {
         let needle = CrateIdNeedle {
@@ -223,7 +223,7 @@ impl Crate {
     pub fn get_item_id_by_path(
         &self,
         path: &[String],
-        registry: &impl CrateRegistry,
+        registry: &(impl CrateRegistry + ?Sized),
     ) -> Result<Result<GlobalItemId, UnknownItemPath>, CannotGetCrateData> {
         if let Some(id) = self.import_path2id.get(path) {
             return Ok(Ok(GlobalItemId::new(id, self.core.package_id.to_owned())));

@@ -37,6 +37,7 @@ use crate::{
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
+use rustdoc_processor::CrateRegistry;
 use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_ext::RustdocKindExt;

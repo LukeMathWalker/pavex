@@ -3,6 +3,7 @@ use crate::diagnostic::{SourceSpanExt, convert_proc_macro_span, convert_rustdoc_
 use crate::language::Callable;
 use crate::rustdoc::CrateCollection;
 use guppy::graph::PackageGraph;
+use rustdoc_processor::CrateRegistry;
 use miette::{NamedSource, SourceSpan};
 use pavex_cli_diagnostic::AnnotatedSource;
 use rustdoc_types::ItemEnum;
