@@ -518,20 +518,9 @@ impl CrateCollection {
                             name2path_arg.types.insert(alias_generic.name.clone(), t);
                         }
                         FQGenericArgument::Lifetime(l) => {
-                            let l = match l {
-                                crate::language::ResolvedPathLifetime::Named(n) => {
-                                    n.as_str().to_owned()
-                                }
-                                crate::language::ResolvedPathLifetime::Static => {
-                                    "static".to_owned()
-                                }
-                                crate::language::ResolvedPathLifetime::Inferred => {
-                                    "_".to_owned()
-                                }
-                            };
                             name2path_arg
                                 .lifetimes
-                                .insert(alias_generic.name.clone(), l);
+                                .insert(alias_generic.name.clone(), l.to_binding_name());
                         }
                     }
                 }
