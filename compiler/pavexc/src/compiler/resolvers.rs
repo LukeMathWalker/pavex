@@ -11,7 +11,7 @@ use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type
 use tracing_log_error::log_error;
 
 use crate::language::{
-    Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
+    Array, Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
     GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
     RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
@@ -83,6 +83,13 @@ impl std::fmt::Display for TypeResolutionError {
                     unsupported_type_kind.kind
                 )
             }
+            TypeResolutionErrorDetails::UnsupportedArrayLength(unsupported_array_length) => {
+                write!(
+                    f,
+                    "It uses an array with a non-literal length (`{}`), which isn't currently supported.",
+                    unsupported_array_length.len
+                )
+            }
             TypeResolutionErrorDetails::GenericKindMismatch(generic_kind_mismatch) => {
                 write!(
                     f,
@@ -121,6 +128,7 @@ pub enum TypeResolutionErrorDetails {
     UnsupportedFnPointer(UnsupportedFnPointer),
     UnsupportedReturnTypeNotation,
     UnsupportedTypeKind(UnsupportedTypeKind),
+    UnsupportedArrayLength(UnsupportedArrayLength),
     UnknownPrimitive(UnknownPrimitive),
     GenericKindMismatch(GenericKindMismatch),
     ItemResolutionError(anyhow::Error),
@@ -149,6 +157,11 @@ pub struct TypePartResolutionError {
 #[derive(Debug)]
 pub struct UnsupportedTypeKind {
     pub kind: &'static str,
+}
+
+#[derive(Debug)]
+pub struct UnsupportedArrayLength {
+    pub len: String,
 }
 
 #[derive(Debug)]
@@ -573,9 +586,27 @@ pub(crate) fn _resolve_type(
                 element_type: Box::new(inner),
             }))
         }
-        RustdocType::Array { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
-            UnsupportedTypeKind { kind: "array" },
-        )),
+        RustdocType::Array { type_, len } => {
+            let len: usize = len.parse().map_err(|_| {
+                TypeResolutionErrorDetails::UnsupportedArrayLength(UnsupportedArrayLength {
+                    len: len.clone(),
+                })
+            })?;
+            let resolved =
+                resolve_type(type_, used_by_package_id, krate_collection, generic_bindings)
+                    .map_err(|source| {
+                        TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                            TypePartResolutionError {
+                                role: "array element type".into(),
+                                source,
+                            },
+                        ))
+                    })?;
+            Ok(Type::Array(Array {
+                element_type: Box::new(resolved),
+                len,
+            }))
+        }
         RustdocType::DynTrait(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "dyn trait" },
         )),

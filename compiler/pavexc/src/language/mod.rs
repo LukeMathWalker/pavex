@@ -10,7 +10,7 @@ pub use krate_name::{
 };
 use pavex_bp_schema::CreatedAt;
 pub(crate) use resolved_type::{
-    Generic, GenericArgument, GenericLifetimeParameter, Lifetime, PathType,
+    Array, Generic, GenericArgument, GenericLifetimeParameter, Lifetime, PathType,
     PathTypeExt, RawPointer, Type, Slice, Tuple, TypeReference, UnknownPrimitive,
 };
 

@@ -296,6 +296,10 @@ fn _field_name_candidate(ty_: &Type, strategy: NamingStrategy, candidate: &mut S
             // Same reasoning as for references.
             _field_name_candidate(&slice.element_type, strategy, candidate);
         }
+        Type::Array(array) => {
+            // Same reasoning as for slices.
+            _field_name_candidate(&array.element_type, strategy, candidate);
+        }
         Type::RawPointer(raw_pointer) => {
             if raw_pointer.is_mutable {
                 candidate.push_str("mut_ptr_");

@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, RawPointer, Type, Slice,
+    Array, GenericArgument, GenericLifetimeParameter, Lifetime, PathType, RawPointer, Type, Slice,
     Tuple, TypeReference,
 };
 
@@ -77,6 +77,10 @@ impl Type {
             Type::Slice(s) => Type::Slice(Slice {
                 element_type: Box::new(s.element_type.bind_generic_type_parameters(bindings)),
             }),
+            Type::Array(a) => Type::Array(Array {
+                element_type: Box::new(a.element_type.bind_generic_type_parameters(bindings)),
+                len: a.len,
+            }),
             Type::RawPointer(r) => Type::RawPointer(RawPointer {
                 is_mutable: r.is_mutable,
                 inner: Box::new(r.inner.bind_generic_type_parameters(bindings)),
@@ -108,6 +112,7 @@ impl Type {
             Type::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
             Type::ScalarPrimitive(_) => false,
             Type::Slice(s) => s.element_type.is_a_template(),
+            Type::Array(a) => a.element_type.is_a_template(),
             Type::RawPointer(r) => r.inner.is_a_template(),
             Type::Generic(_) => true,
         }
@@ -142,6 +147,7 @@ impl Type {
             }
             Type::ScalarPrimitive(_) => {}
             Type::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
+            Type::Array(a) => a.element_type._unassigned_generic_type_parameters(set),
             Type::RawPointer(r) => r.inner._unassigned_generic_type_parameters(set),
             Type::Generic(t) => {
                 set.insert(t.name.clone());
@@ -185,6 +191,12 @@ impl Type {
             (Slice(concrete_slice), Slice(templated_slice)) => templated_slice
                 .element_type
                 ._is_a_template_for(&concrete_slice.element_type, bindings),
+            (Array(concrete_array), Array(templated_array)) => {
+                concrete_array.len == templated_array.len
+                    && templated_array
+                        .element_type
+                        ._is_a_template_for(&concrete_array.element_type, bindings)
+            }
             (Reference(concrete_reference), Reference(templated_reference)) => templated_reference
                 .inner
                 ._is_a_template_for(&concrete_reference.inner, bindings),
@@ -262,6 +274,14 @@ impl Type {
                 self_id_gen,
                 other_id_gen,
             ),
+            (Array(self_array), Array(other_array)) => {
+                self_array.len == other_array.len
+                    && self_array.element_type._is_equivalent_to(
+                        &other_array.element_type,
+                        self_id_gen,
+                        other_id_gen,
+                    )
+            }
             (Reference(self_reference), Reference(other_reference)) => self_reference
                 .inner
                 ._is_equivalent_to(&other_reference.inner, self_id_gen, other_id_gen),
@@ -325,6 +345,7 @@ impl Type {
                 .any(|t| t.has_implicit_lifetime_parameters()),
             Type::ScalarPrimitive(_) => false,
             Type::Slice(s) => s.element_type.has_implicit_lifetime_parameters(),
+            Type::Array(a) => a.element_type.has_implicit_lifetime_parameters(),
             Type::RawPointer(r) => r.inner.has_implicit_lifetime_parameters(),
             Type::Generic(_) => false,
         }
@@ -367,6 +388,7 @@ impl Type {
                 .iter_mut()
                 .for_each(|e| e.set_implicit_lifetimes(inferred_lifetime.clone())),
             Type::Slice(s) => s.element_type.set_implicit_lifetimes(inferred_lifetime),
+            Type::Array(a) => a.element_type.set_implicit_lifetimes(inferred_lifetime),
             Type::RawPointer(r) => r.inner.set_implicit_lifetimes(inferred_lifetime),
             Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
@@ -412,6 +434,9 @@ impl Type {
             Type::Slice(s) => {
                 s.element_type.rename_lifetime_parameters(original2renamed);
             }
+            Type::Array(a) => {
+                a.element_type.rename_lifetime_parameters(original2renamed);
+            }
             Type::RawPointer(r) => {
                 r.inner.rename_lifetime_parameters(original2renamed);
             }
@@ -450,6 +475,7 @@ impl Type {
                 }
             }
             Type::Slice(s) => s.element_type._lifetime_parameters(set),
+            Type::Array(a) => a.element_type._lifetime_parameters(set),
             Type::RawPointer(r) => r.inner._lifetime_parameters(set),
             Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
@@ -495,6 +521,7 @@ impl Type {
                 }
             }
             Type::Slice(s) => s.element_type._named_lifetime_parameters(set),
+            Type::Array(a) => a.element_type._named_lifetime_parameters(set),
             Type::RawPointer(r) => r.inner._named_lifetime_parameters(set),
             Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
@@ -568,6 +595,11 @@ impl Type {
                 s.element_type._display_for_error(buffer);
                 write!(buffer, "]").unwrap();
             }
+            Type::Array(a) => {
+                write!(buffer, "[").unwrap();
+                a.element_type._display_for_error(buffer);
+                write!(buffer, "; {}]", a.len).unwrap();
+            }
             Type::RawPointer(r) => {
                 if r.is_mutable {
                     write!(buffer, "*mut ").unwrap();
@@ -591,6 +623,7 @@ impl Debug for Type {
             Type::Tuple(t) => write!(f, "{t:?}"),
             Type::ScalarPrimitive(s) => write!(f, "{s:?}"),
             Type::Slice(s) => write!(f, "{s:?}"),
+            Type::Array(a) => write!(f, "{a:?}"),
             Type::RawPointer(r) => write!(f, "{r:?}"),
             Type::Generic(g) => write!(f, "{g:?}"),
         }
@@ -618,6 +651,12 @@ impl From<TypeReference> for Type {
 impl From<RawPointer> for Type {
     fn from(value: RawPointer) -> Self {
         Self::RawPointer(value)
+    }
+}
+
+impl From<Array> for Type {
+    fn from(value: Array) -> Self {
+        Self::Array(value)
     }
 }
 
