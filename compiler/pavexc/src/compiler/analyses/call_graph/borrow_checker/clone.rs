@@ -14,7 +14,7 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
     Callable, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime, PathType,
-    ResolvedType, TypeReference,
+    PathTypeExt, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 

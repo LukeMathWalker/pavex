@@ -36,6 +36,7 @@ pavex_test_runner = { path = "compiler/pavex_test_runner", version = "0.2.7" }
 pavexc = { path = "compiler/pavexc", version = "0.2.10" }
 pavexc_attr_parser = { path = "compiler/pavexc_attr_parser", version = "0.2.10" }
 pavexc_cli_client = { path = "compiler/pavexc_cli_client", version = "0.2.10" }
+rustdoc_ir = { path = "rustdoc/rustdoc_ir", version = "0.2.10" }
 rustdoc_processor = { path = "rustdoc/rustdoc_processor", version = "0.2.10" }
 pavexc_annotations = { path = "compiler/pavexc_annotations", version = "0.2.10" }
 persist_if_changed = { path = "compiler/persist_if_changed", version = "0.2.10" }

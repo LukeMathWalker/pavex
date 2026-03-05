@@ -3250,6 +3250,7 @@ dependencies = [
  "rkyv",
  "rustc-hash",
  "rustdoc_ext",
+ "rustdoc_ir",
  "rustdoc_processor",
  "rustdoc_types",
  "semver",
@@ -4243,6 +4244,22 @@ version = "0.2.10"
 dependencies = [
  "px_workspace_hack",
  "rustdoc_types",
+]
+
+[[package]]
+name = "rustdoc_ir"
+version = "0.2.10"
+dependencies = [
+ "ahash",
+ "anyhow",
+ "bimap",
+ "guppy",
+ "indexmap",
+ "rustdoc_types",
+ "serde",
+ "syn",
+ "thiserror 2.0.17",
+ "tracing",
 ]
 
 [[package]]

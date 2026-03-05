@@ -25,7 +25,7 @@ use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
     Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
-    ResolvedType, TypeReference,
+    PathTypeExt, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
