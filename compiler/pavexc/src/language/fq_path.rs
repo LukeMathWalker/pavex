@@ -159,24 +159,16 @@ impl FQPathType {
                             FQGenericArgument::Type(t) => {
                                 GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                             }
-                            FQGenericArgument::Lifetime(l) => match l {
-                                ResolvedPathLifetime::Static => {
-                                    GenericArgument::Lifetime(GenericLifetimeParameter::Static)
-                                }
-                                ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
-                                    GenericLifetimeParameter::Named(name.clone()),
-                                ),
-                                ResolvedPathLifetime::Inferred => {
-                                    GenericArgument::Lifetime(GenericLifetimeParameter::Inferred)
-                                }
-                            },
+                            FQGenericArgument::Lifetime(l) => {
+                                GenericArgument::Lifetime(l.clone().into())
+                            }
                         }
                     } else {
                         match &param_def.kind {
                             rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
-                                GenericArgument::Lifetime(GenericLifetimeParameter::Named(
-                                    NamedLifetime::new(param_def.name.clone()),
-                                ))
+                                GenericArgument::Lifetime(
+                                    GenericLifetimeParameter::from_name(param_def.name.clone()),
+                                )
                             }
                             rustdoc_types::GenericParamDefKind::Type { default, .. } => {
                                 let Some(default) = default else {
@@ -257,19 +249,9 @@ impl From<Type> for FQPathType {
                         .into_iter()
                         .map(|t| match t {
                             GenericArgument::TypeParameter(t) => FQGenericArgument::Type(t.into()),
-                            GenericArgument::Lifetime(l) => match l {
-                                GenericLifetimeParameter::Static => {
-                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Static)
-                                }
-                                GenericLifetimeParameter::Named(name) => {
-                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Named(
-                                        name,
-                                    ))
-                                }
-                                GenericLifetimeParameter::Inferred => {
-                                    FQGenericArgument::Lifetime(ResolvedPathLifetime::Inferred)
-                                }
-                            },
+                            GenericArgument::Lifetime(l) => {
+                                FQGenericArgument::Lifetime(l.into())
+                            }
                         })
                         .collect();
                 }
@@ -1029,6 +1011,26 @@ impl Display for FQGenericArgument {
             FQGenericArgument::Lifetime(l) => {
                 write!(f, "{l}")
             }
+        }
+    }
+}
+
+impl From<ResolvedPathLifetime> for GenericLifetimeParameter {
+    fn from(l: ResolvedPathLifetime) -> Self {
+        match l {
+            ResolvedPathLifetime::Static => GenericLifetimeParameter::Static,
+            ResolvedPathLifetime::Named(n) => GenericLifetimeParameter::Named(n),
+            ResolvedPathLifetime::Inferred => GenericLifetimeParameter::Inferred,
+        }
+    }
+}
+
+impl From<GenericLifetimeParameter> for ResolvedPathLifetime {
+    fn from(l: GenericLifetimeParameter) -> Self {
+        match l {
+            GenericLifetimeParameter::Static => ResolvedPathLifetime::Static,
+            GenericLifetimeParameter::Named(n) => ResolvedPathLifetime::Named(n),
+            GenericLifetimeParameter::Inferred => ResolvedPathLifetime::Inferred,
         }
     }
 }
