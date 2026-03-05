@@ -29,7 +29,7 @@ digraph "GET / - 0" {
 }
 digraph "GET / - 1" {
     0 [ label = "0| &app::A"]
-    1 [ label = "1| app::Generic::new(&''a app::A) -> app::Generic<'a>"]
+    1 [ label = "1| app::Generic::new(&'a app::A) -> app::Generic<'a>"]
     2 [ label = "2| app::handler(app::Generic<'_>) -> http::StatusCode"]
     3 [ label = "3| <http::StatusCode as pavex::IntoResponse>::into_response(http::StatusCode) -> pavex::Response"]
     1 -> 2 [ ]

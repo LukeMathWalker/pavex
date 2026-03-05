@@ -5,8 +5,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, Type, Slice, Tuple,
-    TypeReference,
+    GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType, Type, Slice,
+    Tuple, TypeReference,
 };
 
 impl AsRef<Type> for Type {
@@ -93,11 +93,11 @@ impl Type {
             Type::Path(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.is_a_template(),
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
-                    // One might want to do a more precise level of analysis wrt lifetimes,
-                    // but for now we just assume that named lifetimes are not relevant for
-                    // specialization.
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(_)) => false,
+                    GenericArgument::Lifetime(
+                        GenericLifetimeParameter::Static
+                        | GenericLifetimeParameter::Named(_)
+                        | GenericLifetimeParameter::Inferred,
+                    ) => false,
                 })
             }
             Type::Reference(r) => r.inner.is_a_template(),
@@ -283,16 +283,15 @@ impl Type {
             Type::Path(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) if l == "_" => {
-                        true
-                    }
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(_))
-                    | GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => true,
+                    GenericArgument::Lifetime(
+                        GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Static,
+                    ) => false,
                 })
             }
             Type::Reference(r) => {
                 match &r.lifetime {
-                    Lifetime::Named(s) if s == "_" => {
+                    Lifetime::Inferred => {
                         return true;
                     }
                     Lifetime::Elided => {
@@ -320,11 +319,10 @@ impl Type {
                 for arg in path.generic_arguments.iter_mut() {
                     match arg {
                         GenericArgument::Lifetime(lifetime) => {
-                            if let GenericLifetimeParameter::Named(name) = lifetime
-                                && name == "_"
-                            {
-                                *lifetime =
-                                    GenericLifetimeParameter::Named(inferred_lifetime.clone());
+                            if matches!(lifetime, GenericLifetimeParameter::Inferred) {
+                                *lifetime = GenericLifetimeParameter::Named(
+                                    NamedLifetime::new(inferred_lifetime.clone()),
+                                );
                             }
                         }
                         GenericArgument::TypeParameter(t) => {
@@ -334,12 +332,12 @@ impl Type {
                 }
             }
             Type::Reference(r) => {
-                match &mut r.lifetime {
-                    Lifetime::Named(s) if s == "_" => {
-                        r.lifetime = Lifetime::Named(inferred_lifetime.clone());
+                match &r.lifetime {
+                    Lifetime::Inferred => {
+                        r.lifetime = Lifetime::Named(NamedLifetime::new(inferred_lifetime.clone()));
                     }
                     Lifetime::Elided => {
-                        r.lifetime = Lifetime::Named(inferred_lifetime.clone());
+                        r.lifetime = Lifetime::Named(NamedLifetime::new(inferred_lifetime.clone()));
                     }
                     Lifetime::Static | Lifetime::Named(_) => {}
                 }
@@ -366,23 +364,23 @@ impl Type {
                             tp.rename_lifetime_parameters(original2renamed);
                         }
                         GenericArgument::Lifetime(l) => {
-                            if let GenericLifetimeParameter::Named(l) = l
-                                && let Some(new_name) = original2renamed.get(l)
+                            if let GenericLifetimeParameter::Named(named) = l
+                                && let Some(new_name) = original2renamed.get(named.as_str())
                             {
-                                *l = new_name.clone();
+                                *l = GenericLifetimeParameter::from_name(new_name.clone());
                             }
                         }
                     }
                 }
             }
             Type::Reference(r) => {
-                match &mut r.lifetime {
+                match &r.lifetime {
                     Lifetime::Named(l) => {
-                        if let Some(new_name) = original2renamed.get(l) {
-                            *l = new_name.clone();
+                        if let Some(new_name) = original2renamed.get(l.as_str()) {
+                            r.lifetime = Lifetime::from_name(new_name.clone());
                         }
                     }
-                    Lifetime::Static | Lifetime::Elided => {}
+                    Lifetime::Static | Lifetime::Elided | Lifetime::Inferred => {}
                 }
                 r.inner.rename_lifetime_parameters(original2renamed);
             }
@@ -417,11 +415,10 @@ impl Type {
                             set.insert(Lifetime::Static);
                         }
                         GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
-                            if l != "_" {
-                                set.insert(Lifetime::Named(l.into()));
-                            } else {
-                                set.insert(Lifetime::Elided);
-                            }
+                            set.insert(Lifetime::Named(l.clone()));
+                        }
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => {
+                            set.insert(Lifetime::Inferred);
                         }
                     }
                 }
@@ -455,11 +452,12 @@ impl Type {
                         GenericArgument::TypeParameter(g) => {
                             g._named_lifetime_parameters(set);
                         }
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Static) => {}
+                        GenericArgument::Lifetime(
+                            GenericLifetimeParameter::Static
+                            | GenericLifetimeParameter::Inferred,
+                        ) => {}
                         GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
-                            if l != "_" {
-                                set.insert(l.clone());
-                            }
+                            set.insert(l.as_str().to_owned());
                         }
                     }
                 }
@@ -467,11 +465,9 @@ impl Type {
             Type::Reference(r) => {
                 match &r.lifetime {
                     Lifetime::Named(l) => {
-                        if l != "_" {
-                            set.insert(l.clone());
-                        }
+                        set.insert(l.as_str().to_owned());
                     }
-                    Lifetime::Static | Lifetime::Elided => {}
+                    Lifetime::Static | Lifetime::Elided | Lifetime::Inferred => {}
                 }
                 r.inner._named_lifetime_parameters(set)
             }
@@ -504,14 +500,9 @@ impl Type {
                             GenericArgument::TypeParameter(t) => {
                                 t._display_for_error(buffer);
                             }
-                            GenericArgument::Lifetime(l) => match l {
-                                GenericLifetimeParameter::Static => {
-                                    write!(buffer, "'static").unwrap();
-                                }
-                                GenericLifetimeParameter::Named(l) => {
-                                    write!(buffer, "'{l}").unwrap();
-                                }
-                            },
+                            GenericArgument::Lifetime(l) => {
+                                write!(buffer, "{l}").unwrap();
+                            }
                         }
                         if arguments.peek().is_some() {
                             write!(buffer, ", ").unwrap();
@@ -527,7 +518,10 @@ impl Type {
                         write!(buffer, "'static ").unwrap();
                     }
                     Lifetime::Named(l) => {
-                        write!(buffer, "'{l} ").unwrap();
+                        write!(buffer, "'{} ", l.as_str()).unwrap();
+                    }
+                    Lifetime::Inferred => {
+                        write!(buffer, "'_ ").unwrap();
                     }
                     Lifetime::Elided => {}
                 }
@@ -597,13 +591,14 @@ impl From<TypeReference> for Type {
 mod tests {
     use ahash::{HashSet, HashSetExt};
 
-    use crate::{GenericLifetimeParameter, Lifetime};
+    use crate::{GenericLifetimeParameter, Lifetime, NamedLifetime};
 
     #[test]
     fn all_named_lifetimes_are_equivalent() {
         let lifetimes = vec![
-            Lifetime::Named("a".to_string()),
-            Lifetime::Named("b".to_string()),
+            Lifetime::Named(NamedLifetime::new("a")),
+            Lifetime::Named(NamedLifetime::new("b")),
+            Lifetime::Inferred,
             Lifetime::Elided,
         ];
         for first in &lifetimes {
@@ -613,7 +608,7 @@ mod tests {
         }
 
         let mut set = HashSet::new();
-        set.insert(Lifetime::Named("a".into()));
+        set.insert(Lifetime::Named(NamedLifetime::new("a")));
         for lifetime in &lifetimes {
             assert!(set.contains(lifetime));
         }
@@ -621,8 +616,8 @@ mod tests {
 
     #[test]
     fn all_named_generic_lifetimes_are_equivalent() {
-        let named1 = GenericLifetimeParameter::Named("a".to_string());
-        let named2 = GenericLifetimeParameter::Named("b".to_string());
+        let named1 = GenericLifetimeParameter::Named(NamedLifetime::new("a".to_string()));
+        let named2 = GenericLifetimeParameter::Named(NamedLifetime::new("b".to_string()));
 
         assert_eq!(named1, named2);
 

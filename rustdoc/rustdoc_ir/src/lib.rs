@@ -2,6 +2,7 @@ mod generic;
 mod generic_argument;
 pub(crate) mod generics_equivalence;
 mod lifetime;
+mod named_lifetime;
 mod path_type;
 pub(crate) mod render;
 mod scalar_primitive;
@@ -12,6 +13,7 @@ mod type_reference;
 
 pub use generic::Generic;
 pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
+pub use named_lifetime::NamedLifetime;
 pub use lifetime::Lifetime;
 pub use path_type::PathType;
 pub use scalar_primitive::{ScalarPrimitive, UnknownPrimitive};

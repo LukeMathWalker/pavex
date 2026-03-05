@@ -265,8 +265,11 @@ impl RequestHandlerPipeline {
                         else {
                             unreachable!()
                         };
-                        syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
-                            .to_token_stream()
+                        syn::Lifetime::new(
+                            &format!("'{}", lifetime.as_str()),
+                            proc_macro2::Span::call_site(),
+                        )
+                        .to_token_stream()
                     })
                     .chain(std::iter::once(quote! { T }))
                     .collect();

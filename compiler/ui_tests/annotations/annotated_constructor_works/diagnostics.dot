@@ -46,7 +46,7 @@ digraph "GET /handler - 1" {
     12 [ label = "12| app_9d63a47c::E::new() -> app_9d63a47c::E"]
     13 [ label = "13| app_9d63a47c::F::new(&app_9d63a47c::E) -> app_9d63a47c::F<'_>"]
     14 [ label = "14| core::result::Result<app_9d63a47c::C, pavex::Error> -> app_9d63a47c::C"]
-    15 [ label = "15| app_9d63a47c::d(&''a app_9d63a47c::C, &''a app_9d63a47c::A) -> app_9d63a47c::D<'a>"]
+    15 [ label = "15| app_9d63a47c::d(&'a app_9d63a47c::C, &'a app_9d63a47c::A) -> app_9d63a47c::D<'a>"]
     16 [ label = "16| app_9d63a47c::handler(&app_9d63a47c::A, &app_9d63a47c::B<app_9d63a47c::A>, &app_9d63a47c::D<'_>, &app_9d63a47c::E, &app_9d63a47c::F<'_>, &app_9d63a47c::G<app_9d63a47c::A>, &app_9d63a47c::H<app_9d63a47c::A>, &app_9d63a47c::H<app_9d63a47c::E>) -> pavex::Response"]
     17 [ label = "17| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     8 -> 16 [ label = "&"]

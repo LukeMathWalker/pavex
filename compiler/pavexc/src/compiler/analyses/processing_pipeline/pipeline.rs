@@ -24,8 +24,8 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
-    Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
-    PathTypeExt, Type, TypeReference,
+    Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, NamedLifetime,
+    PathType, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -676,7 +676,11 @@ impl RequestHandlerPipeline {
             generic_arguments: next_state_parameters
                 .lifetimes
                 .iter()
-                .map(|s| GenericArgument::Lifetime(GenericLifetimeParameter::Named(s.to_owned())))
+                .map(|s| {
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(
+                        NamedLifetime::new(s.to_owned()),
+                    ))
+                })
                 .collect(),
         };
 

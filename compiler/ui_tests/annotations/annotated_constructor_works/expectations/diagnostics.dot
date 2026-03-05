@@ -43,7 +43,7 @@ digraph "GET /handler - 1" {
     12 [ label = "12| app::E::new() -> app::E"]
     13 [ label = "13| app::F::new(&app::E) -> app::F<'_>"]
     14 [ label = "14| core::result::Result<app::C, pavex::Error> -> app::C"]
-    15 [ label = "15| app::d(&''a app::C, &''a app::A) -> app::D<'a>"]
+    15 [ label = "15| app::d(&'a app::C, &'a app::A) -> app::D<'a>"]
     16 [ label = "16| app::handler(&app::A, &app::B<app::A>, &app::D<'_>, &app::E, &app::F<'_>, &app::G<app::A>, &app::H<app::A>, &app::H<app::E>) -> pavex::Response"]
     17 [ label = "17| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
     8 -> 16 [ label = "&"]
