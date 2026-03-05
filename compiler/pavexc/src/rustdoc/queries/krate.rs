@@ -3,10 +3,11 @@ use std::collections::BTreeSet;
 use guppy::PackageId;
 
 use crate::diagnostic::DiagnosticSink;
-use rustdoc_processor::{
-    Crate, CrateData, CrateItemIndex, CrateItemPaths, EagerCrateItemIndex, EagerCrateItemPaths,
-    IndexingVisitor,
+use rustdoc_processor::crate_data::{
+    CrateData, CrateItemIndex, CrateItemPaths, EagerCrateItemIndex, EagerCrateItemPaths,
 };
+use rustdoc_processor::indexing::IndexingVisitor;
+use rustdoc_processor::queries::Crate;
 
 use super::super::annotations::{
     self, AnnotatedItems, QueueItem, invalid_diagnostic_attribute, parse_pavex_attributes,

@@ -8,11 +8,12 @@ use rkyv::rancor::Panic;
 use rkyv::util::AlignedVec;
 
 use pavexc_annotations::AnnotatedItems;
-use rustdoc_processor::HydratedCacheEntry as CacheEntryInner;
-pub use rustdoc_processor::{
-    CacheEntry, EagerCrateItemIndex, EagerCrateItemPaths, EagerImportPath2Id, RkyvCowBytes,
-    RustdocCacheKey, RustdocGlobalFsCache, SecondaryIndexes,
+use rustdoc_processor::cache::HydratedCacheEntry as CacheEntryInner;
+pub use rustdoc_processor::cache::{
+    CacheEntry, RkyvCowBytes, RustdocCacheKey, RustdocGlobalFsCache, SecondaryIndexes,
 };
+pub use rustdoc_processor::crate_data::{EagerCrateItemIndex, EagerCrateItemPaths};
+pub use rustdoc_processor::indexing::EagerImportPath2Id;
 
 use crate::DiagnosticSink;
 /// Extension trait to create `CacheEntry` from `&Crate`.
@@ -39,26 +40,26 @@ impl<'a> CacheEntryExt<'a> for CacheEntry<'a> {
 
         // Serialize paths - handle Eager variant
         let paths: AlignedVec = match &krate.core.krate.paths {
-            rustdoc_processor::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
+            rustdoc_processor::crate_data::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
                 rkyv::to_bytes::<Panic>(paths)?
             }
-            rustdoc_processor::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::crate_data::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         // Serialize items - handle Eager variant
         let items: AlignedVec = match &krate.core.krate.index {
-            rustdoc_processor::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
+            rustdoc_processor::crate_data::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
                 rkyv::to_bytes::<Panic>(index)?
             }
-            rustdoc_processor::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::crate_data::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         // Serialize import_path2id
         let import_path2id: AlignedVec = match &krate.import_path2id {
-            rustdoc_processor::ImportPath2Id::Eager(EagerImportPath2Id(m)) => {
+            rustdoc_processor::indexing::ImportPath2Id::Eager(EagerImportPath2Id(m)) => {
                 rkyv::to_bytes::<Panic>(m)?
             }
-            rustdoc_processor::ImportPath2Id::Lazy(lazy) => lazy.0.clone(),
+            rustdoc_processor::indexing::ImportPath2Id::Lazy(lazy) => lazy.0.clone(),
         };
 
         // Serialize other secondary indexes
@@ -95,18 +96,18 @@ impl<'a> CacheEntryExt<'a> for CacheEntry<'a> {
 
         // Serialize paths - handle Eager variant
         let paths: AlignedVec = match &krate.core.krate.paths {
-            rustdoc_processor::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
+            rustdoc_processor::crate_data::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
                 rkyv::to_bytes::<Panic>(paths)?
             }
-            rustdoc_processor::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::crate_data::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         // Serialize items - handle Eager variant
         let items: AlignedVec = match &krate.core.krate.index {
-            rustdoc_processor::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
+            rustdoc_processor::crate_data::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
                 rkyv::to_bytes::<Panic>(index)?
             }
-            rustdoc_processor::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::crate_data::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         Ok(CacheEntry {

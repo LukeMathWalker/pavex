@@ -11,38 +11,17 @@
 //! 4. **Query** ([`Crate`], [`CrateRegistry`]): look up items by path, resolve
 //!    cross-crate references, and retrieve canonical import paths.
 
-mod cache;
-mod compute;
-mod crate_data;
+pub mod cache;
+pub mod compute;
+pub mod crate_data;
 mod global_item_id;
-mod indexing;
-mod queries;
+pub mod indexing;
+pub mod queries;
 mod unknown_item_path;
 mod utils;
 mod version_matcher;
 
-// Cache
-pub use cache::entry::{CacheEntry, SecondaryIndexes};
-pub use cache::utils::RkyvCowBytes;
-pub use cache::{HydratedCacheEntry, ProcessedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache};
-
-// Compute
-pub use compute::{CannotGetCrateData, ComputeProgress, NoProgress, compute_crate_docs};
-
-// Crate data model
-pub use crate_data::{CrateData, CrateItemIndex, EagerCrateItemIndex};
-pub use crate_data::{CrateItemPaths, EagerCrateItemPaths};
-
-// Indexing
-pub use indexing::ExternalReExports;
-pub use indexing::ImportIndex;
-pub use indexing::IndexingVisitor;
-pub use indexing::{EagerImportPath2Id, ImportPath2Id};
-
-// Queries
-pub use queries::{Crate, CrateCore, CrateRegistry};
-
-// Cross-cutting
+// Cross-cutting types re-exported at crate root
 pub use global_item_id::GlobalItemId;
 pub use unknown_item_path::UnknownItemPath;
 

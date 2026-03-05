@@ -1,7 +1,7 @@
 /// Adapter that reports rustdoc progress via Pavex's CLI shell.
 pub(super) struct ShellProgress;
 
-impl rustdoc_processor::ComputeProgress for ShellProgress {
+impl rustdoc_processor::compute::ComputeProgress for ShellProgress {
     fn before_computing(
         &self,
         package_graph: &guppy::graph::PackageGraph,
