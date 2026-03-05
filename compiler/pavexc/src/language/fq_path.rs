@@ -99,6 +99,18 @@ impl ResolvedPathLifetime {
     /// Construct from a lifetime name, with or without the leading `'`.
     ///
     /// Routes `"_"` → `Inferred`, `"static"` → `Static`, everything else → `Named`.
+    /// Returns the lifetime name without the leading `'`, suitable for use as a generic binding key.
+    pub fn to_binding_name(&self) -> String {
+        match self {
+            ResolvedPathLifetime::Named(n) => n.as_str().to_owned(),
+            ResolvedPathLifetime::Static => "static".to_owned(),
+            ResolvedPathLifetime::Inferred => "_".to_owned(),
+        }
+    }
+
+    /// Construct from a lifetime name, with or without the leading `'`.
+    ///
+    /// Routes `"_"` → `Inferred`, `"static"` → `Static`, everything else → `Named`.
     pub fn from_name(name: impl Into<String>) -> Self {
         let mut name = name.into();
         if let Some(stripped) = name.strip_prefix('\'') {

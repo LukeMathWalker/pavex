@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 
+use crate::GenericLifetimeParameter;
 use crate::named_lifetime::NamedLifetime;
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
@@ -40,6 +41,16 @@ impl Hash for Lifetime {
                 // We don't care about the name of the lifetime, only that it is not static.
                 state.write_u8(1);
             }
+        }
+    }
+}
+
+impl From<GenericLifetimeParameter> for Lifetime {
+    fn from(l: GenericLifetimeParameter) -> Self {
+        match l {
+            GenericLifetimeParameter::Static => Lifetime::Static,
+            GenericLifetimeParameter::Named(n) => Lifetime::Named(n),
+            GenericLifetimeParameter::Inferred => Lifetime::Inferred,
         }
     }
 }

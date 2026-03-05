@@ -411,14 +411,8 @@ impl Type {
                         GenericArgument::TypeParameter(g) => {
                             g._lifetime_parameters(set);
                         }
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Static) => {
-                            set.insert(Lifetime::Static);
-                        }
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
-                            set.insert(Lifetime::Named(l.clone()));
-                        }
-                        GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => {
-                            set.insert(Lifetime::Inferred);
+                        GenericArgument::Lifetime(l) => {
+                            set.insert(l.clone().into());
                         }
                     }
                 }
