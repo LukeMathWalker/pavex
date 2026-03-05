@@ -1,8 +1,8 @@
 use guppy::PackageId;
 use guppy::graph::PackageGraph;
 
-use super::CrateData;
 use super::resolution::compute_package_id_for_crate_id;
+use crate::crate_data::CrateData;
 
 #[derive(Debug, Clone)]
 pub struct CrateCore {

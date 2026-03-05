@@ -28,7 +28,7 @@ pavex = { workspace = true }
 rustdoc_ext = { path = "../../rustdoc/rustdoc_ext", version = "=0.2.10" }
 pavexc_annotations = { path = "../pavexc_annotations", version = "=0.2.10" }
 pavexc_attr_parser = { path = "../pavexc_attr_parser", version = "=0.2.10" }
-rustdoc_cache = { path = "../../rustdoc/rustdoc_cache", version = "=0.2.10" }
+rustdoc_processor = { path = "../../rustdoc/rustdoc_processor", version = "=0.2.10" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.2.10" }
 pavex_cli_shell = { path = "../pavex_cli_shell", version = "=0.2.10" }
 pavex_cli_diagnostic = { path = "../pavex_cli_diagnostic", version = "=0.2.10" }

@@ -6,10 +6,11 @@ use guppy::PackageId;
 use rusqlite::params;
 use tracing::instrument;
 
-use crate::types::{
-    CacheEntry, CrateData, CrateItemIndex, CrateItemPaths, ImportPath2Id, LazyCrateItemIndex,
-    LazyCrateItemPaths, LazyImportPath2Id, RkyvCowBytes, SecondaryIndexes,
+use super::entry::{CacheEntry, RkyvCowBytes, SecondaryIndexes};
+use crate::crate_data::{
+    CrateData, CrateItemIndex, CrateItemPaths, LazyCrateItemIndex, LazyCrateItemPaths,
 };
+use crate::indexing::{ImportPath2Id, LazyImportPath2Id};
 
 use super::{BINCODE_CONFIG, HydratedCacheEntry, ProcessedCacheEntry};
 

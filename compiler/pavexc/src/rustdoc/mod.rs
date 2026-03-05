@@ -4,13 +4,13 @@
 //! [`CrateCollection`] is the key entrypoint.
 use guppy::PackageId;
 use once_cell::sync::Lazy;
-pub use rustdoc_cache::{
+pub use rustdoc_processor::{
     ALLOC_PACKAGE_ID_REPR, CORE_PACKAGE_ID_REPR, STD_PACKAGE_ID_REPR, TOOLCHAIN_CRATES,
 };
 
 pub(crate) use annotations::{AnnotatedItem, AnnotationCoordinates, ImplInfo};
 pub use queries::{Crate, CrateCollection, CrateRegistry, GlobalItemId, ResolvedItem};
-pub use rustdoc_cache::CannotGetCrateData;
+pub use rustdoc_processor::CannotGetCrateData;
 
 mod annotations;
 mod compute;

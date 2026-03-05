@@ -1,5 +1,6 @@
 //! SQLite-based caching for rustdoc JSON documentation.
 
+pub(crate) mod entry;
 mod third_party;
 mod toolchain;
 
@@ -14,7 +15,9 @@ use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 
 use crate::TOOLCHAIN_CRATES;
-use crate::types::{CacheEntry, CrateData, ExternalReExports, ImportIndex, ImportPath2Id};
+use crate::cache::entry::CacheEntry;
+use crate::crate_data::CrateData;
+use crate::indexing::{ExternalReExports, ImportIndex, ImportPath2Id};
 
 use third_party::ThirdPartyCrateCache;
 use toolchain::ToolchainCache;
@@ -95,9 +98,9 @@ pub struct ProcessedCacheEntry<A> {
 
 impl<A> ProcessedCacheEntry<A> {
     /// Convert this cache entry into a `Crate` and its associated annotation data.
-    pub fn into_crate(self) -> (crate::types::Crate, A) {
-        let krate = crate::types::Crate::new(
-            crate::types::CrateCore {
+    pub fn into_crate(self) -> (crate::queries::Crate, A) {
+        let krate = crate::queries::Crate::new(
+            crate::queries::CrateCore {
                 package_id: self.package_id,
                 krate: self.crate_data,
             },

@@ -1,6 +1,6 @@
 [package]
-name = "rustdoc_cache"
-description = "SQLite-based caching for rustdoc JSON documentation"
+name = "rustdoc_processor"
+description = "Compute, cache, index, and query rustdoc JSON documentation"
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true

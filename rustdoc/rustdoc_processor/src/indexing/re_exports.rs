@@ -3,10 +3,10 @@
 use ahash::HashMap;
 
 use crate::CannotGetCrateData;
-use super::CrateData;
-use super::GlobalItemId;
-use super::krate::Crate;
-use super::registry::CrateRegistry;
+use crate::crate_data::CrateData;
+use crate::global_item_id::GlobalItemId;
+use crate::queries::Crate;
+use crate::queries::registry::CrateRegistry;
 
 /// Track re-exports of types (or entire modules!) from other crates.
 #[derive(
@@ -79,8 +79,7 @@ impl ExternalReExports {
             )
             .expect("Failed to compute the package id for a given external crate id");
         let source_krate = registry.get_or_compute_crate(&source_package_id)?;
-        let Ok(Ok(source_id)) =
-            source_krate.get_item_id_by_path(&re_export.source_path, registry)
+        let Ok(Ok(source_id)) = source_krate.get_item_id_by_path(&re_export.source_path, registry)
         else {
             return Ok(None);
         };

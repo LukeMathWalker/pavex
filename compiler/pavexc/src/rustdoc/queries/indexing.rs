@@ -4,7 +4,7 @@ use guppy::PackageId;
 use indexmap::IndexSet;
 
 use crate::diagnostic::DiagnosticSink;
-use rustdoc_cache::{CrateData, ExternalReExports, ImportIndex, IndexingVisitor};
+use rustdoc_processor::{CrateData, ExternalReExports, ImportIndex, IndexingVisitor};
 
 use super::super::annotations::{QueueItem, invalid_diagnostic_attribute, parse_pavex_attributes};
 
@@ -50,7 +50,7 @@ pub(super) fn index_local_types<'a>(
         annotation_queue,
         diagnostics,
     };
-    rustdoc_cache::index_local_types(
+    rustdoc_processor::index_local_types(
         krate,
         package_id,
         navigation_history,

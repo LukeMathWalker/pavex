@@ -3249,8 +3249,8 @@ dependencies = [
  "relative-path",
  "rkyv",
  "rustc-hash",
- "rustdoc_cache",
  "rustdoc_ext",
+ "rustdoc_processor",
  "rustdoc_types",
  "semver",
  "serde",
@@ -4238,7 +4238,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustdoc_cache"
+name = "rustdoc_ext"
+version = "0.2.10"
+dependencies = [
+ "px_workspace_hack",
+ "rustdoc_types",
+]
+
+[[package]]
+name = "rustdoc_processor"
 version = "0.2.10"
 dependencies = [
  "ahash",
@@ -4269,14 +4277,6 @@ dependencies = [
  "tracing",
  "tracing_log_error",
  "xxhash-rust",
-]
-
-[[package]]
-name = "rustdoc_ext"
-version = "0.2.10"
-dependencies = [
- "px_workspace_hack",
- "rustdoc_types",
 ]
 
 [[package]]

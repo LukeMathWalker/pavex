@@ -5,7 +5,7 @@ use guppy::PackageId;
 use rustdoc_types::ItemKind;
 
 use crate::diagnostic::DiagnosticSink;
-use rustdoc_cache::{
+use rustdoc_processor::{
     Crate, CrateCore, CrateData, CrateItemIndex, CrateItemPaths, EagerCrateItemIndex,
     EagerCrateItemPaths, EagerImportPath2Id, ImportIndex, ImportPath2Id,
 };

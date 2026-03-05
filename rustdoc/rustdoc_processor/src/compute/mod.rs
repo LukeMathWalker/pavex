@@ -1,3 +1,5 @@
+//! Orchestrate `cargo rustdoc` invocations to generate JSON documentation.
+
 mod format;
 mod orchestration;
 mod package_id_spec;
