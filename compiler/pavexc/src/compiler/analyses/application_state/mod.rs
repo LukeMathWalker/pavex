@@ -296,6 +296,14 @@ fn _field_name_candidate(ty_: &Type, strategy: NamingStrategy, candidate: &mut S
             // Same reasoning as for references.
             _field_name_candidate(&slice.element_type, strategy, candidate);
         }
+        Type::RawPointer(raw_pointer) => {
+            if raw_pointer.is_mutable {
+                candidate.push_str("mut_ptr_");
+            } else {
+                candidate.push_str("const_ptr_");
+            }
+            _field_name_candidate(&raw_pointer.inner, strategy, candidate);
+        }
         Type::Generic(generic) => {
             // We don't have unassigned generics in the application state, so this should never happen.
             // But, should it happen, there's really no other way to name it.

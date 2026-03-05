@@ -134,7 +134,8 @@ pub(super) fn get_application_state_new(
                 Type::Slice(_)
                 | Type::Path(_)
                 | Type::Tuple(_)
-                | Type::ScalarPrimitive(_) => type_,
+                | Type::ScalarPrimitive(_)
+                | Type::RawPointer(_) => type_,
                 Type::Generic(_) => {
                     unreachable!("Generic types should have been resolved by now")
                 }

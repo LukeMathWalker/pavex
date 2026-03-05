@@ -477,6 +477,9 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &Type) {
         Type::Slice(s) => {
             collect_type_package_ids(package_ids, &s.element_type);
         }
+        Type::RawPointer(r) => {
+            collect_type_package_ids(package_ids, &r.inner);
+        }
         Type::Generic(_) | Type::ScalarPrimitive(_) => {}
     }
 }

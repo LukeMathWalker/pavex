@@ -105,6 +105,14 @@ impl Type {
             Type::Slice(s) => {
                 write!(buffer, "[{}]", s.element_type.render_type(id2name)).unwrap();
             }
+            Type::RawPointer(r) => {
+                if r.is_mutable {
+                    write!(buffer, "*mut ").unwrap();
+                } else {
+                    write!(buffer, "*const ").unwrap();
+                }
+                r.inner._render_type(id2name, buffer);
+            }
             Type::Generic(t) => {
                 write!(buffer, "{}", t.name).unwrap();
             }

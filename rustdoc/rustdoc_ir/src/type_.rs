@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, Type, Slice,
+    GenericArgument, GenericLifetimeParameter, Lifetime, PathType, RawPointer, Type, Slice,
     Tuple, TypeReference,
 };
 
@@ -77,6 +77,10 @@ impl Type {
             Type::Slice(s) => Type::Slice(Slice {
                 element_type: Box::new(s.element_type.bind_generic_type_parameters(bindings)),
             }),
+            Type::RawPointer(r) => Type::RawPointer(RawPointer {
+                is_mutable: r.is_mutable,
+                inner: Box::new(r.inner.bind_generic_type_parameters(bindings)),
+            }),
             Type::Generic(g) => {
                 if let Some(bound_type) = bindings.get(&g.name) {
                     bound_type.clone()
@@ -104,6 +108,7 @@ impl Type {
             Type::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
             Type::ScalarPrimitive(_) => false,
             Type::Slice(s) => s.element_type.is_a_template(),
+            Type::RawPointer(r) => r.inner.is_a_template(),
             Type::Generic(_) => true,
         }
     }
@@ -137,6 +142,7 @@ impl Type {
             }
             Type::ScalarPrimitive(_) => {}
             Type::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
+            Type::RawPointer(r) => r.inner._unassigned_generic_type_parameters(set),
             Type::Generic(t) => {
                 set.insert(t.name.clone());
             }
@@ -196,6 +202,12 @@ impl Type {
             }
             (ScalarPrimitive(concrete_primitive), ScalarPrimitive(templated_primitive)) => {
                 concrete_primitive == templated_primitive
+            }
+            (RawPointer(concrete_ptr), RawPointer(templated_ptr)) => {
+                concrete_ptr.is_mutable == templated_ptr.is_mutable
+                    && templated_ptr
+                        .inner
+                        ._is_a_template_for(&concrete_ptr.inner, bindings)
             }
             (_, Generic(parameter)) => {
                 let previous = bindings.insert(parameter.name.clone(), concrete_type.clone());
@@ -266,6 +278,12 @@ impl Type {
                     })
             }
             (ScalarPrimitive(self_p), ScalarPrimitive(other_p)) => self_p == other_p,
+            (RawPointer(self_ptr), RawPointer(other_ptr)) => {
+                self_ptr.is_mutable == other_ptr.is_mutable
+                    && self_ptr
+                        .inner
+                        ._is_equivalent_to(&other_ptr.inner, self_id_gen, other_id_gen)
+            }
             (Generic(self_g), Generic(other_g)) => {
                 let first_id = self_id_gen.id(&self_g.name);
                 let second_id = other_id_gen.id(&other_g.name);
@@ -307,6 +325,7 @@ impl Type {
                 .any(|t| t.has_implicit_lifetime_parameters()),
             Type::ScalarPrimitive(_) => false,
             Type::Slice(s) => s.element_type.has_implicit_lifetime_parameters(),
+            Type::RawPointer(r) => r.inner.has_implicit_lifetime_parameters(),
             Type::Generic(_) => false,
         }
     }
@@ -348,6 +367,7 @@ impl Type {
                 .iter_mut()
                 .for_each(|e| e.set_implicit_lifetimes(inferred_lifetime.clone())),
             Type::Slice(s) => s.element_type.set_implicit_lifetimes(inferred_lifetime),
+            Type::RawPointer(r) => r.inner.set_implicit_lifetimes(inferred_lifetime),
             Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
     }
@@ -392,6 +412,9 @@ impl Type {
             Type::Slice(s) => {
                 s.element_type.rename_lifetime_parameters(original2renamed);
             }
+            Type::RawPointer(r) => {
+                r.inner.rename_lifetime_parameters(original2renamed);
+            }
             Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
     }
@@ -427,6 +450,7 @@ impl Type {
                 }
             }
             Type::Slice(s) => s.element_type._lifetime_parameters(set),
+            Type::RawPointer(r) => r.inner._lifetime_parameters(set),
             Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
     }
@@ -471,6 +495,7 @@ impl Type {
                 }
             }
             Type::Slice(s) => s.element_type._named_lifetime_parameters(set),
+            Type::RawPointer(r) => r.inner._named_lifetime_parameters(set),
             Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
     }
@@ -543,6 +568,14 @@ impl Type {
                 s.element_type._display_for_error(buffer);
                 write!(buffer, "]").unwrap();
             }
+            Type::RawPointer(r) => {
+                if r.is_mutable {
+                    write!(buffer, "*mut ").unwrap();
+                } else {
+                    write!(buffer, "*const ").unwrap();
+                }
+                r.inner._display_for_error(buffer);
+            }
             Type::Generic(t) => {
                 write!(buffer, "{}", t.name).unwrap();
             }
@@ -558,6 +591,7 @@ impl Debug for Type {
             Type::Tuple(t) => write!(f, "{t:?}"),
             Type::ScalarPrimitive(s) => write!(f, "{s:?}"),
             Type::Slice(s) => write!(f, "{s:?}"),
+            Type::RawPointer(r) => write!(f, "{r:?}"),
             Type::Generic(g) => write!(f, "{g:?}"),
         }
     }
@@ -578,6 +612,12 @@ impl From<PathType> for Type {
 impl From<TypeReference> for Type {
     fn from(value: TypeReference) -> Self {
         Self::Reference(value)
+    }
+}
+
+impl From<RawPointer> for Type {
+    fn from(value: RawPointer) -> Self {
+        Self::RawPointer(value)
     }
 }
 

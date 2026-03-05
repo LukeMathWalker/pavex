@@ -13,7 +13,7 @@ use tracing_log_error::log_error;
 use crate::language::{
     Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
     GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
-    Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
+    RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -595,11 +595,22 @@ pub(crate) fn _resolve_type(
                 kind: "inferred type",
             },
         )),
-        RustdocType::RawPointer { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
-            UnsupportedTypeKind {
-                kind: "raw pointer",
-            },
-        )),
+        RustdocType::RawPointer { is_mutable, type_ } => {
+            let resolved =
+                resolve_type(type_, used_by_package_id, krate_collection, generic_bindings)
+                    .map_err(|source| {
+                        TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                            TypePartResolutionError {
+                                role: "pointee type".into(),
+                                source,
+                            },
+                        ))
+                    })?;
+            Ok(Type::RawPointer(RawPointer {
+                is_mutable: *is_mutable,
+                inner: Box::new(resolved),
+            }))
+        }
         RustdocType::QualifiedPath { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind {
                 kind: "qualified path",

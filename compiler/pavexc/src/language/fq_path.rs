@@ -16,7 +16,7 @@ use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
-use crate::language::{CallPath, InvalidCallPath, Type, Tuple, TypeReference};
+use crate::language::{CallPath, InvalidCallPath, RawPointer, Type, Tuple, TypeReference};
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_processor::queries::CrateRegistry;
@@ -131,6 +131,7 @@ pub enum FQPathType {
     Tuple(FQTuple),
     ScalarPrimitive(ScalarPrimitive),
     Slice(FQSlice),
+    RawPointer(FQRawPointer),
 }
 
 impl FQPathType {
@@ -239,6 +240,13 @@ impl FQPathType {
                     element_type: Box::new(inner),
                 }))
             }
+            FQPathType::RawPointer(r) => {
+                let inner = r.inner.resolve(krate_collection)?;
+                Ok(Type::RawPointer(RawPointer {
+                    is_mutable: r.is_mutable,
+                    inner: Box::new(inner),
+                }))
+            }
         }
     }
 }
@@ -287,6 +295,10 @@ impl From<Type> for FQPathType {
             Type::Slice(s) => FQPathType::Slice(FQSlice {
                 element: Box::new((*s.element_type).into()),
             }),
+            Type::RawPointer(r) => FQPathType::RawPointer(FQRawPointer {
+                is_mutable: r.is_mutable,
+                inner: Box::new((*r.inner).into()),
+            }),
             Type::Generic(_) => {
                 // ResolvedPath doesn't support unassigned generic parameters.
                 unreachable!("UnassignedGeneric")
@@ -315,6 +327,12 @@ pub struct FQTuple {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FQSlice {
     pub element: Box<FQPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct FQRawPointer {
+    pub is_mutable: bool,
+    pub inner: Box<FQPathType>,
 }
 
 impl PartialEq for FQPath {
@@ -799,6 +817,7 @@ impl FQPathType {
                 write!(buffer, "{s}").unwrap();
             }
             FQPathType::Slice(s) => s.render_path(id2name, buffer),
+            FQPathType::RawPointer(r) => r.render_path(id2name, buffer),
         }
     }
 
@@ -811,6 +830,7 @@ impl FQPathType {
                 write!(buffer, "{s}").unwrap();
             }
             FQPathType::Slice(s) => s.render_for_error(buffer),
+            FQPathType::RawPointer(r) => r.render_for_error(buffer),
         }
     }
 }
@@ -921,6 +941,26 @@ impl FQReference {
     }
 }
 
+impl FQRawPointer {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        if self.is_mutable {
+            write!(buffer, "*mut ").unwrap();
+        } else {
+            write!(buffer, "*const ").unwrap();
+        }
+        self.inner.render_path(id2name, buffer);
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        if self.is_mutable {
+            write!(buffer, "*mut ").unwrap();
+        } else {
+            write!(buffer, "*const ").unwrap();
+        }
+        self.inner.render_for_error(buffer);
+    }
+}
+
 impl Display for FQPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let last_segment_index = self.segments.len().saturating_sub(1);
@@ -954,6 +994,9 @@ impl Display for FQPathType {
             FQPathType::Slice(s) => {
                 write!(f, "{s}")
             }
+            FQPathType::RawPointer(r) => {
+                write!(f, "{r}")
+            }
         }
     }
 }
@@ -975,6 +1018,17 @@ impl Display for FQReference {
         write!(f, "&")?;
         if self.is_mutable {
             write!(f, "mut ")?;
+        }
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl Display for FQRawPointer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.is_mutable {
+            write!(f, "*mut ")?;
+        } else {
+            write!(f, "*const ")?;
         }
         write!(f, "{}", self.inner)
     }
