@@ -8,7 +8,7 @@ use tracing_log_error::log_error;
 
 use crate::{TOOLCHAIN_CRATES, VersionMatcher, normalize_crate_name};
 
-/// The information used by [`Crate::compute_package_id_for_crate_id_with_hint`](super::krate::Crate::compute_package_id_for_crate_id_with_hint)
+/// The information used by [`Crate::compute_package_id_for_crate_id_with_hint`](super::Crate::compute_package_id_for_crate_id_with_hint)
 /// to map a `crate_id` to a `package_id`.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CrateIdNeedle {

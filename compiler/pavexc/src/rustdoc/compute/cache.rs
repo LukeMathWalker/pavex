@@ -1,4 +1,4 @@
-//! Thin wrapper around `rustdoc_cache` that integrates with pavexc's types.
+//! Thin wrapper around `rustdoc_processor` that integrates with pavexc's types.
 
 use std::borrow::Cow;
 
@@ -8,8 +8,8 @@ use rkyv::rancor::Panic;
 use rkyv::util::AlignedVec;
 
 use pavexc_annotations::AnnotatedItems;
-use rustdoc_cache::HydratedCacheEntry as CacheEntryInner;
-pub use rustdoc_cache::{
+use rustdoc_processor::HydratedCacheEntry as CacheEntryInner;
+pub use rustdoc_processor::{
     CacheEntry, EagerCrateItemIndex, EagerCrateItemPaths, EagerImportPath2Id, RkyvCowBytes,
     RustdocCacheKey, RustdocGlobalFsCache, SecondaryIndexes,
 };
@@ -39,26 +39,26 @@ impl<'a> CacheEntryExt<'a> for CacheEntry<'a> {
 
         // Serialize paths - handle Eager variant
         let paths: AlignedVec = match &krate.core.krate.paths {
-            rustdoc_cache::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
+            rustdoc_processor::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
                 rkyv::to_bytes::<Panic>(paths)?
             }
-            rustdoc_cache::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         // Serialize items - handle Eager variant
         let items: AlignedVec = match &krate.core.krate.index {
-            rustdoc_cache::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
+            rustdoc_processor::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
                 rkyv::to_bytes::<Panic>(index)?
             }
-            rustdoc_cache::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         // Serialize import_path2id
         let import_path2id: AlignedVec = match &krate.import_path2id {
-            rustdoc_cache::ImportPath2Id::Eager(EagerImportPath2Id(m)) => {
+            rustdoc_processor::ImportPath2Id::Eager(EagerImportPath2Id(m)) => {
                 rkyv::to_bytes::<Panic>(m)?
             }
-            rustdoc_cache::ImportPath2Id::Lazy(lazy) => lazy.0.clone(),
+            rustdoc_processor::ImportPath2Id::Lazy(lazy) => lazy.0.clone(),
         };
 
         // Serialize other secondary indexes
@@ -95,18 +95,18 @@ impl<'a> CacheEntryExt<'a> for CacheEntry<'a> {
 
         // Serialize paths - handle Eager variant
         let paths: AlignedVec = match &krate.core.krate.paths {
-            rustdoc_cache::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
+            rustdoc_processor::CrateItemPaths::Eager(EagerCrateItemPaths { paths }) => {
                 rkyv::to_bytes::<Panic>(paths)?
             }
-            rustdoc_cache::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::CrateItemPaths::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         // Serialize items - handle Eager variant
         let items: AlignedVec = match &krate.core.krate.index {
-            rustdoc_cache::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
+            rustdoc_processor::CrateItemIndex::Eager(EagerCrateItemIndex { index }) => {
                 rkyv::to_bytes::<Panic>(index)?
             }
-            rustdoc_cache::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
+            rustdoc_processor::CrateItemIndex::Lazy(lazy) => lazy.bytes.clone(),
         };
 
         Ok(CacheEntry {
@@ -134,7 +134,7 @@ pub(crate) enum RustdocCacheEntry {
 }
 
 impl RustdocCacheEntry {
-    /// Convert a cache entry from the rustdoc_cache crate to our internal representation.
+    /// Convert a cache entry from the rustdoc_processor crate to our internal representation.
     pub fn from_cache_inner(inner: CacheEntryInner<AnnotatedItems>) -> Self {
         match inner {
             CacheEntryInner::<AnnotatedItems>::Raw(crate_data) => {
@@ -195,7 +195,7 @@ impl PavexRustdocCache {
     fn cache_fingerprint() -> String {
         format!(
             "{}-{}",
-            rustdoc_cache::CRATE_VERSION,
+            rustdoc_processor::CRATE_VERSION,
             env!("RUSTDOC_CACHE_SOURCE_HASH")
         )
     }

@@ -1,9 +1,15 @@
 //! Core rustdoc data types.
 
+mod item_index;
+mod item_paths;
+
+pub use item_index::{CrateItemIndex, EagerCrateItemIndex, LazyCrateItemIndex};
+pub use item_paths::{
+    CrateItemPaths, CrateItemPathsIter, EagerCrateItemPaths, ItemSummaryRef, LazyCrateItemPaths,
+};
+
 use rustc_hash::FxHashMap;
 use rustdoc_types::ExternalCrate;
-
-use super::{CrateItemIndex, CrateItemPaths};
 
 /// The JSON documentation for a crate.
 #[derive(Debug, Clone)]

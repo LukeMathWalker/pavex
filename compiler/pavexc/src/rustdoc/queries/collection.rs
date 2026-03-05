@@ -15,17 +15,17 @@ use crate::diagnostic::DiagnosticSink;
 use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id};
 use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
-use rustdoc_cache::compute_crate_docs;
 use rustdoc_ext::RustdocKindExt;
+use rustdoc_processor::compute_crate_docs;
 
 use super::super::AnnotatedItem;
 use super::super::annotations::{AnnotatedItems, AnnotationCoordinates};
 use super::super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache};
 use super::super::progress_reporter::ShellProgress;
-use rustdoc_cache::{Crate, CrateRegistry, GlobalItemId, UnknownItemPath};
+use rustdoc_processor::{Crate, CrateRegistry, GlobalItemId, UnknownItemPath};
 
 use rayon::iter::IntoParallelRefIterator;
-use rustdoc_cache::CacheEntry;
+use rustdoc_processor::CacheEntry;
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.

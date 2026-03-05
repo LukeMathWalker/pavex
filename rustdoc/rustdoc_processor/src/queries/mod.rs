@@ -1,3 +1,13 @@
+//! Query layer for looking up items across crates.
+
+pub(crate) mod core;
+pub(crate) mod registry;
+pub(crate) mod resolution;
+
+pub use self::core::CrateCore;
+pub use registry::CrateRegistry;
+pub use resolution::{CrateIdNeedle, compute_package_id_for_crate_id};
+
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
 
@@ -8,11 +18,9 @@ use guppy::graph::PackageGraph;
 use rustdoc_types::Item;
 
 use crate::CannotGetCrateData;
-use super::{
-    CrateCore, CrateIdNeedle, ExternalReExport, ExternalReExports, GlobalItemId, ImportIndex,
-    ImportPath2Id, UnknownItemPath,
-};
-use super::registry::CrateRegistry;
+use crate::global_item_id::GlobalItemId;
+use crate::indexing::{ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id};
+use crate::unknown_item_path::UnknownItemPath;
 
 /// Thin wrapper around [`rustdoc_types::Crate`] to:
 /// - bundle derived indexes;
@@ -173,9 +181,7 @@ impl Crate {
                         None,
                     )
                     .unwrap();
-                let source_krate = registry
-                    .get_or_compute_crate(&source_package_id)
-                    .unwrap();
+                let source_krate = registry.get_or_compute_crate(&source_package_id).unwrap();
                 if let Ok(source_id) =
                     source_krate.get_item_id_by_path(&original_source_path, registry)
                 {
@@ -228,10 +234,7 @@ impl Crate {
     /// Types can be exposed under multiple paths.
     /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
-    pub fn get_canonical_path(
-        &self,
-        type_id: &GlobalItemId,
-    ) -> Result<&[String], anyhow::Error> {
+    pub fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id
             && let Some(entry) = self.import_index.items.get(&type_id.rustdoc_item_id)
         {

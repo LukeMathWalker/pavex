@@ -1,8 +1,18 @@
+//! Build secondary indexes from raw `rustdoc` JSON output.
+
+mod import_index;
+mod import_path;
+mod re_exports;
+
+pub use import_index::{EntryVisibility, ImportIndex, ImportIndexEntry, SortablePath};
+pub use import_path::{EagerImportPath2Id, ImportPath2Id, LazyImportPath2Id};
+pub use re_exports::{ExternalReExport, ExternalReExports};
+
 use guppy::PackageId;
 use indexmap::IndexSet;
 use rustdoc_types::{ItemEnum, Visibility};
 
-use super::{CrateData, EntryVisibility, ExternalReExports, ImportIndex, ImportIndexEntry};
+use crate::crate_data::CrateData;
 
 /// Visitor invoked during crate indexing to handle item-specific hooks.
 pub trait IndexingVisitor {

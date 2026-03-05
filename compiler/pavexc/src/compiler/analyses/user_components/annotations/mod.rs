@@ -35,9 +35,7 @@ use crate::{
         GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedPathLifetime,
         ResolvedType,
     },
-    rustdoc::{
-        AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo,
-    },
+    rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
 use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};

@@ -1,8 +1,8 @@
 use guppy::PackageId;
 use guppy::graph::PackageGraph;
 
+use super::Crate;
 use crate::CannotGetCrateData;
-use super::krate::Crate;
 
 /// A trait providing cross-crate access during type resolution.
 ///
