@@ -14,7 +14,7 @@ use crate::compiler::{
     codegen_utils::VariableNameGenerator,
 };
 
-use super::{ApplicationStateCallGraph, ComponentDb, ResolvedType, deps::ServerSdkDeps};
+use super::{ApplicationStateCallGraph, ComponentDb, Type, deps::ServerSdkDeps};
 
 pub(super) fn define_application_state(
     application_state: &ApplicationState,
@@ -76,7 +76,7 @@ pub(super) fn define_application_config(
 }
 
 pub(super) fn define_application_state_error(
-    error_types: &IndexMap<String, ResolvedType>,
+    error_types: &IndexMap<String, Type>,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
 ) -> Result<ItemEnum, anyhow::Error> {
@@ -123,7 +123,7 @@ pub(super) fn get_application_state_new(
         .map(|type_| {
             let mut is_shared_reference = false;
             let inner_type = match type_ {
-                ResolvedType::Reference(r) => {
+                Type::Reference(r) => {
                     if !r.lifetime.is_static() {
                         is_shared_reference = true;
                         &r.inner
@@ -131,11 +131,11 @@ pub(super) fn get_application_state_new(
                         type_
                     }
                 }
-                ResolvedType::Slice(_)
-                | ResolvedType::ResolvedPath(_)
-                | ResolvedType::Tuple(_)
-                | ResolvedType::ScalarPrimitive(_) => type_,
-                ResolvedType::Generic(_) => {
+                Type::Slice(_)
+                | Type::Path(_)
+                | Type::Tuple(_)
+                | Type::ScalarPrimitive(_) => type_,
+                Type::Generic(_) => {
                     unreachable!("Generic types should have been resolved by now")
                 }
             };

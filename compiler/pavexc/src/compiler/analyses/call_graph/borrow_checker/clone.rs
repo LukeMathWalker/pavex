@@ -14,7 +14,7 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
     Callable, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime, PathType,
-    PathTypeExt, ResolvedType, TypeReference,
+    PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -33,7 +33,7 @@ pub(super) fn get_clone_component_id(
     static CLONE_PATH_TYPE: OnceCell<PathType> = OnceCell::new();
     let clone = CLONE_PATH_TYPE.get_or_init(|| {
         let clone = resolve_type_path("std::clone::Clone", krate_collection);
-        let ResolvedType::ResolvedPath(clone) = clone else {
+        let Type::Path(clone) = clone else {
             unreachable!()
         };
         clone
@@ -75,7 +75,7 @@ pub(super) fn get_clone_component_id(
         takes_self_as_ref: true,
         output: Some(output.clone()),
         path: type_clone_path,
-        inputs: vec![ResolvedType::Reference(TypeReference {
+        inputs: vec![Type::Reference(TypeReference {
             is_mutable: false,
             lifetime: Lifetime::Elided,
             inner: Box::new(output),

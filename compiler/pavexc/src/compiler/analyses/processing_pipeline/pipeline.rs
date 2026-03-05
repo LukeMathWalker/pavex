@@ -25,7 +25,7 @@ use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
     Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
-    PathTypeExt, ResolvedType, TypeReference,
+    PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -64,7 +64,7 @@ pub struct Stage {
     /// middleware within this stage.
     /// Middlewares are indexed based on their position in the invocation order for
     /// this stage.
-    pub(crate) type2cloning_indexes: IndexMap<ResolvedType, BTreeSet<usize>>,
+    pub(crate) type2cloning_indexes: IndexMap<Type, BTreeSet<usize>>,
 }
 
 #[derive(Debug)]
@@ -346,8 +346,8 @@ impl RequestHandlerPipeline {
             }
             previous_next_state = {
                 let inputs = state_accumulator.iter().filter(|ty| match ty {
-                    ResolvedType::ResolvedPath(_) => *ty != &component_db.pavex_response,
-                    ResolvedType::Reference(ref_) => {
+                    Type::Path(_) => *ty != &component_db.pavex_response,
+                    Type::Reference(ref_) => {
                         ref_.inner.as_ref() != &component_db.pavex_response
                     }
                     _ => true,
@@ -377,8 +377,8 @@ impl RequestHandlerPipeline {
                     let to_be_removed: Vec<_> = state_accumulator
                         .iter()
                         .filter(|ty| match ty {
-                            ResolvedType::ResolvedPath(_) => *ty == &output,
-                            ResolvedType::Reference(ref_) => ref_.inner.as_ref() == &output,
+                            Type::Path(_) => *ty == &output,
+                            Type::Reference(ref_) => ref_.inner.as_ref() == &output,
                             _ => false,
                         })
                         .cloned()
@@ -480,7 +480,7 @@ impl RequestHandlerPipeline {
                 component_id: ComponentId,
             }
 
-            let mut type2info = HashMap::<ResolvedType, CloningInfo>::new();
+            let mut type2info = HashMap::<Type, CloningInfo>::new();
 
             for (index, &id) in ids.iter().enumerate() {
                 let call_graph = &id2ordered_call_graphs[id];
@@ -498,28 +498,28 @@ impl RequestHandlerPipeline {
 
                 for (ty, component_id) in input_types {
                     match ty {
-                        ResolvedType::Reference(ref_) => {
+                        Type::Reference(ref_) => {
                             // We recurse through multi-references (e.g. &&&T).
                             let mut inner = ref_.inner.as_ref();
-                            while let ResolvedType::Reference(ref_) = inner {
+                            while let Type::Reference(ref_) = inner {
                                 inner = ref_.inner.as_ref();
                             }
                             if let Some(info) = type2info.get_mut(inner.as_ref()) {
                                 info.ref_by.push(index);
                             }
                         }
-                        ResolvedType::ResolvedPath(_) |
-                        ResolvedType::Tuple(_) => {
+                        Type::Path(_) |
+                        Type::Tuple(_) => {
                             type2info.entry(ty.clone()).or_default().consumed_by.push(ConsumerInfo { middleware_index: index, component_id });
                         }
                         // Scalars are trivially `Copy`, this analysis doesn't concern them.
-                        ResolvedType::ScalarPrimitive(_) => {
+                        Type::ScalarPrimitive(_) => {
                             continue;
                         }
                         // We'd never encounter a raw slice as input type.
-                        ResolvedType::Slice(_) |
+                        Type::Slice(_) |
                         // All types are concrete at this stage.
-                        ResolvedType::Generic(_) => unreachable!(),
+                        Type::Generic(_) => unreachable!(),
                     }
                 }
             }
@@ -862,7 +862,7 @@ impl InputParameters {
     /// - if both `T` and `&mut T` are needed, only `T` should appear as a field type marked as mutable.
     pub(crate) fn from_iter<T>(types: impl IntoIterator<Item = T>) -> Self
     where
-        T: AsRef<ResolvedType>,
+        T: AsRef<Type>,
     {
         let input_parameters: Vec<_> = Self::get_input_types(types).into_iter().collect();
         let mut lifetimes = IndexSet::new();
@@ -908,17 +908,17 @@ impl InputParameters {
 
     fn get_input_types<T>(types: impl IntoIterator<Item = T>) -> IndexSet<Binding>
     where
-        T: AsRef<ResolvedType>,
+        T: AsRef<Type>,
     {
         struct Metadata {
             by_value: bool,
             mutable: bool,
         }
 
-        let mut inner_type2by_value: IndexMap<ResolvedType, Metadata> = IndexMap::new();
+        let mut inner_type2by_value: IndexMap<Type, Metadata> = IndexMap::new();
         for ty_ in types {
             let ty_ = ty_.as_ref();
-            if let ResolvedType::Reference(ref_) = ty_
+            if let Type::Reference(ref_) = ty_
                 && !ref_.lifetime.is_static()
             {
                 let entry = inner_type2by_value
@@ -946,7 +946,7 @@ impl InputParameters {
                     (ty_, metadata.mutable)
                 } else {
                     (
-                        ResolvedType::Reference(TypeReference {
+                        Type::Reference(TypeReference {
                             is_mutable: metadata.mutable,
                             lifetime: Lifetime::Elided,
                             inner: Box::new(ty_),
@@ -976,7 +976,7 @@ pub(crate) struct Binding {
     /// E.g. `foo` in `foo: Foo`.
     pub(crate) ident: String,
     /// The type bound to the name.
-    pub(crate) type_: ResolvedType,
+    pub(crate) type_: Type,
     /// Whether the binding should be marked as mutable with `mut`.
     ///
     /// E.g. `mut foo: Foo` vs `foo: Foo`.
@@ -999,7 +999,7 @@ impl Bindings {
     /// - `&mut name` if the caller wants an instance of `&mut Foo`
     ///
     /// In the last case, the binding is automatically marked as mutable.
-    pub(crate) fn get_expr_for_type(&mut self, type_: &ResolvedType) -> Option<syn::Expr> {
+    pub(crate) fn get_expr_for_type(&mut self, type_: &Type) -> Option<syn::Expr> {
         let binding = self.0.iter().find(|binding| binding.type_ == *type_);
         if let Some(binding) = binding {
             let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
@@ -1009,7 +1009,7 @@ impl Bindings {
 
         // No exact match.
         // But if they want a reference, perhaps we can borrow something.
-        let ResolvedType::Reference(ref_) = type_ else {
+        let Type::Reference(ref_) = type_ else {
             return None;
         };
 
@@ -1032,7 +1032,7 @@ impl Bindings {
         // If we are looking for a `&T` and we have a `&mut T`,
         // we can use the latter as the former thanks to Rust's coercion rules.
         if !ref_.is_mutable {
-            let new_ref = ResolvedType::Reference(TypeReference {
+            let new_ref = Type::Reference(TypeReference {
                 is_mutable: true,
                 lifetime: ref_.lifetime.clone(),
                 inner: Box::new(ref_.inner.as_ref().clone()),
@@ -1049,7 +1049,7 @@ impl Bindings {
     }
 
     /// Return the first binding with a given type.
-    pub(crate) fn find_exact_by_type(&self, type_: &ResolvedType) -> Option<&Binding> {
+    pub(crate) fn find_exact_by_type(&self, type_: &Type) -> Option<&Binding> {
         self.0.iter().find(|binding| binding.type_ == *type_)
     }
 }
@@ -1061,7 +1061,7 @@ impl Bindings {
 fn extract_long_lived_inputs(
     call_graph: &RawCallGraph,
     component_db: &ComponentDb,
-    buffer: &mut IndexSet<ResolvedType>,
+    buffer: &mut IndexSet<Type>,
 ) {
     for node in call_graph.node_weights() {
         let CallGraphNode::InputParameter { type_, source } = node else {
@@ -1098,7 +1098,7 @@ fn extract_request_scoped_compute_nodes<'a>(
 }
 
 fn emit_cloning_error(
-    ty_: &ResolvedType,
+    ty_: &Type,
     moved_by: ComponentId,
     later_used_by: ComponentId,
     component_id: ComponentId,

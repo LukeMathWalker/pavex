@@ -1,10 +1,10 @@
 use std::fmt::Formatter;
 
 use guppy::PackageId;
-use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
+use rustdoc_types::{GenericParamDefKind, ItemEnum, Type as RustdocType};
 
 use crate::compiler::resolvers::resolve_type;
-use crate::language::{PathType, ResolvedType};
+use crate::language::{PathType, Type};
 use crate::rustdoc::{Crate, CrateCollection};
 use rustdoc_processor::queries::CrateRegistry;
 
@@ -16,7 +16,7 @@ use super::resolvers::GenericBindings;
 /// (e.g. `std::marker::Sync` won't work, you should use `core::marker::Sync`).
 pub(crate) fn assert_trait_is_implemented(
     krate_collection: &CrateCollection,
-    type_: &ResolvedType,
+    type_: &Type,
     expected_trait: &PathType,
 ) -> Result<(), MissingTraitImplementationError> {
     match implements_trait(krate_collection, type_, expected_trait) {
@@ -66,7 +66,7 @@ const CLONE_TRAIT_PATH: [&str; 3] = ["core", "clone", "Clone"];
 /// (e.g. `std::marker::Sync` won't work, you should use `core::marker::Sync`).
 pub(crate) fn implements_trait(
     krate_collection: &CrateCollection,
-    type_: &ResolvedType,
+    type_: &Type,
     expected_trait: &PathType,
 ) -> Result<bool, anyhow::Error> {
     let trait_definition_crate =
@@ -84,7 +84,7 @@ pub(crate) fn implements_trait(
     // We start by checking if there is a trait implementation for this type in the crate where the
     // type was defined.
     match type_ {
-        ResolvedType::ResolvedPath(our_path_type) => {
+        Type::Path(our_path_type) => {
             let type_definition_crate =
                 get_crate_by_package_id(krate_collection, &our_path_type.package_id)?;
             let type_id = type_definition_crate
@@ -167,7 +167,7 @@ pub(crate) fn implements_trait(
                 }
             }
         }
-        ResolvedType::Tuple(t) => {
+        Type::Tuple(t) => {
             // Tuple trait implementations in std are somewhat magical
             // (see https://doc.rust-lang.org/std/primitive.tuple.html#trait-implementations-1).
             // We handle the ones we know we care about (marker traits and Clone).
@@ -189,7 +189,7 @@ pub(crate) fn implements_trait(
                 return Ok(true);
             }
         }
-        ResolvedType::Reference(r) => {
+        Type::Reference(r) => {
             // `& &T` is `Send` if `&T` is `Send`, therefore `&T` is `Sync` if `T` if `Sync`.
             if (expected_trait.base_type == SYNC_TRAIT_PATH
                 || expected_trait.base_type == SEND_TRAIT_PATH)
@@ -208,7 +208,7 @@ pub(crate) fn implements_trait(
             }
             // TODO: Unpin and other traits
         }
-        ResolvedType::ScalarPrimitive(_) => {
+        Type::ScalarPrimitive(_) => {
             if expected_trait.base_type == SEND_TRAIT_PATH
                 || expected_trait.base_type == SYNC_TRAIT_PATH
                 || expected_trait.base_type == COPY_TRAIT_PATH
@@ -219,7 +219,7 @@ pub(crate) fn implements_trait(
             }
             // TODO: handle other traits
         }
-        ResolvedType::Slice(s) => {
+        Type::Slice(s) => {
             if (expected_trait.base_type == SEND_TRAIT_PATH
                 || expected_trait.base_type == SYNC_TRAIT_PATH)
                 && implements_trait(krate_collection, &s.element_type, expected_trait)?
@@ -228,7 +228,7 @@ pub(crate) fn implements_trait(
             }
             // TODO: handle Unpin + other traits
         }
-        ResolvedType::Generic(_) => {
+        Type::Generic(_) => {
             // TODO: handle blanket implementations. As a first approximation,
             //   we assume that if the type is generic, it implements all traits.
             return Ok(true);
@@ -271,14 +271,14 @@ pub(crate) fn implements_trait(
 }
 
 fn is_equivalent(
-    rustdoc_type: &Type,
-    our_type: &ResolvedType,
+    rustdoc_type: &RustdocType,
+    our_type: &Type,
     krate_collection: &CrateCollection,
     used_by_package_id: &PackageId,
 ) -> bool {
     match rustdoc_type {
-        Type::ResolvedPath(p) => {
-            let ResolvedType::ResolvedPath(our_path_type) = our_type else {
+        RustdocType::ResolvedPath(p) => {
+            let Type::Path(our_path_type) = our_type else {
                 return false;
             };
             let rustdoc_type_id = &p.id;
@@ -311,12 +311,12 @@ fn is_equivalent(
                 return true;
             }
         }
-        Type::BorrowedRef {
+        RustdocType::BorrowedRef {
             is_mutable,
             type_: inner_type,
             ..
         } => {
-            if let ResolvedType::Reference(type_) = our_type {
+            if let Type::Reference(type_) = our_type {
                 return type_.is_mutable == *is_mutable
                     && is_equivalent(
                         inner_type,
@@ -326,8 +326,8 @@ fn is_equivalent(
                     );
             }
         }
-        Type::Tuple(rustdoc_tuple) => {
-            if let ResolvedType::Tuple(our_tuple) = our_type {
+        RustdocType::Tuple(rustdoc_tuple) => {
+            if let Type::Tuple(our_tuple) = our_type {
                 if our_tuple.elements.len() != rustdoc_tuple.len() {
                     return false;
                 }
@@ -346,13 +346,13 @@ fn is_equivalent(
                 return true;
             }
         }
-        Type::Primitive(p) => {
-            if let ResolvedType::ScalarPrimitive(our_primitive) = our_type {
+        RustdocType::Primitive(p) => {
+            if let Type::ScalarPrimitive(our_primitive) = our_type {
                 return our_primitive.as_str() == p;
             }
         }
-        Type::Slice(s) => {
-            if let ResolvedType::Slice(our_slice) = our_type {
+        RustdocType::Slice(s) => {
+            if let Type::Slice(our_slice) = our_type {
                 return is_equivalent(
                     s,
                     &our_slice.element_type,
@@ -370,8 +370,8 @@ fn is_equivalent(
 
 #[derive(Debug, Clone)]
 pub(crate) struct MissingTraitImplementationError {
-    pub type_: ResolvedType,
-    pub trait_: ResolvedType,
+    pub type_: Type,
+    pub trait_: Type,
 }
 
 impl std::error::Error for MissingTraitImplementationError {}

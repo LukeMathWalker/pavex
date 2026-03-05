@@ -16,7 +16,7 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
-use crate::language::ResolvedType;
+use crate::language::Type;
 use crate::rustdoc::CrateCollection;
 
 use super::copy::CopyChecker;
@@ -172,7 +172,7 @@ fn is_ref(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
 ) -> bool {
-    let _is_ref = |ty_| matches!(ty_, &ResolvedType::Reference(..));
+    let _is_ref = |ty_| matches!(ty_, &Type::Reference(..));
     match &call_graph[node_id] {
         CallGraphNode::Compute { component_id, .. } => {
             let component = component_db.hydrated_component(*component_id, computation_db);

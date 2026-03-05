@@ -194,15 +194,15 @@ with `ResolvedPath` as an intermediate step.
 
 ```rust
 struct Callable {
-    pub output_fq_path: ResolvedType,
+    pub output_fq_path: Type,
     pub callable_fq_path: ResolvedPath,
-    pub inputs: Vec<ResolvedType>,
+    pub inputs: Vec<Type>,
 }
 
-pub struct ResolvedType {
+pub struct Type {
     pub package_id: PackageId,
     pub base_type: Vec<String>,
-    pub generic_arguments: Vec<ResolvedType>,
+    pub generic_arguments: Vec<Type>,
 }
 ```
 

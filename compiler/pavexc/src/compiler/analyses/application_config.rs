@@ -9,7 +9,7 @@ use pavex_cli_diagnostic::CompilerDiagnostic;
 use crate::{
     compiler::component::{ConfigKey, DefaultStrategy},
     diagnostic::{self, TargetSpan},
-    language::ResolvedType,
+    language::Type,
     utils::comma_separated_list,
 };
 
@@ -26,7 +26,7 @@ use super::{
 /// It includes all items registered via `.config()` against the
 /// blueprint.
 pub struct ApplicationConfig {
-    bindings: BiHashMap<syn::Ident, ResolvedType>,
+    bindings: BiHashMap<syn::Ident, Type>,
     binding2default: BTreeMap<syn::Ident, DefaultStrategy>,
     binding2id: BiBTreeMap<syn::Ident, ComponentId>,
 }
@@ -46,9 +46,9 @@ impl ApplicationConfig {
         let mut binding2id = BiBTreeMap::new();
         // Temporary maps to track key-to-type and type-to-key relationships
         // and detect conflicts.
-        let mut key2types: BTreeMap<ConfigKey, IndexMap<ResolvedType, ComponentId>> =
+        let mut key2types: BTreeMap<ConfigKey, IndexMap<Type, ComponentId>> =
             BTreeMap::new();
-        let mut type2keys: IndexMap<ResolvedType, BTreeMap<ConfigKey, ComponentId>> =
+        let mut type2keys: IndexMap<Type, BTreeMap<ConfigKey, ComponentId>> =
             IndexMap::new();
         for (id, _) in component_db.iter() {
             let HydratedComponent::ConfigType(config) =
@@ -144,7 +144,7 @@ impl ApplicationConfig {
     /// Remove a binding from the generated `ApplicationConfig` type.
     ///
     /// Panics if there is binding with the given id.
-    fn remove(&mut self, id: ComponentId) -> (syn::Ident, ComponentId, ResolvedType) {
+    fn remove(&mut self, id: ComponentId) -> (syn::Ident, ComponentId, Type) {
         let (ident, id) = self.binding2id.remove_by_right(&id).unwrap();
         let (_, ty) = self.bindings.remove_by_left(&ident).unwrap();
         self.binding2default.remove(&ident);
@@ -152,7 +152,7 @@ impl ApplicationConfig {
     }
 
     /// Retrieve the bindings between configuration keys and their types.
-    pub fn bindings(&self) -> &BiHashMap<syn::Ident, ResolvedType> {
+    pub fn bindings(&self) -> &BiHashMap<syn::Ident, Type> {
         &self.bindings
     }
 
@@ -164,7 +164,7 @@ impl ApplicationConfig {
 
 fn same_key_different_types(
     key: &ConfigKey,
-    type2id: &IndexMap<ResolvedType, ComponentId>,
+    type2id: &IndexMap<Type, ComponentId>,
     db: &ComponentDb,
     diagnostics: &diagnostic::DiagnosticSink,
 ) {
@@ -215,7 +215,7 @@ fn same_key_different_types(
 }
 
 fn same_type_different_key(
-    ty: &ResolvedType,
+    ty: &Type,
     key2component_id: &BTreeMap<ConfigKey, ComponentId>,
     db: &ComponentDb,
     diagnostics: &diagnostic::DiagnosticSink,
@@ -269,7 +269,7 @@ fn same_type_different_key(
 
 fn unused_configuration_type(
     id: ComponentId,
-    ty: &ResolvedType,
+    ty: &Type,
     db: &ComponentDb,
     diagnostics: &diagnostic::DiagnosticSink,
 ) {

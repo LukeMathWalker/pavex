@@ -16,7 +16,7 @@ use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
-use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
+use crate::language::{CallPath, InvalidCallPath, Type, Tuple, TypeReference};
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_processor::queries::CrateRegistry;
@@ -107,7 +107,7 @@ impl FQPathType {
     pub fn resolve(
         &self,
         krate_collection: &CrateCollection,
-    ) -> Result<ResolvedType, anyhow::Error> {
+    ) -> Result<Type, anyhow::Error> {
         match self {
             FQPathType::ResolvedPath(p) => {
                 let resolved_item = p.path.find_rustdoc_item_type(krate_collection)?.1;
@@ -194,7 +194,7 @@ impl FQPathType {
                 }
                 .into())
             }
-            FQPathType::Reference(r) => Ok(ResolvedType::Reference(TypeReference {
+            FQPathType::Reference(r) => Ok(Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
                 lifetime: r.lifetime.clone(),
                 inner: Box::new(r.inner.resolve(krate_collection)?),
@@ -205,12 +205,12 @@ impl FQPathType {
                     .iter()
                     .map(|e| e.resolve(krate_collection))
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(ResolvedType::Tuple(Tuple { elements }))
+                Ok(Type::Tuple(Tuple { elements }))
             }
-            FQPathType::ScalarPrimitive(s) => Ok(ResolvedType::ScalarPrimitive(s.clone())),
+            FQPathType::ScalarPrimitive(s) => Ok(Type::ScalarPrimitive(s.clone())),
             FQPathType::Slice(s) => {
                 let inner = s.element.resolve(krate_collection)?;
-                Ok(ResolvedType::Slice(Slice {
+                Ok(Type::Slice(Slice {
                     element_type: Box::new(inner),
                 }))
             }
@@ -218,10 +218,10 @@ impl FQPathType {
     }
 }
 
-impl From<ResolvedType> for FQPathType {
-    fn from(value: ResolvedType) -> Self {
+impl From<Type> for FQPathType {
+    fn from(value: Type) -> Self {
         match value {
-            ResolvedType::ResolvedPath(p) => {
+            Type::Path(p) => {
                 let mut segments: Vec<FQPathSegment> = p
                     .base_type
                     .iter()
@@ -255,19 +255,19 @@ impl From<ResolvedType> for FQPathType {
                     }),
                 })
             }
-            ResolvedType::Reference(r) => FQPathType::Reference(FQReference {
+            Type::Reference(r) => FQPathType::Reference(FQReference {
                 is_mutable: r.is_mutable,
                 lifetime: r.lifetime,
                 inner: Box::new((*r.inner).into()),
             }),
-            ResolvedType::Tuple(t) => FQPathType::Tuple(FQTuple {
+            Type::Tuple(t) => FQPathType::Tuple(FQTuple {
                 elements: t.elements.into_iter().map(|e| e.into()).collect(),
             }),
-            ResolvedType::ScalarPrimitive(s) => FQPathType::ScalarPrimitive(s),
-            ResolvedType::Slice(s) => FQPathType::Slice(FQSlice {
+            Type::ScalarPrimitive(s) => FQPathType::ScalarPrimitive(s),
+            Type::Slice(s) => FQPathType::Slice(FQSlice {
                 element: Box::new((*s.element_type).into()),
             }),
-            ResolvedType::Generic(_) => {
+            Type::Generic(_) => {
                 // ResolvedPath doesn't support unassigned generic parameters.
                 unreachable!("UnassignedGeneric")
             }

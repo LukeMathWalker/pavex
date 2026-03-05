@@ -11,7 +11,7 @@ mod wrapping_middleware;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic::{AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind};
-use crate::language::{Callable, FQPath, ResolvedType};
+use crate::language::{Callable, FQPath, Type};
 use crate::rustdoc::CrateCollection;
 use miette::NamedSource;
 
@@ -39,7 +39,7 @@ pub(crate) struct CannotTakeMutReferenceError {
 impl CannotTakeMutReferenceError {
     pub(crate) fn check_callable(c: &Callable) -> Result<(), Self> {
         for (i, input_type) in c.inputs.iter().enumerate() {
-            if let ResolvedType::Reference(input_type) = input_type
+            if let Type::Reference(input_type) = input_type
                 && input_type.is_mutable
             {
                 return Err(CannotTakeMutReferenceError {

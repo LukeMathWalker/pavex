@@ -5,7 +5,7 @@ use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::{Computation, MatchResult};
-use crate::language::ResolvedType;
+use crate::language::Type;
 
 /// Build a new instance of a type by performing a computation.
 ///
@@ -17,8 +17,8 @@ pub(crate) struct Constructor<'a>(pub(crate) Computation<'a>);
 impl<'a> Constructor<'a> {
     pub fn new(
         c: Computation<'a>,
-        pavex_error: &ResolvedType,
-        pavex_response: &ResolvedType,
+        pavex_error: &Type,
+        pavex_response: &Type,
         framework_item_db: &FrameworkItemDb,
     ) -> Result<Self, ConstructorValidationError> {
         if c.output_type().is_none() {
@@ -31,7 +31,7 @@ impl<'a> Constructor<'a> {
         if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
-            if output_type == ResolvedType::UNIT_TYPE {
+            if output_type == Type::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
             }
         }
@@ -44,7 +44,7 @@ impl<'a> Constructor<'a> {
         if &output_type == pavex_error {
             return Err(ConstructorValidationError::CannotConstructPavexError);
         }
-        if let ResolvedType::Reference(ref_type) = &output_type
+        if let Type::Reference(ref_type) = &output_type
             && ref_type.inner.as_ref() == pavex_error
         {
             return Err(ConstructorValidationError::CannotConstructPavexError);
@@ -54,7 +54,7 @@ impl<'a> Constructor<'a> {
         if &output_type == pavex_response {
             return Err(ConstructorValidationError::CannotConstructPavexResponse);
         }
-        if let ResolvedType::Reference(ref_type) = &output_type
+        if let Type::Reference(ref_type) = &output_type
             && ref_type.inner.as_ref() == pavex_response
         {
             return Err(ConstructorValidationError::CannotConstructPavexResponse);
@@ -68,7 +68,7 @@ impl<'a> Constructor<'a> {
                     },
                 );
             }
-            if let ResolvedType::Reference(ref_type) = &output_type
+            if let Type::Reference(ref_type) = &output_type
                 && ref_type.inner.as_ref() == framework_primitive_type
             {
                 return Err(
@@ -79,7 +79,7 @@ impl<'a> Constructor<'a> {
             }
         }
 
-        if let ResolvedType::Generic(g) = output_type {
+        if let Type::Generic(g) = output_type {
             return Err(ConstructorValidationError::NakedGenericOutputType {
                 naked_parameter: g.name,
             });
@@ -115,12 +115,12 @@ impl<'a> From<Constructor<'a>> for Computation<'a> {
 
 impl Constructor<'_> {
     /// The type returned by the constructor.
-    pub fn output_type(&self) -> &ResolvedType {
+    pub fn output_type(&self) -> &Type {
         self.0.output_type().unwrap()
     }
 
     /// The inputs types used by this constructor.
-    pub fn input_types(&self) -> Cow<'_, [ResolvedType]> {
+    pub fn input_types(&self) -> Cow<'_, [Type]> {
         self.0.input_types()
     }
 
@@ -156,7 +156,7 @@ pub(crate) enum ConstructorValidationError {
         "You can't register a constructor for `{primitive_type:?}`.\n\
         `{primitive_type:?}` is a framework primitive, you can't override the way it's built by Pavex."
     )]
-    CannotConstructFrameworkPrimitive { primitive_type: ResolvedType },
+    CannotConstructFrameworkPrimitive { primitive_type: Type },
     #[error(
         "Input parameters for a constructor can't have any *unassigned* generic type parameters that appear exclusively in its input parameters."
     )]

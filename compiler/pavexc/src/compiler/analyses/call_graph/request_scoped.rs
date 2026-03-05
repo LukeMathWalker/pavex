@@ -15,7 +15,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
-use crate::language::{Callable, FQPath, FQPathSegment, InvocationStyle, ResolvedType};
+use crate::language::{Callable, FQPath, FQPathSegment, InvocationStyle, Type};
 use crate::rustdoc::CrateCollection;
 
 /// Build an [`OrderedCallGraph`] for a computation that gets trigger on a per-request basis
@@ -181,7 +181,7 @@ fn augment_preprocessing_graph(
             continue;
         }
 
-        let ResolvedType::ResolvedPath(processing_path) = component_db.pavex_processing.as_ref()
+        let Type::Path(processing_path) = component_db.pavex_processing.as_ref()
         else {
             unreachable!()
         };

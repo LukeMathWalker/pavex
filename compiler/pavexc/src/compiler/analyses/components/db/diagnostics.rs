@@ -12,7 +12,7 @@ use crate::diagnostic::{
     self, AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind, SourceSpanExt,
     convert_proc_macro_span, convert_rustdoc_span,
 };
-use crate::language::{Callable, ResolvedType};
+use crate::language::{Callable, Type};
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
 use guppy::graph::PackageGraph;
@@ -613,7 +613,7 @@ impl ComponentDb {
     pub(super) fn invalid_response_type(
         e: MissingTraitImplementationError,
         callable: &Callable,
-        output: &ResolvedType,
+        output: &Type,
         id: UserComponentId,
         db: &UserComponentDb,
         krate_collection: &CrateCollection,
@@ -646,7 +646,7 @@ impl ComponentDb {
 
     pub(super) fn cannot_handle_into_response_implementation(
         e: CallableResolutionError,
-        output_type: &ResolvedType,
+        output_type: &Type,
         id: UserComponentId,
         db: &UserComponentDb,
         diagnostics: &diagnostic::DiagnosticSink,
@@ -920,7 +920,7 @@ impl ComponentDb {
     }
 
     pub(super) fn non_static_reference_in_singleton(
-        output_type: &ResolvedType,
+        output_type: &Type,
         id: UserComponentId,
         db: &UserComponentDb,
         diagnostics: &diagnostic::DiagnosticSink,
@@ -945,7 +945,7 @@ impl ComponentDb {
     }
 
     pub(super) fn non_static_lifetime_parameter_in_singleton(
-        output_type: &ResolvedType,
+        output_type: &Type,
         id: UserComponentId,
         db: &UserComponentDb,
         diagnostics: &diagnostic::DiagnosticSink,

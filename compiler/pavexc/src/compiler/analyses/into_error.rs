@@ -6,7 +6,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, FQPath, FQPathSegment, InvocationStyle, PathTypeExt, ResolvedType,
+    Callable, FQPath, FQPathSegment, InvocationStyle, PathTypeExt, Type,
 };
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
@@ -30,7 +30,7 @@ pub(super) fn register_error_new_transformer(
     }
     let error = m.output.clone();
 
-    let ResolvedType::ResolvedPath(pavex_error) = &component_db.pavex_error else {
+    let Type::Path(pavex_error) = &component_db.pavex_error else {
         unreachable!()
     };
     let pavex_error_path = &pavex_error.resolved_path();

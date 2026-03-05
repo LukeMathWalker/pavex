@@ -2,7 +2,7 @@ use indexmap::IndexSet;
 
 use crate::{
     compiler::computation::MatchResult,
-    language::{Callable, ResolvedType},
+    language::{Callable, Type},
 };
 use std::borrow::Cow;
 
@@ -38,7 +38,7 @@ impl<'a> PreProcessingMiddleware<'a> {
         if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
-            if output_type == ResolvedType::UNIT_TYPE {
+            if output_type == Type::UNIT_TYPE {
                 return Err(CannotFalliblyReturnTheUnitType);
             }
         }
@@ -57,11 +57,11 @@ impl<'a> PreProcessingMiddleware<'a> {
         Ok(Self { callable: c })
     }
 
-    pub fn output_type(&self) -> &ResolvedType {
+    pub fn output_type(&self) -> &Type {
         self.callable.output.as_ref().unwrap()
     }
 
-    pub fn input_types(&self) -> &[ResolvedType] {
+    pub fn input_types(&self) -> &[Type] {
         self.callable.inputs.as_slice()
     }
 

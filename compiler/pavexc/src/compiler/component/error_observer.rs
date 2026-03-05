@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
-use crate::language::{Callable, FQPath, ResolvedType};
+use crate::language::{Callable, FQPath, Type};
 
 /// A computation applied to an unhandled error that has been converted into Pavex's "common"
 /// error type.
@@ -18,7 +18,7 @@ pub(crate) struct ErrorObserver<'a> {
 impl<'a> ErrorObserver<'a> {
     pub fn new(
         error_observer: Cow<'a, Callable>,
-        pavex_error_ref: &ResolvedType,
+        pavex_error_ref: &Type,
     ) -> Result<Self, ErrorObserverValidationError> {
         if let Some(output_type) = &error_observer.output {
             return Err(ErrorObserverValidationError::MustReturnUnitType {
@@ -69,7 +69,7 @@ impl<'a> ErrorObserver<'a> {
         }
     }
 
-    pub fn input_types(&self) -> &[ResolvedType] {
+    pub fn input_types(&self) -> &[Type] {
         self.callable.inputs.as_slice()
     }
 }
@@ -84,11 +84,11 @@ impl AsRef<Callable> for ErrorObserver<'_> {
 pub(crate) enum ErrorObserverValidationError {
     MustReturnUnitType {
         observer_path: FQPath,
-        output_type: ResolvedType,
+        output_type: Type,
     },
     DoesNotTakeErrorReferenceAsInput {
         observer_path: FQPath,
-        error_type: ResolvedType,
+        error_type: Type,
     },
     UnassignedGenericParameters {
         observer_path: FQPath,

@@ -5,7 +5,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use serde::{Deserializer, Serializer};
 
-use crate::{GenericArgument, GenericLifetimeParameter, Lifetime, ResolvedType};
+use crate::{GenericArgument, GenericLifetimeParameter, Lifetime, Type};
 
 pub(crate) fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -22,7 +22,7 @@ where
     Ok(PackageId::new(s))
 }
 
-impl ResolvedType {
+impl Type {
     /// Parse this type into a [`syn::Type`], using the provided package-id-to-crate-name mapping.
     pub fn syn_type(&self, id2name: &BiHashMap<PackageId, String>) -> syn::Type {
         let type_ = self.render_type(id2name);
@@ -38,7 +38,7 @@ impl ResolvedType {
 
     fn _render_type(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         match self {
-            ResolvedType::ResolvedPath(t) => {
+            Type::Path(t) => {
                 let crate_name = id2name
                     .get_by_left(&t.package_id)
                     .with_context(|| {
@@ -74,7 +74,7 @@ impl ResolvedType {
                     write!(buffer, ">").unwrap();
                 }
             }
-            ResolvedType::Reference(r) => {
+            Type::Reference(r) => {
                 write!(buffer, "&").unwrap();
                 match &r.lifetime {
                     Lifetime::Static => {
@@ -90,7 +90,7 @@ impl ResolvedType {
                 }
                 r.inner._render_type(id2name, buffer);
             }
-            ResolvedType::Tuple(t) => {
+            Type::Tuple(t) => {
                 write!(buffer, "(").unwrap();
                 let mut elements = t.elements.iter().peekable();
                 while let Some(element) = elements.next() {
@@ -101,13 +101,13 @@ impl ResolvedType {
                 }
                 write!(buffer, ")").unwrap();
             }
-            ResolvedType::ScalarPrimitive(s) => {
+            Type::ScalarPrimitive(s) => {
                 write!(buffer, "{s}").unwrap();
             }
-            ResolvedType::Slice(s) => {
+            Type::Slice(s) => {
                 write!(buffer, "[{}]", s.element_type.render_type(id2name)).unwrap();
             }
-            ResolvedType::Generic(t) => {
+            Type::Generic(t) => {
                 write!(buffer, "{}", t.name).unwrap();
             }
         }

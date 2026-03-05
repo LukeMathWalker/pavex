@@ -9,7 +9,7 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 
 use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
-use crate::language::{Callable, InvocationStyle, Lifetime, ResolvedType, TypeReference};
+use crate::language::{Callable, InvocationStyle, Lifetime, Type, TypeReference};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
@@ -57,7 +57,7 @@ pub(crate) fn codegen_call_block<I, J>(
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> Result<Fragment, anyhow::Error>
 where
-    I: Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)>,
+    I: Iterator<Item = (NodeIndex, Type, CallGraphEdgeMetadata)>,
     J: Iterator<Item = NodeIndex>,
 {
     let mut before_block = quote! {};
@@ -69,17 +69,17 @@ where
         };
     }
 
-    let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
+    let mut dependency_bindings: HashMap<Type, Box<dyn ToTokens>> = HashMap::new();
     let mut dependency_blocks = Vec::new();
     for (dependency_index, dependency_type, consumption_mode) in dependencies {
         let type_ = match consumption_mode {
             CallGraphEdgeMetadata::Move => dependency_type.to_owned(),
-            CallGraphEdgeMetadata::SharedBorrow => ResolvedType::Reference(TypeReference {
+            CallGraphEdgeMetadata::SharedBorrow => Type::Reference(TypeReference {
                 is_mutable: false,
                 lifetime: Lifetime::Elided,
                 inner: Box::new(dependency_type.to_owned()),
             }),
-            CallGraphEdgeMetadata::ExclusiveBorrow => ResolvedType::Reference(TypeReference {
+            CallGraphEdgeMetadata::ExclusiveBorrow => Type::Reference(TypeReference {
                 is_mutable: true,
                 lifetime: Lifetime::Elided,
                 inner: Box::new(dependency_type.to_owned()),
@@ -128,14 +128,14 @@ where
         // We also register the reference as a shared reference
         // since we rely on the compiler's deref coercion to convert
         // `&mut T` to `&T` when needed.
-        if let ResolvedType::Reference(TypeReference {
+        if let Type::Reference(TypeReference {
             is_mutable: true,
             lifetime,
             inner,
         }) = &type_
         {
             dependency_bindings.insert(
-                ResolvedType::Reference(TypeReference {
+                Type::Reference(TypeReference {
                     is_mutable: false,
                     lifetime: lifetime.to_owned(),
                     inner: inner.to_owned(),
@@ -166,7 +166,7 @@ where
 
 pub(crate) fn codegen_call(
     callable: &Callable,
-    variable_bindings: &HashMap<ResolvedType, Box<dyn ToTokens>>,
+    variable_bindings: &HashMap<Type, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> TokenStream {
     let callable_path: syn::ExprPath = {

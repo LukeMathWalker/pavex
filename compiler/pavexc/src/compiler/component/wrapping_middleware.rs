@@ -4,7 +4,7 @@ use crate::compiler::component::CannotTakeMutReferenceError;
 use crate::language::GenericArgument;
 use crate::{
     compiler::computation::MatchResult,
-    language::{Callable, ResolvedType},
+    language::{Callable, Type},
 };
 use std::borrow::Cow;
 
@@ -40,7 +40,7 @@ impl<'a> WrappingMiddleware<'a> {
         if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
-            if output_type == ResolvedType::UNIT_TYPE {
+            if output_type == Type::UNIT_TYPE {
                 return Err(CannotFalliblyReturnTheUnitType);
             }
         }
@@ -58,12 +58,12 @@ impl<'a> WrappingMiddleware<'a> {
         };
 
         // We verify that the generic parameter in `Next<_>` is a naked type parameter.
-        let ResolvedType::ResolvedPath(next_path_type) = next_type else {
+        let Type::Path(next_path_type) = next_type else {
             unreachable!()
         };
         let generic_argument = next_path_type.generic_arguments.first().unwrap();
         match generic_argument {
-            GenericArgument::TypeParameter(ResolvedType::Generic(_)) => {}
+            GenericArgument::TypeParameter(Type::Generic(_)) => {}
             t => {
                 return Err(NextGenericParameterMustBeNaked {
                     parameter: format!("{t:?}"),
@@ -94,11 +94,11 @@ impl<'a> WrappingMiddleware<'a> {
         Ok(Self { callable: c })
     }
 
-    pub fn output_type(&self) -> &ResolvedType {
+    pub fn output_type(&self) -> &Type {
         self.callable.output.as_ref().unwrap()
     }
 
-    pub fn input_types(&self) -> &[ResolvedType] {
+    pub fn input_types(&self) -> &[Type] {
         self.callable.inputs.as_slice()
     }
 
@@ -108,7 +108,7 @@ impl<'a> WrappingMiddleware<'a> {
     }
 
     /// Returns the type of the input parameter that is a `Next<_>`.
-    pub fn next_input_type(&self) -> &ResolvedType {
+    pub fn next_input_type(&self) -> &Type {
         &self.callable.inputs[self.next_input_index()]
     }
 
@@ -120,8 +120,8 @@ impl<'a> WrappingMiddleware<'a> {
 }
 
 /// Returns `true` if the given type is an owned `Next<_>`.
-fn is_next(t: &ResolvedType) -> bool {
-    let ResolvedType::ResolvedPath(t) = t else {
+fn is_next(t: &Type) -> bool {
+    let Type::Path(t) = t else {
         return false;
     };
     t.base_type == ["pavex", "middleware", "Next"]

@@ -6,7 +6,7 @@ use ahash::HashMap;
 use indexmap::IndexSet;
 use itertools::Itertools;
 
-use crate::language::{Callable, FQPath, Lifetime, ResolvedType};
+use crate::language::{Callable, FQPath, Lifetime, Type};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.
@@ -40,7 +40,7 @@ impl ErrorHandler {
     pub fn for_fallible(
         error_handler: Callable,
         fallible_callable: &Callable,
-        pavex_error: &ResolvedType,
+        pavex_error: &Type,
     ) -> Result<Self, ErrorHandlerValidationError> {
         Self::check_output_type(&error_handler)?;
 
@@ -49,7 +49,7 @@ impl ErrorHandler {
             .inputs
             .iter()
             .find_position(|t| {
-                if let ResolvedType::Reference(t) = t {
+                if let Type::Reference(t) = t {
                     !t.is_mutable
                         && (t.lifetime != Lifetime::Static)
                         && (t.inner.as_ref() == error_type || t.inner.as_ref() == pavex_error)
@@ -79,7 +79,7 @@ impl ErrorHandler {
     ///
     /// This is a **reference** to the error type returned by the fallible callable
     /// that this is error handler is associated with.
-    pub(crate) fn error_type_ref(&self) -> &ResolvedType {
+    pub(crate) fn error_type_ref(&self) -> &Type {
         &self.callable.inputs[self.error_ref_input_index]
     }
 
@@ -87,7 +87,7 @@ impl ErrorHandler {
     /// concrete types specified in `bindings`.
     ///
     /// The newly "bound" handler will be returned.
-    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, Type>) -> Self {
         Self {
             callable: self.callable.bind_generic_type_parameters(bindings),
             error_ref_input_index: self.error_ref_input_index,
@@ -111,7 +111,7 @@ impl ErrorHandler {
     fn check_generic_params(
         h: &Callable,
         error_ref_index: usize,
-        error_ref: &ResolvedType,
+        error_ref: &Type,
     ) -> Result<(), ErrorHandlerValidationError> {
         use ErrorHandlerValidationError::*;
 
@@ -163,7 +163,7 @@ pub(crate) enum ErrorHandlerValidationError {
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,
-        error_type: ResolvedType,
+        error_type: Type,
     },
     UnderconstrainedGenericParameters {
         parameters: IndexSet<String>,

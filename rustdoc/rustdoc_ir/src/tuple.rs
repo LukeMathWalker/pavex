@@ -1,12 +1,12 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::ResolvedType;
+use crate::Type;
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 /// A Rust tuple—e.g. `(u8, u16, u32)`.
 pub struct Tuple {
     /// The types of each element in the tuple. An empty vector represents the unit type `()`.
-    pub elements: Vec<ResolvedType>,
+    pub elements: Vec<Type>,
 }
 
 impl Debug for Tuple {

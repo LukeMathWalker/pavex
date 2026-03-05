@@ -16,7 +16,7 @@ use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::utils::resolve_type_path;
 use crate::diagnostic::CompilerDiagnostic;
 use crate::diagnostic::DiagnosticSink;
-use crate::language::{GenericArgument, ResolvedType};
+use crate::language::{GenericArgument, Type};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
 use rustdoc_processor::queries::CrateRegistry;
@@ -36,7 +36,7 @@ pub(crate) fn verify_path_parameters(
     krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) {
-    let ResolvedType::ResolvedPath(structural_deserialize) = resolve_type_path(
+    let Type::Path(structural_deserialize) = resolve_type_path(
         "pavex::serialization::StructuralDeserialize",
         krate_collection,
     ) else {
@@ -71,7 +71,7 @@ pub(crate) fn verify_path_parameters(
                     if m.variant != MatchResultVariant::Ok {
                         return None;
                     }
-                    let ResolvedType::ResolvedPath(ty_) = &m.output else {
+                    let Type::Path(ty_) = &m.output else {
                         return None;
                     };
                     if ty_.base_type == vec!["pavex", "request", "path", "PathParams"] {
@@ -123,7 +123,7 @@ pub(crate) fn verify_path_parameters(
             .collect::<IndexSet<_>>();
         let struct_field_names = {
             let mut struct_field_names = IndexSet::new();
-            let ResolvedType::ResolvedPath(extracted_path_type) = &extracted_type else {
+            let Type::Path(extracted_path_type) = &extracted_type else {
                 unreachable!()
             };
             let StructKind::Plain {
@@ -175,7 +175,7 @@ fn report_non_existing_path_parameters(
     ok_path_params_node_id: NodeIndex,
     path_parameter_names: IndexSet<String>,
     non_existing_path_parameters: IndexSet<String>,
-    extracted_type: &ResolvedType,
+    extracted_type: &Type,
 ) {
     assert!(!non_existing_path_parameters.is_empty());
     // Find the compute nodes that consume the `PathParams` extractor and report
@@ -264,10 +264,10 @@ fn must_be_a_plain_struct(
     diagnostics: &DiagnosticSink,
     call_graph: &RawCallGraph,
     ok_path_params_node_id: NodeIndex,
-    extracted_type: &ResolvedType,
+    extracted_type: &Type,
 ) -> Result<rustdoc_types::Item, ()> {
     let error_suffix = match extracted_type {
-        ResolvedType::ResolvedPath(t) => {
+        Type::Path(t) => {
             let Some(item_id) = t.rustdoc_id else {
                 unreachable!()
             };
@@ -288,11 +288,11 @@ fn must_be_a_plain_struct(
                 _ => unreachable!(),
             }
         }
-        ResolvedType::Reference(r) => format!("`{r:?}` is a reference"),
-        ResolvedType::Tuple(t) => format!("`{t:?}` is a tuple"),
-        ResolvedType::ScalarPrimitive(s) => format!("`{s:?}` is a primitive"),
-        ResolvedType::Slice(s) => format!("`{s:?}` is a slice"),
-        ResolvedType::Generic(_) => {
+        Type::Reference(r) => format!("`{r:?}` is a reference"),
+        Type::Tuple(t) => format!("`{t:?}` is a tuple"),
+        Type::ScalarPrimitive(s) => format!("`{s:?}` is a primitive"),
+        Type::Slice(s) => format!("`{s:?}` is a slice"),
+        Type::Generic(_) => {
             unreachable!()
         }
     };

@@ -4,7 +4,7 @@ use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::MatchResult;
-use crate::language::{Callable, ResolvedType};
+use crate::language::{Callable, Type};
 
 /// A callable that handles incoming requests for one or more routes.
 /// It must return a type that implements `pavex::IntoResponse`.
@@ -27,7 +27,7 @@ impl<'a> RequestHandler<'a> {
         if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
-            if output_type == ResolvedType::UNIT_TYPE {
+            if output_type == Type::UNIT_TYPE {
                 return Err(RequestHandlerValidationError::CannotFalliblyReturnTheUnitType);
             }
         }
@@ -47,11 +47,11 @@ impl<'a> RequestHandler<'a> {
         Ok(Self { callable: c })
     }
 
-    pub fn output_type(&self) -> &ResolvedType {
+    pub fn output_type(&self) -> &Type {
         self.callable.output.as_ref().unwrap()
     }
 
-    pub fn input_types(&self) -> &[ResolvedType] {
+    pub fn input_types(&self) -> &[Type] {
         self.callable.inputs.as_slice()
     }
 

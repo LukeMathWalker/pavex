@@ -6,7 +6,7 @@ use indexmap::{IndexMap, IndexSet};
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::user_components::{ScopeId, UserComponentId};
 use crate::compiler::component::ErrorHandler;
-use crate::language::{ResolvedType, TypeReference};
+use crate::language::{Type, TypeReference};
 
 /// The set of error types that can be handled, for each scope.
 #[derive(Default)]
@@ -46,7 +46,7 @@ impl ErrorHandlersDb {
 
     /// Record that an error handler was registered for the given type, even
     /// though the callable didn't pass our validation checks.
-    pub(crate) fn insert_invalid(&mut self, error_type_ref: &ResolvedType, scope_id: ScopeId) {
+    pub(crate) fn insert_invalid(&mut self, error_type_ref: &Type, scope_id: ScopeId) {
         let scope_handlers = self
             .scope_id2error_handlers
             .entry(scope_id)
@@ -67,7 +67,7 @@ impl ErrorHandlersDb {
     pub(crate) fn get_or_try_bind(
         &mut self,
         scope_id: ScopeId,
-        type_: &ResolvedType,
+        type_: &Type,
         component_db: &ComponentDb,
     ) -> Option<ErrorHandlerEntry> {
         let mut fifo = VecDeque::with_capacity(1);
@@ -106,7 +106,7 @@ pub enum ErrorHandlerEntry {
 /// scope as well as any of its parent scopes.
 struct ErrorHandlersInScope {
     /// Map each supported error type to the dedicated error handler.
-    type2handler: HashMap<ResolvedType, ErrorHandlerEntry>,
+    type2handler: HashMap<Type, ErrorHandlerEntry>,
     /// Every time we encounter an error type that contains an unassigned generic type
     /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
     ///
@@ -115,7 +115,7 @@ struct ErrorHandlersInScope {
     /// `templated` to see if there is one that can match `Vec<T>`.
     ///
     /// Specialization, in a nutshell!
-    templated: IndexSet<ResolvedType>,
+    templated: IndexSet<Type>,
 }
 
 impl ErrorHandlersInScope {
@@ -128,7 +128,7 @@ impl ErrorHandlersInScope {
     }
 
     /// Retrieve the handler for a given error type, if it exists.
-    fn get(&self, type_: &ResolvedType) -> Option<&ErrorHandlerEntry> {
+    fn get(&self, type_: &Type) -> Option<&ErrorHandlerEntry> {
         self.type2handler.get(type_)
     }
 
@@ -136,7 +136,7 @@ impl ErrorHandlersInScope {
     ///
     /// If it doesn't exist, check the templated handlers to see if there is one
     /// that can be specialized to handle the given type.
-    fn get_or_try_bind(&mut self, type_: &ResolvedType) -> Option<ErrorHandlerEntry> {
+    fn get_or_try_bind(&mut self, type_: &Type) -> Option<ErrorHandlerEntry> {
         if let Some(handler) = self.get(type_) {
             return Some(handler.to_owned());
         }
@@ -173,7 +173,7 @@ impl ErrorHandlersInScope {
     /// Register a type and its handler.
     fn insert(&mut self, error_handler: ErrorHandler, component_id: UserComponentId) {
         let error_type_ref = error_handler.error_type_ref();
-        let ResolvedType::Reference(TypeReference { inner, .. }) = error_type_ref else {
+        let Type::Reference(TypeReference { inner, .. }) = error_type_ref else {
             unreachable!()
         };
         let error_type = *inner.to_owned();
@@ -191,8 +191,8 @@ impl ErrorHandlersInScope {
 
     /// Record that an error handler was registered for the given type, even
     /// though the callable didn't pass our validation checks.
-    fn insert_invalid(&mut self, error_type_ref: &ResolvedType) {
-        let ResolvedType::Reference(TypeReference { inner, .. }) = error_type_ref else {
+    fn insert_invalid(&mut self, error_type_ref: &Type) {
+        let Type::Reference(TypeReference { inner, .. }) = error_type_ref else {
             return;
         };
         let error_type = *inner.to_owned();

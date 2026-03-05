@@ -11,7 +11,7 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
-use crate::language::ResolvedType;
+use crate::language::Type;
 
 /// A [`CallGraph`] with nodes globally ordered according to their node index.
 /// Walking the graph according to the specified ordering guarantees that the generated code will
@@ -56,7 +56,7 @@ impl OrderedCallGraph {
     /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
     /// parameters—it will be used in other parts of the crate to provide instances of those types
     /// in the expected order.
-    pub(crate) fn required_input_types(&self) -> IndexSet<ResolvedType> {
+    pub(crate) fn required_input_types(&self) -> IndexSet<Type> {
         self.call_graph.required_input_types()
     }
 

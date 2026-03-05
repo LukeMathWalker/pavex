@@ -10,7 +10,7 @@ use crate::{
         traits::assert_trait_is_implemented,
         utils::resolve_type_path,
     },
-    language::{PathType, ResolvedType},
+    language::{PathType, Type},
     rustdoc::CrateCollection,
 };
 
@@ -58,7 +58,7 @@ impl<'a> CopyChecker<'a> {
 /// Return the `PathType` object for the `Copy` marker trait.
 fn get_copy_trait(krate_collection: &CrateCollection) -> PathType {
     let c = resolve_type_path("core::marker::Copy", krate_collection);
-    let ResolvedType::ResolvedPath(c) = c else {
+    let Type::Path(c) = c else {
         unreachable!()
     };
     c

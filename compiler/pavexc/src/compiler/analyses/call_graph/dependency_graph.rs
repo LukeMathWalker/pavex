@@ -15,7 +15,7 @@ use crate::{
         computation::Computation,
     },
     diagnostic::CompilerDiagnostic,
-    language::ResolvedType,
+    language::Type,
 };
 
 use super::NumberOfAllowedInvocations;
@@ -469,7 +469,7 @@ pub(super) enum DependencyGraphNode {
     },
     Input {
         /// The type that will be taken as an input parameter by the generated dependency closure.
-        type_: ResolvedType,
+        type_: Type,
     },
 }
 

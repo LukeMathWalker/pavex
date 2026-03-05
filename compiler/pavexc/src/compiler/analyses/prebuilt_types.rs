@@ -3,9 +3,9 @@ use ahash::HashMap;
 use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::component::PrebuiltType;
 use crate::compiler::interner::Interner;
-use crate::language::ResolvedType;
+use crate::language::Type;
 
-pub(crate) type PrebuiltTypeId = la_arena::Idx<ResolvedType>;
+pub(crate) type PrebuiltTypeId = la_arena::Idx<Type>;
 
 #[derive(Debug)]
 /// A database of all the types that might be used as inputs to the generated constructor for
@@ -18,7 +18,7 @@ pub(crate) type PrebuiltTypeId = la_arena::Idx<ResolvedType>;
 ///
 /// This database is a "data bag"—it doesn't have any special logic, it just stores data.
 pub struct PrebuiltTypeDb {
-    interner: Interner<ResolvedType>,
+    interner: Interner<Type>,
     component_id2type_id: HashMap<UserComponentId, PrebuiltTypeId>,
 }
 
@@ -44,7 +44,7 @@ impl PrebuiltTypeDb {
 }
 
 impl std::ops::Index<PrebuiltTypeId> for PrebuiltTypeDb {
-    type Output = ResolvedType;
+    type Output = Type;
 
     fn index(&self, index: PrebuiltTypeId) -> &Self::Output {
         &self.interner[index]
@@ -52,7 +52,7 @@ impl std::ops::Index<PrebuiltTypeId> for PrebuiltTypeDb {
 }
 
 impl std::ops::Index<UserComponentId> for PrebuiltTypeDb {
-    type Output = ResolvedType;
+    type Output = Type;
 
     fn index(&self, index: UserComponentId) -> &Self::Output {
         &self[self.component_id2type_id[&index]]

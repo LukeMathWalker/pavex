@@ -8,7 +8,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{FQPath, Lifetime, ResolvedType};
+use crate::language::{FQPath, Lifetime, Type};
 use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
@@ -29,7 +29,7 @@ pub struct Callable {
     pub takes_self_as_ref: bool,
     /// `None` if the callable returns the unit type (`()`).
     /// Otherwise, the type of the callable return value.
-    pub output: Option<ResolvedType>,
+    pub output: Option<Type>,
     /// The fully-qualified path pointing at this callable.
     ///
     /// E.g. `std::vec::Vec::new` for `Vec::new()`.
@@ -37,7 +37,7 @@ pub struct Callable {
     /// The types of the callable input parameter types.
     /// The list is ordered, matching the order in the callable declaration—this is relevant
     /// to ensure correct invocations.
-    pub inputs: Vec<ResolvedType>,
+    pub inputs: Vec<Type>,
     /// Rust supports different types of callables which rely on different invocation syntax.
     /// See [`InvocationStyle`] for more details.
     pub invocation_style: InvocationStyle,
@@ -59,7 +59,7 @@ impl Callable {
     /// The newly "bound" callable will be returned.
     pub fn bind_generic_type_parameters(
         &self,
-        bindings: &HashMap<String, ResolvedType>,
+        bindings: &HashMap<String, Type>,
     ) -> Callable {
         // TODO: we should bind the generics on the path of the callable itself.
         let inputs = self
@@ -181,7 +181,7 @@ impl Callable {
 
         let mut borrowed_indexes = vec![];
         for (i, input) in c.inputs.iter().enumerate() {
-            let ResolvedType::Reference(ref_ty) = input else {
+            let Type::Reference(ref_ty) = input else {
                 continue;
             };
             if ref_ty.is_mutable {
@@ -235,7 +235,7 @@ pub enum InvocationStyle {
     /// An available option to build structs **if all their fields are public**.
     StructLiteral {
         /// A map associating each field name to its type.
-        field_names: BTreeMap<String, ResolvedType>,
+        field_names: BTreeMap<String, Type>,
         /// Rust does not have default values for struct fields.
         /// This is hack to allow us to inject the `next` field in the state we generate for
         /// `Next` where the `next` field is not part of the struct definition and it must

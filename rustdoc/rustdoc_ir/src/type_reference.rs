@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::{Lifetime, ResolvedType};
+use crate::{Lifetime, Type};
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Clone)]
 /// A Rust reference—e.g. `&mut u32` or `&'static mut Vec<u8>`.
@@ -10,7 +10,7 @@ pub struct TypeReference {
     /// The lifetime of this reference.
     pub lifetime: Lifetime,
     /// The type being referenced.
-    pub inner: Box<ResolvedType>,
+    pub inner: Box<Type>,
 }
 
 impl Debug for TypeReference {
