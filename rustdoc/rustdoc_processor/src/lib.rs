@@ -22,42 +22,29 @@ mod utils;
 mod version_matcher;
 
 // Cache
-pub use cache::entry::{CacheEntry, SecondaryIndexes, ThirdPartyCrateCacheKey};
+pub use cache::entry::{CacheEntry, SecondaryIndexes};
 pub use cache::utils::RkyvCowBytes;
-pub use cache::{
-    HydratedCacheEntry, ProcessedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache,
-    cargo_fingerprint,
-};
+pub use cache::{HydratedCacheEntry, ProcessedCacheEntry, RustdocCacheKey, RustdocGlobalFsCache};
 
 // Compute
-pub use compute::{
-    CannotGetCrateData, ComputeProgress, NoProgress, PackageIdSpecification, compute_crate_docs,
-};
+pub use compute::{CannotGetCrateData, ComputeProgress, NoProgress, compute_crate_docs};
 
 // Crate data model
-pub use crate_data::{CrateData, CrateItemIndex, EagerCrateItemIndex, LazyCrateItemIndex};
-pub use crate_data::{
-    CrateItemPaths, CrateItemPathsIter, EagerCrateItemPaths, ItemSummaryRef, LazyCrateItemPaths,
-};
+pub use crate_data::{CrateData, CrateItemIndex, EagerCrateItemIndex};
+pub use crate_data::{CrateItemPaths, EagerCrateItemPaths};
 
 // Indexing
-pub use indexing::{EagerImportPath2Id, ImportPath2Id, LazyImportPath2Id};
-pub use indexing::{EntryVisibility, ImportIndex, ImportIndexEntry, SortablePath};
-pub use indexing::{ExternalReExport, ExternalReExports};
-pub use indexing::{IndexingVisitor, NoopVisitor, index_local_types};
+pub use indexing::ExternalReExports;
+pub use indexing::ImportIndex;
+pub use indexing::IndexingVisitor;
+pub use indexing::{EagerImportPath2Id, ImportPath2Id};
 
 // Queries
 pub use queries::{Crate, CrateCore, CrateRegistry};
-pub use queries::{CrateIdNeedle, compute_package_id_for_crate_id};
 
 // Cross-cutting
 pub use global_item_id::GlobalItemId;
 pub use unknown_item_path::UnknownItemPath;
-
-// Utilities
-pub use cache::checksum::checksum_crate;
-pub use utils::normalize_crate_name;
-pub use version_matcher::VersionMatcher;
 
 /// Crate version - used as part of cache fingerprint.
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -82,7 +69,7 @@ pub const TOOLCHAIN_CRATES: [&str; 3] = [
 /// options from various places in the codebase and maintain a single source of truth.
 ///
 /// In particular, they do affect our caching logic (see the `cache` module).
-pub fn rustdoc_options() -> [&'static str; 4] {
+pub(crate) fn rustdoc_options() -> [&'static str; 4] {
     [
         "--document-private-items",
         "-Zunstable-options",

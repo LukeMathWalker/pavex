@@ -15,10 +15,10 @@ use crate::diagnostic::{
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
-use rustdoc_processor::CrateRegistry;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::{NamedSource, Severity};
+use rustdoc_processor::CrateRegistry;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 

@@ -60,8 +60,7 @@ pub trait CrateRegistry {
                     // The one coming from the summary is the name of the crate where the type was defined.
                     // The one coming from the `maybe_reexport_from` is the name of the crate where the type
                     // was re-exported from and used by the crate we are currently processing.
-                    if local_type_summary.path.first().map(|s| s.as_str())
-                        != re_exporter_crate_name
+                    if local_type_summary.path.first().map(|s| s.as_str()) != re_exporter_crate_name
                     {
                         re_exporter_crate_name
                     } else {

@@ -7,7 +7,7 @@ use semver::{Comparator, Op, Version, VersionReq};
 ///
 /// This is a good defense against crates setting a stale `#![doc(html_root_url = "...")]`
 /// (e.g. https://github.com/hyperium/http/pull/688).
-pub struct VersionMatcher {
+pub(crate) struct VersionMatcher {
     req: VersionReq,
 }
 
