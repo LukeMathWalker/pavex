@@ -517,8 +517,10 @@ impl RequestHandlerPipeline {
                         Type::ScalarPrimitive(_) => {
                             continue;
                         }
-                        // Raw pointers are trivially `Copy`.
-                        Type::RawPointer(_) |
+                        // Raw pointers are trivially `Copy`, this analysis doesn't concern them.
+                        Type::RawPointer(_) => {
+                            continue;
+                        }
                         // We'd never encounter a raw slice as input type.
                         Type::Slice(_) |
                         // All types are concrete at this stage.

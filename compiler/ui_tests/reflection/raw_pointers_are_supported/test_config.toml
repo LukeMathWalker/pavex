@@ -1,0 +1,4 @@
+description = "pavex supports raw pointer types as input parameters"
+
+[expectations]
+codegen = "pass"
