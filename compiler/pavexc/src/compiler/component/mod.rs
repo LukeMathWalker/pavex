@@ -38,7 +38,7 @@ pub(crate) struct CannotTakeMutReferenceError {
 
 impl CannotTakeMutReferenceError {
     pub(crate) fn check_callable(c: &Callable) -> Result<(), Self> {
-        for (i, input_type) in c.inputs.iter().enumerate() {
+        for (i, input_type) in c.input_types().enumerate() {
             if let Type::Reference(input_type) = input_type
                 && input_type.is_mutable
             {

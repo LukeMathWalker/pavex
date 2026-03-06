@@ -22,17 +22,17 @@ pub(crate) enum HydratedComponent<'a> {
 }
 
 impl<'a> HydratedComponent<'a> {
-    pub(crate) fn input_types(&self) -> Cow<'_, [Type]> {
+    pub(crate) fn input_types(&self) -> Vec<&Type> {
         match self {
             HydratedComponent::Constructor(c) => c.input_types(),
-            HydratedComponent::RequestHandler(r) => Cow::Borrowed(r.input_types()),
+            HydratedComponent::RequestHandler(r) => r.input_types(),
             HydratedComponent::Transformer(c, ..) => c.input_types(),
-            HydratedComponent::WrappingMiddleware(c) => Cow::Borrowed(c.input_types()),
-            HydratedComponent::PostProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
-            HydratedComponent::PreProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
-            HydratedComponent::ErrorObserver(eo) => Cow::Borrowed(eo.input_types()),
+            HydratedComponent::WrappingMiddleware(c) => c.input_types(),
+            HydratedComponent::PostProcessingMiddleware(p) => p.input_types(),
+            HydratedComponent::PreProcessingMiddleware(p) => p.input_types(),
+            HydratedComponent::ErrorObserver(eo) => eo.input_types(),
             HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(_) => {
-                Cow::Owned(vec![])
+                vec![]
             }
         }
     }

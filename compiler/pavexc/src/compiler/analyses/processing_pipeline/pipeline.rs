@@ -24,7 +24,7 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
-    Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime,
+    Callable, CallableInput, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime,
     PathType, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
@@ -698,7 +698,10 @@ impl RequestHandlerPipeline {
             output: Some(next_state_type.clone().into()),
             inputs: next_state_parameters
                 .iter()
-                .map(|input| input.type_.clone())
+                .map(|input| CallableInput {
+                    name: input.ident.clone(),
+                    type_: input.type_.clone(),
+                })
                 .collect(),
             invocation_style: InvocationStyle::StructLiteral {
                 field_names: next_state_parameters
@@ -711,6 +714,10 @@ impl RequestHandlerPipeline {
                 },
             },
             source_coordinates: None,
+            abi: rustdoc_types::Abi::Rust,
+            is_unsafe: false,
+            is_c_variadic: false,
+            symbol_name: None,
         };
         let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
         let next_state_scope_id = component_db.scope_id(middleware_id);
@@ -733,7 +740,7 @@ impl RequestHandlerPipeline {
         else {
             unreachable!()
         };
-        let next_input = &mw.input_types()[mw.next_input_index()];
+        let next_input = mw.input_types()[mw.next_input_index()];
         let next_generic_parameters = next_input.unassigned_generic_type_parameters();
 
         #[cfg(debug_assertions)]

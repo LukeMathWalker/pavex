@@ -164,8 +164,8 @@ impl ConstructibleDb {
             let input_types = {
                 let mut input_types: Vec<Option<Type>> = resolved_component
                     .input_types()
-                    .iter()
-                    .map(|i| Some(i.to_owned()))
+                    .into_iter()
+                    .map(|i| Some(i.clone()))
                     .collect();
                 match &resolved_component {
                     // `Next` is a special case: it's not a pre-determined type, but rather
@@ -474,7 +474,7 @@ impl ConstructibleDb {
             }
             let component = component_db.hydrated_component(component_id, computation_db);
             let component_scope = component_db.scope_id(component_id);
-            for input_type in component.input_types().iter() {
+            for input_type in component.input_types() {
                 if let Some((input_constructor_id, _)) =
                     self.get(component_scope, input_type, component_db.scope_graph())
                     && component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped
@@ -516,13 +516,13 @@ impl ConstructibleDb {
             };
             let mut queue = eo
                 .input_types()
-                .iter()
+                .into_iter()
                 .enumerate()
                 .filter_map(|(i, input)| {
                     if i == eo.error_input_index {
                         return None;
                     }
-                    Some((input.to_owned(), IndexSet::<Type>::new()))
+                    Some((input.clone(), IndexSet::<Type>::new()))
                 })
                 .collect_vec();
             'inner: while let Some((input, mut dependency_chain)) = queue.pop() {
@@ -560,8 +560,8 @@ impl ConstructibleDb {
                     // We just break to avoid infinite loops.
                     continue 'inner;
                 }
-                for input in c.input_types().iter() {
-                    queue.push((input.to_owned(), dependency_chain.clone()));
+                for input in c.input_types() {
+                    queue.push((input.clone(), dependency_chain.clone()));
                 }
             }
         }

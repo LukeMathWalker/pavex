@@ -47,7 +47,7 @@ impl<'a> WrappingMiddleware<'a> {
 
         // We verify that exactly one of the input parameters is a `Next<_>`.
         let next_type = {
-            let next_parameters: Vec<_> = c.inputs.iter().filter(|t| is_next(t)).collect();
+            let next_parameters: Vec<_> = c.input_types().filter(|t| is_next(t)).collect();
             if next_parameters.is_empty() {
                 return Err(MustTakeNextAsInputParameter);
             }
@@ -77,7 +77,7 @@ impl<'a> WrappingMiddleware<'a> {
         // apart from the one used in Next.
         let allowed_unassigned_generic_parameters = next_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
-        for input in c.inputs.iter() {
+        for input in c.input_types() {
             free_parameters.extend(
                 input
                     .unassigned_generic_type_parameters()
@@ -98,18 +98,18 @@ impl<'a> WrappingMiddleware<'a> {
         self.callable.output.as_ref().unwrap()
     }
 
-    pub fn input_types(&self) -> &[Type] {
-        self.callable.inputs.as_slice()
+    pub fn input_types(&self) -> Vec<&Type> {
+        self.callable.input_types().collect()
     }
 
     /// Returns the index of the input parameter that is a `Next<_>`.
     pub fn next_input_index(&self) -> usize {
-        self.callable.inputs.iter().position(is_next).unwrap()
+        self.callable.input_types().position(is_next).unwrap()
     }
 
     /// Returns the type of the input parameter that is a `Next<_>`.
     pub fn next_input_type(&self) -> &Type {
-        &self.callable.inputs[self.next_input_index()]
+        &self.callable.inputs[self.next_input_index()].type_
     }
 
     pub fn into_owned(self) -> WrappingMiddleware<'static> {

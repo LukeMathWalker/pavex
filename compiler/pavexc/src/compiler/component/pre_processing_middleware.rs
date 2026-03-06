@@ -45,7 +45,7 @@ impl<'a> PreProcessingMiddleware<'a> {
 
         // We make sure that the callable doesn't have any unassigned generic type parameters.
         let mut free_parameters = IndexSet::new();
-        for input in c.inputs.iter() {
+        for input in c.input_types() {
             free_parameters.extend(input.unassigned_generic_type_parameters());
         }
         if !free_parameters.is_empty() {
@@ -61,8 +61,8 @@ impl<'a> PreProcessingMiddleware<'a> {
         self.callable.output.as_ref().unwrap()
     }
 
-    pub fn input_types(&self) -> &[Type] {
-        self.callable.inputs.as_slice()
+    pub fn input_types(&self) -> Vec<&Type> {
+        self.callable.input_types().collect()
     }
 
     pub fn into_owned(self) -> PreProcessingMiddleware<'static> {

@@ -179,7 +179,7 @@ pub(crate) fn codegen_call(
     };
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {
-            let parameters = callable.inputs.iter().map(|i| {
+            let parameters = callable.input_types().map(|i| {
                 match variable_bindings.get(i) {
                     Some(tokens) => tokens,
                     None => {

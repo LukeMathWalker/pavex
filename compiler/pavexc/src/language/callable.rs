@@ -11,6 +11,13 @@ use indexmap::IndexSet;
 use crate::language::{FQPath, Lifetime, Type};
 use crate::rustdoc::GlobalItemId;
 
+/// A named input parameter of a [`Callable`].
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct CallableInput {
+    pub name: String,
+    pub type_: Type,
+}
+
 #[derive(Clone, Hash, Eq, PartialEq)]
 /// A Rust type that can be invoked—e.g. a function, a method, a struct literal constructor.
 pub struct Callable {
@@ -34,10 +41,10 @@ pub struct Callable {
     ///
     /// E.g. `std::vec::Vec::new` for `Vec::new()`.
     pub path: FQPath,
-    /// The types of the callable input parameter types.
+    /// The input parameters of the callable.
     /// The list is ordered, matching the order in the callable declaration—this is relevant
     /// to ensure correct invocations.
-    pub inputs: Vec<Type>,
+    pub inputs: Vec<CallableInput>,
     /// Rust supports different types of callables which rely on different invocation syntax.
     /// See [`InvocationStyle`] for more details.
     pub invocation_style: InvocationStyle,
@@ -50,6 +57,14 @@ pub struct Callable {
     /// callables that don't exist yet—i.e. that we will code-generate into the new server SDK
     /// crate.
     pub source_coordinates: Option<GlobalItemId>,
+    /// The ABI (calling convention) of this callable.
+    pub abi: rustdoc_types::Abi,
+    /// `true` if the callable is declared as `unsafe`.
+    pub is_unsafe: bool,
+    /// `true` if the callable accepts C-style variadic arguments (`...`).
+    pub is_c_variadic: bool,
+    /// The export symbol name, from `#[no_mangle]` or `#[export_name = "..."]`.
+    pub symbol_name: Option<String>,
 }
 
 impl Callable {
@@ -57,6 +72,11 @@ impl Callable {
     /// concrete types specified in `bindings`.
     ///
     /// The newly "bound" callable will be returned.
+    /// Returns an iterator over the types of the input parameters.
+    pub fn input_types(&self) -> impl Iterator<Item = &Type> + '_ {
+        self.inputs.iter().map(|i| &i.type_)
+    }
+
     pub fn bind_generic_type_parameters(
         &self,
         bindings: &HashMap<String, Type>,
@@ -65,7 +85,10 @@ impl Callable {
         let inputs = self
             .inputs
             .iter()
-            .map(|t| t.bind_generic_type_parameters(bindings))
+            .map(|i| CallableInput {
+                name: i.name.clone(),
+                type_: i.type_.bind_generic_type_parameters(bindings),
+            })
             .collect();
         let output = self
             .output
@@ -84,7 +107,7 @@ impl Callable {
     #[allow(unused)]
     pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
         let mut result = IndexSet::new();
-        for input in &self.inputs {
+        for input in self.input_types() {
             result.extend(input.unassigned_generic_type_parameters());
         }
         if let Some(output) = &self.output {
@@ -123,10 +146,10 @@ impl Callable {
         let mut elided_output_lifetime: String = "elided".to_string();
         let mut inputs = self.inputs.clone();
         for input in inputs.iter_mut() {
-            if input.has_implicit_lifetime_parameters() {
+            if input.type_.has_implicit_lifetime_parameters() {
                 elided_output_lifetime = {
                     let mut named_lifetime_parameters = BTreeSet::new();
-                    for input in &self.inputs {
+                    for input in self.input_types() {
                         named_lifetime_parameters.extend(input.named_lifetime_parameters());
                     }
                     named_lifetime_parameters.extend(output.named_lifetime_parameters());
@@ -142,11 +165,11 @@ impl Callable {
                     }
                 };
 
-                input.set_implicit_lifetimes(elided_output_lifetime.clone());
+                input.type_.set_implicit_lifetimes(elided_output_lifetime.clone());
                 break;
             }
 
-            let named_params = input.named_lifetime_parameters();
+            let named_params = input.type_.named_lifetime_parameters();
             if !named_params.is_empty() {
                 elided_output_lifetime = named_params.first().unwrap().to_string();
                 break;
@@ -157,13 +180,9 @@ impl Callable {
         output.set_implicit_lifetimes(elided_output_lifetime);
 
         Self {
-            is_async: self.is_async,
-            takes_self_as_ref: self.takes_self_as_ref,
             output: Some(output),
-            path: self.path.clone(),
             inputs,
-            invocation_style: self.invocation_style.clone(),
-            source_coordinates: self.source_coordinates.clone(),
+            ..self.clone()
         }
     }
 
@@ -180,7 +199,7 @@ impl Callable {
         let output_lifetime_parameters = output.named_lifetime_parameters();
 
         let mut borrowed_indexes = vec![];
-        for (i, input) in c.inputs.iter().enumerate() {
+        for (i, input) in c.input_types().enumerate() {
             let Type::Reference(ref_ty) = input else {
                 continue;
             };
@@ -209,7 +228,7 @@ impl Callable {
         let output_lifetime_parameters = output.named_lifetime_parameters();
 
         let mut borrowed_indexes = vec![];
-        for (i, input) in c.inputs.iter().enumerate() {
+        for (i, input) in c.input_types().enumerate() {
             if input
                 .named_lifetime_parameters()
                 .intersection(&output_lifetime_parameters)
@@ -251,7 +270,7 @@ impl Callable {
         let mut buffer = String::new();
         write!(&mut buffer, "{}", self.path).unwrap();
         write!(&mut buffer, "(").unwrap();
-        let mut inputs = self.inputs.iter().peekable();
+        let mut inputs = self.input_types().peekable();
         while let Some(input) = inputs.next() {
             write!(&mut buffer, "{}", input.render_type(package_ids2names)).unwrap();
             if inputs.peek().is_some() {
@@ -270,7 +289,7 @@ impl std::fmt::Debug for Callable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path)?;
         write!(f, "(")?;
-        let mut inputs = self.inputs.iter().peekable();
+        let mut inputs = self.input_types().peekable();
         while let Some(input) = inputs.next() {
             write!(f, "{input:?}")?;
             if inputs.peek().is_some() {

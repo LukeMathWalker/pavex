@@ -31,8 +31,8 @@ use crate::{
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
-        Callable, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf, Generic,
-        GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
+        Callable, CallableInput, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf,
+        Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
         ResolvedPathLifetime, Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
@@ -647,7 +647,7 @@ fn rustdoc_free_fn2callable(
     };
 
     let mut inputs = Vec::new();
-    for (parameter_index, (_, input_ty)) in inner.sig.inputs.iter().enumerate() {
+    for (parameter_index, (param_name, input_ty)) in inner.sig.inputs.iter().enumerate() {
         match resolve_type(
             input_ty,
             &krate.core.package_id,
@@ -655,7 +655,10 @@ fn rustdoc_free_fn2callable(
             &Default::default(),
         ) {
             Ok(t) => {
-                inputs.push(t);
+                inputs.push(CallableInput {
+                    name: param_name.clone(),
+                    type_: t,
+                });
             }
             Err(e) => {
                 return Err(InputParameterResolutionError {
@@ -693,6 +696,12 @@ fn rustdoc_free_fn2callable(
         None => None,
     };
 
+    let symbol_name = item.attrs.iter().find_map(|attr| match attr {
+        rustdoc_types::Attribute::NoMangle => item.name.clone(),
+        rustdoc_types::Attribute::ExportName(name) => Some(name.clone()),
+        _ => None,
+    });
+
     Ok(Callable {
         is_async: inner.header.is_async,
         // It's a free function, there's no `self`.
@@ -705,6 +714,10 @@ fn rustdoc_free_fn2callable(
             rustdoc_item_id: item.id,
             package_id: krate.core.package_id.clone(),
         }),
+        abi: inner.header.abi.clone(),
+        is_unsafe: inner.header.is_unsafe,
+        is_c_variadic: inner.sig.is_c_variadic,
+        symbol_name,
     })
 }
 
@@ -847,7 +860,7 @@ fn rustdoc_method2callable(
 
     let mut inputs = Vec::new();
     let mut takes_self_as_ref = false;
-    for (parameter_index, (_, parameter_type)) in inner.sig.inputs.iter().enumerate() {
+    for (parameter_index, (param_name, parameter_type)) in inner.sig.inputs.iter().enumerate() {
         if parameter_index == 0 {
             // The first parameter might be `&self` or `&mut self`.
             // This is important to know for carrying out further analysis doing the line,
@@ -867,7 +880,10 @@ fn rustdoc_method2callable(
             &generic_bindings,
         ) {
             Ok(t) => {
-                inputs.push(t);
+                inputs.push(CallableInput {
+                    name: param_name.clone(),
+                    type_: t,
+                });
             }
             Err(e) => {
                 return Err(InputParameterResolutionError {
@@ -905,6 +921,12 @@ fn rustdoc_method2callable(
         None => None,
     };
 
+    let symbol_name = method_item.attrs.iter().find_map(|attr| match attr {
+        rustdoc_types::Attribute::NoMangle => method_item.name.clone(),
+        rustdoc_types::Attribute::ExportName(name) => Some(name.clone()),
+        _ => None,
+    });
+
     Ok(Callable {
         is_async: inner.header.is_async,
         takes_self_as_ref,
@@ -916,5 +938,9 @@ fn rustdoc_method2callable(
             rustdoc_item_id: method_item.id,
             package_id: krate.core.package_id.clone(),
         }),
+        abi: inner.header.abi.clone(),
+        is_unsafe: inner.header.is_unsafe,
+        is_c_variadic: inner.sig.is_c_variadic,
+        symbol_name,
     })
 }

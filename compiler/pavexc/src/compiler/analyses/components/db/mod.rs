@@ -1172,10 +1172,10 @@ impl ComponentDb {
                             error_handlers_db.insert(e, scope_id, error_handler_user_component_id);
                         }
                         Err(e) => {
-                            if let Some(error_type_ref) =
+                            if let Some(error_input) =
                                 error_handler_callable.inputs.get(error_ref_input_index)
                             {
-                                error_handlers_db.insert_invalid(error_type_ref, scope_id);
+                                error_handlers_db.insert_invalid(&error_input.type_, scope_id);
                             }
                             Self::invalid_error_handler(
                                 e,
@@ -2019,7 +2019,7 @@ impl ComponentDb {
                     .output_type()
                     .unwrap()
                     .to_owned();
-                let transformer_input_type = &computation.input_types()[info.input_index];
+                let transformer_input_type = computation.input_types()[info.input_index];
                 let unbound_transformed_output = match info.transformation_mode {
                     ConsumptionMode::Move => unbound_transformed_output,
                     ConsumptionMode::SharedBorrow => Type::Reference(TypeReference {

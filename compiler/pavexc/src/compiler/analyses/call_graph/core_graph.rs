@@ -191,25 +191,25 @@ where
             // We need to recursively build the input types for all our compute components;
             if let CallGraphNode::Compute { component_id, .. } = call_graph[current_index].clone() {
                 let component = component_db.hydrated_component(component_id, computation_db);
-                let input_types = match component {
+                let input_types: Vec<Type> = match component {
                     HydratedComponent::Constructor(constructor) => {
-                        constructor.input_types().to_vec()
+                        constructor.input_types().into_iter().cloned().collect()
                     }
                     HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(..) => {
                         vec![]
                     }
-                    HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
-                    HydratedComponent::PostProcessingMiddleware(pp) => pp.input_types().to_vec(),
-                    HydratedComponent::PreProcessingMiddleware(pp) => pp.input_types().to_vec(),
+                    HydratedComponent::RequestHandler(r) => r.input_types().into_iter().cloned().collect(),
+                    HydratedComponent::PostProcessingMiddleware(pp) => pp.input_types().into_iter().cloned().collect(),
+                    HydratedComponent::PreProcessingMiddleware(pp) => pp.input_types().into_iter().cloned().collect(),
                     HydratedComponent::Transformer(c, info) => {
-                        let mut inputs = c.input_types().to_vec();
+                        let mut inputs: Vec<_> = c.input_types().into_iter().cloned().collect();
                         // The component we are transforming must have been added to the graph
                         // before the transformer.
                         inputs.remove(info.input_index);
                         inputs
                     }
                     HydratedComponent::WrappingMiddleware(mw) => {
-                        let mut input_types = mw.input_types().to_vec();
+                        let mut input_types: Vec<_> = mw.input_types().into_iter().cloned().collect();
                         let next_type = &input_types[mw.next_input_index()];
                         if !next_type.unassigned_generic_type_parameters().is_empty() {
                             // If we haven't assigned a concrete type to the `Next` type parameter,
@@ -220,7 +220,7 @@ where
                         input_types
                     }
                     HydratedComponent::ErrorObserver(eo) => {
-                        let mut inputs: Vec<_> = eo.input_types().to_vec();
+                        let mut inputs: Vec<_> = eo.input_types().into_iter().cloned().collect();
                         inputs.remove(eo.error_input_index);
                         inputs
                     }

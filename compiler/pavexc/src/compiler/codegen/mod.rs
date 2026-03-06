@@ -449,7 +449,7 @@ fn collect_call_graph_package_ids<'a>(
 
 fn collect_callable_package_ids(package_ids: &mut IndexSet<PackageId>, c: &Callable) {
     package_ids.insert(c.path.package_id.clone());
-    for input in &c.inputs {
+    for input in c.input_types() {
         collect_type_package_ids(package_ids, input);
     }
     if let Some(output) = c.output.as_ref() {
