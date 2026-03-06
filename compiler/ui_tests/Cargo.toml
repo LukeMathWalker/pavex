@@ -315,6 +315,8 @@ members = [
   "reflection/output_parameter_cannot_be_handled/generated_app",
   "reflection/pattern_bindings_in_input_parameters_are_supported",
   "reflection/pattern_bindings_in_input_parameters_are_supported/generated_app",
+  "reflection/raw_pointers_are_supported",
+  "reflection/raw_pointers_are_supported/generated_app",
   "reflection/reexported_type_alias_work",
   "reflection/reexported_type_alias_work/generated_app",
   "reflection/self_as_generic_parameter_is_supported",
