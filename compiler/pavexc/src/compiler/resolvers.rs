@@ -12,8 +12,8 @@ use tracing_log_error::log_error;
 
 use crate::language::{
     Array, Callable, CallableInput, CallableItem, FQGenericArgument, FQPath, FQPathSegment,
-    FQPathType, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
-    RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
+    FQPathType, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, ParameterName,
+    PathType, RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -761,7 +761,7 @@ pub(crate) fn resolve_callable(
             &generic_bindings,
         ) {
             Ok(p) => resolved_parameter_types.push(CallableInput {
-                name: parameter_name.clone(),
+                name: ParameterName::new(parameter_name.clone()),
                 type_: p,
             }),
             Err(e) => {

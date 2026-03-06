@@ -200,14 +200,13 @@ pub(crate) fn codegen_call(
             }
         }
         InvocationStyle::StructLiteral {
-            field_names,
             extra_field2default_value,
         } => {
-            let fields = field_names
+            let fields = callable.inputs
                 .iter()
-                .map(|(field_name, field_type)| {
-                    let field_name = format_ident!("{}", field_name);
-                    let binding = match variable_bindings.get(field_type) {
+                .map(|input| {
+                    let field_name = format_ident!("{}", input.name.as_str());
+                    let binding = match variable_bindings.get(&input.type_) {
                         Some(tokens) => tokens,
                         None => {
                             use std::fmt::Write as _;
@@ -217,7 +216,8 @@ pub(crate) fn codegen_call(
                                 let _ = writeln!(&mut msg, "- {ty:?}`");
                             }
                             panic!(
-                                "There is no variable with type {field_type:?} in scope.\nTypes of bound variables:\n{msg}",
+                                "There is no variable with type {:?} in scope.\nTypes of bound variables:\n{msg}",
+                                input.type_,
                             )
                         }
                     };

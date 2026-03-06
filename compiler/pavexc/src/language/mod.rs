@@ -1,4 +1,4 @@
-pub(crate) use callable::{Callable, CallableInput, InvocationStyle};
+pub(crate) use callable::{Callable, CallableInput, InvocationStyle, ParameterName};
 pub(crate) use callable_path::{CallPath, InvalidCallPath};
 pub(crate) use fq_path::{
     CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, FQQualifiedSelf, PathKind,

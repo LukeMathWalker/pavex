@@ -23,8 +23,8 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, CallableInput, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType,
-    PathTypeExt, Type,
+    Callable, CallableInput, FQPath, FQPathSegment, GenericArgument, InvocationStyle,
+    ParameterName, PathType, PathTypeExt, Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -165,7 +165,7 @@ pub(crate) fn application_state_call_graph(
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
-                inputs: vec![CallableInput { name: String::new(), type_: application_state.type_().into() }],
+                inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: application_state.type_().into() }],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
                 abi: rustdoc_types::Abi::Rust,
@@ -192,7 +192,7 @@ pub(crate) fn application_state_call_graph(
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
-                inputs: vec![CallableInput { name: String::new(), type_: error_enum.clone().into() }],
+                inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_enum.clone().into() }],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
                 abi: rustdoc_types::Abi::Rust,
@@ -283,7 +283,7 @@ pub(crate) fn application_state_call_graph(
                         package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                     },
                     output: Some(error_enum.clone().into()),
-                    inputs: vec![CallableInput { name: String::new(), type_: error_type.to_owned() }],
+                    inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_type.to_owned() }],
                     invocation_style: InvocationStyle::FunctionCall,
                     source_coordinates: None,
                     abi: rustdoc_types::Abi::Rust,

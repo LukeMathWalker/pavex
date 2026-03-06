@@ -32,8 +32,8 @@ use crate::{
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
         Callable, CallableInput, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf,
-        Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
-        ResolvedPathLifetime, Type,
+        Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, ParameterName,
+        PathType, ResolvedPathLifetime, Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
@@ -656,7 +656,7 @@ fn rustdoc_free_fn2callable(
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
-                    name: param_name.clone(),
+                    name: ParameterName::new(param_name.clone()),
                     type_: t,
                 });
             }
@@ -881,7 +881,7 @@ fn rustdoc_method2callable(
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
-                    name: param_name.clone(),
+                    name: ParameterName::new(param_name.clone()),
                     type_: t,
                 });
             }
