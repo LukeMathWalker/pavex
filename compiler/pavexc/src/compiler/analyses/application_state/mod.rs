@@ -19,7 +19,7 @@ use super::{
 };
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
-    language::{Callable, GenericArgument, InvocationStyle, PathTypeExt, Type},
+    language::{Callable, CallableInput, GenericArgument, InvocationStyle, PathTypeExt, Type},
     rustdoc::CrateCollection,
 };
 use indexmap::{IndexMap, IndexSet};
@@ -193,7 +193,12 @@ impl ApplicationState {
             inputs: {
                 // Ensure that the inputs are sorted by name.
                 let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
-                b.into_values().cloned().collect()
+                b.into_iter()
+                    .map(|(name, type_)| CallableInput {
+                        name: name.to_string(),
+                        type_: type_.clone(),
+                    })
+                    .collect()
             },
             invocation_style: InvocationStyle::StructLiteral {
                 field_names: self
@@ -204,6 +209,10 @@ impl ApplicationState {
                 extra_field2default_value: Default::default(),
             },
             source_coordinates: None,
+            abi: rustdoc_types::Abi::Rust,
+            is_unsafe: false,
+            is_c_variadic: false,
+            symbol_name: None,
         }
     }
 

@@ -75,7 +75,7 @@ pub(super) fn move_while_borrowed(
                 .inputs_that_output_borrows_immutably_from()
                 .iter()
                 .map(|&i| {
-                    let t = &callable.inputs[i];
+                    let t = &callable.inputs[i].type_;
                     if let Type::Reference(r) = t {
                         r.inner.deref().to_owned()
                     } else {
@@ -87,7 +87,7 @@ pub(super) fn move_while_borrowed(
                 .inputs_with_lifetime_tied_with_output()
                 .iter()
                 .map(|&i| {
-                    let t = &callable.inputs[i];
+                    let t = &callable.inputs[i].type_;
                     if let Type::Reference(r) = t {
                         r.inner.deref().to_owned()
                     } else {

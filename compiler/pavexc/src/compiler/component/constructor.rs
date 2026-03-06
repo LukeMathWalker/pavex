@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
@@ -87,7 +85,7 @@ impl<'a> Constructor<'a> {
 
         let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
-        for input in c.input_types().as_ref() {
+        for input in c.input_types() {
             free_parameters.extend(
                 input
                     .unassigned_generic_type_parameters()
@@ -120,7 +118,7 @@ impl Constructor<'_> {
     }
 
     /// The inputs types used by this constructor.
-    pub fn input_types(&self) -> Cow<'_, [Type]> {
+    pub fn input_types(&self) -> Vec<&Type> {
         self.0.input_types()
     }
 

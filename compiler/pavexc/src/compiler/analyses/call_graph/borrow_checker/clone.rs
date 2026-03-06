@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
-    Callable, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime, PathType,
-    PathTypeExt, Type, TypeReference,
+    Callable, CallableInput, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime,
+    PathType, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -75,13 +75,20 @@ pub(super) fn get_clone_component_id(
         takes_self_as_ref: true,
         output: Some(output.clone()),
         path: type_clone_path,
-        inputs: vec![Type::Reference(TypeReference {
-            is_mutable: false,
-            lifetime: Lifetime::Elided,
-            inner: Box::new(output),
-        })],
+        inputs: vec![CallableInput {
+            name: String::new(),
+            type_: Type::Reference(TypeReference {
+                is_mutable: false,
+                lifetime: Lifetime::Elided,
+                inner: Box::new(output),
+            }),
+        }],
         invocation_style: InvocationStyle::FunctionCall,
         source_coordinates: None,
+        abi: rustdoc_types::Abi::Rust,
+        is_unsafe: false,
+        is_c_variadic: false,
+        symbol_name: None,
     };
 
     let clone_computation_id =

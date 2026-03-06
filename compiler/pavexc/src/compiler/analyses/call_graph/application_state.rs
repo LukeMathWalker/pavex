@@ -23,8 +23,8 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType, PathTypeExt,
-    Type,
+    Callable, CallableInput, FQPath, FQPathSegment, GenericArgument, InvocationStyle, PathType,
+    PathTypeExt, Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -165,9 +165,13 @@ pub(crate) fn application_state_call_graph(
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
-                inputs: vec![application_state.type_().into()],
+                inputs: vec![CallableInput { name: String::new(), type_: application_state.type_().into() }],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
+                abi: rustdoc_types::Abi::Rust,
+                is_unsafe: false,
+                is_c_variadic: false,
+                symbol_name: None,
             }
         };
         let err_wrapper = {
@@ -188,9 +192,13 @@ pub(crate) fn application_state_call_graph(
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
-                inputs: vec![error_enum.clone().into()],
+                inputs: vec![CallableInput { name: String::new(), type_: error_enum.clone().into() }],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
+                abi: rustdoc_types::Abi::Rust,
+                is_unsafe: false,
+                is_c_variadic: false,
+                symbol_name: None,
             }
         };
         component_db.get_or_intern_transformer(
@@ -275,9 +283,13 @@ pub(crate) fn application_state_call_graph(
                         package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                     },
                     output: Some(error_enum.clone().into()),
-                    inputs: vec![error_type.to_owned()],
+                    inputs: vec![CallableInput { name: String::new(), type_: error_type.to_owned() }],
                     invocation_style: InvocationStyle::FunctionCall,
                     source_coordinates: None,
+                    abi: rustdoc_types::Abi::Rust,
+                    is_unsafe: false,
+                    is_c_variadic: false,
+                    symbol_name: None,
                 };
                 let transformer_id = component_db.get_or_intern_transformer(
                     computation_db.get_or_intern(error_variant_constructor.clone()),

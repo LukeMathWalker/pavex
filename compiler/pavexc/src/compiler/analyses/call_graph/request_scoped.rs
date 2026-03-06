@@ -15,7 +15,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
-use crate::language::{Callable, FQPath, FQPathSegment, InvocationStyle, Type};
+use crate::language::{Callable, CallableInput, FQPath, FQPathSegment, InvocationStyle, Type};
 use crate::rustdoc::CrateCollection;
 
 /// Build an [`OrderedCallGraph`] for a computation that gets trigger on a per-request basis
@@ -204,9 +204,13 @@ fn augment_preprocessing_graph(
                 qualified_self: None,
                 package_id: processing_path.package_id.clone(),
             },
-            inputs: vec![output_type.to_owned()],
+            inputs: vec![CallableInput { name: String::new(), type_: output_type.to_owned() }],
             invocation_style: InvocationStyle::FunctionCall,
             source_coordinates: None,
+            abi: rustdoc_types::Abi::Rust,
+            is_unsafe: false,
+            is_c_variadic: false,
+            symbol_name: None,
         };
         component_db.get_or_intern_transformer(
             computation_db.get_or_intern(wrapper),

@@ -28,7 +28,7 @@ impl ErrorHandler {
         Self::check_generic_params(
             &error_handler,
             error_ref_input_index,
-            &error_handler.inputs[error_ref_input_index],
+            &error_handler.inputs[error_ref_input_index].type_,
         )?;
         Ok(Self {
             callable: error_handler,
@@ -46,10 +46,9 @@ impl ErrorHandler {
 
         let error_type = get_err_variant(fallible_callable.output.as_ref().unwrap());
         let (error_ref_input_index, error_ref) = error_handler
-            .inputs
-            .iter()
+            .input_types()
             .find_position(|t| {
-                if let Type::Reference(t) = t {
+                if let Type::Reference(t) = *t {
                     !t.is_mutable
                         && (t.lifetime != Lifetime::Static)
                         && (t.inner.as_ref() == error_type || t.inner.as_ref() == pavex_error)
@@ -80,7 +79,7 @@ impl ErrorHandler {
     /// This is a **reference** to the error type returned by the fallible callable
     /// that this is error handler is associated with.
     pub(crate) fn error_type_ref(&self) -> &Type {
-        &self.callable.inputs[self.error_ref_input_index]
+        &self.callable.inputs[self.error_ref_input_index].type_
     }
 
     /// Replace all unassigned generic type parameters in this error handler with the
@@ -122,7 +121,7 @@ impl ErrorHandler {
         let error_ref_unassigned_generic_parameters =
             error_ref.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
-        for (i, input) in h.inputs.iter().enumerate() {
+        for (i, input) in h.input_types().enumerate() {
             if i == error_ref_index {
                 continue;
             }

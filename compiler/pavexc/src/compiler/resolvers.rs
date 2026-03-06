@@ -11,8 +11,8 @@ use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type
 use tracing_log_error::log_error;
 
 use crate::language::{
-    Array, Callable, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType, Generic,
-    GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
+    Array, Callable, CallableInput, CallableItem, FQGenericArgument, FQPath, FQPathSegment,
+    FQPathType, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
     RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
@@ -742,7 +742,7 @@ pub(crate) fn resolve_callable(
 
     let mut resolved_parameter_types = Vec::with_capacity(decl.inputs.len());
     let mut takes_self_as_ref = false;
-    for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
+    for (parameter_index, (parameter_name, parameter_type)) in decl.inputs.iter().enumerate() {
         if parameter_index == 0 {
             // The first parameter might be `&self` or `&mut self`.
             // This is important to know for carrying out further analysis doing the line,
@@ -760,7 +760,10 @@ pub(crate) fn resolve_callable(
             krate_collection,
             &generic_bindings,
         ) {
-            Ok(p) => resolved_parameter_types.push(p),
+            Ok(p) => resolved_parameter_types.push(CallableInput {
+                name: parameter_name.clone(),
+                type_: p,
+            }),
             Err(e) => {
                 return Err(InputParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
@@ -894,6 +897,15 @@ pub(crate) fn resolve_callable(
         }
     };
 
+    let symbol_name = callable_item.item.attrs.iter().find_map(|attr| match attr {
+        rustdoc_types::Attribute::NoMangle => callable_item
+            .item
+            .name
+            .clone(),
+        rustdoc_types::Attribute::ExportName(name) => Some(name.clone()),
+        _ => None,
+    });
+
     let callable = Callable {
         is_async: header.is_async,
         takes_self_as_ref,
@@ -902,6 +914,10 @@ pub(crate) fn resolve_callable(
         inputs: resolved_parameter_types,
         invocation_style,
         source_coordinates: Some(callable_item.item_id.clone()),
+        abi: header.abi.clone(),
+        is_unsafe: header.is_unsafe,
+        is_c_variadic: decl.is_c_variadic,
+        symbol_name,
     };
     Ok(callable)
 }

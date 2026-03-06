@@ -29,8 +29,7 @@ impl<'a> ErrorObserver<'a> {
         // TODO: return a more specific error if the error observer takes the error input
         //  parameter by value instead of taking it by reference.
         let error_input_index = error_observer
-            .inputs
-            .iter()
+            .input_types()
             .position(|i| i == pavex_error_ref)
             .ok_or_else(
                 || ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
@@ -46,7 +45,7 @@ impl<'a> ErrorObserver<'a> {
         // because they might/will be dictated by the fallible callable that this error handler
         // is associated with.
         let mut free_parameters = IndexSet::new();
-        for input in &error_observer.inputs {
+        for input in error_observer.input_types() {
             free_parameters.extend(input.unassigned_generic_type_parameters());
         }
         if !free_parameters.is_empty() {
@@ -69,8 +68,8 @@ impl<'a> ErrorObserver<'a> {
         }
     }
 
-    pub fn input_types(&self) -> &[Type] {
-        self.callable.inputs.as_slice()
+    pub fn input_types(&self) -> Vec<&Type> {
+        self.callable.input_types().collect()
     }
 }
 

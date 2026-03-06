@@ -6,7 +6,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, FQPath, FQPathSegment, InvocationStyle, PathTypeExt, Type,
+    Callable, CallableInput, FQPath, FQPathSegment, InvocationStyle, PathTypeExt, Type,
 };
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
@@ -53,9 +53,13 @@ pub(super) fn register_error_new_transformer(
         takes_self_as_ref: true,
         output: Some(pavex_error.clone().into()),
         path: pavex_error_new_path,
-        inputs: vec![error.to_owned()],
+        inputs: vec![CallableInput { name: String::new(), type_: error.to_owned() }],
         invocation_style: InvocationStyle::FunctionCall,
         source_coordinates: None,
+        abi: rustdoc_types::Abi::Rust,
+        is_unsafe: false,
+        is_c_variadic: false,
+        symbol_name: None,
     };
 
     let computation_id =
