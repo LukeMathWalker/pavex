@@ -19,7 +19,9 @@ use super::{
 };
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
-    language::{Callable, CallableInput, GenericArgument, InvocationStyle, PathTypeExt, Type},
+    language::{
+        Callable, CallableInput, GenericArgument, InvocationStyle, ParameterName, PathTypeExt, Type,
+    },
     rustdoc::CrateCollection,
 };
 use indexmap::{IndexMap, IndexSet};
@@ -195,17 +197,12 @@ impl ApplicationState {
                 let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
                 b.into_iter()
                     .map(|(name, type_)| CallableInput {
-                        name: name.to_string(),
+                        name: ParameterName::new(name.to_string()),
                         type_: type_.clone(),
                     })
                     .collect()
             },
             invocation_style: InvocationStyle::StructLiteral {
-                field_names: self
-                    .bindings
-                    .iter()
-                    .map(|(ident, type_)| (ident.to_string(), type_.to_owned()))
-                    .collect(),
                 extra_field2default_value: Default::default(),
             },
             source_coordinates: None,

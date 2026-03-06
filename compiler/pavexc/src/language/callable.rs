@@ -11,10 +11,48 @@ use indexmap::IndexSet;
 use crate::language::{FQPath, Lifetime, Type};
 use crate::rustdoc::GlobalItemId;
 
+/// A validated parameter name that is guaranteed to be a valid Rust identifier.
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct ParameterName(String);
+
+impl ParameterName {
+    /// Create a new `ParameterName`, validating that it is a valid Rust identifier.
+    ///
+    /// # Panics
+    /// Panics if `name` is not a valid Rust identifier (`[a-zA-Z_][a-zA-Z0-9_]*`).
+    pub fn new(name: String) -> Self {
+        assert!(
+            Self::is_valid_identifier(&name),
+            "Invalid parameter name: `{name}`"
+        );
+        Self(name)
+    }
+
+    /// Returns `true` if `name` matches `[a-zA-Z_][a-zA-Z0-9_]*`.
+    fn is_valid_identifier(name: &str) -> bool {
+        let mut chars = name.chars();
+        match chars.next() {
+            Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
+            _ => return false,
+        }
+        chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for ParameterName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 /// A named input parameter of a [`Callable`].
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct CallableInput {
-    pub name: String,
+    pub name: ParameterName,
     pub type_: Type,
 }
 
@@ -253,8 +291,6 @@ pub enum InvocationStyle {
     /// `<struct_name> { <field_name>: <field_value>, ...}`
     /// An available option to build structs **if all their fields are public**.
     StructLiteral {
-        /// A map associating each field name to its type.
-        field_names: BTreeMap<String, Type>,
         /// Rust does not have default values for struct fields.
         /// This is hack to allow us to inject the `next` field in the state we generate for
         /// `Next` where the `next` field is not part of the struct definition and it must

@@ -14,7 +14,7 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
     Callable, CallableInput, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime,
-    PathType, PathTypeExt, Type, TypeReference,
+    ParameterName, PathType, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -76,7 +76,7 @@ pub(super) fn get_clone_component_id(
         output: Some(output.clone()),
         path: type_clone_path,
         inputs: vec![CallableInput {
-            name: String::new(),
+            name: ParameterName::new("_0".into()),
             type_: Type::Reference(TypeReference {
                 is_mutable: false,
                 lifetime: Lifetime::Elided,

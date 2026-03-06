@@ -25,7 +25,7 @@ use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
     Callable, CallableInput, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime,
-    PathType, PathTypeExt, Type, TypeReference,
+    ParameterName, PathType, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -699,15 +699,11 @@ impl RequestHandlerPipeline {
             inputs: next_state_parameters
                 .iter()
                 .map(|input| CallableInput {
-                    name: input.ident.clone(),
+                    name: ParameterName::new(input.ident.clone()),
                     type_: input.type_.clone(),
                 })
                 .collect(),
             invocation_style: InvocationStyle::StructLiteral {
-                field_names: next_state_parameters
-                    .iter()
-                    .map(|input| (input.ident.clone(), input.type_.clone()))
-                    .collect::<BTreeMap<_, _>>(),
                 // TODO: remove when TAIT stabilises
                 extra_field2default_value: {
                     BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())])
