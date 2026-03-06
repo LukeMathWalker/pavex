@@ -4242,7 +4242,6 @@ dependencies = [
 name = "rustdoc_ext"
 version = "0.2.10"
 dependencies = [
- "px_workspace_hack",
  "rustdoc_types",
 ]
 
@@ -4255,7 +4254,6 @@ dependencies = [
  "bimap",
  "guppy",
  "indexmap",
- "px_workspace_hack",
  "rustdoc_types",
  "serde",
  "syn",
@@ -4278,7 +4276,6 @@ dependencies = [
  "itertools 0.14.0",
  "num_cpus",
  "once_cell",
- "px_workspace_hack",
  "r2d2",
  "r2d2_sqlite",
  "rayon",
@@ -4302,7 +4299,6 @@ name = "rustdoc_types"
 version = "0.2.10"
 dependencies = [
  "bincode",
- "px_workspace_hack",
  "rkyv",
  "rustc-hash",
  "serde",
