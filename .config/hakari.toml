@@ -31,3 +31,6 @@ third-party = [
     # `rustls` entirely.
     { name = "rustls" }
 ]
+
+[final-excludes]
+workspace-members = ["rustdoc_types", "rustdoc_ir", "rustdoc_ext", "rustdoc_processor"]

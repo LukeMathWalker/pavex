@@ -18,4 +18,3 @@ syn = { workspace = true }
 rustdoc-types = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../../px_workspace_hack" }
