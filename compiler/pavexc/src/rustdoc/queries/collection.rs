@@ -12,7 +12,7 @@ use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
-use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id};
+use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id, resolve_fq_path_type};
 use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use rustdoc_ext::RustdocKindExt;
@@ -514,7 +514,7 @@ impl CrateCollection {
                 for (path_arg, alias_generic) in path_args.iter().zip(alias_generics.iter()) {
                     match path_arg {
                         FQGenericArgument::Type(t) => {
-                            let t = t.resolve(self).unwrap();
+                            let t = resolve_fq_path_type(t, self).unwrap();
                             name2path_arg.types.insert(alias_generic.name.clone(), t);
                         }
                         FQGenericArgument::Lifetime(l) => {

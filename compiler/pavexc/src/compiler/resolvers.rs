@@ -14,6 +14,7 @@ use crate::language::{
     Array, Callable, CallableInput, CallableItem, FQGenericArgument, FQPath, FQPathSegment,
     FQPathType, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, ParameterName,
     PathType, RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
+    find_rustdoc_callable_items, find_rustdoc_item_type, resolve_fq_path_type,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -654,7 +655,7 @@ pub(crate) fn resolve_callable(
     krate_collection: &CrateCollection,
     callable_path: &FQPath,
 ) -> Result<Callable, CallableResolutionError> {
-    let callable_items = callable_path.find_rustdoc_callable_items(krate_collection)??;
+    let callable_items = find_rustdoc_callable_items(callable_path, krate_collection)??;
     let (callable_item, new_callable_path) = match &callable_items {
         CallableItem::Function(item, p) => (item, p),
         CallableItem::Method { method, .. } => (&method.0, &method.1),
@@ -720,7 +721,7 @@ pub(crate) fn resolve_callable(
         match generic_arg {
             FQGenericArgument::Type(t) => {
                 let resolved_type =
-                    t.resolve(krate_collection)
+                    resolve_fq_path_type(t, krate_collection)
                         .map_err(|e| GenericParameterResolutionError {
                             generic_type: t.to_owned(),
                             callable_path: new_callable_path.to_owned(),
@@ -943,7 +944,7 @@ fn get_trait_generic_bindings(
             // TODO: handle conflicts
             generic_bindings
                 .types
-                .insert(generic_slot.name.clone(), t.resolve(krate_collection)?);
+                .insert(generic_slot.name.clone(), resolve_fq_path_type(t, krate_collection)?);
         }
     }
     Ok(())
@@ -957,7 +958,7 @@ pub(crate) fn resolve_type_path(
         path: &FQPath,
         krate_collection: &CrateCollection,
     ) -> Result<Type, anyhow::Error> {
-        let item = path.find_rustdoc_item_type(krate_collection)?.1;
+        let item = find_rustdoc_item_type(path, krate_collection)?.1;
         resolve_type_path_with_item(path, &item, krate_collection)
     }
 
@@ -982,7 +983,7 @@ pub(crate) fn resolve_type_path_with_item(
         for generic_path in &segment.generic_arguments {
             let arg = match generic_path {
                 FQGenericArgument::Type(t) => {
-                    GenericArgument::TypeParameter(t.resolve(krate_collection)?)
+                    GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?)
                 }
                 FQGenericArgument::Lifetime(l) => {
                     GenericArgument::Lifetime(l.clone().into())
@@ -1003,7 +1004,7 @@ pub(crate) fn resolve_type_path_with_item(
         let arg = if let Some(generic_path) = last_segment.generic_arguments.get(i) {
             match generic_path {
                 FQGenericArgument::Type(t) => {
-                    GenericArgument::TypeParameter(t.resolve(krate_collection)?)
+                    GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?)
                 }
                 FQGenericArgument::Lifetime(l) => {
                     GenericArgument::Lifetime(l.clone().into())
