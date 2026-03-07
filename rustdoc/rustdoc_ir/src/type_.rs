@@ -5,9 +5,32 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    Array, GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType,
+    Array, Generic, GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType,
     RawPointer, Type, Slice, Tuple, TypeReference,
 };
+
+/// A `Type` with canonicalized names for lifetimes and unassigned generic type parameters.
+///
+/// - Non-static lifetimes: each occurrence gets a fresh positional name ('a, 'b, ...),
+///   ignoring identity (two occurrences of `'x` become two distinct canonical names).
+/// - Unassigned generic type parameters: renamed with fresh positional names (A, B, ...),
+///   **preserving** identity (two occurrences of `T` both become `A`).
+///
+/// Only constructible via [`Type::canonicalize()`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CanonicalType(Type);
+
+impl CanonicalType {
+    /// Access the underlying `Type`.
+    pub fn inner(&self) -> &Type {
+        &self.0
+    }
+
+    /// Consume the wrapper and return the underlying `Type`.
+    pub fn into_inner(self) -> Type {
+        self.0
+    }
+}
 
 impl AsRef<Type> for Type {
     fn as_ref(&self) -> &Type {
@@ -527,28 +550,48 @@ impl Type {
         }
     }
 
-    /// Returns a copy of this type with non-static lifetime names canonicalized.
+    /// Returns a canonicalized copy of this type, wrapped in [`CanonicalType`].
     ///
-    /// Each non-static lifetime occurrence gets a fresh canonical name ('a, 'b, 'c, ...),
-    /// regardless of whether it shares a name with another occurrence.
-    /// This ensures structural position matching without preserving lifetime identity.
-    /// Static lifetimes are preserved as-is.
-    pub fn canonicalize_lifetimes(&self) -> Self {
-        let mut counter = 0usize;
-        self._canonicalize_lifetimes(&mut counter)
+    /// - Non-static lifetimes: each occurrence gets a fresh canonical name ('a, 'b, 'c, ...),
+    ///   regardless of whether it shares a name with another occurrence.
+    /// - Unassigned generic type parameters: renamed with fresh positional names (A, B, ...),
+    ///   **preserving** identity (two occurrences of `T` both become `A`).
+    /// - Static lifetimes and scalar primitives are preserved as-is.
+    pub fn canonicalize(&self) -> CanonicalType {
+        let mut lifetime_counter = 0usize;
+        let mut generic_counter = 0usize;
+        let mut generic_name_map: HashMap<String, String> = HashMap::new();
+        CanonicalType(self._canonicalize(&mut lifetime_counter, &mut generic_counter, &mut generic_name_map))
     }
 
-    fn _canonicalize_lifetimes(
+    fn _canonicalize(
         &self,
-        counter: &mut usize,
+        lifetime_counter: &mut usize,
+        generic_counter: &mut usize,
+        generic_name_map: &mut HashMap<String, String>,
     ) -> Self {
-        fn next_canonical_name(counter: &mut usize) -> String {
+        fn next_lifetime_name(counter: &mut usize) -> String {
             // Produce "a", "b", ..., "z", "aa", "ab", ...
             let mut n = *counter;
             *counter += 1;
             let mut name = String::new();
             loop {
                 name.insert(0, (b'a' + (n % 26) as u8) as char);
+                if n < 26 {
+                    break;
+                }
+                n = n / 26 - 1;
+            }
+            name
+        }
+
+        fn next_generic_name(counter: &mut usize) -> String {
+            // Produce "A", "B", ..., "Z", "AA", "AB", ...
+            let mut n = *counter;
+            *counter += 1;
+            let mut name = String::new();
+            loop {
+                name.insert(0, (b'A' + (n % 26) as u8) as char);
                 if n < 26 {
                     break;
                 }
@@ -564,7 +607,7 @@ impl Type {
             match lifetime {
                 Lifetime::Static => Lifetime::Static,
                 Lifetime::Named(_) | Lifetime::Elided | Lifetime::Inferred => {
-                    Lifetime::Named(NamedLifetime::new(next_canonical_name(counter)))
+                    Lifetime::Named(NamedLifetime::new(next_lifetime_name(counter)))
                 }
             }
         }
@@ -576,7 +619,7 @@ impl Type {
             match lifetime {
                 GenericLifetimeParameter::Static => GenericLifetimeParameter::Static,
                 GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
-                    GenericLifetimeParameter::Named(NamedLifetime::new(next_canonical_name(counter)))
+                    GenericLifetimeParameter::Named(NamedLifetime::new(next_lifetime_name(counter)))
                 }
             }
         }
@@ -589,12 +632,12 @@ impl Type {
                     .map(|arg| match arg {
                         GenericArgument::TypeParameter(inner) => {
                             GenericArgument::TypeParameter(
-                                inner._canonicalize_lifetimes(counter),
+                                inner._canonicalize(lifetime_counter, generic_counter, generic_name_map),
                             )
                         }
                         GenericArgument::Lifetime(l) => {
                             GenericArgument::Lifetime(canonicalize_generic_lifetime(
-                                l, counter,
+                                l, lifetime_counter,
                             ))
                         }
                     })
@@ -608,32 +651,39 @@ impl Type {
             }
             Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
-                lifetime: canonicalize_lifetime(&r.lifetime, counter),
-                inner: Box::new(r.inner._canonicalize_lifetimes(counter)),
+                lifetime: canonicalize_lifetime(&r.lifetime, lifetime_counter),
+                inner: Box::new(r.inner._canonicalize(lifetime_counter, generic_counter, generic_name_map)),
             }),
             Type::Tuple(t) => Type::Tuple(Tuple {
                 elements: t
                     .elements
                     .iter()
-                    .map(|e| e._canonicalize_lifetimes(counter))
+                    .map(|e| e._canonicalize(lifetime_counter, generic_counter, generic_name_map))
                     .collect(),
             }),
             Type::Slice(s) => Type::Slice(Slice {
                 element_type: Box::new(
-                    s.element_type._canonicalize_lifetimes(counter),
+                    s.element_type._canonicalize(lifetime_counter, generic_counter, generic_name_map),
                 ),
             }),
             Type::Array(a) => Type::Array(Array {
                 element_type: Box::new(
-                    a.element_type._canonicalize_lifetimes(counter),
+                    a.element_type._canonicalize(lifetime_counter, generic_counter, generic_name_map),
                 ),
                 len: a.len,
             }),
             Type::RawPointer(r) => Type::RawPointer(RawPointer {
                 is_mutable: r.is_mutable,
-                inner: Box::new(r.inner._canonicalize_lifetimes(counter)),
+                inner: Box::new(r.inner._canonicalize(lifetime_counter, generic_counter, generic_name_map)),
             }),
-            Type::ScalarPrimitive(_) | Type::Generic(_) => self.clone(),
+            Type::ScalarPrimitive(_) => self.clone(),
+            Type::Generic(g) => {
+                let canonical_name = generic_name_map
+                    .entry(g.name.clone())
+                    .or_insert_with(|| next_generic_name(generic_counter))
+                    .clone();
+                Type::Generic(Generic { name: canonical_name })
+            }
         }
     }
 

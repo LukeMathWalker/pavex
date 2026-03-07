@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::user_components::{ScopeId, UserComponentId};
 use crate::compiler::component::ErrorHandler;
-use crate::language::{Type, TypeReference};
+use crate::language::{CanonicalType, Type, TypeReference};
 
 /// The set of error types that can be handled, for each scope.
 #[derive(Default)]
@@ -102,7 +102,7 @@ pub enum ErrorHandlerEntry {
 /// The set of error handlers that have been registered in a given scope.
 struct ErrorHandlersInScope {
     /// Map each concrete (non-templated) error type to the dedicated error handler.
-    concrete: HashMap<Type, ErrorHandlerEntry>,
+    concrete: HashMap<CanonicalType, ErrorHandlerEntry>,
     /// Map each templated error type (containing unassigned generics) to the dedicated error handler.
     ///
     /// For example, if you have a `Vec<u8>`, you first look in `concrete` to see if
@@ -124,7 +124,7 @@ impl ErrorHandlersInScope {
 
     /// Retrieve the handler for a given error type, if it exists.
     fn get(&self, type_: &Type) -> Option<&ErrorHandlerEntry> {
-        self.concrete.get(&type_.canonicalize_lifetimes())
+        self.concrete.get(&type_.canonicalize())
     }
 
     /// Retrieve the handler for a given error type, if it exists.
@@ -190,7 +190,7 @@ impl ErrorHandlersInScope {
             self.templated.insert(error_type, entry);
         } else {
             self.concrete
-                .insert(error_type.canonicalize_lifetimes(), entry);
+                .insert(error_type.canonicalize(), entry);
         }
     }
 
@@ -205,7 +205,7 @@ impl ErrorHandlersInScope {
             self.templated.insert(error_type, ErrorHandlerEntry::Invalid);
         } else {
             self.concrete
-                .insert(error_type.canonicalize_lifetimes(), ErrorHandlerEntry::Invalid);
+                .insert(error_type.canonicalize(), ErrorHandlerEntry::Invalid);
         }
     }
 }
@@ -214,7 +214,7 @@ impl std::fmt::Debug for ErrorHandlersInScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error handlers:")?;
         for (type_, entry) in &self.concrete {
-            writeln!(f, "- {} -> {:?}", type_.display_for_error(), entry)?;
+            writeln!(f, "- {} -> {:?}", type_.inner().display_for_error(), entry)?;
         }
         for (type_, entry) in &self.templated {
             writeln!(f, "- {} [templated] -> {:?}", type_.display_for_error(), entry)?;

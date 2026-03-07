@@ -9,7 +9,7 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 
 use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
-use crate::language::{Callable, InvocationStyle, Lifetime, Type, TypeReference};
+use crate::language::{Callable, CanonicalType, InvocationStyle, Lifetime, Type, TypeReference};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
@@ -69,7 +69,7 @@ where
         };
     }
 
-    let mut dependency_bindings: HashMap<Type, Box<dyn ToTokens>> = HashMap::new();
+    let mut dependency_bindings: HashMap<CanonicalType, Box<dyn ToTokens>> = HashMap::new();
     let mut dependency_blocks = Vec::new();
     for (dependency_index, dependency_type, consumption_mode) in dependencies {
         let type_ = match consumption_mode {
@@ -140,12 +140,12 @@ where
                     lifetime: lifetime.to_owned(),
                     inner: inner.to_owned(),
                 })
-                .canonicalize_lifetimes(),
+                .canonicalize(),
                 tokens.clone(),
             );
         }
 
-        dependency_bindings.insert(type_.canonicalize_lifetimes(), tokens);
+        dependency_bindings.insert(type_.canonicalize(), tokens);
     }
     let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {
@@ -167,7 +167,7 @@ where
 
 pub(crate) fn codegen_call(
     callable: &Callable,
-    variable_bindings: &HashMap<Type, Box<dyn ToTokens>>,
+    variable_bindings: &HashMap<CanonicalType, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> TokenStream {
     let callable_path: syn::ExprPath = {
@@ -181,7 +181,7 @@ pub(crate) fn codegen_call(
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {
             let parameters = callable.input_types().map(|i| {
-                let canonical = i.canonicalize_lifetimes();
+                let canonical = i.canonicalize();
                 match variable_bindings.get(&canonical) {
                     Some(tokens) => tokens,
                     None => {
@@ -208,7 +208,7 @@ pub(crate) fn codegen_call(
                 .iter()
                 .map(|input| {
                     let field_name = format_ident!("{}", input.name.as_str());
-                    let canonical = input.type_.canonicalize_lifetimes();
+                    let canonical = input.type_.canonicalize();
                     let binding = match variable_bindings.get(&canonical) {
                         Some(tokens) => tokens,
                         None => {

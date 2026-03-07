@@ -24,7 +24,7 @@ use crate::compiler::codegen_utils;
 use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::language::Type;
+use crate::language::{CanonicalType, Type};
 
 /// Generate the dependency closure of the [`OrderedCallGraph`]'s root callable.
 ///
@@ -39,11 +39,11 @@ pub(crate) fn codegen_callable_closure(
     let input_parameter_types = call_graph.required_input_types();
     let mut variable_generator = VariableNameGenerator::new();
     // Assign a unique parameter name to each input parameter type.
-    let parameter_bindings: HashMap<Type, Ident> = input_parameter_types
+    let parameter_bindings: HashMap<CanonicalType, Ident> = input_parameter_types
         .iter()
         .map(|type_| {
             let parameter_name = variable_generator.generate();
-            (type_.canonicalize_lifetimes(), parameter_name)
+            (type_.canonicalize(), parameter_name)
         })
         .collect();
     let body = codegen_callable_closure_body(
@@ -57,7 +57,7 @@ pub(crate) fn codegen_callable_closure(
 
     let function = {
         let inputs = input_parameter_types.into_iter().map(|mut type_| {
-            let variable_name = &parameter_bindings[&type_.canonicalize_lifetimes()];
+            let variable_name = &parameter_bindings[&type_.canonicalize()];
             // We can set all the non-'static lifetimes to implied (i.e. '_) in function signatures.
             let original2renamed = type_
                 .named_lifetime_parameters()
@@ -204,7 +204,7 @@ impl BasicBlockVisitor {
 /// [`CallGraph`]: crate::compiler::analyses::call_graph::CallGraph
 fn codegen_callable_closure_body(
     ocg: &OrderedCallGraph,
-    parameter_bindings: &HashMap<Type, Ident>,
+    parameter_bindings: &HashMap<CanonicalType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -267,7 +267,7 @@ fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, BTreeSet
 fn _codegen_callable_closure_body(
     target_terminals: &BTreeSet<NodeIndex>,
     call_graph: &RawCallGraph,
-    parameter_bindings: &HashMap<Type, Ident>,
+    parameter_bindings: &HashMap<CanonicalType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -348,7 +348,7 @@ fn _codegen_callable_closure_body(
             CallGraphNode::InputParameter {
                 type_: input_type, ..
             } => {
-                let parameter_name = parameter_bindings[&input_type.canonicalize_lifetimes()].clone();
+                let parameter_name = parameter_bindings[&input_type.canonicalize()].clone();
                 blocks.insert(current_index, Fragment::VariableReference(parameter_name));
             }
             CallGraphNode::MatchBranching => {
