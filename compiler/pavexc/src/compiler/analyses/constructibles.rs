@@ -18,7 +18,7 @@ use crate::diagnostic::{
     self, CallableDefSource, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile,
 };
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
-use crate::language::{Callable, Type};
+use crate::language::{Callable, CanonicalType, Type};
 use crate::rustdoc::CrateCollection;
 
 use super::framework_items::FrameworkItemDb;
@@ -343,7 +343,7 @@ impl ConstructibleDb {
     ) {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
-            for (type_, component_id) in constructibles.concrete.iter().chain(constructibles.templated.iter()) {
+            for (type_, component_id) in constructibles.concrete.iter().map(|(t, id)| (t.inner(), id)).chain(constructibles.templated.iter()) {
                 if component_db.lifecycle(*component_id) != Lifecycle::Singleton {
                     continue;
                 }
@@ -933,7 +933,7 @@ impl ConstructibleDb {
 /// scope as well as any of its parent scopes.
 struct ConstructiblesInScope {
     /// Map each concrete (non-templated) output type to its constructor.
-    concrete: HashMap<Type, ComponentId>,
+    concrete: HashMap<CanonicalType, ComponentId>,
     /// Map each templated output type (containing unassigned generics) to its constructor.
     ///
     /// For example, if you have a `Vec<u8>`, you first look in `concrete` to see if
@@ -956,14 +956,14 @@ impl ConstructiblesInScope {
     /// Retrieve the constructor for a given type, if it exists.
     /// Only searches concrete (non-templated) types.
     fn get(&self, type_: &Type) -> Option<(ComponentId, ConsumptionMode)> {
-        let normalized = type_.canonicalize_lifetimes();
+        let normalized = type_.canonicalize();
         if let Some(constructor_id) = self.concrete.get(&normalized).copied() {
             return Some((constructor_id, ConsumptionMode::Move));
         }
 
         match type_ {
             Type::Reference(ref_) if !ref_.lifetime.is_static() => {
-                let normalized_inner = ref_.inner.canonicalize_lifetimes();
+                let normalized_inner = ref_.inner.canonicalize();
                 if let Some(constructor_id) = self.concrete.get(&normalized_inner).copied() {
                     return Some((
                         constructor_id,
@@ -1070,7 +1070,7 @@ impl ConstructiblesInScope {
             self.templated.insert(output, component_id);
         } else {
             self.concrete
-                .insert(output.canonicalize_lifetimes(), component_id);
+                .insert(output.canonicalize(), component_id);
         }
     }
 
@@ -1099,7 +1099,7 @@ impl ConstructiblesInScope {
             let component = component_db.hydrated_component(derived_component_id, computation_db);
             if let HydratedComponent::Constructor(c) = component {
                 self.concrete.insert(
-                    c.output_type().canonicalize_lifetimes(),
+                    c.output_type().canonicalize(),
                     derived_component_id,
                 );
             }
@@ -1111,7 +1111,7 @@ impl std::fmt::Debug for ConstructiblesInScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Constructibles:")?;
         for (type_, component_id) in &self.concrete {
-            writeln!(f, "- {} -> {:?}", type_.display_for_error(), component_id)?;
+            writeln!(f, "- {} -> {:?}", type_.inner().display_for_error(), component_id)?;
         }
         for (type_, component_id) in &self.templated {
             writeln!(f, "- {} [templated] -> {:?}", type_.display_for_error(), component_id)?;

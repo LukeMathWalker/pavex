@@ -24,8 +24,8 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
-    Callable, CallableInput, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime,
-    ParameterName, PathType, PathTypeExt, Type, TypeReference,
+    Callable, CallableInput, CanonicalType, GenericArgument, GenericLifetimeParameter,
+    InvocationStyle, Lifetime, ParameterName, PathType, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -64,7 +64,7 @@ pub struct Stage {
     /// middleware within this stage.
     /// Middlewares are indexed based on their position in the invocation order for
     /// this stage.
-    pub(crate) type2cloning_indexes: IndexMap<Type, BTreeSet<usize>>,
+    pub(crate) type2cloning_indexes: IndexMap<CanonicalType, BTreeSet<usize>>,
 }
 
 #[derive(Debug)]
@@ -591,7 +591,7 @@ impl RequestHandlerPipeline {
 
                 let indexes: BTreeSet<_> =
                     consumers.into_iter().map(|v| v.middleware_index).collect();
-                type2cloning_indexes.insert(ty_.canonicalize_lifetimes(), indexes);
+                type2cloning_indexes.insert(ty_.canonicalize(), indexes);
             }
             stage.type2cloning_indexes = type2cloning_indexes;
         }
@@ -1012,11 +1012,11 @@ impl Bindings {
     ///
     /// In the last case, the binding is automatically marked as mutable.
     pub(crate) fn get_expr_for_type(&mut self, type_: &Type) -> Option<syn::Expr> {
-        let canonical_type = type_.canonicalize_lifetimes();
+        let canonical_type = type_.canonicalize();
         let binding = self
             .0
             .iter()
-            .find(|binding| binding.type_.canonicalize_lifetimes() == canonical_type);
+            .find(|binding| binding.type_.canonicalize() == canonical_type);
         if let Some(binding) = binding {
             let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
             let block = quote! { #ident };
@@ -1029,11 +1029,11 @@ impl Bindings {
             return None;
         };
 
-        let canonical_inner = ref_.inner.canonicalize_lifetimes();
+        let canonical_inner = ref_.inner.canonicalize();
         if let Some(binding) = self
             .0
             .iter_mut()
-            .find(|binding| binding.type_.canonicalize_lifetimes() == canonical_inner)
+            .find(|binding| binding.type_.canonicalize() == canonical_inner)
         {
             let mut_ = if ref_.is_mutable {
                 binding.mutable = true;
@@ -1054,11 +1054,11 @@ impl Bindings {
                 lifetime: ref_.lifetime.clone(),
                 inner: Box::new(ref_.inner.as_ref().clone()),
             });
-            let canonical_new_ref = new_ref.canonicalize_lifetimes();
+            let canonical_new_ref = new_ref.canonicalize();
             let binding = self
                 .0
                 .iter()
-                .find(|binding| binding.type_.canonicalize_lifetimes() == canonical_new_ref);
+                .find(|binding| binding.type_.canonicalize() == canonical_new_ref);
             if let Some(binding) = binding {
                 let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
                 let block = quote! { #ident };
@@ -1071,10 +1071,10 @@ impl Bindings {
 
     /// Return the first binding with a given type.
     pub(crate) fn find_exact_by_type(&self, type_: &Type) -> Option<&Binding> {
-        let canonical = type_.canonicalize_lifetimes();
+        let canonical = type_.canonicalize();
         self.0
             .iter()
-            .find(|binding| binding.type_.canonicalize_lifetimes() == canonical)
+            .find(|binding| binding.type_.canonicalize() == canonical)
     }
 }
 

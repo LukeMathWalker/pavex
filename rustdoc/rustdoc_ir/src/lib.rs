@@ -23,6 +23,7 @@ pub use raw_pointer::RawPointer;
 pub use scalar_primitive::{ScalarPrimitive, UnknownPrimitive};
 pub use slice::Slice;
 pub use tuple::Tuple;
+pub use type_::CanonicalType;
 pub use type_reference::TypeReference;
 
 /// A Rust type.
