@@ -1,9 +1,10 @@
 pub use rustdoc_ir::*;
 
-use crate::language::{FQPath, FQPathSegment};
+use crate::language::{CallablePath, FQPath, FQPathSegment, StructLiteralPath};
 
 pub(crate) trait PathTypeExt {
     fn resolved_path(&self) -> FQPath;
+    fn callable_struct_literal_path(&self) -> CallablePath;
 }
 
 impl PathTypeExt for PathType {
@@ -20,5 +21,23 @@ impl PathTypeExt for PathType {
             qualified_self: None,
             package_id: self.package_id.clone(),
         }
+    }
+
+    fn callable_struct_literal_path(&self) -> CallablePath {
+        // base_type is [crate_name, module1, ..., TypeName]
+        let crate_name = self.base_type.first().cloned().unwrap_or_default();
+        let type_name = self.base_type.last().cloned().unwrap_or_default();
+        let module_path = if self.base_type.len() > 2 {
+            self.base_type[1..self.base_type.len() - 1].to_vec()
+        } else {
+            vec![]
+        };
+        CallablePath::StructLiteral(StructLiteralPath {
+            package_id: self.package_id.clone(),
+            crate_name,
+            module_path,
+            type_name,
+            type_generics: vec![],
+        })
     }
 }

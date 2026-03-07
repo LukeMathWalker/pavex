@@ -8,16 +8,16 @@ use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{Array, GenericArgument, Slice};
-use crate::language::{CallPath, InvalidCallPath, RawPointer, Type, Tuple, TypeReference};
+use crate::language::{CallPath, InvalidCallPath, RawPointer, Tuple, Type, TypeReference};
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_processor::queries::CrateRegistry;
 
+use super::RawIdentifiers;
 use super::fq_path::*;
 use super::krate_name::CrateNameResolutionError;
 use super::krate2package_id;
 use super::resolved_type::GenericLifetimeParameter;
-use super::RawIdentifiers;
 
 #[derive(Debug, Clone, Copy)]
 pub enum PathKind {
@@ -59,9 +59,9 @@ pub fn resolve_fq_path_type(
             for (i, param_def) in generic_param_def.iter().enumerate() {
                 let arg = if let Some(arg) = last_segment.generic_arguments.get(i) {
                     match arg {
-                        FQGenericArgument::Type(t) => {
-                            GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?)
-                        }
+                        FQGenericArgument::Type(t) => GenericArgument::TypeParameter(
+                            resolve_fq_path_type(t, krate_collection)?,
+                        ),
                         FQGenericArgument::Lifetime(l) => {
                             GenericArgument::Lifetime(l.clone().into())
                         }
@@ -69,9 +69,9 @@ pub fn resolve_fq_path_type(
                 } else {
                     match &param_def.kind {
                         rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
-                            GenericArgument::Lifetime(
-                                GenericLifetimeParameter::from_name(param_def.name.clone()),
-                            )
+                            GenericArgument::Lifetime(GenericLifetimeParameter::from_name(
+                                param_def.name.clone(),
+                            ))
                         }
                         rustdoc_types::GenericParamDefKind::Type { default, .. } => {
                             let Some(default) = default else {
@@ -198,11 +198,7 @@ fn parse_call_path_type(
         CallPathType::Reference(r) => Ok(FQPathType::Reference(FQReference {
             is_mutable: r.is_mutable,
             lifetime: r.lifetime.clone(),
-            inner: Box::new(parse_call_path_type(
-                r.inner.deref(),
-                identifiers,
-                graph,
-            )?),
+            inner: Box::new(parse_call_path_type(r.inner.deref(), identifiers, graph)?),
         })),
         CallPathType::Tuple(t) => {
             let mut elements = Vec::with_capacity(t.elements.len());
@@ -212,8 +208,7 @@ fn parse_call_path_type(
             Ok(FQPathType::Tuple(FQTuple { elements }))
         }
         CallPathType::Slice(s) => {
-            let element_type =
-                parse_call_path_type(s.element_type.deref(), identifiers, graph)?;
+            let element_type = parse_call_path_type(s.element_type.deref(), identifiers, graph)?;
             Ok(FQPathType::Slice(FQSlice {
                 element: Box::new(element_type),
             }))
@@ -258,9 +253,9 @@ fn parse_call_path(
     let package_id =
         dependency_name2package_id(&path.leading_path_segment().to_string(), &used_in, graph)
             .map_err(|source| PathMustBeAbsolute {
-            relative_path: path.to_string(),
-            source,
-        })?;
+                relative_path: path.to_string(),
+                source,
+            })?;
     Ok(FQPath {
         segments,
         qualified_self: qself,
@@ -359,8 +354,8 @@ pub fn find_rustdoc_callable_items<'a>(
                 unreachable!()
             }
         };
-        let search_krate = krate_collection
-            .get_or_compute_crate_by_package_id(&parent_item.item_id.package_id)?;
+        let search_krate =
+            krate_collection.get_or_compute_crate_by_package_id(&parent_item.item_id.package_id)?;
         for child_id in children_ids {
             let child = search_krate.get_item_by_local_type_id(child_id);
             match &child.inner {

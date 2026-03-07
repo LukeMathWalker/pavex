@@ -6,7 +6,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, CallableInput, FQPath, FQPathSegment, InvocationStyle, ParameterName, PathTypeExt,
+    Callable, CallableInput, InherentMethodPath, InvocationStyle, CallablePath, ParameterName,
     Type,
 };
 
@@ -34,26 +34,27 @@ pub(super) fn register_error_new_transformer(
     let Type::Path(pavex_error) = &component_db.pavex_error else {
         unreachable!()
     };
-    let pavex_error_path = &pavex_error.resolved_path();
-    let pavex_error_new_segments = {
-        let mut c = pavex_error_path.segments.clone();
-        c.push(FQPathSegment {
-            ident: "new".into(),
-            generic_arguments: vec![],
-        });
-        c
-    };
-    let pavex_error_new_path = FQPath {
-        segments: pavex_error_new_segments,
-        qualified_self: None,
-        package_id: pavex_error.package_id.clone(),
+    let crate_name = pavex_error.base_type.first().cloned().unwrap_or_default();
+    let type_name = pavex_error.base_type.last().cloned().unwrap_or_default();
+    let module_path = if pavex_error.base_type.len() > 2 {
+        pavex_error.base_type[1..pavex_error.base_type.len() - 1].to_vec()
+    } else {
+        vec![]
     };
 
     let pavex_error_new_callable = Callable {
         is_async: false,
         takes_self_as_ref: true,
         output: Some(pavex_error.clone().into()),
-        path: pavex_error_new_path,
+        path: CallablePath::InherentMethod(InherentMethodPath {
+            package_id: pavex_error.package_id.clone(),
+            crate_name,
+            module_path,
+            type_name,
+            type_generics: vec![],
+            method_name: "new".into(),
+            method_generics: vec![],
+        }),
         inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error.to_owned() }],
         invocation_style: InvocationStyle::FunctionCall,
         source_coordinates: None,

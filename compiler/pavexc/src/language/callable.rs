@@ -8,7 +8,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{FQPath, Lifetime, Type};
+use crate::language::{CallablePath, Lifetime, Type};
 use crate::rustdoc::GlobalItemId;
 
 /// A validated parameter name that is guaranteed to be a valid Rust identifier.
@@ -78,7 +78,7 @@ pub struct Callable {
     /// The fully-qualified path pointing at this callable.
     ///
     /// E.g. `std::vec::Vec::new` for `Vec::new()`.
-    pub path: FQPath,
+    pub path: CallablePath,
     /// The input parameters of the callable.
     /// The list is ordered, matching the order in the callable declaration—this is relevant
     /// to ensure correct invocations.

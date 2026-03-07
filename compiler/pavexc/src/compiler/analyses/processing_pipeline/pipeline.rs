@@ -694,7 +694,7 @@ impl RequestHandlerPipeline {
         let next_state_constructor = Callable {
             is_async: false,
             takes_self_as_ref: false,
-            path: next_state_type.resolved_path(),
+            path: next_state_type.callable_struct_literal_path(),
             output: Some(next_state_type.clone().into()),
             inputs: next_state_parameters
                 .iter()
