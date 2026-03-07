@@ -3,7 +3,7 @@ use guppy::graph::PackageGraph;
 use pavex_bp_schema::CreatedAt;
 
 use crate::compiler::resolvers::resolve_callable;
-use crate::language::{Callable, FQPath, GenericArgument, PathKind, RawIdentifiers, Type};
+use crate::language::{Callable, GenericArgument, PathKind, RawIdentifiers, Type, parse_fq_path};
 use crate::rustdoc::CrateCollection;
 
 use super::app::PAVEX_VERSION;
@@ -47,7 +47,7 @@ pub(crate) fn resolve_type_path(
             package_version: PAVEX_VERSION.to_owned(),
         },
     };
-    let path = FQPath::parse(
+    let path = parse_fq_path(
         &identifiers,
         krate_collection.package_graph(),
         PathKind::Type,
@@ -72,7 +72,7 @@ pub(crate) fn resolve_framework_callable_path(
             package_version: PAVEX_VERSION.to_owned(),
         },
     };
-    let path = FQPath::parse(&identifiers, package_graph, PathKind::Callable).unwrap();
+    let path = parse_fq_path(&identifiers, package_graph, PathKind::Callable).unwrap();
     resolve_callable(krate_collection, &path).unwrap()
 }
 
