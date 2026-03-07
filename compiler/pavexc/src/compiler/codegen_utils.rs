@@ -139,12 +139,13 @@ where
                     is_mutable: false,
                     lifetime: lifetime.to_owned(),
                     inner: inner.to_owned(),
-                }),
+                })
+                .canonicalize_lifetimes(),
                 tokens.clone(),
             );
         }
 
-        dependency_bindings.insert(type_, tokens);
+        dependency_bindings.insert(type_.canonicalize_lifetimes(), tokens);
     }
     let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {
@@ -180,7 +181,8 @@ pub(crate) fn codegen_call(
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {
             let parameters = callable.input_types().map(|i| {
-                match variable_bindings.get(i) {
+                let canonical = i.canonicalize_lifetimes();
+                match variable_bindings.get(&canonical) {
                     Some(tokens) => tokens,
                     None => {
                         use std::fmt::Write as _;
@@ -206,7 +208,8 @@ pub(crate) fn codegen_call(
                 .iter()
                 .map(|input| {
                     let field_name = format_ident!("{}", input.name.as_str());
-                    let binding = match variable_bindings.get(&input.type_) {
+                    let canonical = input.type_.canonicalize_lifetimes();
+                    let binding = match variable_bindings.get(&canonical) {
                         Some(tokens) => tokens,
                         None => {
                             use std::fmt::Write as _;

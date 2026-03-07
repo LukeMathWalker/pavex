@@ -124,7 +124,7 @@ impl ErrorHandlersInScope {
 
     /// Retrieve the handler for a given error type, if it exists.
     fn get(&self, type_: &Type) -> Option<&ErrorHandlerEntry> {
-        self.concrete.get(type_)
+        self.concrete.get(&type_.canonicalize_lifetimes())
     }
 
     /// Retrieve the handler for a given error type, if it exists.
@@ -189,7 +189,8 @@ impl ErrorHandlersInScope {
         if error_type.is_a_template() {
             self.templated.insert(error_type, entry);
         } else {
-            self.concrete.insert(error_type, entry);
+            self.concrete
+                .insert(error_type.canonicalize_lifetimes(), entry);
         }
     }
 
@@ -203,7 +204,8 @@ impl ErrorHandlersInScope {
         if error_type.is_a_template() {
             self.templated.insert(error_type, ErrorHandlerEntry::Invalid);
         } else {
-            self.concrete.insert(error_type, ErrorHandlerEntry::Invalid);
+            self.concrete
+                .insert(error_type.canonicalize_lifetimes(), ErrorHandlerEntry::Invalid);
         }
     }
 }

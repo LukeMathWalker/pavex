@@ -123,7 +123,7 @@ impl RequestHandlerPipeline {
                                     }
                                     Some(i) => {
                                         let mut output = i.to_token_stream();
-                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(input_type)
+                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(&input_type.canonicalize_lifetimes())
                                             && cloning_indexes.contains(&index) {
                                                 output = quote! { #i.clone() };
                                             }
@@ -400,7 +400,11 @@ impl CodegenedRequestHandlerPipeline {
                     unreachable!("Generic types should have been resolved by now")
                 }
             };
-            if let Some(field_name) = application_state.bindings().get_by_right(inner_type) {
+            let canonical_inner = inner_type.canonicalize_lifetimes();
+            let canonical_type = type_.canonicalize_lifetimes();
+            if let Some(field_name) = application_state.bindings().iter()
+                .find(|(_, t)| t.canonicalize_lifetimes() == canonical_inner)
+                .map(|(name, _)| name) {
                 if is_shared_reference {
                     quote! {
                         &#server_state_ident.#field_name
@@ -416,12 +420,16 @@ impl CodegenedRequestHandlerPipeline {
                         #server_state_ident.#field_name.clone()
                     }
                 }
-            } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
+            } else if let Some(field_name) = request_scoped_bindings.iter()
+                .find(|(_, t)| t.canonicalize_lifetimes() == canonical_type)
+                .map(|(name, _)| name) {
                 quote! {
                     #field_name
                 }
             } else {
-                let Some(field_name) = request_scoped_bindings.get_by_right(inner_type) else {
+                let Some(field_name) = request_scoped_bindings.iter()
+                    .find(|(_, t)| t.canonicalize_lifetimes() == canonical_inner)
+                    .map(|(name, _)| name) else {
                     let rs_bindings = request_scoped_bindings
                         .iter()
                         .fold(String::new(), |acc, (ident, type_)| {
@@ -461,12 +469,13 @@ impl CodegenedRequestHandlerPipeline {
     /// Returns `true` if the first stage of the pipeline (i.e. the entrypoint) needs the specified
     /// type as input.
     pub(crate) fn needs_input_type(&self, input_type: &Type) -> bool {
+        let canonical_input = input_type.canonicalize_lifetimes();
         self.stages[0].input_parameters.iter().any(|t| {
-            if t == input_type {
+            if t.canonicalize_lifetimes() == canonical_input {
                 return true;
             }
             if let Type::Reference(r) = t {
-                return r.inner.as_ref() == input_type;
+                return r.inner.canonicalize_lifetimes() == canonical_input;
             }
 
             false

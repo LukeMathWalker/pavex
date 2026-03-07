@@ -43,7 +43,7 @@ pub(crate) fn codegen_callable_closure(
         .iter()
         .map(|type_| {
             let parameter_name = variable_generator.generate();
-            (type_.to_owned(), parameter_name)
+            (type_.canonicalize_lifetimes(), parameter_name)
         })
         .collect();
     let body = codegen_callable_closure_body(
@@ -57,7 +57,7 @@ pub(crate) fn codegen_callable_closure(
 
     let function = {
         let inputs = input_parameter_types.into_iter().map(|mut type_| {
-            let variable_name = &parameter_bindings[&type_];
+            let variable_name = &parameter_bindings[&type_.canonicalize_lifetimes()];
             // We can set all the non-'static lifetimes to implied (i.e. '_) in function signatures.
             let original2renamed = type_
                 .named_lifetime_parameters()
@@ -348,7 +348,7 @@ fn _codegen_callable_closure_body(
             CallGraphNode::InputParameter {
                 type_: input_type, ..
             } => {
-                let parameter_name = parameter_bindings[input_type].clone();
+                let parameter_name = parameter_bindings[&input_type.canonicalize_lifetimes()].clone();
                 blocks.insert(current_index, Fragment::VariableReference(parameter_name));
             }
             CallGraphNode::MatchBranching => {

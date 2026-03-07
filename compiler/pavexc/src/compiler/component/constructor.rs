@@ -58,8 +58,10 @@ impl<'a> Constructor<'a> {
             return Err(ConstructorValidationError::CannotConstructPavexResponse);
         }
 
+        let canonical_output = output_type.canonicalize_lifetimes();
         for (_, framework_primitive_type) in framework_item_db.iter() {
-            if &output_type == framework_primitive_type {
+            let canonical_framework = framework_primitive_type.canonicalize_lifetimes();
+            if canonical_output == canonical_framework {
                 return Err(
                     ConstructorValidationError::CannotConstructFrameworkPrimitive {
                         primitive_type: framework_primitive_type.to_owned(),
@@ -67,7 +69,7 @@ impl<'a> Constructor<'a> {
                 );
             }
             if let Type::Reference(ref_type) = &output_type
-                && ref_type.inner.as_ref() == framework_primitive_type
+                && ref_type.inner.canonicalize_lifetimes() == canonical_framework
             {
                 return Err(
                     ConstructorValidationError::CannotConstructFrameworkPrimitive {

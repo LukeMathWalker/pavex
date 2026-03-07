@@ -5,8 +5,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    Array, GenericArgument, GenericLifetimeParameter, Lifetime, PathType, RawPointer, Type, Slice,
-    Tuple, TypeReference,
+    Array, GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType,
+    RawPointer, Type, Slice, Tuple, TypeReference,
 };
 
 impl AsRef<Type> for Type {
@@ -527,6 +527,116 @@ impl Type {
         }
     }
 
+    /// Returns a copy of this type with non-static lifetime names canonicalized.
+    ///
+    /// Each non-static lifetime occurrence gets a fresh canonical name ('a, 'b, 'c, ...),
+    /// regardless of whether it shares a name with another occurrence.
+    /// This ensures structural position matching without preserving lifetime identity.
+    /// Static lifetimes are preserved as-is.
+    pub fn canonicalize_lifetimes(&self) -> Self {
+        let mut counter = 0usize;
+        self._canonicalize_lifetimes(&mut counter)
+    }
+
+    fn _canonicalize_lifetimes(
+        &self,
+        counter: &mut usize,
+    ) -> Self {
+        fn next_canonical_name(counter: &mut usize) -> String {
+            // Produce "a", "b", ..., "z", "aa", "ab", ...
+            let mut n = *counter;
+            *counter += 1;
+            let mut name = String::new();
+            loop {
+                name.insert(0, (b'a' + (n % 26) as u8) as char);
+                if n < 26 {
+                    break;
+                }
+                n = n / 26 - 1;
+            }
+            name
+        }
+
+        fn canonicalize_lifetime(
+            lifetime: &Lifetime,
+            counter: &mut usize,
+        ) -> Lifetime {
+            match lifetime {
+                Lifetime::Static => Lifetime::Static,
+                Lifetime::Named(_) | Lifetime::Elided | Lifetime::Inferred => {
+                    Lifetime::Named(NamedLifetime::new(next_canonical_name(counter)))
+                }
+            }
+        }
+
+        fn canonicalize_generic_lifetime(
+            lifetime: &GenericLifetimeParameter,
+            counter: &mut usize,
+        ) -> GenericLifetimeParameter {
+            match lifetime {
+                GenericLifetimeParameter::Static => GenericLifetimeParameter::Static,
+                GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
+                    GenericLifetimeParameter::Named(NamedLifetime::new(next_canonical_name(counter)))
+                }
+            }
+        }
+
+        match self {
+            Type::Path(t) => {
+                let generic_arguments = t
+                    .generic_arguments
+                    .iter()
+                    .map(|arg| match arg {
+                        GenericArgument::TypeParameter(inner) => {
+                            GenericArgument::TypeParameter(
+                                inner._canonicalize_lifetimes(counter),
+                            )
+                        }
+                        GenericArgument::Lifetime(l) => {
+                            GenericArgument::Lifetime(canonicalize_generic_lifetime(
+                                l, counter,
+                            ))
+                        }
+                    })
+                    .collect();
+                Type::Path(PathType {
+                    package_id: t.package_id.clone(),
+                    rustdoc_id: t.rustdoc_id,
+                    base_type: t.base_type.clone(),
+                    generic_arguments,
+                })
+            }
+            Type::Reference(r) => Type::Reference(TypeReference {
+                is_mutable: r.is_mutable,
+                lifetime: canonicalize_lifetime(&r.lifetime, counter),
+                inner: Box::new(r.inner._canonicalize_lifetimes(counter)),
+            }),
+            Type::Tuple(t) => Type::Tuple(Tuple {
+                elements: t
+                    .elements
+                    .iter()
+                    .map(|e| e._canonicalize_lifetimes(counter))
+                    .collect(),
+            }),
+            Type::Slice(s) => Type::Slice(Slice {
+                element_type: Box::new(
+                    s.element_type._canonicalize_lifetimes(counter),
+                ),
+            }),
+            Type::Array(a) => Type::Array(Array {
+                element_type: Box::new(
+                    a.element_type._canonicalize_lifetimes(counter),
+                ),
+                len: a.len,
+            }),
+            Type::RawPointer(r) => Type::RawPointer(RawPointer {
+                is_mutable: r.is_mutable,
+                inner: Box::new(r.inner._canonicalize_lifetimes(counter)),
+            }),
+            Type::ScalarPrimitive(_) | Type::Generic(_) => self.clone(),
+        }
+    }
+
     /// Format this type for display in user-facing error messages.
     pub fn display_for_error(&self) -> String {
         let mut s = String::new();
@@ -662,40 +772,40 @@ impl From<Array> for Type {
 
 #[cfg(test)]
 mod tests {
-    use ahash::{HashSet, HashSetExt};
-
     use crate::{GenericLifetimeParameter, Lifetime, NamedLifetime};
 
     #[test]
-    fn all_named_lifetimes_are_equivalent() {
-        let lifetimes = vec![
+    fn named_lifetimes_are_structurally_compared() {
+        // Different names are not equal.
+        assert_ne!(
             Lifetime::Named(NamedLifetime::new("a")),
             Lifetime::Named(NamedLifetime::new("b")),
-            Lifetime::Inferred,
+        );
+        // Named is not equal to Elided or Inferred.
+        assert_ne!(
+            Lifetime::Named(NamedLifetime::new("a")),
             Lifetime::Elided,
-        ];
-        for first in &lifetimes {
-            for second in &lifetimes {
-                assert_eq!(first, second);
-            }
-        }
-
-        let mut set = HashSet::new();
-        set.insert(Lifetime::Named(NamedLifetime::new("a")));
-        for lifetime in &lifetimes {
-            assert!(set.contains(lifetime));
-        }
+        );
+        assert_ne!(
+            Lifetime::Named(NamedLifetime::new("a")),
+            Lifetime::Inferred,
+        );
+        // Same name is equal.
+        assert_eq!(
+            Lifetime::Named(NamedLifetime::new("a")),
+            Lifetime::Named(NamedLifetime::new("a")),
+        );
     }
 
     #[test]
-    fn all_named_generic_lifetimes_are_equivalent() {
-        let named1 = GenericLifetimeParameter::Named(NamedLifetime::new("a".to_string()));
-        let named2 = GenericLifetimeParameter::Named(NamedLifetime::new("b".to_string()));
-
-        assert_eq!(named1, named2);
-
-        let mut set = HashSet::new();
-        set.insert(named1);
-        assert!(set.contains(&named2));
+    fn named_generic_lifetimes_are_structurally_compared() {
+        assert_ne!(
+            GenericLifetimeParameter::Named(NamedLifetime::new("a")),
+            GenericLifetimeParameter::Named(NamedLifetime::new("b")),
+        );
+        assert_eq!(
+            GenericLifetimeParameter::Named(NamedLifetime::new("a")),
+            GenericLifetimeParameter::Named(NamedLifetime::new("a")),
+        );
     }
 }
