@@ -4,7 +4,7 @@ use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
 
-use crate::language::fq_path::{FQGenericArgument, FQPathType};
+use crate::language::{GenericArgument, GenericLifetimeParameter, Type};
 
 /// A fully-qualified path to a callable, with the callable kind
 /// made explicit in the type system.
@@ -25,7 +25,7 @@ pub struct FreeFunctionPath {
     /// Module path from crate root (excludes crate name and function name).
     pub module_path: Vec<String>,
     pub function_name: String,
-    pub function_generics: Vec<FQGenericArgument>,
+    pub function_generics: Vec<GenericArgument>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -35,9 +35,9 @@ pub struct InherentMethodPath {
     /// Module path from crate root (excludes crate name and type name).
     pub module_path: Vec<String>,
     pub type_name: String,
-    pub type_generics: Vec<FQGenericArgument>,
+    pub type_generics: Vec<GenericArgument>,
     pub method_name: String,
-    pub method_generics: Vec<FQGenericArgument>,
+    pub method_generics: Vec<GenericArgument>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -48,10 +48,10 @@ pub struct TraitMethodPath {
     /// Module path from crate root (excludes crate name and trait name).
     pub module_path: Vec<String>,
     pub trait_name: String,
-    pub trait_generics: Vec<FQGenericArgument>,
-    pub self_type: FQPathType,
+    pub trait_generics: Vec<GenericArgument>,
+    pub self_type: Type,
     pub method_name: String,
-    pub method_generics: Vec<FQGenericArgument>,
+    pub method_generics: Vec<GenericArgument>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -61,7 +61,7 @@ pub struct StructLiteralPath {
     /// Module path from crate root (excludes crate name and type name).
     pub module_path: Vec<String>,
     pub type_name: String,
-    pub type_generics: Vec<FQGenericArgument>,
+    pub type_generics: Vec<GenericArgument>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -71,7 +71,7 @@ pub struct EnumVariantConstructorPath {
     /// Module path from crate root (excludes crate name and enum name).
     pub module_path: Vec<String>,
     pub enum_name: String,
-    pub enum_generics: Vec<FQGenericArgument>,
+    pub enum_generics: Vec<GenericArgument>,
     pub variant_name: String,
 }
 
@@ -110,7 +110,11 @@ impl CallablePath {
         }
     }
 
-    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+    pub fn render_as_expression_path(
+        &self,
+        id2name: &BiHashMap<PackageId, String>,
+        buffer: &mut String,
+    ) {
         match self {
             CallablePath::FreeFunction(p) => p.render_path(id2name, buffer),
             CallablePath::InherentMethod(p) => p.render_path(id2name, buffer),
@@ -146,7 +150,7 @@ impl Display for CallablePath {
 // --- Helper: render generics ---
 
 fn render_generics_for_codegen(
-    generics: &[FQGenericArgument],
+    generics: &[GenericArgument],
     id2name: &BiHashMap<PackageId, String>,
     buffer: &mut String,
 ) {
@@ -154,7 +158,19 @@ fn render_generics_for_codegen(
         write!(buffer, "::<").unwrap();
         let mut args = generics.iter().peekable();
         while let Some(arg) = args.next() {
-            arg.render_path(id2name, buffer);
+            match arg {
+                GenericArgument::TypeParameter(t) => {
+                    t._render_with_inferred_lifetimes(id2name, buffer);
+                }
+                GenericArgument::Lifetime(l) => match l {
+                    GenericLifetimeParameter::Static => {
+                        write!(buffer, "'static").unwrap();
+                    }
+                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
+                        write!(buffer, "'_").unwrap();
+                    }
+                },
+            }
             if args.peek().is_some() {
                 write!(buffer, ", ").unwrap();
             }
@@ -163,12 +179,24 @@ fn render_generics_for_codegen(
     }
 }
 
-fn render_generics_for_error(generics: &[FQGenericArgument], buffer: &mut String) {
+fn render_generics_for_error(generics: &[GenericArgument], buffer: &mut String) {
     if !generics.is_empty() {
         write!(buffer, "::<").unwrap();
         let mut args = generics.iter().peekable();
         while let Some(arg) = args.next() {
-            arg.render_for_error(buffer);
+            match arg {
+                GenericArgument::TypeParameter(t) => {
+                    t._display_for_error(buffer);
+                }
+                GenericArgument::Lifetime(l) => match l {
+                    GenericLifetimeParameter::Static => {
+                        write!(buffer, "'static").unwrap();
+                    }
+                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
+                        write!(buffer, "'_").unwrap();
+                    }
+                },
+            }
             if args.peek().is_some() {
                 write!(buffer, ", ").unwrap();
             }
@@ -178,10 +206,7 @@ fn render_generics_for_error(generics: &[FQGenericArgument], buffer: &mut String
 }
 
 /// Write generics using `Display` (preserves named lifetimes like `'server`, `'request`).
-fn write_generics_display(
-    generics: &[FQGenericArgument],
-    f: &mut Formatter<'_>,
-) -> std::fmt::Result {
+fn write_generics_display(generics: &[GenericArgument], f: &mut Formatter<'_>) -> std::fmt::Result {
     if !generics.is_empty() {
         write!(f, "::<")?;
         for (i, arg) in generics.iter().enumerate() {
@@ -299,7 +324,8 @@ impl TraitMethodPath {
             })
             .unwrap();
         write!(buffer, "<").unwrap();
-        self.self_type.render_path(id2name, buffer);
+        self.self_type
+            ._render_with_inferred_lifetimes(id2name, buffer);
         write!(buffer, " as {crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
@@ -313,7 +339,7 @@ impl TraitMethodPath {
 
     pub fn render_for_error(&self, buffer: &mut String) {
         write!(buffer, "<").unwrap();
-        self.self_type.render_for_error(buffer);
+        self.self_type._display_for_error(buffer);
         write!(buffer, " as {}", self.crate_name).unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();

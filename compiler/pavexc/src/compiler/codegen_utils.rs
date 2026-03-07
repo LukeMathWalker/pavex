@@ -172,7 +172,9 @@ pub(crate) fn codegen_call(
 ) -> TokenStream {
     let callable_path: syn::ExprPath = {
         let mut buffer = String::new();
-        callable.path.render_path(package_id2name, &mut buffer);
+        callable
+            .path
+            .render_as_expression_path(package_id2name, &mut buffer);
         match syn::parse_str(&buffer) {
             Ok(p) => p,
             Err(e) => panic!("Couldn't parse `{buffer}` as an expression path: {e}"),

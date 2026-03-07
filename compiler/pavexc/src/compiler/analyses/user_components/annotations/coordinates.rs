@@ -6,9 +6,8 @@ use crate::{
 use pavexc_attr_parser::AnnotationProperties;
 
 use super::{
-    AuxiliaryData, ConfigType, FQPath, FQPathSegment, ImplInfo, annotated_item2type,
-    cannot_resolve_callable_path, invalid_config_type, rustdoc_free_fn2callable,
-    rustdoc_method2callable, validate_route_path,
+    AuxiliaryData, ConfigType, ImplInfo, annotated_item2type, cannot_resolve_callable_path,
+    invalid_config_type, rustdoc_free_fn2callable, rustdoc_method2callable, validate_route_path,
 };
 use crate::compiler::analyses::user_components::{UserComponent, UserComponentId};
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
@@ -113,17 +112,13 @@ pub(crate) fn resolve_annotation_coordinates(
                     aux.config_id2type.insert(component_id, config);
                 }
                 Err(e) => {
-                    let path = FQPath {
-                        segments: krate.import_index.items[&item.id]
-                            .canonical_path()
-                            .iter()
-                            .cloned()
-                            .map(FQPathSegment::new)
-                            .collect(),
-                        qualified_self: None,
-                        package_id: krate.core.package_id.clone(),
-                    };
-                    invalid_config_type(e, &path, component_id, aux, diagnostics)
+                    let path_display = krate.import_index.items[&item.id]
+                        .canonical_path()
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join("::");
+                    invalid_config_type(e, &path_display, component_id, aux, diagnostics)
                 }
             };
         }
@@ -159,17 +154,13 @@ pub(crate) fn resolve_annotation_coordinates(
                     prebuilt_type_db.get_or_intern(prebuilt, component_id);
                 }
                 Err(e) => {
-                    let path = FQPath {
-                        segments: krate.import_index.items[&item.id]
-                            .canonical_path()
-                            .iter()
-                            .cloned()
-                            .map(FQPathSegment::new)
-                            .collect(),
-                        qualified_self: None,
-                        package_id: krate.core.package_id.clone(),
-                    };
-                    invalid_prebuilt_type(e, &path, component_id, aux, diagnostics)
+                    let path_display = krate.import_index.items[&item.id]
+                        .canonical_path()
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join("::");
+                    invalid_prebuilt_type(e, &path_display, component_id, aux, diagnostics)
                 }
             };
         }

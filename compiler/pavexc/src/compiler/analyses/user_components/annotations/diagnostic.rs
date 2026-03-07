@@ -14,7 +14,7 @@ use guppy::graph::PackageGraph;
 use pavex_cli_diagnostic::CompilerDiagnostic;
 use rustdoc_types::Item;
 
-use super::{AuxiliaryData, CallableResolutionError, FQPath};
+use super::{AuxiliaryData, CallableResolutionError};
 
 pub(super) fn const_generics_are_not_supported(
     e: UnsupportedConstGeneric,
@@ -149,7 +149,7 @@ pub(super) fn not_a_module(
 
 pub(super) fn invalid_prebuilt_type(
     e: PrebuiltTypeValidationError,
-    resolved_path: &FQPath,
+    resolved_path: &str,
     id: UserComponentId,
     db: &AuxiliaryData,
     diagnostics: &crate::diagnostic::DiagnosticSink,
@@ -238,7 +238,7 @@ pub(super) fn invalid_prebuilt_type(
 
 pub(super) fn invalid_config_type(
     e: ConfigTypeValidationError,
-    resolved_path: &FQPath,
+    resolved_path: &str,
     id: UserComponentId,
     db: &AuxiliaryData,
     diagnostics: &crate::diagnostic::DiagnosticSink,
