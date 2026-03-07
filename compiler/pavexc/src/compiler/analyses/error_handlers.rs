@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use ahash::{HashMap, HashMapExt};
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::user_components::{ScopeId, UserComponentId};
@@ -99,37 +99,32 @@ pub enum ErrorHandlerEntry {
     Invalid,
 }
 
-/// The set of constructibles that have been registered in a given scope.
-///
-/// Be careful! This is not the set of all types that can be constructed in the given scope!
-/// That's a much larger set, because it includes all types that can be constructed in this
-/// scope as well as any of its parent scopes.
+/// The set of error handlers that have been registered in a given scope.
 struct ErrorHandlersInScope {
-    /// Map each supported error type to the dedicated error handler.
-    type2handler: HashMap<Type, ErrorHandlerEntry>,
-    /// Every time we encounter an error type that contains an unassigned generic type
-    /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
+    /// Map each concrete (non-templated) error type to the dedicated error handler.
+    concrete: HashMap<Type, ErrorHandlerEntry>,
+    /// Map each templated error type (containing unassigned generics) to the dedicated error handler.
     ///
-    /// For example, if you have a `Vec<u8>`, you first look in `type2handler` to see if
+    /// For example, if you have a `Vec<u8>`, you first look in `concrete` to see if
     /// there is an error handler for `Vec<u8>`. If there isn't, you look in
     /// `templated` to see if there is one that can match `Vec<T>`.
     ///
     /// Specialization, in a nutshell!
-    templated: IndexSet<Type>,
+    templated: IndexMap<Type, ErrorHandlerEntry>,
 }
 
 impl ErrorHandlersInScope {
-    /// Create a new, empty set of constructibles.
+    /// Create a new, empty set of error handlers.
     fn new() -> Self {
         Self {
-            type2handler: HashMap::new(),
-            templated: IndexSet::new(),
+            concrete: HashMap::new(),
+            templated: IndexMap::new(),
         }
     }
 
     /// Retrieve the handler for a given error type, if it exists.
     fn get(&self, type_: &Type) -> Option<&ErrorHandlerEntry> {
-        self.type2handler.get(type_)
+        self.concrete.get(type_)
     }
 
     /// Retrieve the handler for a given error type, if it exists.
@@ -140,20 +135,30 @@ impl ErrorHandlersInScope {
         if let Some(handler) = self.get(type_) {
             return Some(handler.to_owned());
         }
-        let (bindings, templated_error_type) =
-            self.templated.iter().find_map(|templated_error_type| {
+        let matched = self
+            .templated
+            .iter()
+            .find_map(|(templated_error_type, entry)| {
                 let bindings = templated_error_type.is_a_template_for(type_)?;
-                Some((bindings, templated_error_type))
-            })?;
-        let (templated_error_handler, component_id) =
-            match self.get(templated_error_type).cloned().unwrap() {
-                ErrorHandlerEntry::Valid {
-                    error_handler,
-                    component_id,
-                } => (error_handler, component_id),
-                ErrorHandlerEntry::Invalid => return Some(ErrorHandlerEntry::Invalid),
-            };
+                Some((bindings, entry.clone()))
+            });
+        let (bindings, entry) = matched?;
+        let (templated_error_handler, component_id) = match entry {
+            ErrorHandlerEntry::Valid {
+                error_handler,
+                component_id,
+            } => (error_handler, component_id),
+            ErrorHandlerEntry::Invalid => return Some(ErrorHandlerEntry::Invalid),
+        };
         let bound_handler = templated_error_handler.bind_generic_type_parameters(&bindings);
+        if type_.is_a_template() {
+            // The lookup type is itself a template — return the bound handler directly
+            // without caching (the result is still templated).
+            return Some(ErrorHandlerEntry::Valid {
+                error_handler: bound_handler,
+                component_id,
+            });
+        }
         self.insert(bound_handler, component_id);
         let bound = self.get(type_);
         assert!(
@@ -177,16 +182,15 @@ impl ErrorHandlersInScope {
             unreachable!()
         };
         let error_type = *inner.to_owned();
+        let entry = ErrorHandlerEntry::Valid {
+            error_handler,
+            component_id,
+        };
         if error_type.is_a_template() {
-            self.templated.insert(error_type.clone());
+            self.templated.insert(error_type, entry);
+        } else {
+            self.concrete.insert(error_type, entry);
         }
-        self.type2handler.insert(
-            error_type,
-            ErrorHandlerEntry::Valid {
-                error_handler,
-                component_id,
-            },
-        );
     }
 
     /// Record that an error handler was registered for the given type, even
@@ -197,18 +201,21 @@ impl ErrorHandlersInScope {
         };
         let error_type = *inner.to_owned();
         if error_type.is_a_template() {
-            self.templated.insert(error_type.clone());
+            self.templated.insert(error_type, ErrorHandlerEntry::Invalid);
+        } else {
+            self.concrete.insert(error_type, ErrorHandlerEntry::Invalid);
         }
-        self.type2handler
-            .insert(error_type, ErrorHandlerEntry::Invalid);
     }
 }
 
 impl std::fmt::Debug for ErrorHandlersInScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error handlers:")?;
-        for (type_, entry) in &self.type2handler {
+        for (type_, entry) in &self.concrete {
             writeln!(f, "- {} -> {:?}", type_.display_for_error(), entry)?;
+        }
+        for (type_, entry) in &self.templated {
+            writeln!(f, "- {} [templated] -> {:?}", type_.display_for_error(), entry)?;
         }
         Ok(())
     }
