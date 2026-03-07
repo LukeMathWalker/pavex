@@ -956,13 +956,15 @@ impl ConstructiblesInScope {
     /// Retrieve the constructor for a given type, if it exists.
     /// Only searches concrete (non-templated) types.
     fn get(&self, type_: &Type) -> Option<(ComponentId, ConsumptionMode)> {
-        if let Some(constructor_id) = self.concrete.get(type_).copied() {
+        let normalized = type_.canonicalize_lifetimes();
+        if let Some(constructor_id) = self.concrete.get(&normalized).copied() {
             return Some((constructor_id, ConsumptionMode::Move));
         }
 
         match type_ {
             Type::Reference(ref_) if !ref_.lifetime.is_static() => {
-                if let Some(constructor_id) = self.concrete.get(&ref_.inner).copied() {
+                let normalized_inner = ref_.inner.canonicalize_lifetimes();
+                if let Some(constructor_id) = self.concrete.get(&normalized_inner).copied() {
                     return Some((
                         constructor_id,
                         if ref_.is_mutable {
@@ -1067,7 +1069,8 @@ impl ConstructiblesInScope {
         if output.is_a_template() {
             self.templated.insert(output, component_id);
         } else {
-            self.concrete.insert(output, component_id);
+            self.concrete
+                .insert(output.canonicalize_lifetimes(), component_id);
         }
     }
 
@@ -1095,8 +1098,10 @@ impl ConstructiblesInScope {
         for derived_component_id in derived_component_ids {
             let component = component_db.hydrated_component(derived_component_id, computation_db);
             if let HydratedComponent::Constructor(c) = component {
-                self.concrete
-                    .insert(c.output_type().clone(), derived_component_id);
+                self.concrete.insert(
+                    c.output_type().canonicalize_lifetimes(),
+                    derived_component_id,
+                );
             }
         }
     }

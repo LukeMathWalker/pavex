@@ -16,7 +16,7 @@ pub struct TypeReference {
 impl Debug for TypeReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "&")?;
-        if self.lifetime != Lifetime::Elided {
+        if !self.lifetime.is_elided() {
             write!(f, "{:?} ", self.lifetime)?;
         }
 

@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Display, Formatter};
-use std::hash::{Hash, Hasher};
 
 use crate::named_lifetime::NamedLifetime;
 use crate::Type;
@@ -14,7 +13,7 @@ pub enum GenericArgument {
 }
 
 /// A lifetime used as a generic argument—e.g. `'a` in `Cow<'a, str>`.
-#[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Clone)]
 pub enum GenericLifetimeParameter {
     /// A named (non-static) lifetime, e.g. `'a`.
     Named(NamedLifetime),
@@ -47,31 +46,6 @@ impl Display for GenericLifetimeParameter {
             GenericLifetimeParameter::Named(l) => write!(f, "'{l}"),
             GenericLifetimeParameter::Static => write!(f, "'static"),
             GenericLifetimeParameter::Inferred => write!(f, "'_"),
-        }
-    }
-}
-
-impl PartialEq for GenericLifetimeParameter {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (GenericLifetimeParameter::Static, GenericLifetimeParameter::Static) => true,
-            (GenericLifetimeParameter::Static, _) => false,
-            // We don't care about the name of the lifetime, only that it is not static.
-            _ => true,
-        }
-    }
-}
-
-impl Hash for GenericLifetimeParameter {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            GenericLifetimeParameter::Static => {
-                state.write_u8(0);
-            }
-            GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
-                // We don't care about the name of the lifetime, only that it is not static.
-                state.write_u8(1);
-            }
         }
     }
 }

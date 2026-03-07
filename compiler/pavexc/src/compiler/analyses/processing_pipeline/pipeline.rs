@@ -591,7 +591,7 @@ impl RequestHandlerPipeline {
 
                 let indexes: BTreeSet<_> =
                     consumers.into_iter().map(|v| v.middleware_index).collect();
-                type2cloning_indexes.insert(ty_, indexes);
+                type2cloning_indexes.insert(ty_.canonicalize_lifetimes(), indexes);
             }
             stage.type2cloning_indexes = type2cloning_indexes;
         }
@@ -1012,7 +1012,11 @@ impl Bindings {
     ///
     /// In the last case, the binding is automatically marked as mutable.
     pub(crate) fn get_expr_for_type(&mut self, type_: &Type) -> Option<syn::Expr> {
-        let binding = self.0.iter().find(|binding| binding.type_ == *type_);
+        let canonical_type = type_.canonicalize_lifetimes();
+        let binding = self
+            .0
+            .iter()
+            .find(|binding| binding.type_.canonicalize_lifetimes() == canonical_type);
         if let Some(binding) = binding {
             let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
             let block = quote! { #ident };
@@ -1025,10 +1029,11 @@ impl Bindings {
             return None;
         };
 
+        let canonical_inner = ref_.inner.canonicalize_lifetimes();
         if let Some(binding) = self
             .0
             .iter_mut()
-            .find(|binding| ref_.inner.as_ref() == &binding.type_)
+            .find(|binding| binding.type_.canonicalize_lifetimes() == canonical_inner)
         {
             let mut_ = if ref_.is_mutable {
                 binding.mutable = true;
@@ -1049,7 +1054,11 @@ impl Bindings {
                 lifetime: ref_.lifetime.clone(),
                 inner: Box::new(ref_.inner.as_ref().clone()),
             });
-            let binding = self.0.iter().find(|binding| binding.type_ == new_ref);
+            let canonical_new_ref = new_ref.canonicalize_lifetimes();
+            let binding = self
+                .0
+                .iter()
+                .find(|binding| binding.type_.canonicalize_lifetimes() == canonical_new_ref);
             if let Some(binding) = binding {
                 let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
                 let block = quote! { #ident };
@@ -1062,7 +1071,10 @@ impl Bindings {
 
     /// Return the first binding with a given type.
     pub(crate) fn find_exact_by_type(&self, type_: &Type) -> Option<&Binding> {
-        self.0.iter().find(|binding| binding.type_ == *type_)
+        let canonical = type_.canonicalize_lifetimes();
+        self.0
+            .iter()
+            .find(|binding| binding.type_.canonicalize_lifetimes() == canonical)
     }
 }
 

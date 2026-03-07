@@ -1,10 +1,9 @@
 use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
 
 use crate::GenericLifetimeParameter;
 use crate::named_lifetime::NamedLifetime;
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Clone)]
 pub enum Lifetime {
     /// The `'static` lifetime.
     Static,
@@ -17,32 +16,6 @@ pub enum Lifetime {
     ///
     /// E.g. `&str`.
     Elided,
-}
-
-impl PartialEq for Lifetime {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Lifetime::Static, Lifetime::Static) => true,
-            (Lifetime::Static, _) => false,
-            (_, Lifetime::Static) => false,
-            // We don't care about the name of the lifetime, only that it is not static.
-            _ => true,
-        }
-    }
-}
-
-impl Hash for Lifetime {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Lifetime::Static => {
-                state.write_u8(0);
-            }
-            Lifetime::Named(_) | Lifetime::Elided | Lifetime::Inferred => {
-                // We don't care about the name of the lifetime, only that it is not static.
-                state.write_u8(1);
-            }
-        }
-    }
 }
 
 impl From<GenericLifetimeParameter> for Lifetime {
