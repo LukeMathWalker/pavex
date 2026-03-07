@@ -343,7 +343,7 @@ impl ConstructibleDb {
     ) {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
-            for (type_, component_id) in constructibles.type2constructor_id.iter() {
+            for (type_, component_id) in constructibles.concrete.iter().chain(constructibles.templated.iter()) {
                 if component_db.lifecycle(*component_id) != Lifecycle::Singleton {
                     continue;
                 }
@@ -932,38 +932,37 @@ impl ConstructibleDb {
 /// That's a much larger set, because it includes all types that can be constructed in this
 /// scope as well as any of its parent scopes.
 struct ConstructiblesInScope {
-    type2constructor_id: HashMap<Type, ComponentId>,
-    /// Every time we encounter a constructible type that contains an unassigned generic type
-    /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
+    /// Map each concrete (non-templated) output type to its constructor.
+    concrete: HashMap<Type, ComponentId>,
+    /// Map each templated output type (containing unassigned generics) to its constructor.
     ///
-    /// This enables us to quickly determine if there might be a constructor for a given concrete
-    /// type.
-    /// For example, if you have a `Vec<u8>`, you first look in `type2constructor_id` to see if
+    /// For example, if you have a `Vec<u8>`, you first look in `concrete` to see if
     /// there is a constructor that returns `Vec<u8>`. If there isn't, you look in
-    /// `generic_base_types` to see if there is a constructor that returns `Vec<T>`.
+    /// `templated` to see if there is a constructor that returns `Vec<T>`.
     ///
     /// Specialization, in a nutshell!
-    templated_constructors: IndexSet<Type>,
+    templated: IndexMap<Type, ComponentId>,
 }
 
 impl ConstructiblesInScope {
     /// Create a new, empty set of constructibles.
     fn new() -> Self {
         Self {
-            type2constructor_id: HashMap::new(),
-            templated_constructors: IndexSet::new(),
+            concrete: HashMap::new(),
+            templated: IndexMap::new(),
         }
     }
 
     /// Retrieve the constructor for a given type, if it exists.
+    /// Only searches concrete (non-templated) types.
     fn get(&self, type_: &Type) -> Option<(ComponentId, ConsumptionMode)> {
-        if let Some(constructor_id) = self.type2constructor_id.get(type_).copied() {
+        if let Some(constructor_id) = self.concrete.get(type_).copied() {
             return Some((constructor_id, ConsumptionMode::Move));
         }
 
         match type_ {
             Type::Reference(ref_) if !ref_.lifetime.is_static() => {
-                if let Some(constructor_id) = self.type2constructor_id.get(&ref_.inner).copied() {
+                if let Some(constructor_id) = self.concrete.get(&ref_.inner).copied() {
                     return Some((
                         constructor_id,
                         if ref_.is_mutable {
@@ -994,31 +993,39 @@ impl ConstructiblesInScope {
         if let Some(output) = self.get(type_) {
             return Some(output);
         }
-        for templated_constructible_type in &self.templated_constructors {
-            if let Some(bindings) = templated_constructible_type.is_a_template_for(type_) {
-                let template = templated_constructible_type.clone();
-                let (templated_component_id, _) = self.get(&template).unwrap();
-                self.bind_and_register_constructor(
-                    templated_component_id,
-                    component_db,
-                    computation_db,
-                    framework_item_db,
-                    &bindings,
-                );
-                let bound = self.get(type_);
-                assert!(
-                    bound.is_some(),
-                    "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
-                    template.display_for_error(),
-                    type_.display_for_error(),
-                    bindings
-                        .into_iter()
-                        .map(|(k, v)| format!("- {k} -> {}", v.display_for_error()))
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                );
-                return bound;
+        let matched = self
+            .templated
+            .iter()
+            .find_map(|(templated_type, &component_id)| {
+                let bindings = templated_type.is_a_template_for(type_)?;
+                Some((bindings, templated_type.clone(), component_id))
+            });
+        if let Some((bindings, template, templated_component_id)) = matched {
+            if type_.is_a_template() {
+                // The lookup type is itself a template — return the matched component
+                // directly without caching (the result is still templated).
+                return Some((templated_component_id, ConsumptionMode::Move));
             }
+            self.bind_and_register_constructor(
+                templated_component_id,
+                component_db,
+                computation_db,
+                framework_item_db,
+                &bindings,
+            );
+            let bound = self.get(type_);
+            assert!(
+                bound.is_some(),
+                "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
+                template.display_for_error(),
+                type_.display_for_error(),
+                bindings
+                    .into_iter()
+                    .map(|(k, v)| format!("- {k} -> {}", v.display_for_error()))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
+            return bound;
         }
 
         match type_ {
@@ -1058,9 +1065,10 @@ impl ConstructiblesInScope {
     /// Register a type and its constructor.
     fn insert(&mut self, output: Type, component_id: ComponentId) {
         if output.is_a_template() {
-            self.templated_constructors.insert(output.clone());
+            self.templated.insert(output, component_id);
+        } else {
+            self.concrete.insert(output, component_id);
         }
-        self.type2constructor_id.insert(output, component_id);
     }
 
     /// Specialize a templated constructor to a concrete type.
@@ -1087,7 +1095,7 @@ impl ConstructiblesInScope {
         for derived_component_id in derived_component_ids {
             let component = component_db.hydrated_component(derived_component_id, computation_db);
             if let HydratedComponent::Constructor(c) = component {
-                self.type2constructor_id
+                self.concrete
                     .insert(c.output_type().clone(), derived_component_id);
             }
         }
@@ -1097,8 +1105,11 @@ impl ConstructiblesInScope {
 impl std::fmt::Debug for ConstructiblesInScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Constructibles:")?;
-        for (type_, component_id) in &self.type2constructor_id {
+        for (type_, component_id) in &self.concrete {
             writeln!(f, "- {} -> {:?}", type_.display_for_error(), component_id)?;
+        }
+        for (type_, component_id) in &self.templated {
+            writeln!(f, "- {} [templated] -> {:?}", type_.display_for_error(), component_id)?;
         }
         Ok(())
     }

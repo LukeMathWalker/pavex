@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
 
 use guppy::PackageId;
 
@@ -8,7 +7,7 @@ use crate::render::{deserialize_package_id, serialize_package_id};
 use crate::{GenericArgument, Type};
 
 /// A named type identified by its fully-qualified path—e.g. `std::vec::Vec<u32>`.
-#[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct PathType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
@@ -60,12 +59,25 @@ impl PathType {
         {
             use GenericArgument::*;
             match (concrete_arg, templated_arg) {
-                (TypeParameter(Type::Generic(unassigned)), _) => {
-                    // You are not allowed to specialize a type with an unassigned type parameter.
-                    unreachable!(
-                        "Unassigned type parameter (`{:?}`) in the 'concrete' type (`{:?}`) when checking for specialization",
-                        unassigned, concrete_type
-                    );
+                // Both sides are generic — bind the template's generic to the concrete's generic.
+                (TypeParameter(Type::Generic(concrete_generic)), TypeParameter(Type::Generic(template_generic))) => {
+                    let concrete_type = Type::Generic(concrete_generic.clone());
+                    let previous = bindings.insert(template_generic.name.clone(), concrete_type.clone());
+                    if let Some(previous) = previous
+                        && previous != concrete_type
+                    {
+                        tracing::trace!(
+                            "Type parameter `{:?}` was already assigned to `{:?}` but is now being assigned to `{:?}`",
+                            template_generic,
+                            previous,
+                            concrete_type
+                        );
+                        return false;
+                    }
+                }
+                // Concrete side has a generic but template side doesn't — can't specialize.
+                (TypeParameter(Type::Generic(_)), _) => {
+                    return false;
                 }
                 (TypeParameter(assigned), TypeParameter(Type::Generic(unassigned))) => {
                     // The unassigned type parameter can be assigned to the concrete type
@@ -144,49 +156,6 @@ impl PathType {
             }
         }
         true
-    }
-}
-
-impl PartialEq for PathType {
-    fn eq(&self, other: &Self) -> bool {
-        self._is_equivalent_to(
-            other,
-            &mut UnassignedIdGenerator::new(),
-            &mut UnassignedIdGenerator::new(),
-        )
-    }
-}
-
-impl Hash for PathType {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let Self {
-            package_id,
-            rustdoc_id,
-            base_type,
-            generic_arguments,
-        } = self;
-        package_id.hash(state);
-        rustdoc_id.hash(state);
-        base_type.hash(state);
-        let mut id_gen = UnassignedIdGenerator::new();
-        for generic_argument in generic_arguments {
-            match generic_argument {
-                GenericArgument::Lifetime(lifetime) => {
-                    state.write_u8(0);
-                    lifetime.hash(state);
-                }
-                GenericArgument::TypeParameter(Type::Generic(
-                    unassigned_type_parameter,
-                )) => {
-                    state.write_u8(1);
-                    id_gen.id(&unassigned_type_parameter.name).hash(state);
-                }
-                _ => {
-                    state.write_u8(1);
-                    generic_argument.hash(state);
-                }
-            }
-        }
     }
 }
 
