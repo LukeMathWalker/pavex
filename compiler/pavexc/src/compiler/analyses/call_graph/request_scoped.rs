@@ -16,7 +16,8 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
 use crate::language::{
-    Callable, CallableInput, FQPath, FQPathSegment, InvocationStyle, ParameterName, Type,
+    Callable, CallableInput, CallablePath, EnumVariantConstructorPath, InvocationStyle,
+    ParameterName, Type,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -187,25 +188,28 @@ fn augment_preprocessing_graph(
         else {
             unreachable!()
         };
-        let early_return_segments = processing_path
+        let crate_name = processing_path.base_type.first().cloned().unwrap_or_default();
+        // module_path = everything between crate name and the enum name.
+        let module_path: Vec<String> = processing_path.base_type
+            [1..processing_path.base_type.len().saturating_sub(1)]
+            .to_vec();
+        let enum_name = processing_path
             .base_type
-            .iter()
+            .last()
             .cloned()
-            .chain(std::iter::once("EarlyReturn".to_string()))
-            .map(|s| FQPathSegment {
-                ident: s,
-                generic_arguments: vec![],
-            })
-            .collect();
+            .unwrap_or_default();
         let wrapper = Callable {
             is_async: false,
             takes_self_as_ref: false,
             output: Some(component_db.pavex_processing.clone()),
-            path: FQPath {
-                segments: early_return_segments,
-                qualified_self: None,
+            path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
                 package_id: processing_path.package_id.clone(),
-            },
+                crate_name,
+                module_path,
+                enum_name,
+                enum_generics: vec![],
+                variant_name: "EarlyReturn".into(),
+            }),
             inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: output_type.to_owned() }],
             invocation_style: InvocationStyle::FunctionCall,
             source_coordinates: None,

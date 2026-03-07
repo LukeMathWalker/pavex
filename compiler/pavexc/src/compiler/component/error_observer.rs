@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
-use crate::language::{Callable, FQPath, Type};
+use crate::language::{Callable, CallablePath, Type};
 
 /// A computation applied to an unhandled error that has been converted into Pavex's "common"
 /// error type.
@@ -82,15 +82,15 @@ impl AsRef<Callable> for ErrorObserver<'_> {
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorObserverValidationError {
     MustReturnUnitType {
-        observer_path: FQPath,
+        observer_path: CallablePath,
         output_type: Type,
     },
     DoesNotTakeErrorReferenceAsInput {
-        observer_path: FQPath,
+        observer_path: CallablePath,
         error_type: Type,
     },
     UnassignedGenericParameters {
-        observer_path: FQPath,
+        observer_path: CallablePath,
         parameters: IndexSet<String>,
     },
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),

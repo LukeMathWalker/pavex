@@ -23,8 +23,8 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, CallableInput, FQPath, FQPathSegment, GenericArgument, InvocationStyle,
-    ParameterName, PathType, PathTypeExt, Type,
+    Callable, CallableInput, CallablePath, EnumVariantConstructorPath, GenericArgument,
+    InvocationStyle, ParameterName, PathType, Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -148,23 +148,18 @@ pub(crate) fn application_state_call_graph(
         };
         // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.
         let ok_wrapper = {
-            let ok_wrapper_path = {
-                let mut v = application_state_result.resolved_path().segments;
-                v.push(FQPathSegment {
-                    ident: "Ok".into(),
-                    generic_arguments: vec![],
-                });
-                v
-            };
             Callable {
                 is_async: false,
                 takes_self_as_ref: false,
                 output: Some(application_state_result.clone().into()),
-                path: FQPath {
-                    segments: ok_wrapper_path,
-                    qualified_self: None,
+                path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
-                },
+                    crate_name: "core".into(),
+                    module_path: vec!["result".into()],
+                    enum_name: "Result".into(),
+                    enum_generics: vec![],
+                    variant_name: "Ok".into(),
+                }),
                 inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: application_state.type_().into() }],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
@@ -175,23 +170,18 @@ pub(crate) fn application_state_call_graph(
             }
         };
         let err_wrapper = {
-            let err_wrapper_path = {
-                let mut v = application_state_result.resolved_path().segments;
-                v.push(FQPathSegment {
-                    ident: "Err".into(),
-                    generic_arguments: vec![],
-                });
-                v
-            };
             Callable {
                 is_async: false,
                 takes_self_as_ref: false,
                 output: Some(application_state_result.into()),
-                path: FQPath {
-                    segments: err_wrapper_path,
-                    qualified_self: None,
+                path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
-                },
+                    crate_name: "core".into(),
+                    module_path: vec!["result".into()],
+                    enum_name: "Result".into(),
+                    enum_generics: vec![],
+                    variant_name: "Err".into(),
+                }),
                 inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_enum.clone().into() }],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
@@ -235,22 +225,33 @@ pub(crate) fn application_state_call_graph(
                         unreachable!()
                     }
                 };
-                let error_type_name = {
-                    let n_path_segments = fallible_callable.path.segments.len();
-                    let last_segment = &fallible_callable.path.segments[n_path_segments - 1]
-                        .ident
-                        .to_case(Case::Pascal);
-                    if n_path_segments >= 3 {
-                        let second_to_last_segment =
-                            &fallible_callable.path.segments[n_path_segments - 2].ident;
-                        if second_to_last_segment.is_case(Case::Pascal) {
-                            // This is likely to be a method on a struct/enum.
-                            format!("{second_to_last_segment}{last_segment}")
-                        } else {
-                            last_segment.to_owned()
-                        }
-                    } else {
-                        last_segment.to_owned()
+                let error_type_name = match &fallible_callable.path {
+                    CallablePath::InherentMethod(p) => {
+                        format!(
+                            "{}{}",
+                            p.type_name,
+                            p.method_name.to_case(Case::Pascal)
+                        )
+                    }
+                    CallablePath::TraitMethod(p) => {
+                        format!(
+                            "{}{}",
+                            p.trait_name,
+                            p.method_name.to_case(Case::Pascal)
+                        )
+                    }
+                    CallablePath::FreeFunction(p) => {
+                        p.function_name.to_case(Case::Pascal)
+                    }
+                    CallablePath::StructLiteral(p) => {
+                        p.type_name.to_case(Case::Pascal)
+                    }
+                    CallablePath::EnumVariantConstructor(p) => {
+                        format!(
+                            "{}{}",
+                            p.enum_name,
+                            p.variant_name.to_case(Case::Pascal)
+                        )
                     }
                 };
                 let n_duplicates = collision_map.entry(error_type_name.clone()).or_insert(1);
@@ -264,24 +265,14 @@ pub(crate) fn application_state_call_graph(
                 let error_variant_constructor = Callable {
                     is_async: false,
                     takes_self_as_ref: false,
-                    path: FQPath {
-                        segments: vec![
-                            FQPathSegment {
-                                ident: "crate".into(),
-                                generic_arguments: vec![],
-                            },
-                            FQPathSegment {
-                                ident: "ApplicationStateError".into(),
-                                generic_arguments: vec![],
-                            },
-                            FQPathSegment {
-                                ident: error_type_name.to_owned(),
-                                generic_arguments: vec![],
-                            },
-                        ],
-                        qualified_self: None,
+                    path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
                         package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
-                    },
+                        crate_name: "crate".into(),
+                        module_path: vec![],
+                        enum_name: "ApplicationStateError".into(),
+                        enum_generics: vec![],
+                        variant_name: error_type_name.to_owned(),
+                    }),
                     output: Some(error_enum.clone().into()),
                     inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_type.to_owned() }],
                     invocation_style: InvocationStyle::FunctionCall,

@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
-    Callable, CallableInput, FQPath, FQPathSegment, FQQualifiedSelf, InvocationStyle, Lifetime,
-    ParameterName, PathType, PathTypeExt, Type, TypeReference,
+    Callable, CallableInput, CallablePath, InvocationStyle, Lifetime, ParameterName, PathType,
+    TraitMethodPath, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -52,29 +52,28 @@ pub(super) fn get_clone_component_id(
         return None;
     }
 
-    let clone_path = clone.resolved_path();
-    let clone_segments = {
-        let mut c = clone_path.segments.clone();
-        c.push(FQPathSegment {
-            ident: "clone".into(),
-            generic_arguments: vec![],
-        });
-        c
-    };
-    let type_clone_path = FQPath {
-        segments: clone_segments,
-        qualified_self: Some(FQQualifiedSelf {
-            position: clone_path.segments.len(),
-            type_: output.clone().into(),
-        }),
-        package_id: clone_path.package_id,
+    let crate_name = clone.base_type.first().cloned().unwrap_or_default();
+    let trait_name = clone.base_type.last().cloned().unwrap_or_default();
+    let module_path = if clone.base_type.len() > 2 {
+        clone.base_type[1..clone.base_type.len() - 1].to_vec()
+    } else {
+        vec![]
     };
 
     let clone_callable = Callable {
         is_async: false,
         takes_self_as_ref: true,
         output: Some(output.clone()),
-        path: type_clone_path,
+        path: CallablePath::TraitMethod(TraitMethodPath {
+            package_id: clone.package_id.clone(),
+            crate_name,
+            module_path,
+            trait_name,
+            trait_generics: vec![],
+            self_type: output.clone().into(),
+            method_name: "clone".into(),
+            method_generics: vec![],
+        }),
         inputs: vec![CallableInput {
             name: ParameterName::new("_0".into()),
             type_: Type::Reference(TypeReference {

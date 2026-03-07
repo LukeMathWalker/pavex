@@ -31,9 +31,10 @@ use crate::{
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
-        Callable, CallableInput, FQGenericArgument, FQPath, FQPathSegment, FQQualifiedSelf,
-        Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, ParameterName,
-        PathType, ResolvedPathLifetime, Type,
+        Callable, CallableInput, CallablePath, FQGenericArgument, FQPath, FQPathSegment,
+        FQQualifiedSelf, FreeFunctionPath, Generic, GenericArgument, GenericLifetimeParameter,
+        InherentMethodPath, InvocationStyle, ParameterName, PathType, ResolvedPathLifetime,
+        TraitMethodPath, Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
@@ -702,12 +703,13 @@ fn rustdoc_free_fn2callable(
         _ => None,
     });
 
+    let callable_path = fq_path_to_free_function(&path);
     Ok(Callable {
         is_async: inner.header.is_async,
         // It's a free function, there's no `self`.
         takes_self_as_ref: false,
         output,
-        path,
+        path: callable_path,
         inputs,
         invocation_style: InvocationStyle::FunctionCall,
         source_coordinates: Some(GlobalItemId {
@@ -927,11 +929,12 @@ fn rustdoc_method2callable(
         _ => None,
     });
 
+    let callable_path = fq_path_to_method_callable_path(&method_path);
     Ok(Callable {
         is_async: inner.header.is_async,
         takes_self_as_ref,
         output,
-        path: method_path,
+        path: callable_path,
         inputs,
         invocation_style: InvocationStyle::FunctionCall,
         source_coordinates: Some(GlobalItemId {
@@ -943,4 +946,65 @@ fn rustdoc_method2callable(
         is_c_variadic: inner.sig.is_c_variadic,
         symbol_name,
     })
+}
+
+/// Convert an `FQPath` for a free function into a `CallablePath::FreeFunction`.
+fn fq_path_to_free_function(path: &FQPath) -> CallablePath {
+    let n = path.segments.len();
+    let last = &path.segments[n - 1];
+    let crate_name = path.segments[0].ident.clone();
+    let module_path = path.segments[1..n - 1]
+        .iter()
+        .map(|s| s.ident.clone())
+        .collect();
+    CallablePath::FreeFunction(FreeFunctionPath {
+        package_id: path.package_id.clone(),
+        crate_name,
+        module_path,
+        function_name: last.ident.clone(),
+        function_generics: last.generic_arguments.clone(),
+    })
+}
+
+/// Convert an `FQPath` for a method (inherent or trait) into a `CallablePath`.
+fn fq_path_to_method_callable_path(path: &FQPath) -> CallablePath {
+    let n = path.segments.len();
+    let crate_name = path.segments[0].ident.clone();
+
+    if let Some(qself) = &path.qualified_self {
+        // Trait method
+        let method_segment = &path.segments[n - 1];
+        let trait_segment = &path.segments[n - 2];
+        let module_path = path.segments[1..n - 2]
+            .iter()
+            .map(|s| s.ident.clone())
+            .collect();
+        CallablePath::TraitMethod(TraitMethodPath {
+            package_id: path.package_id.clone(),
+            crate_name,
+            module_path,
+            trait_name: trait_segment.ident.clone(),
+            trait_generics: trait_segment.generic_arguments.clone(),
+            self_type: qself.type_.clone(),
+            method_name: method_segment.ident.clone(),
+            method_generics: method_segment.generic_arguments.clone(),
+        })
+    } else {
+        // Inherent method
+        let method_segment = &path.segments[n - 1];
+        let type_segment = &path.segments[n - 2];
+        let module_path = path.segments[1..n - 2]
+            .iter()
+            .map(|s| s.ident.clone())
+            .collect();
+        CallablePath::InherentMethod(InherentMethodPath {
+            package_id: path.package_id.clone(),
+            crate_name,
+            module_path,
+            type_name: type_segment.ident.clone(),
+            type_generics: type_segment.generic_arguments.clone(),
+            method_name: method_segment.ident.clone(),
+            method_generics: method_segment.generic_arguments.clone(),
+        })
+    }
 }

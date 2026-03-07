@@ -20,7 +20,8 @@ use super::{
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
     language::{
-        Callable, CallableInput, GenericArgument, InvocationStyle, ParameterName, PathTypeExt, Type,
+        Callable, CallableInput, GenericArgument, InvocationStyle, ParameterName, PathTypeExt,
+        Type,
     },
     rustdoc::CrateCollection,
 };
@@ -190,7 +191,7 @@ impl ApplicationState {
         Callable {
             is_async: false,
             takes_self_as_ref: false,
-            path: ty_.resolved_path(),
+            path: ty_.callable_struct_literal_path(),
             output: Some(ty_.into()),
             inputs: {
                 // Ensure that the inputs are sorted by name.

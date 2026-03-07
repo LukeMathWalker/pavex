@@ -6,7 +6,7 @@ use ahash::HashMap;
 use indexmap::IndexSet;
 use itertools::Itertools;
 
-use crate::language::{Callable, FQPath, Lifetime, Type};
+use crate::language::{Callable, CallablePath, Lifetime, Type};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.
@@ -157,8 +157,8 @@ impl AsRef<Callable> for ErrorHandler {
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorHandlerValidationError {
-    CannotReturnTheUnitType(FQPath),
-    CannotBeFallible(FQPath),
+    CannotReturnTheUnitType(CallablePath),
+    CannotBeFallible(CallablePath),
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,

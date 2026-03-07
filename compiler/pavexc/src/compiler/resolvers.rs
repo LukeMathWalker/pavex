@@ -11,10 +11,11 @@ use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type
 use tracing_log_error::log_error;
 
 use crate::language::{
-    Array, Callable, CallableInput, CallableItem, FQGenericArgument, FQPath, FQPathSegment,
-    FQPathType, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, ParameterName,
-    PathType, RawPointer, Type, Slice, Tuple, TypeReference, UnknownPath, UnknownPrimitive,
-    find_rustdoc_callable_items, find_rustdoc_item_type, resolve_fq_path_type,
+    Array, Callable, CallableInput, CallableItem, CallablePath, FQGenericArgument, FQPath,
+    FQPathSegment, FQPathType, FreeFunctionPath, Generic, GenericArgument,
+    GenericLifetimeParameter, InherentMethodPath, InvocationStyle, ParameterName, PathType,
+    RawPointer, Slice, TraitMethodPath, Tuple, Type, TypeReference, UnknownPath,
+    UnknownPrimitive, find_rustdoc_callable_items, find_rustdoc_item_type, resolve_fq_path_type,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -907,11 +908,13 @@ pub(crate) fn resolve_callable(
         _ => None,
     });
 
+    let callable_fq_path = fq_path_to_callable_path(&canonical_path, &callable_items);
+
     let callable = Callable {
         is_async: header.is_async,
         takes_self_as_ref,
         output: output_type_path,
-        path: canonical_path,
+        path: callable_fq_path,
         inputs: resolved_parameter_types,
         invocation_style,
         source_coordinates: Some(callable_item.item_id.clone()),
@@ -921,6 +924,93 @@ pub(crate) fn resolve_callable(
         symbol_name,
     };
     Ok(callable)
+}
+
+/// Convert a canonical `FQPath` and the resolved `CallableItem` into a structured `CallablePath`.
+fn fq_path_to_callable_path(canonical_path: &FQPath, callable_items: &CallableItem) -> CallablePath {
+    let crate_name = canonical_path.crate_name().to_owned();
+    let package_id = canonical_path.package_id.clone();
+
+    match callable_items {
+        CallableItem::Function(..) => {
+            // Segments: [crate, mod1, ..., modN, function_name]
+            // Last segment is the function, everything in between is modules.
+            let n = canonical_path.segments.len();
+            let last = &canonical_path.segments[n - 1];
+            let module_path = canonical_path.segments[1..n - 1]
+                .iter()
+                .map(|s| s.ident.clone())
+                .collect();
+            CallablePath::FreeFunction(FreeFunctionPath {
+                package_id,
+                crate_name,
+                module_path,
+                function_name: last.ident.clone(),
+                function_generics: last.generic_arguments.clone(),
+            })
+        }
+        CallableItem::Method {
+            qualified_self: Some(_),
+            method_owner,
+            ..
+        } => {
+            // Trait method: segments = [crate, mod1, ..., TraitName, method_name]
+            // qualified_self is populated → TraitMethod
+            let n = canonical_path.segments.len();
+            let method_segment = &canonical_path.segments[n - 1];
+            let trait_segment = &canonical_path.segments[n - 2];
+            let module_path = canonical_path.segments[1..n - 2]
+                .iter()
+                .map(|s| s.ident.clone())
+                .collect();
+            let self_type = canonical_path
+                .qualified_self
+                .as_ref()
+                .map(|q| q.type_.clone())
+                .unwrap_or_else(|| {
+                    // Fall back: build from the method_owner path if qualified_self
+                    // wasn't propagated to canonical_path (shouldn't happen, but be defensive).
+                    FQPathType::from(
+                        Type::Path(PathType {
+                            package_id: method_owner.0.item_id.package_id.clone(),
+                            rustdoc_id: None,
+                            base_type: method_owner.1.segments.iter().map(|s| s.ident.clone()).collect(),
+                            generic_arguments: vec![],
+                        })
+                    )
+                });
+            CallablePath::TraitMethod(TraitMethodPath {
+                package_id,
+                crate_name,
+                module_path,
+                trait_name: trait_segment.ident.clone(),
+                trait_generics: trait_segment.generic_arguments.clone(),
+                self_type,
+                method_name: method_segment.ident.clone(),
+                method_generics: method_segment.generic_arguments.clone(),
+            })
+        }
+        CallableItem::Method { .. } => {
+            // Inherent method: segments = [crate, mod1, ..., TypeName, method_name]
+            // No qualified_self → InherentMethod
+            let n = canonical_path.segments.len();
+            let method_segment = &canonical_path.segments[n - 1];
+            let type_segment = &canonical_path.segments[n - 2];
+            let module_path = canonical_path.segments[1..n - 2]
+                .iter()
+                .map(|s| s.ident.clone())
+                .collect();
+            CallablePath::InherentMethod(InherentMethodPath {
+                package_id,
+                crate_name,
+                module_path,
+                type_name: type_segment.ident.clone(),
+                type_generics: type_segment.generic_arguments.clone(),
+                method_name: method_segment.ident.clone(),
+                method_generics: method_segment.generic_arguments.clone(),
+            })
+        }
+    }
 }
 
 fn get_trait_generic_bindings(
