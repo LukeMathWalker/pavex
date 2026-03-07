@@ -769,7 +769,7 @@ pub(crate) fn resolve_callable(
             Err(e) => {
                 return Err(InputParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
-                    callable_path: new_callable_path.to_owned(),
+                    callable_path: new_callable_path.to_string(),
                     callable_item: callable_item.item.clone().into_owned(),
                     source: Arc::new(e.into()),
                     parameter_index,
@@ -792,7 +792,7 @@ pub(crate) fn resolve_callable(
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),
-                        callable_path: new_callable_path.to_owned(),
+                        callable_path: new_callable_path.to_string(),
                         callable_item: callable_item.item.clone().into_owned(),
                         source: Arc::new(e.into()),
                     }
@@ -908,7 +908,8 @@ pub(crate) fn resolve_callable(
         _ => None,
     });
 
-    let callable_fq_path = fq_path_to_callable_path(&canonical_path, &callable_items);
+    let callable_fq_path = fq_path_to_callable_path(&canonical_path, &callable_items, krate_collection)
+        .expect("Failed to convert generic arguments when building CallablePath");
 
     let callable = Callable {
         is_async: header.is_async,
@@ -926,12 +927,41 @@ pub(crate) fn resolve_callable(
     Ok(callable)
 }
 
+/// Convert a single `FQGenericArgument` into a `GenericArgument`.
+fn resolve_fq_generic_arg(
+    arg: &FQGenericArgument,
+    krate_collection: &CrateCollection,
+) -> Result<GenericArgument, anyhow::Error> {
+    match arg {
+        FQGenericArgument::Type(t) => {
+            Ok(GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?))
+        }
+        FQGenericArgument::Lifetime(l) => {
+            Ok(GenericArgument::Lifetime(l.clone().into()))
+        }
+    }
+}
+
+/// Convert a slice of `FQGenericArgument`s into a `Vec<GenericArgument>`.
+fn resolve_fq_generic_args(
+    args: &[FQGenericArgument],
+    krate_collection: &CrateCollection,
+) -> Result<Vec<GenericArgument>, anyhow::Error> {
+    args.iter()
+        .map(|arg| resolve_fq_generic_arg(arg, krate_collection))
+        .collect()
+}
+
 /// Convert a canonical `FQPath` and the resolved `CallableItem` into a structured `CallablePath`.
-fn fq_path_to_callable_path(canonical_path: &FQPath, callable_items: &CallableItem) -> CallablePath {
+fn fq_path_to_callable_path(
+    canonical_path: &FQPath,
+    callable_items: &CallableItem,
+    krate_collection: &CrateCollection,
+) -> Result<CallablePath, anyhow::Error> {
     let crate_name = canonical_path.crate_name().to_owned();
     let package_id = canonical_path.package_id.clone();
 
-    match callable_items {
+    let result = match callable_items {
         CallableItem::Function(..) => {
             // Segments: [crate, mod1, ..., modN, function_name]
             // Last segment is the function, everything in between is modules.
@@ -946,7 +976,7 @@ fn fq_path_to_callable_path(canonical_path: &FQPath, callable_items: &CallableIt
                 crate_name,
                 module_path,
                 function_name: last.ident.clone(),
-                function_generics: last.generic_arguments.clone(),
+                function_generics: resolve_fq_generic_args(&last.generic_arguments, krate_collection)?,
             })
         }
         CallableItem::Method {
@@ -963,7 +993,7 @@ fn fq_path_to_callable_path(canonical_path: &FQPath, callable_items: &CallableIt
                 .iter()
                 .map(|s| s.ident.clone())
                 .collect();
-            let self_type = canonical_path
+            let fq_self_type = canonical_path
                 .qualified_self
                 .as_ref()
                 .map(|q| q.type_.clone())
@@ -979,15 +1009,16 @@ fn fq_path_to_callable_path(canonical_path: &FQPath, callable_items: &CallableIt
                         })
                     )
                 });
+            let self_type = resolve_fq_path_type(&fq_self_type, krate_collection)?;
             CallablePath::TraitMethod(TraitMethodPath {
                 package_id,
                 crate_name,
                 module_path,
                 trait_name: trait_segment.ident.clone(),
-                trait_generics: trait_segment.generic_arguments.clone(),
+                trait_generics: resolve_fq_generic_args(&trait_segment.generic_arguments, krate_collection)?,
                 self_type,
                 method_name: method_segment.ident.clone(),
-                method_generics: method_segment.generic_arguments.clone(),
+                method_generics: resolve_fq_generic_args(&method_segment.generic_arguments, krate_collection)?,
             })
         }
         CallableItem::Method { .. } => {
@@ -1005,12 +1036,13 @@ fn fq_path_to_callable_path(canonical_path: &FQPath, callable_items: &CallableIt
                 crate_name,
                 module_path,
                 type_name: type_segment.ident.clone(),
-                type_generics: type_segment.generic_arguments.clone(),
+                type_generics: resolve_fq_generic_args(&type_segment.generic_arguments, krate_collection)?,
                 method_name: method_segment.ident.clone(),
-                method_generics: method_segment.generic_arguments.clone(),
+                method_generics: resolve_fq_generic_args(&method_segment.generic_arguments, krate_collection)?,
             })
         }
-    }
+    };
+    Ok(result)
 }
 
 fn get_trait_generic_bindings(
@@ -1177,7 +1209,7 @@ pub(crate) struct UnsupportedCallableKind {
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("One of the input parameters for `{callable_path}` has a type that I can't handle.")]
 pub(crate) struct InputParameterResolutionError {
-    pub callable_path: FQPath,
+    pub callable_path: String,
     pub callable_item: rustdoc_types::Item,
     pub parameter_type: RustdocType,
     pub parameter_index: usize,
@@ -1188,7 +1220,7 @@ pub(crate) struct InputParameterResolutionError {
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("I can't handle the `Self` type for `{path}`.")]
 pub(crate) struct SelfResolutionError {
-    pub path: FQPath,
+    pub path: String,
     #[source]
     pub source: Arc<anyhow::Error>,
 }
@@ -1208,7 +1240,7 @@ pub(crate) struct GenericParameterResolutionError {
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("I don't know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
-    pub callable_path: FQPath,
+    pub callable_path: String,
     pub callable_item: rustdoc_types::Item,
     pub output_type: RustdocType,
     #[source]

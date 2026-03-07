@@ -4,13 +4,10 @@ pub(crate) use callable_fq_path::{
     StructLiteralPath, TraitMethodPath,
 };
 pub(crate) use callable_path::{CallPath, InvalidCallPath};
-pub(crate) use fq_path::{
-    FQGenericArgument, FQPath, FQPathSegment, FQPathType, FQQualifiedSelf,
-    ResolvedPathLifetime,
-};
+pub(crate) use fq_path::{FQGenericArgument, FQPath, FQPathSegment, FQPathType, FQQualifiedSelf};
 pub(crate) use fq_path_resolution::{
-    find_rustdoc_callable_items, find_rustdoc_item_type, parse_fq_path, resolve_fq_path_type,
-    CallableItem, PathKind, UnknownPath,
+    CallableItem, PathKind, UnknownPath, find_rustdoc_callable_items, find_rustdoc_item_type,
+    parse_fq_path, resolve_fq_path_type,
 };
 pub use krate_name::{
     CrateNameResolutionError, UnknownCrate, UnknownDependency, dependency_name2package_id,
@@ -19,7 +16,7 @@ pub use krate_name::{
 use pavex_bp_schema::CreatedAt;
 pub(crate) use resolved_type::{
     Array, CanonicalType, Generic, GenericArgument, GenericLifetimeParameter, Lifetime, PathType,
-    PathTypeExt, RawPointer, Type, Slice, Tuple, TypeReference, UnknownPrimitive,
+    PathTypeExt, RawPointer, Slice, Tuple, Type, TypeReference, UnknownPrimitive,
 };
 
 mod callable;

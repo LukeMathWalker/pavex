@@ -31,9 +31,8 @@ use crate::{
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
-        Callable, CallableInput, CallablePath, FQGenericArgument, FQPath, FQPathSegment,
-        FQQualifiedSelf, FreeFunctionPath, Generic, GenericArgument, GenericLifetimeParameter,
-        InherentMethodPath, InvocationStyle, ParameterName, PathType, ResolvedPathLifetime,
+        Callable, CallableInput, CallablePath, FreeFunctionPath, Generic, GenericArgument,
+        GenericLifetimeParameter, InherentMethodPath, InvocationStyle, ParameterName, PathType,
         TraitMethodPath, Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
@@ -374,17 +373,13 @@ fn intern_annotated(
                     aux.config_id2type.insert(config_id, config);
                 }
                 Err(e) => {
-                    let path = FQPath {
-                        segments: krate.import_index.items[&item.id]
-                            .canonical_path()
-                            .iter()
-                            .cloned()
-                            .map(FQPathSegment::new)
-                            .collect(),
-                        qualified_self: None,
-                        package_id: krate.core.package_id.clone(),
-                    };
-                    invalid_config_type(e, &path, config_id, aux, diagnostics)
+                    let path_display = krate.import_index.items[&item.id]
+                        .canonical_path()
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join("::");
+                    invalid_config_type(e, &path_display, config_id, aux, diagnostics)
                 }
             };
 
@@ -423,17 +418,13 @@ fn intern_annotated(
                     prebuilt_type_db.get_or_intern(prebuilt, prebuilt_id);
                 }
                 Err(e) => {
-                    let path = FQPath {
-                        segments: krate.import_index.items[&item.id]
-                            .canonical_path()
-                            .iter()
-                            .cloned()
-                            .map(FQPathSegment::new)
-                            .collect(),
-                        qualified_self: None,
-                        package_id: krate.core.package_id.clone(),
-                    };
-                    invalid_prebuilt_type(e, &path, prebuilt_id, aux, diagnostics)
+                    let path_display = krate.import_index.items[&item.id]
+                        .canonical_path()
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join("::");
+                    invalid_prebuilt_type(e, &path_display, prebuilt_id, aux, diagnostics)
                 }
             };
 
@@ -586,10 +577,7 @@ fn rustdoc_type_alias2type(
 /// # Panics
 ///
 /// Panics if the item isn't of kind enum or struct.
-fn rustdoc_new_type_def2type(
-    item: &Item,
-    krate: &Crate,
-) -> Result<Type, UnsupportedConstGeneric> {
+fn rustdoc_new_type_def2type(item: &Item, krate: &Crate) -> Result<Type, UnsupportedConstGeneric> {
     assert!(
         matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_)),
         "Unexpected item type, `{}`. Expected a struct or an enum.",
@@ -636,16 +624,14 @@ fn rustdoc_free_fn2callable(
     let ItemEnum::Function(inner) = &item.inner else {
         unreachable!("Expected a function item");
     };
-    let path = FQPath {
-        segments: krate.import_index.items[&item.id]
-            .canonical_path()
-            .iter()
-            .cloned()
-            .map(FQPathSegment::new)
-            .collect(),
-        qualified_self: None,
-        package_id: krate.core.package_id.clone(),
-    };
+
+    let canonical_path_segments: Vec<String> = krate.import_index.items[&item.id]
+        .canonical_path()
+        .iter()
+        .cloned()
+        .collect();
+    // A representation of the path that will be used in error paths
+    let path_display = canonical_path_segments.join("::");
 
     let mut inputs = Vec::new();
     for (parameter_index, (param_name, input_ty)) in inner.sig.inputs.iter().enumerate() {
@@ -663,7 +649,7 @@ fn rustdoc_free_fn2callable(
             }
             Err(e) => {
                 return Err(InputParameterResolutionError {
-                    callable_path: path,
+                    callable_path: path_display,
                     callable_item: item.clone(),
                     parameter_type: input_ty.clone(),
                     parameter_index,
@@ -685,7 +671,7 @@ fn rustdoc_free_fn2callable(
                 Ok(t) => Some(t),
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
-                        callable_path: path,
+                        callable_path: path_display,
                         callable_item: item.clone(),
                         output_type: output_ty.clone(),
                         source: Arc::new(e.into()),
@@ -702,8 +688,14 @@ fn rustdoc_free_fn2callable(
         rustdoc_types::Attribute::ExportName(name) => Some(name.clone()),
         _ => None,
     });
-
-    let callable_path = fq_path_to_free_function(&path);
+    let n_segments = canonical_path_segments.len();
+    let callable_path = CallablePath::FreeFunction(FreeFunctionPath {
+        package_id: krate.core.package_id.clone(),
+        crate_name: canonical_path_segments[0].clone(),
+        module_path: canonical_path_segments[1..n_segments - 1].to_vec(),
+        function_name: canonical_path_segments[n_segments - 1].clone(),
+        function_generics: vec![],
+    });
     Ok(Callable {
         is_async: inner.header.is_async,
         // It's a free function, there's no `self`.
@@ -758,22 +750,17 @@ fn rustdoc_method2callable(
     ) {
         Ok(t) => t,
         Err(e) => {
+            let path_display: String = krate.import_index.items[&attached_to]
+                .canonical_path()
+                .iter()
+                .cloned()
+                .chain(std::iter::once(
+                    method_item.name.clone().expect("Method without a name"),
+                ))
+                .collect::<Vec<_>>()
+                .join("::");
             return Err(SelfResolutionError {
-                // This path is not strictly correctly, since we may be dealing with a trait method,
-                // but it's good enough for an error at this point in the flow.
-                path: FQPath {
-                    segments: krate.import_index.items[&attached_to]
-                        .canonical_path()
-                        .iter()
-                        .cloned()
-                        .map(FQPathSegment::new)
-                        .chain(std::iter::once(FQPathSegment::new(
-                            method_item.name.clone().expect("Method without a name"),
-                        )))
-                        .collect(),
-                    qualified_self: None,
-                    package_id: krate.core.package_id.clone(),
-                },
+                path: path_display,
                 source: Arc::new(e.into()),
             }
             .into());
@@ -784,26 +771,23 @@ fn rustdoc_method2callable(
         .types
         .insert("Self".into(), self_ty.clone());
 
-    let method_path = if let Some(trait_) = &impl_item.trait_ {
+    // Build CallablePath before resolving inputs/outputs so we can use it in error messages.
+    let callable_path = if let Some(trait_) = &impl_item.trait_ {
         let (trait_global_id, trait_path) = krate_collection
             .get_canonical_path_by_local_type_id(&krate.core.package_id, &trait_.id, None)
             // FIXME: handle the error
             .unwrap();
-        let mut segments: Vec<_> = trait_path.iter().cloned().map(FQPathSegment::new).collect();
-        let qualified_self = FQQualifiedSelf {
-            position: segments.len(),
-            type_: self_ty.into(),
-        };
-        let mut generic_args = Vec::new();
+        let method_name = method_item.name.clone().expect("Method without a name");
+
+        let mut trait_generics = Vec::new();
         if let Some(args) = &trait_.args {
             let GenericArgs::AngleBracketed { args, .. } = args.as_ref() else {
-                // TODO: fixme.
                 todo!();
             };
             for arg in args {
-                let parsed_arg = match arg {
+                let ga = match arg {
                     rustdoc_types::GenericArg::Lifetime(l) => {
-                        FQGenericArgument::Lifetime(ResolvedPathLifetime::from_name(l))
+                        GenericArgument::Lifetime(GenericLifetimeParameter::from_name(l))
                     }
                     rustdoc_types::GenericArg::Type(t) => {
                         let Ok(t) = resolve_type(
@@ -814,46 +798,47 @@ fn rustdoc_method2callable(
                         ) else {
                             todo!()
                         };
-                        FQGenericArgument::Type(t.into())
+                        GenericArgument::TypeParameter(t)
                     }
                     rustdoc_types::GenericArg::Const(_) => {
                         todo!()
                     }
                     rustdoc_types::GenericArg::Infer => {
-                        // The placeholder `_` is not allowed within types on item signatures for implementations
                         unreachable!()
                     }
                 };
-                generic_args.push(parsed_arg);
+                trait_generics.push(ga);
             }
         }
-        if let Some(last) = segments.last_mut() {
-            last.generic_arguments = generic_args;
-        }
-        FQPath {
-            segments: {
-                segments.push(FQPathSegment::new(
-                    method_item.name.clone().expect("Method without a name"),
-                ));
-                segments
-            },
-            qualified_self: Some(qualified_self),
+
+        let n = trait_path.len();
+        CallablePath::TraitMethod(TraitMethodPath {
             package_id: trait_global_id.package_id.clone(),
-        }
+            crate_name: trait_path[0].clone(),
+            module_path: trait_path[1..n - 1].to_vec(),
+            trait_name: trait_path[n - 1].clone(),
+            trait_generics,
+            self_type: self_ty.clone(),
+            method_name,
+            method_generics: vec![],
+        })
     } else {
-        FQPath {
-            segments: krate.import_index.items[&attached_to]
-                .canonical_path()
-                .iter()
-                .cloned()
-                .map(FQPathSegment::new)
-                .chain(std::iter::once(FQPathSegment::new(
-                    method_item.name.clone().expect("Method without a name"),
-                )))
-                .collect(),
-            qualified_self: None,
+        let canonical_path_segments: Vec<String> = krate.import_index.items[&attached_to]
+            .canonical_path()
+            .iter()
+            .cloned()
+            .collect();
+        let method_name = method_item.name.clone().expect("Method without a name");
+        let n = canonical_path_segments.len();
+        CallablePath::InherentMethod(InherentMethodPath {
             package_id: krate.core.package_id.clone(),
-        }
+            crate_name: canonical_path_segments[0].clone(),
+            module_path: canonical_path_segments[1..n - 1].to_vec(),
+            type_name: canonical_path_segments[n - 1].clone(),
+            type_generics: vec![],
+            method_name,
+            method_generics: vec![],
+        })
     };
 
     let ItemEnum::Function(inner) = &method_item.inner else {
@@ -889,7 +874,7 @@ fn rustdoc_method2callable(
             }
             Err(e) => {
                 return Err(InputParameterResolutionError {
-                    callable_path: method_path,
+                    callable_path: callable_path.to_string(),
                     callable_item: method_item.clone(),
                     parameter_type: parameter_type.clone(),
                     parameter_index,
@@ -911,7 +896,7 @@ fn rustdoc_method2callable(
                 Ok(t) => Some(t),
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
-                        callable_path: method_path,
+                        callable_path: callable_path.to_string(),
                         callable_item: method_item.clone(),
                         output_type: output_ty.clone(),
                         source: Arc::new(e.into()),
@@ -929,7 +914,6 @@ fn rustdoc_method2callable(
         _ => None,
     });
 
-    let callable_path = fq_path_to_method_callable_path(&method_path);
     Ok(Callable {
         is_async: inner.header.is_async,
         takes_self_as_ref,
@@ -946,65 +930,4 @@ fn rustdoc_method2callable(
         is_c_variadic: inner.sig.is_c_variadic,
         symbol_name,
     })
-}
-
-/// Convert an `FQPath` for a free function into a `CallablePath::FreeFunction`.
-fn fq_path_to_free_function(path: &FQPath) -> CallablePath {
-    let n = path.segments.len();
-    let last = &path.segments[n - 1];
-    let crate_name = path.segments[0].ident.clone();
-    let module_path = path.segments[1..n - 1]
-        .iter()
-        .map(|s| s.ident.clone())
-        .collect();
-    CallablePath::FreeFunction(FreeFunctionPath {
-        package_id: path.package_id.clone(),
-        crate_name,
-        module_path,
-        function_name: last.ident.clone(),
-        function_generics: last.generic_arguments.clone(),
-    })
-}
-
-/// Convert an `FQPath` for a method (inherent or trait) into a `CallablePath`.
-fn fq_path_to_method_callable_path(path: &FQPath) -> CallablePath {
-    let n = path.segments.len();
-    let crate_name = path.segments[0].ident.clone();
-
-    if let Some(qself) = &path.qualified_self {
-        // Trait method
-        let method_segment = &path.segments[n - 1];
-        let trait_segment = &path.segments[n - 2];
-        let module_path = path.segments[1..n - 2]
-            .iter()
-            .map(|s| s.ident.clone())
-            .collect();
-        CallablePath::TraitMethod(TraitMethodPath {
-            package_id: path.package_id.clone(),
-            crate_name,
-            module_path,
-            trait_name: trait_segment.ident.clone(),
-            trait_generics: trait_segment.generic_arguments.clone(),
-            self_type: qself.type_.clone(),
-            method_name: method_segment.ident.clone(),
-            method_generics: method_segment.generic_arguments.clone(),
-        })
-    } else {
-        // Inherent method
-        let method_segment = &path.segments[n - 1];
-        let type_segment = &path.segments[n - 2];
-        let module_path = path.segments[1..n - 2]
-            .iter()
-            .map(|s| s.ident.clone())
-            .collect();
-        CallablePath::InherentMethod(InherentMethodPath {
-            package_id: path.package_id.clone(),
-            crate_name,
-            module_path,
-            type_name: type_segment.ident.clone(),
-            type_generics: type_segment.generic_arguments.clone(),
-            method_name: method_segment.ident.clone(),
-            method_generics: method_segment.generic_arguments.clone(),
-        })
-    }
 }

@@ -50,6 +50,15 @@ impl Display for GenericLifetimeParameter {
     }
 }
 
+impl Display for GenericArgument {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GenericArgument::TypeParameter(t) => write!(f, "{t}"),
+            GenericArgument::Lifetime(l) => write!(f, "{l}"),
+        }
+    }
+}
+
 impl Debug for GenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

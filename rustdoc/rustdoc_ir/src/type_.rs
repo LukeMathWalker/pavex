@@ -694,7 +694,7 @@ impl Type {
         s
     }
 
-    fn _display_for_error<W: std::fmt::Write>(&self, buffer: &mut W) {
+    pub fn _display_for_error<W: std::fmt::Write>(&self, buffer: &mut W) {
         match self {
             Type::Path(t) => {
                 write!(buffer, "{}", t.base_type.join("::")).unwrap();
@@ -772,6 +772,13 @@ impl Type {
                 write!(buffer, "{}", t.name).unwrap();
             }
         }
+    }
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self._display_for_error(f);
+        Ok(())
     }
 }
 

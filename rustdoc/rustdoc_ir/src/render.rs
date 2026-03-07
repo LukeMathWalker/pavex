@@ -24,19 +24,22 @@ where
 
 impl Type {
     /// Parse this type into a [`syn::Type`], using the provided package-id-to-crate-name mapping.
+    ///
+    /// Named lifetimes are preserved as-is. Call sites that need `'_` should use
+    /// [`Type::rename_lifetime_parameters`] beforehand to replace named lifetimes.
     pub fn syn_type(&self, id2name: &BiHashMap<PackageId, String>) -> syn::Type {
         let type_ = self.render_type(id2name);
         syn::parse_str(&type_).unwrap()
     }
 
-    /// Render this type as a Rust source string, using the provided package-id-to-crate-name mapping.
+    /// Render this type as a Rust source string, preserving named lifetimes as-is.
     pub fn render_type(&self, id2name: &BiHashMap<PackageId, String>) -> String {
         let mut buffer = String::new();
         self._render_type(id2name, &mut buffer);
         buffer
     }
 
-    fn _render_type(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+    pub fn _render_type(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         match self {
             Type::Path(t) => {
                 let crate_name = id2name
@@ -115,6 +118,105 @@ impl Type {
                     write!(buffer, "*const ").unwrap();
                 }
                 r.inner._render_type(id2name, buffer);
+            }
+            Type::Generic(t) => {
+                write!(buffer, "{}", t.name).unwrap();
+            }
+        }
+    }
+
+    /// Render this type as a Rust source string, replacing named lifetimes with `'_`.
+    ///
+    /// Use this when the type appears in a codegen expression context where the
+    /// original named lifetimes are not in scope.
+    pub fn render_with_inferred_lifetimes(&self, id2name: &BiHashMap<PackageId, String>) -> String {
+        let mut buffer = String::new();
+        self._render_with_inferred_lifetimes(id2name, &mut buffer);
+        buffer
+    }
+
+    pub fn _render_with_inferred_lifetimes(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        match self {
+            Type::Path(t) => {
+                let crate_name = id2name
+                    .get_by_left(&t.package_id)
+                    .with_context(|| {
+                        format!(
+                            "The package id '{}' is missing from the id<>name mapping for crates.",
+                            t.package_id
+                        )
+                    })
+                    .unwrap();
+                write!(buffer, "{crate_name}").unwrap();
+                write!(buffer, "::{}", t.base_type[1..].join("::")).unwrap();
+                if !t.generic_arguments.is_empty() {
+                    write!(buffer, "<").unwrap();
+                    let mut arguments = t.generic_arguments.iter().peekable();
+                    while let Some(argument) = arguments.next() {
+                        match argument {
+                            GenericArgument::TypeParameter(t) => {
+                                write!(buffer, "{}", t.render_with_inferred_lifetimes(id2name)).unwrap();
+                            }
+                            GenericArgument::Lifetime(l) => match l {
+                                crate::GenericLifetimeParameter::Static => {
+                                    write!(buffer, "'static").unwrap();
+                                }
+                                crate::GenericLifetimeParameter::Named(_)
+                                | crate::GenericLifetimeParameter::Inferred => {
+                                    write!(buffer, "'_").unwrap();
+                                }
+                            },
+                        }
+                        if arguments.peek().is_some() {
+                            write!(buffer, ", ").unwrap();
+                        }
+                    }
+                    write!(buffer, ">").unwrap();
+                }
+            }
+            Type::Reference(r) => {
+                write!(buffer, "&").unwrap();
+                match &r.lifetime {
+                    Lifetime::Static => {
+                        write!(buffer, "'static ").unwrap();
+                    }
+                    Lifetime::Named(_) | Lifetime::Inferred => {
+                        write!(buffer, "'_ ").unwrap();
+                    }
+                    Lifetime::Elided => {}
+                }
+                if r.is_mutable {
+                    write!(buffer, "mut ").unwrap();
+                }
+                r.inner._render_with_inferred_lifetimes(id2name, buffer);
+            }
+            Type::Tuple(t) => {
+                write!(buffer, "(").unwrap();
+                let mut elements = t.elements.iter().peekable();
+                while let Some(element) = elements.next() {
+                    element._render_with_inferred_lifetimes(id2name, buffer);
+                    if elements.peek().is_some() {
+                        write!(buffer, ", ").unwrap();
+                    }
+                }
+                write!(buffer, ")").unwrap();
+            }
+            Type::ScalarPrimitive(s) => {
+                write!(buffer, "{s}").unwrap();
+            }
+            Type::Slice(s) => {
+                write!(buffer, "[{}]", s.element_type.render_with_inferred_lifetimes(id2name)).unwrap();
+            }
+            Type::Array(a) => {
+                write!(buffer, "[{}; {}]", a.element_type.render_with_inferred_lifetimes(id2name), a.len).unwrap();
+            }
+            Type::RawPointer(r) => {
+                if r.is_mutable {
+                    write!(buffer, "*mut ").unwrap();
+                } else {
+                    write!(buffer, "*const ").unwrap();
+                }
+                r.inner._render_with_inferred_lifetimes(id2name, buffer);
             }
             Type::Generic(t) => {
                 write!(buffer, "{}", t.name).unwrap();
