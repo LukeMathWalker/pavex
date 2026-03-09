@@ -2,4 +2,4 @@
 mod cache;
 
 pub(super) use cache::CacheEntryExt;
-pub(crate) use cache::{PavexRustdocCache as RustdocGlobalFsCache, RustdocCacheKey};
+pub(crate) use cache::{RustdocCacheKey, pavex_rustdoc_cache};

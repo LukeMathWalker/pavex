@@ -14,6 +14,7 @@ pub use rustdoc_processor::compute::CannotGetCrateData;
 
 mod annotations;
 mod compute;
+pub(crate) mod indexer;
 mod progress_reporter;
 mod queries;
 

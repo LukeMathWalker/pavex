@@ -429,7 +429,7 @@ fn warm_up_rustdoc_cache(
     // We want to ensure that all invocations of `pavexc generate` hit the cache
     // thus avoiding the need to invoke `rustdoc` and acquire a contentious
     // lock over the target directory.
-    let crate_collection = CrateCollection::new(
+    let crate_collection = CrateCollection::new_pavex(
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
         package_graph.clone(),
         package_graph.workspace().root().to_string(),

@@ -11,24 +11,25 @@ use tracing::Span;
 use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
-use crate::diagnostic::DiagnosticSink;
 use crate::language::{
     FQGenericArgument, FQPathType, UnknownCrate, krate2package_id, resolve_fq_path_type,
 };
 use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use rustdoc_ext::RustdocKindExt;
+use rustdoc_processor::cache::{CacheEntry, HydratedCacheEntry, RustdocGlobalFsCache};
 use rustdoc_processor::compute::compute_crate_docs;
+use rustdoc_processor::indexing::CrateIndexer;
 
 use super::super::AnnotatedItem;
-use super::super::annotations::{AnnotatedItems, AnnotationCoordinates};
-use super::super::compute::{CacheEntryExt, RustdocCacheKey, RustdocGlobalFsCache};
+use super::super::annotations::AnnotationCoordinates;
+use super::super::compute::{CacheEntryExt, RustdocCacheKey};
+use super::super::indexer::PavexIndexer;
 use super::super::progress_reporter::ShellProgress;
 use rustdoc_processor::queries::{Crate, CrateRegistry};
 use rustdoc_processor::{GlobalItemId, UnknownItemPath};
 
 use rayon::iter::IntoParallelRefIterator;
-use rustdoc_processor::cache::CacheEntry;
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -37,13 +38,14 @@ use rustdoc_processor::cache::CacheEntry;
 /// - Computing and caching the JSON documentation for crates in the graph;
 /// - Execute queries that span the documentation of multiple crates (e.g. following crate
 ///   re-exports or star re-exports).
-pub struct CrateCollection {
+pub struct CrateCollection<I: CrateIndexer = PavexIndexer> {
+    indexer: I,
     package_id2krate: FrozenMap<PackageId, Box<Crate>>,
-    /// Pavex-specific annotations extracted from each crate, stored as a side map
-    /// to keep `Crate` itself Pavex-agnostic.
-    annotated_items: FrozenMap<PackageId, Box<AnnotatedItems>>,
+    /// Annotations extracted from each crate, stored as a side map
+    /// to keep `Crate` itself annotation-agnostic.
+    annotated_items: FrozenMap<PackageId, Box<I::Annotations>>,
     pub(super) package_graph: PackageGraph,
-    disk_cache: RustdocGlobalFsCache,
+    disk_cache: RustdocGlobalFsCache<I::Annotations>,
     /// An opaque string that uniquely identifies the current project (i.e. the current
     /// blueprint and the crate we are generating from it).
     project_fingerprint: String,
@@ -60,55 +62,35 @@ pub struct CrateCollection {
     /// The name of the toolchain used to generate the JSON documentation of a crate.
     /// It is assumed to be a toolchain available via `rustup`.
     toolchain_name: String,
-    /// A handle pointing at the diagnostic sink for this compilation attempt.
-    diagnostic_sink: DiagnosticSink,
 }
 
-impl std::fmt::Debug for CrateCollection {
+impl<I: CrateIndexer> std::fmt::Debug for CrateCollection<I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CrateCollection")
             .field("package_graph", &self.package_graph)
-            .field("disk_cache", &self.disk_cache)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
-impl CrateCollection {
-    /// A crate collection is specific to a workspace, as it relates to its package graph.
-    ///
-    /// # Project fingerprint
-    ///
-    /// The project fingerprint is meant to uniquely identify the current project (i.e. the current
-    /// blueprint). It is used to cache the access log, the set of crates that are accessed
-    /// while processing the blueprint of an application.
-    /// This is then used to pre-compute/eagerly retrieve from the cache the docs for these crates
-    /// the next time we process a blueprint for the same project.
-    ///
-    /// If the fingerprint ends up being the same for two different projects, the cache will be
-    /// shared between them, which may lead to unnecessary doc loads but shouldn't cause any
-    /// correctness issues.
+impl<I: CrateIndexer> CrateCollection<I> {
+    /// Create a new `CrateCollection` with the given indexer and pre-constructed cache.
     pub fn new(
+        indexer: I,
         toolchain_name: String,
         package_graph: PackageGraph,
         project_fingerprint: String,
-        cache_workspace_package_docs: bool,
-        diagnostic_sink: DiagnosticSink,
-    ) -> Result<Self, anyhow::Error> {
-        let disk_cache = RustdocGlobalFsCache::new(
-            &toolchain_name,
-            cache_workspace_package_docs,
-            &package_graph,
-        )?;
-        Ok(Self {
+        disk_cache: RustdocGlobalFsCache<I::Annotations>,
+    ) -> Self {
+        Self {
+            indexer,
             package_id2krate: FrozenMap::new(),
             annotated_items: FrozenMap::new(),
             package_graph,
-            diagnostic_sink,
             disk_cache,
             project_fingerprint,
             access_log: FrozenMap::new(),
             toolchain_name,
-        })
+        }
     }
 
     pub fn package_graph(&self) -> &PackageGraph {
@@ -127,9 +109,9 @@ impl CrateCollection {
     ///
     /// This method should only be called once.
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn bootstrap_collection<I>(&self, extra_package_ids: I) -> Result<(), anyhow::Error>
+    pub fn bootstrap_collection<Iter>(&self, extra_package_ids: Iter) -> Result<(), anyhow::Error>
     where
-        I: Iterator<Item = PackageId>,
+        Iter: Iterator<Item = PackageId>,
     {
         let package_ids = self
             .disk_cache
@@ -162,39 +144,30 @@ impl CrateCollection {
         self.batch_compute_crates(package_ids.into_iter())
     }
 
+    /// Process a [`HydratedCacheEntry`] into a `(Crate, Annotations)` pair,
+    /// re-indexing if only the raw data was cached.
+    fn process_cache_entry(
+        &self,
+        entry: HydratedCacheEntry<I::Annotations>,
+        package_id: PackageId,
+    ) -> (Crate, I::Annotations) {
+        match entry {
+            HydratedCacheEntry::Processed(processed) => processed.into_crate(),
+            HydratedCacheEntry::Raw(crate_data) => {
+                let result = self.indexer.index(crate_data, package_id);
+                (result.krate, result.annotations)
+            }
+        }
+    }
+
     /// Compute the documentation for multiple crates given their [`PackageId`]s.
     ///
     /// They won't be computed again if they are already in [`CrateCollection`]'s internal cache.
     #[tracing::instrument(skip_all, level = "trace")]
-    pub fn batch_compute_crates<I>(&self, package_ids: I) -> Result<(), anyhow::Error>
+    pub fn batch_compute_crates<Iter>(&self, package_ids: Iter) -> Result<(), anyhow::Error>
     where
-        I: Iterator<Item = PackageId>,
+        Iter: Iterator<Item = PackageId>,
     {
-        fn get_if_cached(
-            package_id: PackageId,
-            package_graph: &PackageGraph,
-            cache: &RustdocGlobalFsCache,
-            diagnostic_sink: &DiagnosticSink,
-        ) -> (PackageId, Option<(Crate, AnnotatedItems)>) {
-            let cache_key = RustdocCacheKey::new(&package_id, package_graph);
-            match cache.get(&cache_key, package_graph) {
-                Ok(None) => (package_id, None),
-                Ok(Some(entry)) => (
-                    package_id.clone(),
-                    Some(entry.process(package_id, diagnostic_sink)),
-                ),
-                Err(e) => {
-                    log_error!(
-                        *e,
-                        level: tracing::Level::WARN,
-                        package_id = package_id.repr(),
-                        "Failed to retrieve the documentation from the on-disk cache",
-                    );
-                    (package_id, None)
-                }
-            }
-        }
-
         let missing_ids = package_ids
             // First check if we already have the crate docs in the in-memory cache.
             .filter(|package_id| self.get_crate_by_package_id(package_id).is_none())
@@ -204,16 +177,33 @@ impl CrateCollection {
         // so we parallelize the operation.
         let package_graph = &self.package_graph;
         let cache = &self.disk_cache;
-        let sink = &self.diagnostic_sink;
         let tracing_span = Span::current();
-        let map_op =
-            move |id| tracing_span.in_scope(|| get_if_cached(id, package_graph, cache, sink));
+        let map_op = move |id: PackageId| {
+            tracing_span.in_scope(|| {
+                let cache_key = RustdocCacheKey::new(&id, package_graph);
+                match cache.get(&cache_key, package_graph) {
+                    Ok(None) => (id, None),
+                    Ok(Some(entry)) => (id, Some(entry)),
+                    Err(e) => {
+                        log_error!(
+                            *e,
+                            level: tracing::Level::WARN,
+                            package_id = id.repr(),
+                            "Failed to retrieve the documentation from the on-disk cache",
+                        );
+                        (id, None)
+                    }
+                }
+            })
+        };
 
         let mut to_be_computed = vec![];
 
         use rayon::prelude::{IntoParallelIterator, ParallelIterator};
         for (package_id, cached) in missing_ids.into_par_iter().map(map_op).collect::<Vec<_>>() {
-            if let Some((krate, annotations)) = cached {
+            if let Some(entry) = cached {
+                let (krate, annotations) =
+                    self.process_cache_entry(entry, package_id.clone());
                 self.annotated_items
                     .insert(package_id.clone(), Box::new(annotations));
                 self.package_id2krate.insert(package_id, Box::new(krate));
@@ -236,24 +226,13 @@ impl CrateCollection {
         // We perform both in parallel, since they're CPU-intensive.
         //
         // First indexing:
+        let indexer = &self.indexer;
         let package_graph = self.package_graph();
-        let diagnostic_sink = &self.diagnostic_sink;
         let indexed_krates = results
             .into_par_iter()
             .map(move |(package_id, krate)| {
-                let n_diagnostics = diagnostic_sink.len();
-                let (krate, annotations) =
-                    super::krate::index_raw(krate, package_id.to_owned(), diagnostic_sink);
-
-                // No issues arose in the indexing phase.
-                // Let's make sure to store them in the on-disk cache for next time.
-                //
-                // TODO: Since we're indexing in parallel, the counter may have been incremented
-                //  by a different thread, signaling an issue with indexes for another crate.
-                //  It'd be enough to keep a thread-local counter to get an accurate yes/no,
-                //  but since we don't get false negatives it isn't a big deal.
-                let cache_indexes = n_diagnostics == diagnostic_sink.len();
-                (package_id, krate, annotations, cache_indexes)
+                let result = indexer.index_raw(krate, package_id.to_owned());
+                (package_id, result.krate, result.annotations, result.can_cache_indexes)
             })
             .collect::<Vec<_>>();
         // Then conversion to the desired cache format:
@@ -332,7 +311,8 @@ impl CrateCollection {
         let cache_key = RustdocCacheKey::new(package_id, &self.package_graph);
         match self.disk_cache.get(&cache_key, &self.package_graph) {
             Ok(Some(entry)) => {
-                let (krate, annotations) = entry.process(package_id.clone(), &self.diagnostic_sink);
+                let (krate, annotations) =
+                    self.process_cache_entry(entry, package_id.clone());
                 self.annotated_items
                     .insert(package_id.to_owned(), Box::new(annotations));
                 self.package_id2krate
@@ -360,32 +340,42 @@ impl CrateCollection {
         .remove(package_id)
         .unwrap();
 
-        let n_diagnostics = self.diagnostic_sink.len();
-        let (krate, annotations) =
-            super::krate::index_raw(krate, package_id.to_owned(), &self.diagnostic_sink);
+        let result = self.indexer.index_raw(krate, package_id.to_owned());
 
-        // No issues arose in the indexing phase.
-        // Let's make sure to store them in the on-disk cache for next time.
-        let cache_indexes = n_diagnostics == self.diagnostic_sink.len();
-        if let Err(e) = self.disk_cache.convert_and_insert(
-            &cache_key,
-            &krate,
-            &annotations,
-            cache_indexes,
-            &self.package_graph,
-        ) {
-            log_error!(
-                *e,
-                level: tracing::Level::WARN,
-                package_id = package_id.repr(),
-                "Failed to store the computed JSON docs in the on-disk cache",
-            );
+        // Store in the on-disk cache for next time.
+        let cache_entry_data = if result.can_cache_indexes {
+            <CacheEntry as CacheEntryExt>::from_crate(&result.krate, &result.annotations)
+        } else {
+            <CacheEntry as CacheEntryExt>::from_crate_raw(&result.krate)
+        };
+        match cache_entry_data {
+            Ok(cache_entry) => {
+                if let Err(e) = self
+                    .disk_cache
+                    .insert(&cache_key, cache_entry, &self.package_graph)
+                {
+                    log_error!(
+                        *e,
+                        level: tracing::Level::WARN,
+                        package_id = package_id.repr(),
+                        "Failed to store the computed JSON docs in the on-disk cache",
+                    );
+                }
+            }
+            Err(e) => {
+                log_error!(
+                    *e,
+                    level: tracing::Level::WARN,
+                    package_id = package_id.repr(),
+                    "Failed to convert the computed JSON docs into the format used by the on-disk cache",
+                );
+            }
         }
 
         self.annotated_items
-            .insert(package_id.to_owned(), Box::new(annotations));
+            .insert(package_id.to_owned(), Box::new(result.annotations));
         self.package_id2krate
-            .insert(package_id.to_owned(), Box::new(krate));
+            .insert(package_id.to_owned(), Box::new(result.krate));
         Ok(self.get_crate_by_package_id(package_id).unwrap())
     }
 
@@ -398,8 +388,35 @@ impl CrateCollection {
     }
 
     /// Retrieve the annotations for a specific package, if available.
-    pub fn get_annotated_items(&self, package_id: &PackageId) -> Option<&AnnotatedItems> {
+    pub fn get_annotated_items(&self, package_id: &PackageId) -> Option<&I::Annotations> {
         self.annotated_items.get(package_id)
+    }
+}
+
+// Pavex-specific methods that only apply when using PavexIndexer.
+impl CrateCollection<PavexIndexer> {
+    /// Convenience constructor for Pavex: creates a `PavexIndexer` and the
+    /// pre-configured on-disk cache, then returns a ready-to-use collection.
+    pub fn new_pavex(
+        toolchain_name: String,
+        package_graph: PackageGraph,
+        project_fingerprint: String,
+        cache_workspace_package_docs: bool,
+        diagnostic_sink: crate::diagnostic::DiagnosticSink,
+    ) -> Result<Self, anyhow::Error> {
+        let disk_cache = super::super::compute::pavex_rustdoc_cache(
+            &toolchain_name,
+            cache_workspace_package_docs,
+            &package_graph,
+        )?;
+        let indexer = PavexIndexer::new(diagnostic_sink);
+        Ok(Self::new(
+            indexer,
+            toolchain_name,
+            package_graph,
+            project_fingerprint,
+            disk_cache,
+        ))
     }
 
     /// Retrieve the annotation associated with the given item, if any.
@@ -556,7 +573,7 @@ impl CrateCollection {
     }
 }
 
-impl CrateRegistry for CrateCollection {
+impl<I: CrateIndexer> CrateRegistry for CrateCollection<I> {
     fn package_graph(&self) -> &PackageGraph {
         &self.package_graph
     }
@@ -566,7 +583,7 @@ impl CrateRegistry for CrateCollection {
     }
 }
 
-impl Drop for CrateCollection {
+impl<I: CrateIndexer> Drop for CrateCollection<I> {
     fn drop(&mut self) {
         let access_log = std::mem::take(&mut self.access_log);
         let package_ids = access_log.into_map().into_keys().collect();

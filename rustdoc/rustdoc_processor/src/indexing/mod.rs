@@ -10,11 +10,83 @@ pub use import_path::{EagerImportPath2Id, ImportPath2Id, LazyImportPath2Id};
 pub(crate) use re_exports::ExternalReExport;
 pub use re_exports::ExternalReExports;
 
+
 use guppy::PackageId;
 use indexmap::IndexSet;
 use rustdoc_types::{ItemEnum, Visibility};
 
 use crate::crate_data::CrateData;
+use crate::queries::Crate;
+
+/// Provides the indexing strategy for a collection of crates: how to turn raw
+/// rustdoc JSON into a `(Crate, Annotations)` pair.
+///
+/// Different consumers supply different implementations—e.g. Pavex extracts
+/// `#[pavex(...)]` attributes, while a plain consumer may use `()` annotations.
+pub trait CrateIndexer: Send + Sync {
+    /// The annotation payload stored alongside each indexed crate.
+    type Annotations: Default + Send + Sync + serde::Serialize + bincode::Decode<()>;
+
+    /// Index a freshly-computed rustdoc JSON crate.
+    fn index_raw(
+        &self,
+        krate: rustdoc_types::Crate,
+        package_id: PackageId,
+    ) -> IndexResult<Self::Annotations>;
+
+    /// Index pre-parsed crate data (e.g. from a partial cache hit).
+    fn index(
+        &self,
+        crate_data: CrateData,
+        package_id: PackageId,
+    ) -> IndexResult<Self::Annotations>;
+}
+
+/// The result of indexing a single crate.
+pub struct IndexResult<A> {
+    pub krate: Crate,
+    pub annotations: A,
+    /// If `false`, the secondary indexes (including annotations) should not
+    /// be persisted to the disk cache—e.g. because diagnostics were emitted
+    /// during indexing and need to be re-reported on next run.
+    pub can_cache_indexes: bool,
+}
+
+/// A no-op indexer that produces no annotations.
+pub struct NoAnnotations;
+
+impl CrateIndexer for NoAnnotations {
+    type Annotations = ();
+
+    fn index_raw(
+        &self,
+        krate: rustdoc_types::Crate,
+        package_id: PackageId,
+    ) -> IndexResult<()> {
+        use crate::crate_data::{CrateItemIndex, CrateItemPaths, EagerCrateItemIndex, EagerCrateItemPaths};
+        let crate_data = CrateData {
+            root_item_id: krate.root,
+            index: CrateItemIndex::Eager(EagerCrateItemIndex { index: krate.index }),
+            external_crates: krate.external_crates,
+            format_version: krate.format_version,
+            paths: CrateItemPaths::Eager(EagerCrateItemPaths { paths: krate.paths }),
+        };
+        self.index(crate_data, package_id)
+    }
+
+    fn index(
+        &self,
+        crate_data: CrateData,
+        package_id: PackageId,
+    ) -> IndexResult<()> {
+        let krate = Crate::index_without_visitor(crate_data, package_id);
+        IndexResult {
+            krate,
+            annotations: (),
+            can_cache_indexes: true,
+        }
+    }
+}
 
 /// Visitor invoked during crate indexing to handle item-specific hooks.
 pub trait IndexingVisitor {
