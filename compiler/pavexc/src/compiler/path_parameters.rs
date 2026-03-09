@@ -196,7 +196,7 @@ fn report_non_existing_path_parameters(
             let error = anyhow!(
                 "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
                     But there are no path parameters in `{path}`, the corresponding path pattern!",
-                callable.path
+                callable
             );
             let d = CompilerDiagnostic::builder(error)
                 .optional_source(source)
@@ -240,7 +240,7 @@ fn report_non_existing_path_parameters(
                     Every struct field in `{extracted_type:?}` must be named after one of the route \
                     parameters that appear in `{path}`:\n{path_parameters}\n\n\
                     {missing_msg}. This is going to cause a runtime error!",
-                callable.path,
+                callable,
             );
             let d = CompilerDiagnostic::builder(error)
                 .optional_source(source)
@@ -320,7 +320,7 @@ fn must_be_a_plain_struct(
             `{}` is trying to extract `PathParams<{extracted_type:?}>`, but \
             {error_suffix}, not a plain struct type. I don't support this: the extraction would \
             fail at runtime, when trying to process an incoming request.",
-            callable.path
+            callable
         );
         let d = CompilerDiagnostic::builder(error)
             .optional_source(source)

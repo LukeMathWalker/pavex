@@ -23,8 +23,8 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, CallableInput, CallablePath, EnumVariantConstructorPath, GenericArgument,
-    InvocationStyle, ParameterName, PathType, Type,
+    Callable, CallableInput, CallableMetadata, EnumVariantConstructorPath, EnumVariantInit,
+    GenericArgument, ParameterName, PathType, Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -148,48 +148,38 @@ pub(crate) fn application_state_call_graph(
         };
         // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.
         let ok_wrapper = {
-            Callable {
-                is_async: false,
-                takes_self_as_ref: false,
-                output: Some(application_state_result.clone().into()),
-                path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
+            Callable::EnumVariantInit(EnumVariantInit {
+                path: EnumVariantConstructorPath {
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                     crate_name: "core".into(),
                     module_path: vec!["result".into()],
                     enum_name: "Result".into(),
                     enum_generics: vec![],
                     variant_name: "Ok".into(),
-                }),
-                inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: application_state.type_().into() }],
-                invocation_style: InvocationStyle::FunctionCall,
-                source_coordinates: None,
-                abi: rustdoc_types::Abi::Rust,
-                is_unsafe: false,
-                is_c_variadic: false,
-                symbol_name: None,
-            }
+                },
+                metadata: CallableMetadata {
+                    output: Some(application_state_result.clone().into()),
+                    inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: application_state.type_().into() }],
+                    source_coordinates: None,
+                },
+            })
         };
         let err_wrapper = {
-            Callable {
-                is_async: false,
-                takes_self_as_ref: false,
-                output: Some(application_state_result.into()),
-                path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
+            Callable::EnumVariantInit(EnumVariantInit {
+                path: EnumVariantConstructorPath {
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                     crate_name: "core".into(),
                     module_path: vec!["result".into()],
                     enum_name: "Result".into(),
                     enum_generics: vec![],
                     variant_name: "Err".into(),
-                }),
-                inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_enum.clone().into() }],
-                invocation_style: InvocationStyle::FunctionCall,
-                source_coordinates: None,
-                abi: rustdoc_types::Abi::Rust,
-                is_unsafe: false,
-                is_c_variadic: false,
-                symbol_name: None,
-            }
+                },
+                metadata: CallableMetadata {
+                    output: Some(application_state_result.into()),
+                    inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_enum.clone().into() }],
+                    source_coordinates: None,
+                },
+            })
         };
         component_db.get_or_intern_transformer(
             computation_db.get_or_intern(ok_wrapper),
@@ -207,7 +197,7 @@ pub(crate) fn application_state_call_graph(
             for err_match_id in err_match_ids {
                 let fallible_id = component_db.fallible_id(*err_match_id);
                 let fallible = component_db.hydrated_component(fallible_id, computation_db);
-                let fallible_callable = match &fallible {
+                let fallible_callable: &Callable = match &fallible {
                     HydratedComponent::Constructor(c) => {
                         let Computation::Callable(c) = &c.0 else {
                             unreachable!()
@@ -225,32 +215,32 @@ pub(crate) fn application_state_call_graph(
                         unreachable!()
                     }
                 };
-                let error_type_name = match &fallible_callable.path {
-                    CallablePath::InherentMethod(p) => {
+                let error_type_name = match fallible_callable {
+                    Callable::InherentMethod(m) => {
                         format!(
                             "{}{}",
-                            p.type_name,
-                            p.method_name.to_case(Case::Pascal)
+                            m.path.type_name,
+                            m.path.method_name.to_case(Case::Pascal)
                         )
                     }
-                    CallablePath::TraitMethod(p) => {
+                    Callable::TraitMethod(m) => {
                         format!(
                             "{}{}",
-                            p.trait_name,
-                            p.method_name.to_case(Case::Pascal)
+                            m.path.trait_name,
+                            m.path.method_name.to_case(Case::Pascal)
                         )
                     }
-                    CallablePath::FreeFunction(p) => {
-                        p.function_name.to_case(Case::Pascal)
+                    Callable::FreeFunction(f) => {
+                        f.path.function_name.to_case(Case::Pascal)
                     }
-                    CallablePath::StructLiteral(p) => {
-                        p.type_name.to_case(Case::Pascal)
+                    Callable::StructLiteralInit(s) => {
+                        s.path.type_name.to_case(Case::Pascal)
                     }
-                    CallablePath::EnumVariantConstructor(p) => {
+                    Callable::EnumVariantInit(e) => {
                         format!(
                             "{}{}",
-                            p.enum_name,
-                            p.variant_name.to_case(Case::Pascal)
+                            e.path.enum_name,
+                            e.path.variant_name.to_case(Case::Pascal)
                         )
                     }
                 };
@@ -262,26 +252,21 @@ pub(crate) fn application_state_call_graph(
                 };
                 error_variants.insert(error_type_name.clone(), error_type.clone());
                 *n_duplicates += 1;
-                let error_variant_constructor = Callable {
-                    is_async: false,
-                    takes_self_as_ref: false,
-                    path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
+                let error_variant_constructor = Callable::EnumVariantInit(EnumVariantInit {
+                    path: EnumVariantConstructorPath {
                         package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                         crate_name: "crate".into(),
                         module_path: vec![],
                         enum_name: "ApplicationStateError".into(),
                         enum_generics: vec![],
                         variant_name: error_type_name.to_owned(),
-                    }),
-                    output: Some(error_enum.clone().into()),
-                    inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_type.to_owned() }],
-                    invocation_style: InvocationStyle::FunctionCall,
-                    source_coordinates: None,
-                    abi: rustdoc_types::Abi::Rust,
-                    is_unsafe: false,
-                    is_c_variadic: false,
-                    symbol_name: None,
-                };
+                    },
+                    metadata: CallableMetadata {
+                        output: Some(error_enum.clone().into()),
+                        inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_type.to_owned() }],
+                        source_coordinates: None,
+                    },
+                });
                 let transformer_id = component_db.get_or_intern_transformer(
                     computation_db.get_or_intern(error_variant_constructor.clone()),
                     *err_match_id,

@@ -17,8 +17,7 @@ pub(crate) struct RequestHandler<'a> {
 impl<'a> RequestHandler<'a> {
     pub fn new(c: Cow<'a, Callable>) -> Result<Self, RequestHandlerValidationError> {
         let mut output_type = c
-            .output
-            .as_ref()
+            .output()
             .ok_or(RequestHandlerValidationError::CannotReturnTheUnitType)?
             .clone();
 
@@ -48,7 +47,7 @@ impl<'a> RequestHandler<'a> {
     }
 
     pub fn output_type(&self) -> &Type {
-        self.callable.output.as_ref().unwrap()
+        self.callable.output().unwrap()
     }
 
     pub fn input_types(&self) -> Vec<&Type> {

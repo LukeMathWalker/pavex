@@ -1,7 +1,10 @@
-pub(crate) use callable::{Callable, CallableInput, InvocationStyle, ParameterName};
+pub(crate) use callable::{
+    Callable, CallableInput, CallableMetadata, EnumVariantInit, FnHeader, FreeFunction,
+    InherentMethod, ParameterName, StructLiteralInit, TraitMethod,
+};
 pub(crate) use callable_fq_path::{
-    CallablePath, EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath,
-    StructLiteralPath, TraitMethodPath,
+    EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,
+    TraitMethodPath,
 };
 pub(crate) use callable_path::{CallPath, InvalidCallPath};
 pub(crate) use fq_path::{FQGenericArgument, FQPath, FQPathSegment, FQPathType, FQQualifiedSelf};

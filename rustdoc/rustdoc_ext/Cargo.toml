@@ -8,4 +8,5 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
+guppy = { workspace = true }
 rustdoc-types = { workspace = true }

@@ -31,9 +31,9 @@ use crate::{
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::{
-        Callable, CallableInput, CallablePath, FreeFunctionPath, Generic, GenericArgument,
-        GenericLifetimeParameter, InherentMethodPath, InvocationStyle, ParameterName, PathType,
-        TraitMethodPath, Type,
+        Callable, CallableInput, CallableMetadata, FnHeader, FreeFunction, FreeFunctionPath,
+        Generic, GenericArgument, GenericLifetimeParameter, InherentMethod, InherentMethodPath,
+        ParameterName, PathType, TraitMethod, TraitMethodPath, Type,
     },
     rustdoc::{AnnotationCoordinates, Crate, CrateCollection, GlobalItemId, ImplInfo},
 };
@@ -689,30 +689,30 @@ fn rustdoc_free_fn2callable(
         _ => None,
     });
     let n_segments = canonical_path_segments.len();
-    let callable_path = CallablePath::FreeFunction(FreeFunctionPath {
-        package_id: krate.core.package_id.clone(),
-        crate_name: canonical_path_segments[0].clone(),
-        module_path: canonical_path_segments[1..n_segments - 1].to_vec(),
-        function_name: canonical_path_segments[n_segments - 1].clone(),
-        function_generics: vec![],
-    });
-    Ok(Callable {
-        is_async: inner.header.is_async,
-        // It's a free function, there's no `self`.
-        takes_self_as_ref: false,
-        output,
-        path: callable_path,
-        inputs,
-        invocation_style: InvocationStyle::FunctionCall,
-        source_coordinates: Some(GlobalItemId {
-            rustdoc_item_id: item.id,
+    Ok(Callable::FreeFunction(FreeFunction {
+        path: FreeFunctionPath {
             package_id: krate.core.package_id.clone(),
-        }),
-        abi: inner.header.abi.clone(),
-        is_unsafe: inner.header.is_unsafe,
-        is_c_variadic: inner.sig.is_c_variadic,
-        symbol_name,
-    })
+            crate_name: canonical_path_segments[0].clone(),
+            module_path: canonical_path_segments[1..n_segments - 1].to_vec(),
+            function_name: canonical_path_segments[n_segments - 1].clone(),
+            function_generics: vec![],
+        },
+        metadata: CallableMetadata {
+            output,
+            inputs,
+            source_coordinates: Some(GlobalItemId {
+                rustdoc_item_id: item.id,
+                package_id: krate.core.package_id.clone(),
+            }),
+        },
+        header: FnHeader {
+            is_async: inner.header.is_async,
+            abi: inner.header.abi.clone(),
+            is_unsafe: inner.header.is_unsafe,
+            is_c_variadic: inner.sig.is_c_variadic,
+            symbol_name,
+        },
+    }))
 }
 
 /// Convert a method item retrieved from `rustdoc`'s JSON output to Pavex's internal
@@ -771,7 +771,19 @@ fn rustdoc_method2callable(
         .types
         .insert("Self".into(), self_ty.clone());
 
-    // Build CallablePath before resolving inputs/outputs so we can use it in error messages.
+    // Build path before resolving inputs/outputs so we can use it in error messages.
+    enum MethodPath {
+        Trait(TraitMethodPath),
+        Inherent(InherentMethodPath),
+    }
+    impl std::fmt::Display for MethodPath {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                MethodPath::Trait(p) => write!(f, "{p}"),
+                MethodPath::Inherent(p) => write!(f, "{p}"),
+            }
+        }
+    }
     let callable_path = if let Some(trait_) = &impl_item.trait_ {
         let (trait_global_id, trait_path) = krate_collection
             .get_canonical_path_by_local_type_id(&krate.core.package_id, &trait_.id, None)
@@ -812,7 +824,7 @@ fn rustdoc_method2callable(
         }
 
         let n = trait_path.len();
-        CallablePath::TraitMethod(TraitMethodPath {
+        MethodPath::Trait(TraitMethodPath {
             package_id: trait_global_id.package_id.clone(),
             crate_name: trait_path[0].clone(),
             module_path: trait_path[1..n - 1].to_vec(),
@@ -830,7 +842,7 @@ fn rustdoc_method2callable(
             .collect();
         let method_name = method_item.name.clone().expect("Method without a name");
         let n = canonical_path_segments.len();
-        CallablePath::InherentMethod(InherentMethodPath {
+        MethodPath::Inherent(InherentMethodPath {
             package_id: krate.core.package_id.clone(),
             crate_name: canonical_path_segments[0].clone(),
             module_path: canonical_path_segments[1..n - 1].to_vec(),
@@ -914,20 +926,33 @@ fn rustdoc_method2callable(
         _ => None,
     });
 
-    Ok(Callable {
+    let fn_header = FnHeader {
         is_async: inner.header.is_async,
-        takes_self_as_ref,
-        output,
-        path: callable_path,
-        inputs,
-        invocation_style: InvocationStyle::FunctionCall,
-        source_coordinates: Some(GlobalItemId {
-            rustdoc_item_id: method_item.id,
-            package_id: krate.core.package_id.clone(),
-        }),
         abi: inner.header.abi.clone(),
         is_unsafe: inner.header.is_unsafe,
         is_c_variadic: inner.sig.is_c_variadic,
         symbol_name,
+    };
+    let metadata = CallableMetadata {
+        output,
+        inputs,
+        source_coordinates: Some(GlobalItemId {
+            rustdoc_item_id: method_item.id,
+            package_id: krate.core.package_id.clone(),
+        }),
+    };
+    Ok(match callable_path {
+        MethodPath::Trait(path) => Callable::TraitMethod(TraitMethod {
+            path,
+            metadata,
+            header: fn_header,
+            takes_self_as_ref,
+        }),
+        MethodPath::Inherent(path) => Callable::InherentMethod(InherentMethod {
+            path,
+            metadata,
+            header: fn_header,
+            takes_self_as_ref,
+        }),
     })
 }

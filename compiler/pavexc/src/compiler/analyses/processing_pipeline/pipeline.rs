@@ -24,8 +24,9 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
-    Callable, CallableInput, CanonicalType, GenericArgument, GenericLifetimeParameter,
-    InvocationStyle, Lifetime, ParameterName, PathType, PathTypeExt, Type, TypeReference,
+    Callable, CallableInput, CallableMetadata, CanonicalType, GenericArgument,
+    GenericLifetimeParameter, Lifetime, ParameterName, PathType, PathTypeExt, StructLiteralInit,
+    Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -691,30 +692,22 @@ impl RequestHandlerPipeline {
 
         // We register a constructor, in order to make it possible to build an instance of
         // `next_type`.
-        let next_state_constructor = Callable {
-            is_async: false,
-            takes_self_as_ref: false,
+        let next_state_constructor = Callable::StructLiteralInit(StructLiteralInit {
             path: next_state_type.callable_struct_literal_path(),
-            output: Some(next_state_type.clone().into()),
-            inputs: next_state_parameters
-                .iter()
-                .map(|input| CallableInput {
-                    name: ParameterName::new(input.ident.clone()),
-                    type_: input.type_.clone(),
-                })
-                .collect(),
-            invocation_style: InvocationStyle::StructLiteral {
-                // TODO: remove when TAIT stabilises
-                extra_field2default_value: {
-                    BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())])
-                },
+            metadata: CallableMetadata {
+                output: Some(next_state_type.clone().into()),
+                inputs: next_state_parameters
+                    .iter()
+                    .map(|input| CallableInput {
+                        name: ParameterName::new(input.ident.clone()),
+                        type_: input.type_.clone(),
+                    })
+                    .collect(),
+                source_coordinates: None,
             },
-            source_coordinates: None,
-            abi: rustdoc_types::Abi::Rust,
-            is_unsafe: false,
-            is_c_variadic: false,
-            symbol_name: None,
-        };
+            // TODO: remove when TAIT stabilises
+            extra_field2default_value: BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())]),
+        });
         let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
         let next_state_scope_id = component_db.scope_id(middleware_id);
         let next_state_constructor_id = component_db
@@ -822,7 +815,7 @@ impl RequestHandlerPipeline {
                 let Computation::Callable(callable) = &constructor.0 else {
                     unreachable!()
                 };
-                let path = callable.path.to_string();
+                let path = callable.to_string();
                 let message = format!(
                     "Request-scoped component `{path}` should be invoked at most once in a request pipeline, but it's invoked {n_invocations} times instead."
                 );
@@ -1136,7 +1129,7 @@ fn emit_cloning_error(
     else {
         unreachable!()
     };
-    let moved_by_path = &moved_by_callable.path;
+    let moved_by_path = moved_by_callable;
 
     let Computation::Callable(later_used_by_callable) = db
         .hydrated_component(later_used_by, computation_db)
@@ -1144,7 +1137,7 @@ fn emit_cloning_error(
     else {
         unreachable!()
     };
-    let later_used_by_path = &later_used_by_callable.path;
+    let later_used_by_path = later_used_by_callable;
 
     // TODO(diagnostics): improve the error message pointing at the specific components that require
     //  the contested type.

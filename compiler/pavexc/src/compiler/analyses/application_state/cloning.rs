@@ -143,13 +143,13 @@ fn must_be_cloneable(
         "I can't generate code that will pass the borrow checker *and* match the \
         instructions in your blueprint.\n\
         `{}` consumes `{type_}` by value, but `{type_}` is a singleton and can't be moved out of `ApplicationState`.",
-        consumer_callable.path,
+        consumer_callable,
     );
     let help = is_clone
         .then(|| format!("Allow Pavex to clone `{type_}` by marking it `{clone_if_necessary}`.",));
     let second_help = format!(
         "Can `{}` take a reference to `{type_}`, rather than consuming it by value?",
-        consumer_callable.path,
+        consumer_callable,
     );
     let diagnostic = CompilerDiagnostic::builder(e)
         .optional_source(source)

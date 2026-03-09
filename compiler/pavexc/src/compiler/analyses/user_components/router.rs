@@ -886,14 +886,12 @@ fn push_fallback_ambiguity_diagnostic(
     let scope_fallback = {
         let mut s = String::new();
         computation_db[scope_fallback_id]
-            .path
             .render_for_error(&mut s);
         s
     };
     let path_fallback = {
         let mut s = String::new();
         computation_db[path_fallback_id]
-            .path
             .render_for_error(&mut s);
         s
     };
@@ -956,7 +954,6 @@ fn push_fallback_method_ambiguity_diagnostic(
 
             let mut path = String::new();
             computation_db[*fallback_id]
-                .path
                 .render_for_error(&mut path);
             path
         };

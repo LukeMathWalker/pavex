@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
-use crate::language::{Callable, CallablePath, Type};
+use crate::language::{Callable, Type};
 
 /// A computation applied to an unhandled error that has been converted into Pavex's "common"
 /// error type.
@@ -20,9 +20,9 @@ impl<'a> ErrorObserver<'a> {
         error_observer: Cow<'a, Callable>,
         pavex_error_ref: &Type,
     ) -> Result<Self, ErrorObserverValidationError> {
-        if let Some(output_type) = &error_observer.output {
+        if let Some(output_type) = error_observer.output() {
             return Err(ErrorObserverValidationError::MustReturnUnitType {
-                observer_path: error_observer.path.to_owned(),
+                observer_path: error_observer.to_string(),
                 output_type: output_type.to_owned(),
             });
         }
@@ -33,7 +33,7 @@ impl<'a> ErrorObserver<'a> {
             .position(|i| i == pavex_error_ref)
             .ok_or_else(
                 || ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
-                    observer_path: error_observer.path.to_owned(),
+                    observer_path: error_observer.to_string(),
                     error_type: pavex_error_ref.to_owned(),
                 },
             )?;
@@ -51,7 +51,7 @@ impl<'a> ErrorObserver<'a> {
         if !free_parameters.is_empty() {
             return Err(ErrorObserverValidationError::UnassignedGenericParameters {
                 parameters: free_parameters,
-                observer_path: error_observer.path.to_owned(),
+                observer_path: error_observer.to_string(),
             });
         }
 
@@ -82,15 +82,15 @@ impl AsRef<Callable> for ErrorObserver<'_> {
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorObserverValidationError {
     MustReturnUnitType {
-        observer_path: CallablePath,
+        observer_path: String,
         output_type: Type,
     },
     DoesNotTakeErrorReferenceAsInput {
-        observer_path: CallablePath,
+        observer_path: String,
         error_type: Type,
     },
     UnassignedGenericParameters {
-        observer_path: CallablePath,
+        observer_path: String,
         parameters: IndexSet<String>,
     },
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),

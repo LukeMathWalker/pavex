@@ -20,8 +20,8 @@ use super::{
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
     language::{
-        Callable, CallableInput, GenericArgument, InvocationStyle, ParameterName, PathTypeExt,
-        Type,
+        Callable, CallableInput, CallableMetadata, GenericArgument, ParameterName, PathTypeExt,
+        StructLiteralInit, Type,
     },
     rustdoc::CrateCollection,
 };
@@ -188,30 +188,24 @@ impl ApplicationState {
         // that builds the dependency graph.
         let ty_ = self.type_();
 
-        Callable {
-            is_async: false,
-            takes_self_as_ref: false,
+        Callable::StructLiteralInit(StructLiteralInit {
             path: ty_.callable_struct_literal_path(),
-            output: Some(ty_.into()),
-            inputs: {
-                // Ensure that the inputs are sorted by name.
-                let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
-                b.into_iter()
-                    .map(|(name, type_)| CallableInput {
-                        name: ParameterName::new(name.to_string()),
-                        type_: type_.clone(),
-                    })
-                    .collect()
+            metadata: CallableMetadata {
+                output: Some(ty_.into()),
+                inputs: {
+                    // Ensure that the inputs are sorted by name.
+                    let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
+                    b.into_iter()
+                        .map(|(name, type_)| CallableInput {
+                            name: ParameterName::new(name.to_string()),
+                            type_: type_.clone(),
+                        })
+                        .collect()
+                },
+                source_coordinates: None,
             },
-            invocation_style: InvocationStyle::StructLiteral {
-                extra_field2default_value: Default::default(),
-            },
-            source_coordinates: None,
-            abi: rustdoc_types::Abi::Rust,
-            is_unsafe: false,
-            is_c_variadic: false,
-            symbol_name: None,
-        }
+            extra_field2default_value: Default::default(),
+        })
     }
 
     /// Return a bi-directional map between field names and their types.

@@ -685,7 +685,7 @@ impl ConstructibleDb {
         .context(format!(
             "I can't find a constructor for `{unconstructible_type:?}`.\n\
                 I need an instance of `{unconstructible_type:?}` to invoke your {kind}, `{}`.",
-            callable.path
+            callable
         ));
         let definition_info =
             get_definition_info(callable, unconstructible_type_index, krate_collection);
@@ -734,7 +734,7 @@ impl ConstructibleDb {
             get_snippet(&computation_db[id], krate_collection, singleton_input_index);
         let error = anyhow::anyhow!(
             "You can't inject a mutable reference to a singleton (`{singleton_input_type:?}`) as an input parameter to `{}`.",
-            callable.path
+            callable
         );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
@@ -779,7 +779,7 @@ impl ConstructibleDb {
             "You can't inject a mutable reference to a transient type (`{transient_input_type:?}`) as an input parameter to `{}`.\n\
         Transient constructors are invoked every time their output is needed—instances of transient types are never reused. \
         The result of any mutation would be immediately discarded.",
-            callable.path
+            callable
         );
         let diagnostic = CompilerDiagnostic::builder(error)
             .optional_source(source)
@@ -825,7 +825,7 @@ impl ConstructibleDb {
         since `{scoped_input_type:?}` has been marked `CloneIfNecessary`.\n\
         Reasoning about mutations becomes impossible if Pavex can't guarantee that all mutations \
         will affect *the same* instance of `{:?}`.",
-            callable.path,
+            callable,
             ref_.inner
         );
         let diagnostic = CompilerDiagnostic::builder(error)
@@ -899,7 +899,7 @@ impl ConstructibleDb {
         let Computation::Callable(c) = &fallible_constructor.0 else {
             unreachable!()
         };
-        let fallible_constructor_path = &c.path;
+        let fallible_constructor_path = c;
 
         let mut err_msg = String::new();
         for (i, type_) in dependency_chain.iter().enumerate() {
@@ -914,7 +914,7 @@ impl ConstructibleDb {
             "Error observers can't depend on a type with a fallible constructor, either directly or transitively.\n\
             `{}` violates this constraints! \
             It depends on{err_msg}, which is built with `{fallible_constructor_path}`, a fallible constructor.",
-            error_observer.callable.path,
+            error_observer.callable,
         );
         let source = component_db.registration_span(
             error_observer_id,

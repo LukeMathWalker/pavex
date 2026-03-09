@@ -6,7 +6,7 @@ use ahash::HashMap;
 use indexmap::IndexSet;
 use itertools::Itertools;
 
-use crate::language::{Callable, CallablePath, Lifetime, Type};
+use crate::language::{Callable, Lifetime, Type};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.
@@ -28,7 +28,7 @@ impl ErrorHandler {
         Self::check_generic_params(
             &error_handler,
             error_ref_input_index,
-            &error_handler.inputs[error_ref_input_index].type_,
+            &error_handler.inputs()[error_ref_input_index].type_,
         )?;
         Ok(Self {
             callable: error_handler,
@@ -44,7 +44,7 @@ impl ErrorHandler {
     ) -> Result<Self, ErrorHandlerValidationError> {
         Self::check_output_type(&error_handler)?;
 
-        let error_type = get_err_variant(fallible_callable.output.as_ref().unwrap());
+        let error_type = get_err_variant(fallible_callable.output().unwrap());
         let (error_ref_input_index, error_ref) = error_handler
             .input_types()
             .find_position(|t| {
@@ -79,7 +79,7 @@ impl ErrorHandler {
     /// This is a **reference** to the error type returned by the fallible callable
     /// that this is error handler is associated with.
     pub(crate) fn error_type_ref(&self) -> &Type {
-        &self.callable.inputs[self.error_ref_input_index].type_
+        &self.callable.inputs()[self.error_ref_input_index].type_
     }
 
     /// Replace all unassigned generic type parameters in this error handler with the
@@ -95,11 +95,11 @@ impl ErrorHandler {
 
     fn check_output_type(h: &Callable) -> Result<(), ErrorHandlerValidationError> {
         use ErrorHandlerValidationError::*;
-        match &h.output {
-            None => Err(CannotReturnTheUnitType(h.path.clone())),
+        match h.output() {
+            None => Err(CannotReturnTheUnitType(h.to_string())),
             Some(output_type) => {
                 if output_type.is_result() {
-                    Err(CannotBeFallible(h.path.clone()))
+                    Err(CannotBeFallible(h.to_string()))
                 } else {
                     Ok(())
                 }
@@ -157,8 +157,8 @@ impl AsRef<Callable> for ErrorHandler {
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorHandlerValidationError {
-    CannotReturnTheUnitType(CallablePath),
-    CannotBeFallible(CallablePath),
+    CannotReturnTheUnitType(String),
+    CannotBeFallible(String),
     CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,
@@ -190,7 +190,7 @@ impl Display for ErrorHandlerValidationError {
                     to the operation's error type as input.\n\
                     This error handler is associated with `{}`, therefore I \
                     expect `&{error_type:?}` to be one of its input parameters.",
-                    fallible_callable.path,
+                    fallible_callable,
                 )
             }
             ErrorHandlerValidationError::UnderconstrainedGenericParameters { .. } => {

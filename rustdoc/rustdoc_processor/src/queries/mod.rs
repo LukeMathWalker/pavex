@@ -19,7 +19,7 @@ use rustdoc_types::Item;
 
 use crate::compute::CannotGetCrateData;
 use crate::crate_data::CrateData;
-use crate::global_item_id::GlobalItemId;
+use rustdoc_ext::GlobalItemId;
 use crate::indexing::{
     EagerImportPath2Id, ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id,
     IndexingVisitor, NoopVisitor, index_local_types,

@@ -1145,7 +1145,7 @@ impl ComponentDb {
                         index
                     } else {
                         let Some(source_id) =
-                            &computation_db[error_handler_user_component_id].source_coordinates
+                            computation_db[error_handler_user_component_id].source_coordinates()
                         else {
                             unreachable!()
                         };
@@ -1173,7 +1173,7 @@ impl ComponentDb {
                         }
                         Err(e) => {
                             if let Some(error_input) =
-                                error_handler_callable.inputs.get(error_ref_input_index)
+                                error_handler_callable.inputs().get(error_ref_input_index)
                             {
                                 error_handlers_db.insert_invalid(&error_input.type_, scope_id);
                             }
@@ -1321,7 +1321,7 @@ impl ComponentDb {
                     Cow::Borrowed(&computation_db[user_component_id])
                 }
             };
-            let output = callable.output.as_ref().unwrap();
+            let output = callable.output().unwrap();
             let output = if output.is_result() {
                 get_ok_variant(output)
             } else {

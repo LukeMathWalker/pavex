@@ -239,7 +239,7 @@ fn emit_multiple_consumers_error(
         };
         let user_id = db.user_component_id(component_id);
 
-        write!(&mut error_msg, "- `{}`", callable.path).unwrap();
+        write!(&mut error_msg, "- `{}`", callable).unwrap();
         match user_id {
             None => writeln!(&mut error_msg),
             Some(user_component_id) => {

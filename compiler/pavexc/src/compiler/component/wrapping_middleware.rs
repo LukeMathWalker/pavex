@@ -34,7 +34,7 @@ impl<'a> WrappingMiddleware<'a> {
     pub fn new(c: Cow<'a, Callable>) -> Result<Self, WrappingMiddlewareValidationError> {
         use WrappingMiddlewareValidationError::*;
 
-        let mut output_type = c.output.as_ref().ok_or(CannotReturnTheUnitType)?.clone();
+        let mut output_type = c.output().ok_or(CannotReturnTheUnitType)?.clone();
 
         // If it is fallible, we make sure that it returns a non-unit type on the happy path.
         if output_type.is_result() {
@@ -95,7 +95,7 @@ impl<'a> WrappingMiddleware<'a> {
     }
 
     pub fn output_type(&self) -> &Type {
-        self.callable.output.as_ref().unwrap()
+        self.callable.output().unwrap()
     }
 
     pub fn input_types(&self) -> Vec<&Type> {
@@ -109,7 +109,7 @@ impl<'a> WrappingMiddleware<'a> {
 
     /// Returns the type of the input parameter that is a `Next<_>`.
     pub fn next_input_type(&self) -> &Type {
-        &self.callable.inputs[self.next_input_index()].type_
+        &self.callable.inputs()[self.next_input_index()].type_
     }
 
     pub fn into_owned(self) -> WrappingMiddleware<'static> {

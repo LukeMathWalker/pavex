@@ -6,17 +6,6 @@ use guppy::PackageId;
 
 use crate::language::{GenericArgument, GenericLifetimeParameter, Type};
 
-/// A fully-qualified path to a callable, with the callable kind
-/// made explicit in the type system.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub enum CallablePath {
-    FreeFunction(FreeFunctionPath),
-    InherentMethod(InherentMethodPath),
-    TraitMethod(TraitMethodPath),
-    StructLiteral(StructLiteralPath),
-    EnumVariantConstructor(EnumVariantConstructorPath),
-}
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FreeFunctionPath {
     pub package_id: PackageId,
@@ -73,78 +62,6 @@ pub struct EnumVariantConstructorPath {
     pub enum_name: String,
     pub enum_generics: Vec<GenericArgument>,
     pub variant_name: String,
-}
-
-impl CallablePath {
-    pub fn package_id(&self) -> &PackageId {
-        match self {
-            CallablePath::FreeFunction(p) => &p.package_id,
-            CallablePath::InherentMethod(p) => &p.package_id,
-            CallablePath::TraitMethod(p) => &p.package_id,
-            CallablePath::StructLiteral(p) => &p.package_id,
-            CallablePath::EnumVariantConstructor(p) => &p.package_id,
-        }
-    }
-
-    /// Returns the name of the callable itself (function name, method name, or type name for struct literals).
-    #[allow(unused)]
-    pub fn callable_name(&self) -> &str {
-        match self {
-            CallablePath::FreeFunction(p) => &p.function_name,
-            CallablePath::InherentMethod(p) => &p.method_name,
-            CallablePath::TraitMethod(p) => &p.method_name,
-            CallablePath::StructLiteral(p) => &p.type_name,
-            CallablePath::EnumVariantConstructor(p) => &p.variant_name,
-        }
-    }
-
-    /// Returns the owner name (type/trait) for methods, `None` for free functions and struct literals.
-    #[allow(unused)]
-    pub fn owner_name(&self) -> Option<&str> {
-        match self {
-            CallablePath::FreeFunction(_) => None,
-            CallablePath::InherentMethod(p) => Some(&p.type_name),
-            CallablePath::TraitMethod(p) => Some(&p.trait_name),
-            CallablePath::StructLiteral(_) => None,
-            CallablePath::EnumVariantConstructor(p) => Some(&p.enum_name),
-        }
-    }
-
-    pub fn render_as_expression_path(
-        &self,
-        id2name: &BiHashMap<PackageId, String>,
-        buffer: &mut String,
-    ) {
-        match self {
-            CallablePath::FreeFunction(p) => p.render_path(id2name, buffer),
-            CallablePath::InherentMethod(p) => p.render_path(id2name, buffer),
-            CallablePath::TraitMethod(p) => p.render_path(id2name, buffer),
-            CallablePath::StructLiteral(p) => p.render_path(id2name, buffer),
-            CallablePath::EnumVariantConstructor(p) => p.render_path(id2name, buffer),
-        }
-    }
-
-    pub fn render_for_error(&self, buffer: &mut String) {
-        match self {
-            CallablePath::FreeFunction(p) => p.render_for_error(buffer),
-            CallablePath::InherentMethod(p) => p.render_for_error(buffer),
-            CallablePath::TraitMethod(p) => p.render_for_error(buffer),
-            CallablePath::StructLiteral(p) => p.render_for_error(buffer),
-            CallablePath::EnumVariantConstructor(p) => p.render_for_error(buffer),
-        }
-    }
-}
-
-impl Display for CallablePath {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CallablePath::FreeFunction(p) => write!(f, "{p}"),
-            CallablePath::InherentMethod(p) => write!(f, "{p}"),
-            CallablePath::TraitMethod(p) => write!(f, "{p}"),
-            CallablePath::StructLiteral(p) => write!(f, "{p}"),
-            CallablePath::EnumVariantConstructor(p) => write!(f, "{p}"),
-        }
-    }
 }
 
 // --- Helper: render generics ---

@@ -71,7 +71,7 @@ impl Computation<'_> {
     /// This is `None` for computations that don't return a value.
     pub fn output_type(&self) -> Option<&crate::language::Type> {
         match self {
-            Computation::Callable(c) => c.output.as_ref(),
+            Computation::Callable(c) => c.output(),
             Computation::MatchResult(m) => Some(&m.output),
             Computation::PrebuiltType(i) => Some(i.as_ref()),
         }

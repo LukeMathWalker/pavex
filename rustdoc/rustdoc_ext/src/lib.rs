@@ -4,6 +4,9 @@
 //! We keep these extensions separate to maintain `rustdoc_types` as close to upstream
 //! as possible.
 
+mod global_item_id;
+pub use global_item_id::GlobalItemId;
+
 use rustdoc_types::{ItemEnum, ItemKind, MacroKind};
 
 /// Extension trait for `ItemEnum` to get the corresponding `ItemKind`.

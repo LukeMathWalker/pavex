@@ -11,7 +11,7 @@ mod wrapping_middleware;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic::{AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind};
-use crate::language::{Callable, CallablePath, Type};
+use crate::language::{Callable, Type};
 use crate::rustdoc::CrateCollection;
 use miette::NamedSource;
 
@@ -32,7 +32,7 @@ pub(crate) use wrapping_middleware::{WrappingMiddleware, WrappingMiddlewareValid
 #[derive(thiserror::Error, Debug, Clone)]
 #[error("You can't inject a mutable reference as an input parameter to `{component_path}`.")]
 pub(crate) struct CannotTakeMutReferenceError {
-    pub component_path: CallablePath,
+    pub component_path: String,
     pub mut_ref_input_index: usize,
 }
 
@@ -43,7 +43,7 @@ impl CannotTakeMutReferenceError {
                 && input_type.is_mutable
             {
                 return Err(CannotTakeMutReferenceError {
-                    component_path: c.path.clone(),
+                    component_path: c.to_string(),
                     mut_ref_input_index: i,
                 });
             }
