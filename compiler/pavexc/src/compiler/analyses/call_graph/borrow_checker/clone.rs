@@ -67,7 +67,7 @@ pub(super) fn get_clone_component_id(
             module_path,
             trait_name,
             trait_generics: vec![],
-            self_type: output.clone().into(),
+            self_type: output.clone(),
             method_name: "clone".into(),
             method_generics: vec![],
         },
