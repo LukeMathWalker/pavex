@@ -4,7 +4,7 @@ use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
 
-use crate::language::{GenericArgument, GenericLifetimeParameter, Type};
+use crate::{GenericArgument, Type};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FreeFunctionPath {
@@ -75,19 +75,7 @@ fn render_generics_for_codegen(
         write!(buffer, "::<").unwrap();
         let mut args = generics.iter().peekable();
         while let Some(arg) = args.next() {
-            match arg {
-                GenericArgument::TypeParameter(t) => {
-                    t._render_with_inferred_lifetimes(id2name, buffer);
-                }
-                GenericArgument::Lifetime(l) => match l {
-                    GenericLifetimeParameter::Static => {
-                        write!(buffer, "'static").unwrap();
-                    }
-                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
-                        write!(buffer, "'_").unwrap();
-                    }
-                },
-            }
+            arg.render_with_inferred_lifetimes_into(id2name, buffer);
             if args.peek().is_some() {
                 write!(buffer, ", ").unwrap();
             }
@@ -101,19 +89,7 @@ fn render_generics_for_error(generics: &[GenericArgument], buffer: &mut String) 
         write!(buffer, "::<").unwrap();
         let mut args = generics.iter().peekable();
         while let Some(arg) = args.next() {
-            match arg {
-                GenericArgument::TypeParameter(t) => {
-                    t._display_for_error(buffer);
-                }
-                GenericArgument::Lifetime(l) => match l {
-                    GenericLifetimeParameter::Static => {
-                        write!(buffer, "'static").unwrap();
-                    }
-                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
-                        write!(buffer, "'_").unwrap();
-                    }
-                },
-            }
+            arg.display_for_error_into(buffer);
             if args.peek().is_some() {
                 write!(buffer, ", ").unwrap();
             }
@@ -242,7 +218,7 @@ impl TraitMethodPath {
             .unwrap();
         write!(buffer, "<").unwrap();
         self.self_type
-            ._render_with_inferred_lifetimes(id2name, buffer);
+            .render_with_inferred_lifetimes_into(id2name, buffer);
         write!(buffer, " as {crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
@@ -256,7 +232,7 @@ impl TraitMethodPath {
 
     pub fn render_for_error(&self, buffer: &mut String) {
         write!(buffer, "<").unwrap();
-        self.self_type._display_for_error(buffer);
+        self.self_type.display_for_error_into(buffer);
         write!(buffer, " as {}", self.crate_name).unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();

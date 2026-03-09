@@ -8,11 +8,11 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{
+use crate::{
     EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, Lifetime, StructLiteralPath,
     TraitMethodPath, Type,
 };
-use crate::rustdoc::GlobalItemId;
+use rustdoc_ext::GlobalItemId;
 
 /// A validated parameter name that is guaranteed to be a valid Rust identifier.
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
@@ -201,28 +201,6 @@ impl Callable {
         }
     }
 
-    #[allow(unused)]
-    pub fn callable_name(&self) -> &str {
-        match self {
-            Callable::FreeFunction(f) => &f.path.function_name,
-            Callable::InherentMethod(m) => &m.path.method_name,
-            Callable::TraitMethod(m) => &m.path.method_name,
-            Callable::StructLiteralInit(s) => &s.path.type_name,
-            Callable::EnumVariantInit(e) => &e.path.variant_name,
-        }
-    }
-
-    #[allow(unused)]
-    pub fn owner_name(&self) -> Option<&str> {
-        match self {
-            Callable::FreeFunction(_) => None,
-            Callable::InherentMethod(m) => Some(&m.path.type_name),
-            Callable::TraitMethod(m) => Some(&m.path.trait_name),
-            Callable::StructLiteralInit(_) => None,
-            Callable::EnumVariantInit(e) => Some(&e.path.enum_name),
-        }
-    }
-
     pub fn render_as_expression_path(
         &self,
         id2name: &BiHashMap<PackageId, String>,
@@ -251,7 +229,7 @@ impl Callable {
 
     /// Returns the set of all unassigned generic type parameters in this callable.
     #[allow(unused)]
-    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
+    pub fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
         let mut result = IndexSet::new();
         for input in self.input_types() {
             result.extend(input.unassigned_generic_type_parameters());
@@ -264,10 +242,7 @@ impl Callable {
 
     /// Replace all unassigned generic type parameters in this callable with the
     /// concrete types specified in `bindings`.
-    pub fn bind_generic_type_parameters(
-        &self,
-        bindings: &HashMap<String, Type>,
-    ) -> Callable {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, Type>) -> Callable {
         let inputs = self
             .inputs()
             .iter()
@@ -288,7 +263,7 @@ impl Callable {
 
     /// Returns a new [`Callable`] where all lifetime parameters in the
     /// output type (if present) are explicitly named.
-    pub(crate) fn unelide_output_lifetimes(&self) -> Self {
+    pub fn unelide_output_lifetimes(&self) -> Self {
         // Struct literals and enum variant constructors don't have lifetime elision.
         if matches!(
             self,
@@ -323,7 +298,9 @@ impl Callable {
                     }
                 };
 
-                input.type_.set_implicit_lifetimes(elided_output_lifetime.clone());
+                input
+                    .type_
+                    .set_implicit_lifetimes(elided_output_lifetime.clone());
                 break;
             }
 
@@ -346,7 +323,7 @@ impl Callable {
 
     /// Returns the indices of all input parameters that the output type
     /// borrows immutably from (i.e. not `&mut`).
-    pub(crate) fn inputs_that_output_borrows_immutably_from(&self) -> Vec<usize> {
+    pub fn inputs_that_output_borrows_immutably_from(&self) -> Vec<usize> {
         let c = self.unelide_output_lifetimes();
         let Some(output) = c.output() else {
             return vec![];
@@ -373,7 +350,7 @@ impl Callable {
     }
 
     /// Returns the indices of all input parameters share a lifetime parameter with the output
-    pub(crate) fn inputs_with_lifetime_tied_with_output(&self) -> Vec<usize> {
+    pub fn inputs_with_lifetime_tied_with_output(&self) -> Vec<usize> {
         let c = self.unelide_output_lifetimes();
         let Some(output) = c.output() else {
             return vec![];

@@ -16,5 +16,6 @@ indexmap = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 syn = { workspace = true }
 rustdoc-types = { workspace = true }
+rustdoc_ext = { path = "../rustdoc_ext" }
 thiserror = { workspace = true }
 tracing = { workspace = true }

@@ -1,11 +1,3 @@
-pub(crate) use callable::{
-    Callable, CallableInput, CallableMetadata, EnumVariantInit, FnHeader, FreeFunction,
-    InherentMethod, ParameterName, StructLiteralInit, TraitMethod,
-};
-pub(crate) use callable_fq_path::{
-    EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,
-    TraitMethodPath,
-};
 pub(crate) use callable_path::{CallPath, InvalidCallPath};
 pub(crate) use fq_path::{FQGenericArgument, FQPath, FQPathSegment, FQPathType, FQQualifiedSelf};
 pub(crate) use fq_path_resolution::{
@@ -18,12 +10,13 @@ pub use krate_name::{
 };
 use pavex_bp_schema::CreatedAt;
 pub(crate) use resolved_type::{
-    Array, CanonicalType, Generic, GenericArgument, GenericLifetimeParameter, Lifetime, PathType,
-    PathTypeExt, RawPointer, Slice, Tuple, Type, TypeReference, UnknownPrimitive,
+    Array, Callable, CallableInput, CallableMetadata, CanonicalType, EnumVariantConstructorPath,
+    EnumVariantInit, FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument,
+    GenericLifetimeParameter, InherentMethod, InherentMethodPath, Lifetime, ParameterName, PathType,
+    PathTypeExt, RawPointer, Slice, StructLiteralInit, TraitMethod,
+    TraitMethodPath, Tuple, Type, TypeReference, UnknownPrimitive,
 };
 
-mod callable;
-mod callable_fq_path;
 mod callable_path;
 mod fq_path;
 mod fq_path_resolution;

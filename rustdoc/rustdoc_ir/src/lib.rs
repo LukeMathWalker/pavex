@@ -1,4 +1,6 @@
 mod array;
+mod callable;
+mod callable_path;
 mod generic;
 mod generic_argument;
 pub(crate) mod generics_equivalence;
@@ -14,6 +16,14 @@ mod type_;
 mod type_reference;
 
 pub use array::Array;
+pub use callable::{
+    Callable, CallableInput, CallableMetadata, EnumVariantInit, FnHeader, FreeFunction,
+    InherentMethod, ParameterName, StructLiteralInit, TraitMethod,
+};
+pub use callable_path::{
+    EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,
+    TraitMethodPath,
+};
 pub use generic::Generic;
 pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
 pub use named_lifetime::NamedLifetime;
