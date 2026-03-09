@@ -1,10 +1,11 @@
-use std::fmt::{Debug, Display, Formatter, Write};
+use std::fmt::{Debug, Display, Formatter};
 
 use bimap::BiHashMap;
 use guppy::PackageId;
 
-use crate::named_lifetime::NamedLifetime;
 use crate::Type;
+use crate::named_lifetime::NamedLifetime;
+use crate::render::{LifetimeStyle, PathStyle, RenderConfig};
 
 /// A single generic argument supplied to a generic type or function.
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -46,14 +47,11 @@ impl GenericLifetimeParameter {
 impl GenericArgument {
     /// Render this generic argument preserving named lifetimes as-is.
     pub fn render_type_into(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
-        match self {
-            GenericArgument::TypeParameter(t) => {
-                t.render_type_into(id2name, buffer);
-            }
-            GenericArgument::Lifetime(l) => {
-                write!(buffer, "{l}").unwrap();
-            }
-        }
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Preserve,
+        };
+        self.render_into(&config, buffer);
     }
 
     /// Render this generic argument, replacing named lifetimes with `'_`.
@@ -62,30 +60,49 @@ impl GenericArgument {
         id2name: &BiHashMap<PackageId, String>,
         buffer: &mut String,
     ) {
-        match self {
-            GenericArgument::TypeParameter(t) => {
-                t.render_with_inferred_lifetimes_into(id2name, buffer);
-            }
-            GenericArgument::Lifetime(l) => match l {
-                GenericLifetimeParameter::Static => {
-                    write!(buffer, "'static").unwrap();
-                }
-                GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
-                    write!(buffer, "'_").unwrap();
-                }
-            },
-        }
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Erase,
+        };
+        self.render_into(&config, buffer);
     }
 
     /// Render this generic argument for error messages.
     pub fn display_for_error_into<W: std::fmt::Write>(&self, buffer: &mut W) {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
+        self.render_into(&config, buffer);
+    }
+
+    /// Render this generic argument into `buffer` according to `config`.
+    ///
+    /// This is the single implementation behind [`GenericArgument::render_type_into`],
+    /// [`GenericArgument::render_with_inferred_lifetimes_into`], and
+    /// [`GenericArgument::display_for_error_into`].
+    pub(crate) fn render_into<W: std::fmt::Write>(
+        &self,
+        config: &RenderConfig<'_>,
+        buffer: &mut W,
+    ) {
         match self {
             GenericArgument::TypeParameter(t) => {
-                t.display_for_error_into(buffer);
+                t.render_into(config, buffer);
             }
-            GenericArgument::Lifetime(l) => {
-                write!(buffer, "{l}").unwrap();
-            }
+            GenericArgument::Lifetime(l) => match config.lifetime {
+                LifetimeStyle::Preserve => {
+                    write!(buffer, "{l}").unwrap();
+                }
+                LifetimeStyle::Erase => match l {
+                    GenericLifetimeParameter::Static => {
+                        write!(buffer, "'static").unwrap();
+                    }
+                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
+                        write!(buffer, "'_").unwrap();
+                    }
+                },
+            },
         }
     }
 }

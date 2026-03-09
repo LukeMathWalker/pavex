@@ -93,9 +93,7 @@ impl ApplicationState {
     /// - If that's not enough, we prepend the singleton's crate name to the field name with a `_` separator
     /// - If there are still conflicts, we use the singleton's full path as the field name, replacing
     ///   all `::` with `_`
-    fn assign_field_names(
-        type2id: &IndexSet<(Type, ComponentId)>,
-    ) -> BiHashMap<syn::Ident, Type> {
+    fn assign_field_names(type2id: &IndexSet<(Type, ComponentId)>) -> BiHashMap<syn::Ident, Type> {
         let mut name_map = BiHashMap::new();
 
         let mut candidate2positions: BTreeMap<String, Vec<usize>> = BTreeMap::new();

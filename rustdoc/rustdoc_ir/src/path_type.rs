@@ -60,9 +60,13 @@ impl PathType {
             use GenericArgument::*;
             match (concrete_arg, templated_arg) {
                 // Both sides are generic — bind the template's generic to the concrete's generic.
-                (TypeParameter(Type::Generic(concrete_generic)), TypeParameter(Type::Generic(template_generic))) => {
+                (
+                    TypeParameter(Type::Generic(concrete_generic)),
+                    TypeParameter(Type::Generic(template_generic)),
+                ) => {
                     let concrete_type = Type::Generic(concrete_generic.clone());
-                    let previous = bindings.insert(template_generic.name.clone(), concrete_type.clone());
+                    let previous =
+                        bindings.insert(template_generic.name.clone(), concrete_type.clone());
                     if let Some(previous) = previous
                         && previous != concrete_type
                     {

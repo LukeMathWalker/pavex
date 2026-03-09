@@ -343,7 +343,12 @@ impl ConstructibleDb {
     ) {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
-            for (type_, component_id) in constructibles.concrete.iter().map(|(t, id)| (t.inner(), id)).chain(constructibles.templated.iter()) {
+            for (type_, component_id) in constructibles
+                .concrete
+                .iter()
+                .map(|(t, id)| (t.inner(), id))
+                .chain(constructibles.templated.iter())
+            {
                 if component_db.lifecycle(*component_id) != Lifecycle::Singleton {
                     continue;
                 }
@@ -1069,8 +1074,7 @@ impl ConstructiblesInScope {
         if output.is_a_template() {
             self.templated.insert(output, component_id);
         } else {
-            self.concrete
-                .insert(output.canonicalize(), component_id);
+            self.concrete.insert(output.canonicalize(), component_id);
         }
     }
 
@@ -1098,10 +1102,8 @@ impl ConstructiblesInScope {
         for derived_component_id in derived_component_ids {
             let component = component_db.hydrated_component(derived_component_id, computation_db);
             if let HydratedComponent::Constructor(c) = component {
-                self.concrete.insert(
-                    c.output_type().canonicalize(),
-                    derived_component_id,
-                );
+                self.concrete
+                    .insert(c.output_type().canonicalize(), derived_component_id);
             }
         }
     }
@@ -1111,10 +1113,20 @@ impl std::fmt::Debug for ConstructiblesInScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Constructibles:")?;
         for (type_, component_id) in &self.concrete {
-            writeln!(f, "- {} -> {:?}", type_.inner().display_for_error(), component_id)?;
+            writeln!(
+                f,
+                "- {} -> {:?}",
+                type_.inner().display_for_error(),
+                component_id
+            )?;
         }
         for (type_, component_id) in &self.templated {
-            writeln!(f, "- {} [templated] -> {:?}", type_.display_for_error(), component_id)?;
+            writeln!(
+                f,
+                "- {} [templated] -> {:?}",
+                type_.display_for_error(),
+                component_id
+            )?;
         }
         Ok(())
     }

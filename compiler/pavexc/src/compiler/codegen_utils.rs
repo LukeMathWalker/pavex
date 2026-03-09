@@ -172,14 +172,15 @@ pub(crate) fn codegen_call(
 ) -> TokenStream {
     let callable_path: syn::ExprPath = {
         let mut buffer = String::new();
-        callable
-            .render_as_expression_path(package_id2name, &mut buffer);
+        callable.render_as_expression_path(package_id2name, &mut buffer);
         match syn::parse_str(&buffer) {
             Ok(p) => p,
             Err(e) => panic!("Couldn't parse `{buffer}` as an expression path: {e}"),
         }
     };
-    let mut invocation = if let Some(extra_field2default_value) = callable.extra_field2default_value() {
+    let mut invocation = if let Some(extra_field2default_value) =
+        callable.extra_field2default_value()
+    {
         let fields = callable.inputs()
             .iter()
             .map(|input| {

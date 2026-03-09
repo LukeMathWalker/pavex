@@ -6,7 +6,7 @@ use indexmap::{IndexMap, IndexSet};
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
     Array, Generic, GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType,
-    RawPointer, Type, Slice, Tuple, TypeReference,
+    RawPointer, Slice, Tuple, Type, TypeReference,
 };
 
 /// A `Type` with canonicalized names for lifetimes and unassigned generic type parameters.
@@ -58,10 +58,7 @@ impl Type {
     ///
     /// This function can also be used to _partially_ bind the unassigned generic type parameters in
     /// `t`. You are not required to bind all of them.
-    pub fn bind_generic_type_parameters(
-        &self,
-        bindings: &HashMap<String, Type>,
-    ) -> Type {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, Type>) -> Type {
         match self {
             Type::Path(t) => {
                 let mut bound_generics = Vec::with_capacity(t.generic_arguments.len());
@@ -121,16 +118,14 @@ impl Type {
     /// Check if a type can be used as a "template"—i.e. if it has any unassigned generic parameters.
     pub fn is_a_template(&self) -> bool {
         match self {
-            Type::Path(path) => {
-                path.generic_arguments.iter().any(|arg| match arg {
-                    GenericArgument::TypeParameter(g) => g.is_a_template(),
-                    GenericArgument::Lifetime(
-                        GenericLifetimeParameter::Static
-                        | GenericLifetimeParameter::Named(_)
-                        | GenericLifetimeParameter::Inferred,
-                    ) => false,
-                })
-            }
+            Type::Path(path) => path.generic_arguments.iter().any(|arg| match arg {
+                GenericArgument::TypeParameter(g) => g.is_a_template(),
+                GenericArgument::Lifetime(
+                    GenericLifetimeParameter::Static
+                    | GenericLifetimeParameter::Named(_)
+                    | GenericLifetimeParameter::Inferred,
+                ) => false,
+            }),
             Type::Reference(r) => r.inner.is_a_template(),
             Type::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
             Type::ScalarPrimitive(_) => false,
@@ -186,10 +181,7 @@ impl Type {
     /// If possible, this function will return a map associating each unassigned generic parameter
     /// in `self` with the type it must be set to in order to match `concrete_type`.
     /// If impossible, this function will return `None`.
-    pub fn is_a_template_for(
-        &self,
-        concrete_type: &Type,
-    ) -> Option<HashMap<String, Type>> {
+    pub fn is_a_template_for(&self, concrete_type: &Type) -> Option<HashMap<String, Type>> {
         let mut bindings = HashMap::new();
         if self._is_a_template_for(concrete_type, &mut bindings) {
             Some(bindings)
@@ -341,15 +333,13 @@ impl Type {
     /// E.g. `&'_ str` and `&str` would both return `true`. `&'static str` or `&'a str` wouldn't.
     pub fn has_implicit_lifetime_parameters(&self) -> bool {
         match self {
-            Type::Path(path) => {
-                path.generic_arguments.iter().any(|arg| match arg {
-                    GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => true,
-                    GenericArgument::Lifetime(
-                        GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Static,
-                    ) => false,
-                })
-            }
+            Type::Path(path) => path.generic_arguments.iter().any(|arg| match arg {
+                GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
+                GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => true,
+                GenericArgument::Lifetime(
+                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Static,
+                ) => false,
+            }),
             Type::Reference(r) => {
                 match &r.lifetime {
                     Lifetime::Inferred => {
@@ -383,9 +373,8 @@ impl Type {
                     match arg {
                         GenericArgument::Lifetime(lifetime) => {
                             if matches!(lifetime, GenericLifetimeParameter::Inferred) {
-                                *lifetime = GenericLifetimeParameter::from_name(
-                                    inferred_lifetime.clone(),
-                                );
+                                *lifetime =
+                                    GenericLifetimeParameter::from_name(inferred_lifetime.clone());
                             }
                         }
                         GenericArgument::TypeParameter(t) => {
@@ -520,8 +509,7 @@ impl Type {
                             g._named_lifetime_parameters(set);
                         }
                         GenericArgument::Lifetime(
-                            GenericLifetimeParameter::Static
-                            | GenericLifetimeParameter::Inferred,
+                            GenericLifetimeParameter::Static | GenericLifetimeParameter::Inferred,
                         ) => {}
                         GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
                             set.insert(l.as_str().to_owned());
@@ -561,7 +549,11 @@ impl Type {
         let mut lifetime_counter = 0usize;
         let mut generic_counter = 0usize;
         let mut generic_name_map: HashMap<String, String> = HashMap::new();
-        CanonicalType(self._canonicalize(&mut lifetime_counter, &mut generic_counter, &mut generic_name_map))
+        CanonicalType(self._canonicalize(
+            &mut lifetime_counter,
+            &mut generic_counter,
+            &mut generic_name_map,
+        ))
     }
 
     fn _canonicalize(
@@ -600,10 +592,7 @@ impl Type {
             name
         }
 
-        fn canonicalize_lifetime(
-            lifetime: &Lifetime,
-            counter: &mut usize,
-        ) -> Lifetime {
+        fn canonicalize_lifetime(lifetime: &Lifetime, counter: &mut usize) -> Lifetime {
             match lifetime {
                 Lifetime::Static => Lifetime::Static,
                 Lifetime::Named(_) | Lifetime::Elided | Lifetime::Inferred => {
@@ -631,15 +620,15 @@ impl Type {
                     .iter()
                     .map(|arg| match arg {
                         GenericArgument::TypeParameter(inner) => {
-                            GenericArgument::TypeParameter(
-                                inner._canonicalize(lifetime_counter, generic_counter, generic_name_map),
-                            )
-                        }
-                        GenericArgument::Lifetime(l) => {
-                            GenericArgument::Lifetime(canonicalize_generic_lifetime(
-                                l, lifetime_counter,
+                            GenericArgument::TypeParameter(inner._canonicalize(
+                                lifetime_counter,
+                                generic_counter,
+                                generic_name_map,
                             ))
                         }
+                        GenericArgument::Lifetime(l) => GenericArgument::Lifetime(
+                            canonicalize_generic_lifetime(l, lifetime_counter),
+                        ),
                     })
                     .collect();
                 Type::Path(PathType {
@@ -652,7 +641,11 @@ impl Type {
             Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
                 lifetime: canonicalize_lifetime(&r.lifetime, lifetime_counter),
-                inner: Box::new(r.inner._canonicalize(lifetime_counter, generic_counter, generic_name_map)),
+                inner: Box::new(r.inner._canonicalize(
+                    lifetime_counter,
+                    generic_counter,
+                    generic_name_map,
+                )),
             }),
             Type::Tuple(t) => Type::Tuple(Tuple {
                 elements: t
@@ -662,19 +655,27 @@ impl Type {
                     .collect(),
             }),
             Type::Slice(s) => Type::Slice(Slice {
-                element_type: Box::new(
-                    s.element_type._canonicalize(lifetime_counter, generic_counter, generic_name_map),
-                ),
+                element_type: Box::new(s.element_type._canonicalize(
+                    lifetime_counter,
+                    generic_counter,
+                    generic_name_map,
+                )),
             }),
             Type::Array(a) => Type::Array(Array {
-                element_type: Box::new(
-                    a.element_type._canonicalize(lifetime_counter, generic_counter, generic_name_map),
-                ),
+                element_type: Box::new(a.element_type._canonicalize(
+                    lifetime_counter,
+                    generic_counter,
+                    generic_name_map,
+                )),
                 len: a.len,
             }),
             Type::RawPointer(r) => Type::RawPointer(RawPointer {
                 is_mutable: r.is_mutable,
-                inner: Box::new(r.inner._canonicalize(lifetime_counter, generic_counter, generic_name_map)),
+                inner: Box::new(r.inner._canonicalize(
+                    lifetime_counter,
+                    generic_counter,
+                    generic_name_map,
+                )),
             }),
             Type::ScalarPrimitive(_) => self.clone(),
             Type::Generic(g) => {
@@ -682,11 +683,12 @@ impl Type {
                     .entry(g.name.clone())
                     .or_insert_with(|| next_generic_name(generic_counter))
                     .clone();
-                Type::Generic(Generic { name: canonical_name })
+                Type::Generic(Generic {
+                    name: canonical_name,
+                })
             }
         }
     }
-
 }
 
 impl Debug for Type {
@@ -746,14 +748,8 @@ mod tests {
             Lifetime::Named(NamedLifetime::new("b")),
         );
         // Named is not equal to Elided or Inferred.
-        assert_ne!(
-            Lifetime::Named(NamedLifetime::new("a")),
-            Lifetime::Elided,
-        );
-        assert_ne!(
-            Lifetime::Named(NamedLifetime::new("a")),
-            Lifetime::Inferred,
-        );
+        assert_ne!(Lifetime::Named(NamedLifetime::new("a")), Lifetime::Elided,);
+        assert_ne!(Lifetime::Named(NamedLifetime::new("a")), Lifetime::Inferred,);
         // Same name is equal.
         assert_eq!(
             Lifetime::Named(NamedLifetime::new("a")),

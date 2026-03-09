@@ -4,6 +4,7 @@ use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
 
+use crate::render::{LifetimeStyle, PathStyle, RenderConfig};
 use crate::{GenericArgument, Type};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -66,51 +67,25 @@ pub struct EnumVariantConstructorPath {
 
 // --- Helper: render generics ---
 
-fn render_generics_for_codegen(
+/// Render a generic argument list (e.g. `::<A, B>`) into `buffer`.
+///
+/// Writes nothing if `generics` is empty.
+fn render_generics<W: Write>(
     generics: &[GenericArgument],
-    id2name: &BiHashMap<PackageId, String>,
-    buffer: &mut String,
+    config: &RenderConfig<'_>,
+    buffer: &mut W,
 ) {
     if !generics.is_empty() {
         write!(buffer, "::<").unwrap();
         let mut args = generics.iter().peekable();
         while let Some(arg) = args.next() {
-            arg.render_with_inferred_lifetimes_into(id2name, buffer);
+            arg.render_into(config, buffer);
             if args.peek().is_some() {
                 write!(buffer, ", ").unwrap();
             }
         }
         write!(buffer, ">").unwrap();
     }
-}
-
-fn render_generics_for_error(generics: &[GenericArgument], buffer: &mut String) {
-    if !generics.is_empty() {
-        write!(buffer, "::<").unwrap();
-        let mut args = generics.iter().peekable();
-        while let Some(arg) = args.next() {
-            arg.display_for_error_into(buffer);
-            if args.peek().is_some() {
-                write!(buffer, ", ").unwrap();
-            }
-        }
-        write!(buffer, ">").unwrap();
-    }
-}
-
-/// Write generics using `Display` (preserves named lifetimes like `'server`, `'request`).
-fn write_generics_display(generics: &[GenericArgument], f: &mut Formatter<'_>) -> std::fmt::Result {
-    if !generics.is_empty() {
-        write!(f, "::<")?;
-        for (i, arg) in generics.iter().enumerate() {
-            if i > 0 {
-                write!(f, ", ")?;
-            }
-            write!(f, "{arg}")?;
-        }
-        write!(f, ">")?;
-    }
-    Ok(())
 }
 
 // --- FreeFunctionPath ---
@@ -126,32 +101,45 @@ impl FreeFunctionPath {
                 )
             })
             .unwrap();
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Erase,
+        };
         write!(buffer, "{crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.function_name).unwrap();
-        render_generics_for_codegen(&self.function_generics, id2name, buffer);
+        render_generics(&self.function_generics, &config, buffer);
     }
 
     pub fn render_for_error(&self, buffer: &mut String) {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         buffer.push_str(&self.crate_name);
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.function_name).unwrap();
-        render_generics_for_error(&self.function_generics, buffer);
+        render_generics(&self.function_generics, &config, buffer);
     }
 }
 
 impl Display for FreeFunctionPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         write!(f, "{}", self.crate_name)?;
         for module in &self.module_path {
             write!(f, "::{module}")?;
         }
         write!(f, "::{}", self.function_name)?;
-        write_generics_display(&self.function_generics, f)
+        render_generics(&self.function_generics, &config, f);
+        Ok(())
     }
 }
 
@@ -168,38 +156,51 @@ impl InherentMethodPath {
                 )
             })
             .unwrap();
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Erase,
+        };
         write!(buffer, "{crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.type_name).unwrap();
-        render_generics_for_codegen(&self.type_generics, id2name, buffer);
+        render_generics(&self.type_generics, &config, buffer);
         write!(buffer, "::{}", self.method_name).unwrap();
-        render_generics_for_codegen(&self.method_generics, id2name, buffer);
+        render_generics(&self.method_generics, &config, buffer);
     }
 
     pub fn render_for_error(&self, buffer: &mut String) {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         buffer.push_str(&self.crate_name);
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.type_name).unwrap();
-        render_generics_for_error(&self.type_generics, buffer);
+        render_generics(&self.type_generics, &config, buffer);
         write!(buffer, "::{}", self.method_name).unwrap();
-        render_generics_for_error(&self.method_generics, buffer);
+        render_generics(&self.method_generics, &config, buffer);
     }
 }
 
 impl Display for InherentMethodPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         write!(f, "{}", self.crate_name)?;
         for module in &self.module_path {
             write!(f, "::{module}")?;
         }
         write!(f, "::{}", self.type_name)?;
-        write_generics_display(&self.type_generics, f)?;
+        render_generics(&self.type_generics, &config, f);
         write!(f, "::{}", self.method_name)?;
-        write_generics_display(&self.method_generics, f)
+        render_generics(&self.method_generics, &config, f);
+        Ok(())
     }
 }
 
@@ -216,48 +217,60 @@ impl TraitMethodPath {
                 )
             })
             .unwrap();
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Erase,
+        };
         write!(buffer, "<").unwrap();
-        self.self_type
-            .render_with_inferred_lifetimes_into(id2name, buffer);
+        self.self_type.render_into(&config, buffer);
         write!(buffer, " as {crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.trait_name).unwrap();
-        render_generics_for_codegen(&self.trait_generics, id2name, buffer);
+        render_generics(&self.trait_generics, &config, buffer);
         write!(buffer, ">").unwrap();
         write!(buffer, "::{}", self.method_name).unwrap();
-        render_generics_for_codegen(&self.method_generics, id2name, buffer);
+        render_generics(&self.method_generics, &config, buffer);
     }
 
     pub fn render_for_error(&self, buffer: &mut String) {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         write!(buffer, "<").unwrap();
-        self.self_type.display_for_error_into(buffer);
+        self.self_type.render_into(&config, buffer);
         write!(buffer, " as {}", self.crate_name).unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.trait_name).unwrap();
-        render_generics_for_error(&self.trait_generics, buffer);
+        render_generics(&self.trait_generics, &config, buffer);
         write!(buffer, ">").unwrap();
         write!(buffer, "::{}", self.method_name).unwrap();
-        render_generics_for_error(&self.method_generics, buffer);
+        render_generics(&self.method_generics, &config, buffer);
     }
 }
 
 impl Display for TraitMethodPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         write!(f, "<")?;
-        write!(f, "{}", self.self_type)?;
+        self.self_type.render_into(&config, f);
         write!(f, " as {}", self.crate_name)?;
         for module in &self.module_path {
             write!(f, "::{module}")?;
         }
         write!(f, "::{}", self.trait_name)?;
-        write_generics_display(&self.trait_generics, f)?;
+        render_generics(&self.trait_generics, &config, f);
         write!(f, ">")?;
         write!(f, "::{}", self.method_name)?;
-        write_generics_display(&self.method_generics, f)
+        render_generics(&self.method_generics, &config, f);
+        Ok(())
     }
 }
 
@@ -274,32 +287,45 @@ impl StructLiteralPath {
                 )
             })
             .unwrap();
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Erase,
+        };
         write!(buffer, "{crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.type_name).unwrap();
-        render_generics_for_codegen(&self.type_generics, id2name, buffer);
+        render_generics(&self.type_generics, &config, buffer);
     }
 
     pub fn render_for_error(&self, buffer: &mut String) {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         buffer.push_str(&self.crate_name);
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.type_name).unwrap();
-        render_generics_for_error(&self.type_generics, buffer);
+        render_generics(&self.type_generics, &config, buffer);
     }
 }
 
 impl Display for StructLiteralPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         write!(f, "{}", self.crate_name)?;
         for module in &self.module_path {
             write!(f, "::{module}")?;
         }
         write!(f, "::{}", self.type_name)?;
-        write_generics_display(&self.type_generics, f)
+        render_generics(&self.type_generics, &config, f);
+        Ok(())
     }
 }
 
@@ -316,34 +342,46 @@ impl EnumVariantConstructorPath {
                 )
             })
             .unwrap();
+        let config = RenderConfig {
+            path: PathStyle::CrateLookup(id2name),
+            lifetime: LifetimeStyle::Erase,
+        };
         write!(buffer, "{crate_name}").unwrap();
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.enum_name).unwrap();
-        render_generics_for_codegen(&self.enum_generics, id2name, buffer);
+        render_generics(&self.enum_generics, &config, buffer);
         write!(buffer, "::{}", self.variant_name).unwrap();
     }
 
     pub fn render_for_error(&self, buffer: &mut String) {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         buffer.push_str(&self.crate_name);
         for module in &self.module_path {
             write!(buffer, "::{module}").unwrap();
         }
         write!(buffer, "::{}", self.enum_name).unwrap();
-        render_generics_for_error(&self.enum_generics, buffer);
+        render_generics(&self.enum_generics, &config, buffer);
         write!(buffer, "::{}", self.variant_name).unwrap();
     }
 }
 
 impl Display for EnumVariantConstructorPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let config = RenderConfig {
+            path: PathStyle::Direct,
+            lifetime: LifetimeStyle::Preserve,
+        };
         write!(f, "{}", self.crate_name)?;
         for module in &self.module_path {
             write!(f, "::{module}")?;
         }
         write!(f, "::{}", self.enum_name)?;
-        write_generics_display(&self.enum_generics, f)?;
+        render_generics(&self.enum_generics, &config, f);
         write!(f, "::{}", self.variant_name)
     }
 }

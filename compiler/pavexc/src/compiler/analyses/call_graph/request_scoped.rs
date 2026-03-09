@@ -184,11 +184,14 @@ fn augment_preprocessing_graph(
             continue;
         }
 
-        let Type::Path(processing_path) = component_db.pavex_processing.as_ref()
-        else {
+        let Type::Path(processing_path) = component_db.pavex_processing.as_ref() else {
             unreachable!()
         };
-        let crate_name = processing_path.base_type.first().cloned().unwrap_or_default();
+        let crate_name = processing_path
+            .base_type
+            .first()
+            .cloned()
+            .unwrap_or_default();
         // module_path = everything between crate name and the enum name.
         let module_path: Vec<String> = processing_path.base_type
             [1..processing_path.base_type.len().saturating_sub(1)]
@@ -209,7 +212,10 @@ fn augment_preprocessing_graph(
             },
             metadata: CallableMetadata {
                 output: Some(component_db.pavex_processing.clone()),
-                inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: output_type.to_owned() }],
+                inputs: vec![CallableInput {
+                    name: ParameterName::new("_0".into()),
+                    type_: output_type.to_owned(),
+                }],
                 source_coordinates: None,
             },
         });

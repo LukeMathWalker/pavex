@@ -189,8 +189,7 @@ impl ErrorHandlersInScope {
         if error_type.is_a_template() {
             self.templated.insert(error_type, entry);
         } else {
-            self.concrete
-                .insert(error_type.canonicalize(), entry);
+            self.concrete.insert(error_type.canonicalize(), entry);
         }
     }
 
@@ -202,7 +201,8 @@ impl ErrorHandlersInScope {
         };
         let error_type = *inner.to_owned();
         if error_type.is_a_template() {
-            self.templated.insert(error_type, ErrorHandlerEntry::Invalid);
+            self.templated
+                .insert(error_type, ErrorHandlerEntry::Invalid);
         } else {
             self.concrete
                 .insert(error_type.canonicalize(), ErrorHandlerEntry::Invalid);
@@ -217,7 +217,12 @@ impl std::fmt::Debug for ErrorHandlersInScope {
             writeln!(f, "- {} -> {:?}", type_.inner().display_for_error(), entry)?;
         }
         for (type_, entry) in &self.templated {
-            writeln!(f, "- {} [templated] -> {:?}", type_.display_for_error(), entry)?;
+            writeln!(
+                f,
+                "- {} [templated] -> {:?}",
+                type_.display_for_error(),
+                entry
+            )?;
         }
         Ok(())
     }

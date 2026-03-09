@@ -19,12 +19,12 @@ use rustdoc_types::Item;
 
 use crate::compute::CannotGetCrateData;
 use crate::crate_data::CrateData;
-use rustdoc_ext::GlobalItemId;
 use crate::indexing::{
     EagerImportPath2Id, ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id,
     IndexingVisitor, NoopVisitor, index_local_types,
 };
 use crate::unknown_item_path::UnknownItemPath;
+use rustdoc_ext::GlobalItemId;
 
 /// Thin wrapper around [`rustdoc_types::Crate`] to:
 /// - bundle derived indexes;

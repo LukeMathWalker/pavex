@@ -419,11 +419,11 @@ pub(crate) fn _resolve_type(
                                                         resolved_type.to_owned(),
                                                     )
                                                 } else {
-                                                    GenericArgument::TypeParameter(
-                                                        Type::Generic(Generic {
+                                                    GenericArgument::TypeParameter(Type::Generic(
+                                                        Generic {
                                                             name: generic.to_owned(),
-                                                        }),
-                                                    )
+                                                        },
+                                                    ))
                                                 }
                                             } else {
                                                 GenericArgument::TypeParameter(resolve_type(
@@ -467,11 +467,9 @@ pub(crate) fn _resolve_type(
                                             }
                                             GenericArgument::TypeParameter(default)
                                         } else {
-                                            GenericArgument::TypeParameter(Type::Generic(
-                                                Generic {
-                                                    name: arg_def.name.clone(),
-                                                },
-                                            ))
+                                            GenericArgument::TypeParameter(Type::Generic(Generic {
+                                                name: arg_def.name.clone(),
+                                            }))
                                         }
                                     }
                                     GenericParamDefKind::Const { .. } => {
@@ -594,16 +592,20 @@ pub(crate) fn _resolve_type(
                     len: len.clone(),
                 })
             })?;
-            let resolved =
-                resolve_type(type_, used_by_package_id, krate_collection, generic_bindings)
-                    .map_err(|source| {
-                        TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
-                            TypePartResolutionError {
-                                role: "array element type".into(),
-                                source,
-                            },
-                        ))
-                    })?;
+            let resolved = resolve_type(
+                type_,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+            )
+            .map_err(|source| {
+                TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                    TypePartResolutionError {
+                        role: "array element type".into(),
+                        source,
+                    },
+                ))
+            })?;
             Ok(Type::Array(Array {
                 element_type: Box::new(resolved),
                 len,
@@ -629,16 +631,20 @@ pub(crate) fn _resolve_type(
             },
         )),
         RustdocType::RawPointer { is_mutable, type_ } => {
-            let resolved =
-                resolve_type(type_, used_by_package_id, krate_collection, generic_bindings)
-                    .map_err(|source| {
-                        TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
-                            TypePartResolutionError {
-                                role: "pointee type".into(),
-                                source,
-                            },
-                        ))
-                    })?;
+            let resolved = resolve_type(
+                type_,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+            )
+            .map_err(|source| {
+                TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                    TypePartResolutionError {
+                        role: "pointee type".into(),
+                        source,
+                    },
+                ))
+            })?;
             Ok(Type::RawPointer(RawPointer {
                 is_mutable: *is_mutable,
                 inner: Box::new(resolved),
@@ -664,11 +670,7 @@ pub(crate) fn resolve_callable(
     let used_by_package_id = &new_callable_path.package_id;
 
     let (header, decl, fn_generics_defs) = match &callable_item.item.inner {
-        ItemEnum::Function(f) => (
-            &f.header,
-            &f.sig,
-            &f.generics,
-        ),
+        ItemEnum::Function(f) => (&f.header, &f.sig, &f.generics),
         kind => {
             let item_kind = kind.kind().to_owned();
             return Err(UnsupportedCallableKind {
@@ -720,14 +722,14 @@ pub(crate) fn resolve_callable(
         let generic_name = &generic_def.name;
         match generic_arg {
             FQGenericArgument::Type(t) => {
-                let resolved_type =
-                    resolve_fq_path_type(t, krate_collection)
-                        .map_err(|e| GenericParameterResolutionError {
-                            generic_type: t.to_owned(),
-                            callable_path: new_callable_path.to_owned(),
-                            callable_item: callable_item.item.clone().into_owned(),
-                            source: Arc::new(e),
-                        })?;
+                let resolved_type = resolve_fq_path_type(t, krate_collection).map_err(|e| {
+                    GenericParameterResolutionError {
+                        generic_type: t.to_owned(),
+                        callable_path: new_callable_path.to_owned(),
+                        callable_item: callable_item.item.clone().into_owned(),
+                        source: Arc::new(e),
+                    }
+                })?;
                 generic_bindings
                     .types
                     .insert(generic_name.to_owned(), resolved_type);
@@ -899,16 +901,14 @@ pub(crate) fn resolve_callable(
     };
 
     let symbol_name = callable_item.item.attrs.iter().find_map(|attr| match attr {
-        rustdoc_types::Attribute::NoMangle => callable_item
-            .item
-            .name
-            .clone(),
+        rustdoc_types::Attribute::NoMangle => callable_item.item.name.clone(),
         rustdoc_types::Attribute::ExportName(name) => Some(name.clone()),
         _ => None,
     });
 
-    let resolved_path = fq_path_to_resolved_path(&canonical_path, &callable_items, krate_collection)
-        .expect("Failed to convert generic arguments when building callable path");
+    let resolved_path =
+        fq_path_to_resolved_path(&canonical_path, &callable_items, krate_collection)
+            .expect("Failed to convert generic arguments when building callable path");
 
     let fn_header = FnHeader {
         is_async: header.is_async,
@@ -951,12 +951,11 @@ fn resolve_fq_generic_arg(
     krate_collection: &CrateCollection,
 ) -> Result<GenericArgument, anyhow::Error> {
     match arg {
-        FQGenericArgument::Type(t) => {
-            Ok(GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?))
-        }
-        FQGenericArgument::Lifetime(l) => {
-            Ok(GenericArgument::Lifetime(l.clone().into()))
-        }
+        FQGenericArgument::Type(t) => Ok(GenericArgument::TypeParameter(resolve_fq_path_type(
+            t,
+            krate_collection,
+        )?)),
+        FQGenericArgument::Lifetime(l) => Ok(GenericArgument::Lifetime(l.clone().into())),
     }
 }
 
@@ -999,7 +998,10 @@ fn fq_path_to_resolved_path(
                 crate_name,
                 module_path,
                 function_name: last.ident.clone(),
-                function_generics: resolve_fq_generic_args(&last.generic_arguments, krate_collection)?,
+                function_generics: resolve_fq_generic_args(
+                    &last.generic_arguments,
+                    krate_collection,
+                )?,
             })
         }
         CallableItem::Method {
@@ -1019,14 +1021,17 @@ fn fq_path_to_resolved_path(
                 .as_ref()
                 .map(|q| q.type_.clone())
                 .unwrap_or_else(|| {
-                    FQPathType::from(
-                        Type::Path(PathType {
-                            package_id: method_owner.0.item_id.package_id.clone(),
-                            rustdoc_id: None,
-                            base_type: method_owner.1.segments.iter().map(|s| s.ident.clone()).collect(),
-                            generic_arguments: vec![],
-                        })
-                    )
+                    FQPathType::from(Type::Path(PathType {
+                        package_id: method_owner.0.item_id.package_id.clone(),
+                        rustdoc_id: None,
+                        base_type: method_owner
+                            .1
+                            .segments
+                            .iter()
+                            .map(|s| s.ident.clone())
+                            .collect(),
+                        generic_arguments: vec![],
+                    }))
                 });
             let self_type = resolve_fq_path_type(&fq_self_type, krate_collection)?;
             ResolvedPath::TraitMethod(TraitMethodPath {
@@ -1034,10 +1039,16 @@ fn fq_path_to_resolved_path(
                 crate_name,
                 module_path,
                 trait_name: trait_segment.ident.clone(),
-                trait_generics: resolve_fq_generic_args(&trait_segment.generic_arguments, krate_collection)?,
+                trait_generics: resolve_fq_generic_args(
+                    &trait_segment.generic_arguments,
+                    krate_collection,
+                )?,
                 self_type,
                 method_name: method_segment.ident.clone(),
-                method_generics: resolve_fq_generic_args(&method_segment.generic_arguments, krate_collection)?,
+                method_generics: resolve_fq_generic_args(
+                    &method_segment.generic_arguments,
+                    krate_collection,
+                )?,
             })
         }
         CallableItem::Method { .. } => {
@@ -1053,9 +1064,15 @@ fn fq_path_to_resolved_path(
                 crate_name,
                 module_path,
                 type_name: type_segment.ident.clone(),
-                type_generics: resolve_fq_generic_args(&type_segment.generic_arguments, krate_collection)?,
+                type_generics: resolve_fq_generic_args(
+                    &type_segment.generic_arguments,
+                    krate_collection,
+                )?,
                 method_name: method_segment.ident.clone(),
-                method_generics: resolve_fq_generic_args(&method_segment.generic_arguments, krate_collection)?,
+                method_generics: resolve_fq_generic_args(
+                    &method_segment.generic_arguments,
+                    krate_collection,
+                )?,
             })
         }
     };
@@ -1081,9 +1098,10 @@ fn get_trait_generic_bindings(
     {
         if let FQGenericArgument::Type(t) = assigned_parameter {
             // TODO: handle conflicts
-            generic_bindings
-                .types
-                .insert(generic_slot.name.clone(), resolve_fq_path_type(t, krate_collection)?);
+            generic_bindings.types.insert(
+                generic_slot.name.clone(),
+                resolve_fq_path_type(t, krate_collection)?,
+            );
         }
     }
     Ok(())
@@ -1124,9 +1142,7 @@ pub(crate) fn resolve_type_path_with_item(
                 FQGenericArgument::Type(t) => {
                     GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?)
                 }
-                FQGenericArgument::Lifetime(l) => {
-                    GenericArgument::Lifetime(l.clone().into())
-                }
+                FQGenericArgument::Lifetime(l) => GenericArgument::Lifetime(l.clone().into()),
             };
             generic_arguments.push(arg);
         }
@@ -1145,15 +1161,13 @@ pub(crate) fn resolve_type_path_with_item(
                 FQGenericArgument::Type(t) => {
                     GenericArgument::TypeParameter(resolve_fq_path_type(t, krate_collection)?)
                 }
-                FQGenericArgument::Lifetime(l) => {
-                    GenericArgument::Lifetime(l.clone().into())
-                }
+                FQGenericArgument::Lifetime(l) => GenericArgument::Lifetime(l.clone().into()),
             }
         } else {
             match &generic_def.kind {
-                GenericParamDefKind::Lifetime { .. } => {
-                    GenericArgument::Lifetime(GenericLifetimeParameter::from_name(&generic_def.name))
-                }
+                GenericParamDefKind::Lifetime { .. } => GenericArgument::Lifetime(
+                    GenericLifetimeParameter::from_name(&generic_def.name),
+                ),
                 GenericParamDefKind::Type { default, .. } => {
                     if let Some(default) = default {
                         let default = resolve_type(

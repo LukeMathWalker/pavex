@@ -348,9 +348,7 @@ impl RequestHandlerPipeline {
             previous_next_state = {
                 let inputs = state_accumulator.iter().filter(|ty| match ty {
                     Type::Path(_) => *ty != &component_db.pavex_response,
-                    Type::Reference(ref_) => {
-                        ref_.inner.as_ref() != &component_db.pavex_response
-                    }
+                    Type::Reference(ref_) => ref_.inner.as_ref() != &component_db.pavex_response,
                     _ => true,
                 });
                 let inputs = InputParameters::from_iter(inputs);
@@ -683,9 +681,7 @@ impl RequestHandlerPipeline {
                 .lifetimes
                 .iter()
                 .map(|s| {
-                    GenericArgument::Lifetime(
-                        GenericLifetimeParameter::from_name(s.to_owned()),
-                    )
+                    GenericArgument::Lifetime(GenericLifetimeParameter::from_name(s.to_owned()))
                 })
                 .collect(),
         };
@@ -706,7 +702,10 @@ impl RequestHandlerPipeline {
                 source_coordinates: None,
             },
             // TODO: remove when TAIT stabilises
-            extra_field2default_value: BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())]),
+            extra_field2default_value: BTreeMap::from([(
+                "next".into(),
+                stage_names[wrapping_id + 1].clone(),
+            )]),
         });
         let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
         let next_state_scope_id = component_db.scope_id(middleware_id);
