@@ -26,8 +26,8 @@ pub use callable_path::{
 };
 pub use generic::Generic;
 pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
-pub use named_lifetime::NamedLifetime;
 pub use lifetime::Lifetime;
+pub use named_lifetime::NamedLifetime;
 pub use path_type::PathType;
 pub use raw_pointer::RawPointer;
 pub use scalar_primitive::{ScalarPrimitive, UnknownPrimitive};

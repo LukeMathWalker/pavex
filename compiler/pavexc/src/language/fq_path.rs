@@ -7,8 +7,8 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use itertools::Itertools;
 
-use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive};
 use crate::language::Type;
+use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive};
 
 use super::resolved_type::{GenericLifetimeParameter, NamedLifetime};
 
@@ -140,9 +140,7 @@ impl From<Type> for FQPathType {
                         .into_iter()
                         .map(|t| match t {
                             GenericArgument::TypeParameter(t) => FQGenericArgument::Type(t.into()),
-                            GenericArgument::Lifetime(l) => {
-                                FQGenericArgument::Lifetime(l.into())
-                            }
+                            GenericArgument::Lifetime(l) => FQGenericArgument::Lifetime(l.into()),
                         })
                         .collect();
                 }

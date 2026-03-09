@@ -12,7 +12,9 @@ use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{GenericBindings, resolve_type};
 use crate::diagnostic::DiagnosticSink;
-use crate::language::{FQGenericArgument, FQPathType, UnknownCrate, krate2package_id, resolve_fq_path_type};
+use crate::language::{
+    FQGenericArgument, FQPathType, UnknownCrate, krate2package_id, resolve_fq_path_type,
+};
 use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 use rustdoc_ext::RustdocKindExt;

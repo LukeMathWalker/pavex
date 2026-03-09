@@ -33,10 +33,7 @@ pub(crate) fn get_err_variant(t: &Type) -> &Type {
 /// Resolve a type path assuming that the crate it belongs to is either
 /// a toolchain crate (i.e. `core`/`std`/`alloc`) or a direct dependency
 /// of `pavex`.
-pub(crate) fn resolve_type_path(
-    raw_path: &str,
-    krate_collection: &CrateCollection,
-) -> Type {
+pub(crate) fn resolve_type_path(raw_path: &str, krate_collection: &CrateCollection) -> Type {
     let identifiers = RawIdentifiers {
         import_path: raw_path.into(),
         created_at: CreatedAt {

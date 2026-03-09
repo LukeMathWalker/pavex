@@ -46,10 +46,8 @@ impl ApplicationConfig {
         let mut binding2id = BiBTreeMap::new();
         // Temporary maps to track key-to-type and type-to-key relationships
         // and detect conflicts.
-        let mut key2types: BTreeMap<ConfigKey, IndexMap<Type, ComponentId>> =
-            BTreeMap::new();
-        let mut type2keys: IndexMap<Type, BTreeMap<ConfigKey, ComponentId>> =
-            IndexMap::new();
+        let mut key2types: BTreeMap<ConfigKey, IndexMap<Type, ComponentId>> = BTreeMap::new();
+        let mut type2keys: IndexMap<Type, BTreeMap<ConfigKey, ComponentId>> = IndexMap::new();
         for (id, _) in component_db.iter() {
             let HydratedComponent::ConfigType(config) =
                 component_db.hydrated_component(id, computation_db)

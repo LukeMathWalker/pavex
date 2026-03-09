@@ -4,9 +4,9 @@ use ahash::HashMap;
 
 use crate::compute::CannotGetCrateData;
 use crate::crate_data::CrateData;
-use rustdoc_ext::GlobalItemId;
 use crate::queries::Crate;
 use crate::queries::registry::CrateRegistry;
+use rustdoc_ext::GlobalItemId;
 
 /// Track re-exports of types (or entire modules!) from other crates.
 #[derive(

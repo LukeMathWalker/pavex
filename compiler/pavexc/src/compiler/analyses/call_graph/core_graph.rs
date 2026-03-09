@@ -198,9 +198,15 @@ where
                     HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(..) => {
                         vec![]
                     }
-                    HydratedComponent::RequestHandler(r) => r.input_types().into_iter().cloned().collect(),
-                    HydratedComponent::PostProcessingMiddleware(pp) => pp.input_types().into_iter().cloned().collect(),
-                    HydratedComponent::PreProcessingMiddleware(pp) => pp.input_types().into_iter().cloned().collect(),
+                    HydratedComponent::RequestHandler(r) => {
+                        r.input_types().into_iter().cloned().collect()
+                    }
+                    HydratedComponent::PostProcessingMiddleware(pp) => {
+                        pp.input_types().into_iter().cloned().collect()
+                    }
+                    HydratedComponent::PreProcessingMiddleware(pp) => {
+                        pp.input_types().into_iter().cloned().collect()
+                    }
                     HydratedComponent::Transformer(c, info) => {
                         let mut inputs: Vec<_> = c.input_types().into_iter().cloned().collect();
                         // The component we are transforming must have been added to the graph
@@ -209,7 +215,8 @@ where
                         inputs
                     }
                     HydratedComponent::WrappingMiddleware(mw) => {
-                        let mut input_types: Vec<_> = mw.input_types().into_iter().cloned().collect();
+                        let mut input_types: Vec<_> =
+                            mw.input_types().into_iter().cloned().collect();
                         let next_type = &input_types[mw.next_input_index()];
                         if !next_type.unassigned_generic_type_parameters().is_empty() {
                             // If we haven't assigned a concrete type to the `Next` type parameter,

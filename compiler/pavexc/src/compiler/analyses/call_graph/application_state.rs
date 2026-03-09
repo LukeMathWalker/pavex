@@ -159,7 +159,10 @@ pub(crate) fn application_state_call_graph(
                 },
                 metadata: CallableMetadata {
                     output: Some(application_state_result.clone().into()),
-                    inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: application_state.type_().into() }],
+                    inputs: vec![CallableInput {
+                        name: ParameterName::new("_0".into()),
+                        type_: application_state.type_().into(),
+                    }],
                     source_coordinates: None,
                 },
             })
@@ -176,7 +179,10 @@ pub(crate) fn application_state_call_graph(
                 },
                 metadata: CallableMetadata {
                     output: Some(application_state_result.into()),
-                    inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_enum.clone().into() }],
+                    inputs: vec![CallableInput {
+                        name: ParameterName::new("_0".into()),
+                        type_: error_enum.clone().into(),
+                    }],
                     source_coordinates: None,
                 },
             })
@@ -230,12 +236,8 @@ pub(crate) fn application_state_call_graph(
                             m.path.method_name.to_case(Case::Pascal)
                         )
                     }
-                    Callable::FreeFunction(f) => {
-                        f.path.function_name.to_case(Case::Pascal)
-                    }
-                    Callable::StructLiteralInit(s) => {
-                        s.path.type_name.to_case(Case::Pascal)
-                    }
+                    Callable::FreeFunction(f) => f.path.function_name.to_case(Case::Pascal),
+                    Callable::StructLiteralInit(s) => s.path.type_name.to_case(Case::Pascal),
                     Callable::EnumVariantInit(e) => {
                         format!(
                             "{}{}",
@@ -263,7 +265,10 @@ pub(crate) fn application_state_call_graph(
                     },
                     metadata: CallableMetadata {
                         output: Some(error_enum.clone().into()),
-                        inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error_type.to_owned() }],
+                        inputs: vec![CallableInput {
+                            name: ParameterName::new("_0".into()),
+                            type_: error_type.to_owned(),
+                        }],
                         source_coordinates: None,
                     },
                 });

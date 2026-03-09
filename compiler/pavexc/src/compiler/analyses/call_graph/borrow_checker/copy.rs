@@ -58,8 +58,6 @@ impl<'a> CopyChecker<'a> {
 /// Return the `PathType` object for the `Copy` marker trait.
 fn get_copy_trait(krate_collection: &CrateCollection) -> PathType {
     let c = resolve_type_path("core::marker::Copy", krate_collection);
-    let Type::Path(c) = c else {
-        unreachable!()
-    };
+    let Type::Path(c) = c else { unreachable!() };
     c
 }

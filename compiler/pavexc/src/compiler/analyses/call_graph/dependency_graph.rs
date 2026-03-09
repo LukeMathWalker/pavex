@@ -131,9 +131,12 @@ impl DependencyGraph {
                         HydratedComponent::ConfigType(..) | HydratedComponent::PrebuiltType(..) => {
                             vec![]
                         }
-                        HydratedComponent::RequestHandler(r) => r.input_types().into_iter().cloned().collect(),
+                        HydratedComponent::RequestHandler(r) => {
+                            r.input_types().into_iter().cloned().collect()
+                        }
                         HydratedComponent::PostProcessingMiddleware(pp) => {
-                            let mut input_types: Vec<_> = pp.input_types().into_iter().cloned().collect();
+                            let mut input_types: Vec<_> =
+                                pp.input_types().into_iter().cloned().collect();
                             // `Response` doesn't matter when it comes to verifying that we don't
                             // have cyclic dependencies, so we can skip it.
                             input_types
@@ -141,26 +144,31 @@ impl DependencyGraph {
                             input_types
                         }
                         HydratedComponent::Transformer(t, info) => {
-                            let mut input_types: Vec<_> = t.input_types().into_iter().cloned().collect();
+                            let mut input_types: Vec<_> =
+                                t.input_types().into_iter().cloned().collect();
                             // We have already added the transformed -> transformer edge at this stage.
                             input_types.remove(info.input_index);
                             input_types
                         }
                         HydratedComponent::WrappingMiddleware(mw) => {
-                            let mut input_types: Vec<_> = mw.input_types().into_iter().cloned().collect();
+                            let mut input_types: Vec<_> =
+                                mw.input_types().into_iter().cloned().collect();
                             // `Next` doesn't matter when it comes to verifying that we don't
                             // have cyclic dependencies, so we can skip it.
                             input_types.remove(mw.next_input_index());
                             input_types
                         }
                         HydratedComponent::ErrorObserver(eo) => {
-                            let mut input_types: Vec<_> = eo.input_types().into_iter().cloned().collect();
+                            let mut input_types: Vec<_> =
+                                eo.input_types().into_iter().cloned().collect();
                             // `Error` doesn't matter when it comes to verifying that we don't
                             // have cyclic dependencies, so we can skip it.
                             input_types.remove(eo.error_input_index);
                             input_types
                         }
-                        HydratedComponent::PreProcessingMiddleware(p) => p.input_types().into_iter().cloned().collect(),
+                        HydratedComponent::PreProcessingMiddleware(p) => {
+                            p.input_types().into_iter().cloned().collect()
+                        }
                     };
                     for input_type in input_types {
                         if let Some((constructor_id, _)) = constructible_db.get(

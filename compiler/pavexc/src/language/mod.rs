@@ -12,9 +12,9 @@ use pavex_bp_schema::CreatedAt;
 pub(crate) use resolved_type::{
     Array, Callable, CallableInput, CallableMetadata, CanonicalType, EnumVariantConstructorPath,
     EnumVariantInit, FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument,
-    GenericLifetimeParameter, InherentMethod, InherentMethodPath, Lifetime, ParameterName, PathType,
-    PathTypeExt, RawPointer, Slice, StructLiteralInit, TraitMethod,
-    TraitMethodPath, Tuple, Type, TypeReference, UnknownPrimitive,
+    GenericLifetimeParameter, InherentMethod, InherentMethodPath, Lifetime, ParameterName,
+    PathType, PathTypeExt, RawPointer, Slice, StructLiteralInit, TraitMethod, TraitMethodPath,
+    Tuple, Type, TypeReference, UnknownPrimitive,
 };
 
 mod callable_path;

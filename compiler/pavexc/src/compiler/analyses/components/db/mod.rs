@@ -23,8 +23,7 @@ use crate::compiler::utils::{
 };
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
-    Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, PathTypeExt, Type,
-    TypeReference,
+    Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, PathTypeExt, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt, HashSet};

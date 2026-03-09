@@ -885,14 +885,12 @@ fn push_fallback_ambiguity_diagnostic(
     let route_repr = router_key.diagnostic_repr();
     let scope_fallback = {
         let mut s = String::new();
-        computation_db[scope_fallback_id]
-            .render_for_error(&mut s);
+        computation_db[scope_fallback_id].render_for_error(&mut s);
         s
     };
     let path_fallback = {
         let mut s = String::new();
-        computation_db[path_fallback_id]
-            .render_for_error(&mut s);
+        computation_db[path_fallback_id].render_for_error(&mut s);
         s
     };
     let path_prefix = db.fallback_id2path_prefix[&path_fallback_id]
@@ -953,8 +951,7 @@ fn push_fallback_method_ambiguity_diagnostic(
             }
 
             let mut path = String::new();
-            computation_db[*fallback_id]
-                .render_for_error(&mut path);
+            computation_db[*fallback_id].render_for_error(&mut path);
             path
         };
 

@@ -54,7 +54,10 @@ pub(super) fn register_error_new_transformer(
         },
         metadata: CallableMetadata {
             output: Some(pavex_error.clone().into()),
-            inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error.to_owned() }],
+            inputs: vec![CallableInput {
+                name: ParameterName::new("_0".into()),
+                type_: error.to_owned(),
+            }],
             source_coordinates: None,
         },
         header: FnHeader {
