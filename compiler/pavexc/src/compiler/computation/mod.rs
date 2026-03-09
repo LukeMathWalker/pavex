@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use ahash::HashMap;
-use indexmap::IndexSet;
 
 pub(crate) use match_result::{MatchResult, MatchResultVariant};
 
@@ -95,16 +94,6 @@ impl Computation<'_> {
             Computation::PrebuiltType(i) => {
                 Computation::PrebuiltType(Cow::Owned(i.bind_generic_type_parameters(bindings)))
             }
-        }
-    }
-
-    /// Returns the set of all unassigned generic type parameters in this computation.
-    #[allow(unused)]
-    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
-        match self {
-            Computation::Callable(c) => c.unassigned_generic_type_parameters(),
-            Computation::MatchResult(m) => m.unassigned_generic_type_parameters(),
-            Computation::PrebuiltType(i) => i.unassigned_generic_type_parameters(),
         }
     }
 }

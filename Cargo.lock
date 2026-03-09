@@ -4255,6 +4255,7 @@ dependencies = [
  "bimap",
  "guppy",
  "indexmap",
+ "rustdoc_ext",
  "rustdoc_types",
  "serde",
  "syn",

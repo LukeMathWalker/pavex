@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display, Formatter, Write};
+
+use bimap::BiHashMap;
+use guppy::PackageId;
 
 use crate::named_lifetime::NamedLifetime;
 use crate::Type;
@@ -36,6 +39,53 @@ impl GenericLifetimeParameter {
             "_" => GenericLifetimeParameter::Inferred,
             "static" => GenericLifetimeParameter::Static,
             _ => GenericLifetimeParameter::Named(NamedLifetime::new(name)),
+        }
+    }
+}
+
+impl GenericArgument {
+    /// Render this generic argument preserving named lifetimes as-is.
+    pub fn render_type_into(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        match self {
+            GenericArgument::TypeParameter(t) => {
+                t.render_type_into(id2name, buffer);
+            }
+            GenericArgument::Lifetime(l) => {
+                write!(buffer, "{l}").unwrap();
+            }
+        }
+    }
+
+    /// Render this generic argument, replacing named lifetimes with `'_`.
+    pub fn render_with_inferred_lifetimes_into(
+        &self,
+        id2name: &BiHashMap<PackageId, String>,
+        buffer: &mut String,
+    ) {
+        match self {
+            GenericArgument::TypeParameter(t) => {
+                t.render_with_inferred_lifetimes_into(id2name, buffer);
+            }
+            GenericArgument::Lifetime(l) => match l {
+                GenericLifetimeParameter::Static => {
+                    write!(buffer, "'static").unwrap();
+                }
+                GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Inferred => {
+                    write!(buffer, "'_").unwrap();
+                }
+            },
+        }
+    }
+
+    /// Render this generic argument for error messages.
+    pub fn display_for_error_into<W: std::fmt::Write>(&self, buffer: &mut W) {
+        match self {
+            GenericArgument::TypeParameter(t) => {
+                t.display_for_error_into(buffer);
+            }
+            GenericArgument::Lifetime(l) => {
+                write!(buffer, "{l}").unwrap();
+            }
         }
     }
 }

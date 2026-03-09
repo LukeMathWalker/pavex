@@ -1,6 +1,6 @@
 pub use rustdoc_ir::*;
 
-use crate::language::{FQPath, FQPathSegment, StructLiteralPath};
+use crate::language::{FQPath, FQPathSegment};
 
 pub(crate) trait PathTypeExt {
     fn resolved_path(&self) -> FQPath;
