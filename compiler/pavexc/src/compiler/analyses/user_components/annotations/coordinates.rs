@@ -113,10 +113,7 @@ pub(crate) fn resolve_annotation_coordinates(
                 }
                 Err(e) => {
                     let path_display = krate.import_index.items[&item.id]
-                        .canonical_path()
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
+                        .canonical_path().to_vec()
                         .join("::");
                     invalid_config_type(e, &path_display, component_id, aux, diagnostics)
                 }
@@ -155,10 +152,7 @@ pub(crate) fn resolve_annotation_coordinates(
                 }
                 Err(e) => {
                     let path_display = krate.import_index.items[&item.id]
-                        .canonical_path()
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
+                        .canonical_path().to_vec()
                         .join("::");
                     invalid_prebuilt_type(e, &path_display, component_id, aux, diagnostics)
                 }
