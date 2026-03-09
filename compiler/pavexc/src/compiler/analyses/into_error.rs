@@ -6,8 +6,8 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, CallableInput, InherentMethodPath, InvocationStyle, CallablePath, ParameterName,
-    Type,
+    Callable, CallableInput, CallableMetadata, FnHeader, InherentMethod, InherentMethodPath,
+    ParameterName, Type,
 };
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
@@ -42,11 +42,8 @@ pub(super) fn register_error_new_transformer(
         vec![]
     };
 
-    let pavex_error_new_callable = Callable {
-        is_async: false,
-        takes_self_as_ref: true,
-        output: Some(pavex_error.clone().into()),
-        path: CallablePath::InherentMethod(InherentMethodPath {
+    let pavex_error_new_callable = Callable::InherentMethod(InherentMethod {
+        path: InherentMethodPath {
             package_id: pavex_error.package_id.clone(),
             crate_name,
             module_path,
@@ -54,15 +51,21 @@ pub(super) fn register_error_new_transformer(
             type_generics: vec![],
             method_name: "new".into(),
             method_generics: vec![],
-        }),
-        inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error.to_owned() }],
-        invocation_style: InvocationStyle::FunctionCall,
-        source_coordinates: None,
-        abi: rustdoc_types::Abi::Rust,
-        is_unsafe: false,
-        is_c_variadic: false,
-        symbol_name: None,
-    };
+        },
+        metadata: CallableMetadata {
+            output: Some(pavex_error.clone().into()),
+            inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: error.to_owned() }],
+            source_coordinates: None,
+        },
+        header: FnHeader {
+            is_async: false,
+            abi: rustdoc_types::Abi::Rust,
+            is_unsafe: false,
+            is_c_variadic: false,
+            symbol_name: None,
+        },
+        takes_self_as_ref: true,
+    });
 
     let computation_id =
         computation_db.get_or_intern(Computation::Callable(Cow::Owned(pavex_error_new_callable)));

@@ -13,6 +13,7 @@ clippy = { large_enum_variant = "allow", result_large_err = "allow" }
 [dependencies]
 # Core dependencies
 rustdoc-types = { workspace = true }
+rustdoc_ext = { path = "../rustdoc_ext" }
 
 # Package graph
 guppy = { workspace = true }

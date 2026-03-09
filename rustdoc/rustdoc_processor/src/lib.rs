@@ -14,7 +14,6 @@
 pub mod cache;
 pub mod compute;
 pub mod crate_data;
-mod global_item_id;
 pub mod indexing;
 pub mod queries;
 mod unknown_item_path;
@@ -22,7 +21,7 @@ mod utils;
 mod version_matcher;
 
 // Cross-cutting types re-exported at crate root
-pub use global_item_id::GlobalItemId;
+pub use rustdoc_ext::GlobalItemId;
 pub use unknown_item_path::UnknownItemPath;
 
 /// Crate version - used as part of cache fingerprint.

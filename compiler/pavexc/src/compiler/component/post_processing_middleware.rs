@@ -34,7 +34,7 @@ impl<'a> PostProcessingMiddleware<'a> {
     ) -> Result<Self, PostProcessingMiddlewareValidationError> {
         use PostProcessingMiddlewareValidationError::*;
 
-        let mut output_type = c.output.as_ref().ok_or(CannotReturnTheUnitType)?.clone();
+        let mut output_type = c.output().ok_or(CannotReturnTheUnitType)?.clone();
 
         // If it is fallible, we make sure that it returns a non-unit type on the happy path.
         if output_type.is_result() {
@@ -72,7 +72,7 @@ impl<'a> PostProcessingMiddleware<'a> {
     }
 
     pub fn output_type(&self) -> &Type {
-        self.callable.output.as_ref().unwrap()
+        self.callable.output().unwrap()
     }
 
     pub fn input_types(&self) -> Vec<&Type> {

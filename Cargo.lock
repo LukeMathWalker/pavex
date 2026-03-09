@@ -4242,6 +4242,7 @@ dependencies = [
 name = "rustdoc_ext"
 version = "0.2.10"
 dependencies = [
+ "guppy",
  "rustdoc_types",
 ]
 
@@ -4282,6 +4283,7 @@ dependencies = [
  "rkyv",
  "rusqlite",
  "rustc-hash",
+ "rustdoc_ext",
  "rustdoc_types",
  "semver",
  "serde",

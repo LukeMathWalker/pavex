@@ -309,7 +309,7 @@ fn emit_borrow_checking_error(
                 let help_msg = format!(
                     "Considering changing the signature of `{}`.\n\
                         It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
-                    callable.path
+                    callable
                 );
                 let help = HelpWithSnippet::new(help_msg, AnnotatedSource::empty());
                 diagnostic = diagnostic.help_with_snippet(help);

@@ -331,7 +331,7 @@ fn cycle_error(
             .hydrated_component(*dependency_id, computation_db)
             .computation()
         {
-            Computation::Callable(c) => c.path.clone(),
+            Computation::Callable(c) => c.to_string(),
             Computation::MatchResult(_) => unreachable!(),
             Computation::PrebuiltType(_) => unreachable!(
                 "Prebuilt types do not have dependencies, so they can't be part of a cycle"
@@ -339,7 +339,7 @@ fn cycle_error(
         };
         let dependent_component = component_db.hydrated_component(dependent_id, computation_db);
         let dependent_path = match dependent_component.computation() {
-            Computation::Callable(c) => c.path.clone(),
+            Computation::Callable(c) => c.to_string(),
             Computation::MatchResult(_) => unreachable!(),
             Computation::PrebuiltType(_) => unreachable!(
                 "Prebuilt types do not have dependencies, so they can't be part of a cycle"

@@ -11,10 +11,10 @@ use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type
 use tracing_log_error::log_error;
 
 use crate::language::{
-    Array, Callable, CallableInput, CallableItem, CallablePath, FQGenericArgument, FQPath,
-    FQPathSegment, FQPathType, FreeFunctionPath, Generic, GenericArgument,
-    GenericLifetimeParameter, InherentMethodPath, InvocationStyle, ParameterName, PathType,
-    RawPointer, Slice, TraitMethodPath, Tuple, Type, TypeReference, UnknownPath,
+    Array, Callable, CallableInput, CallableItem, CallableMetadata, FQGenericArgument, FQPath,
+    FQPathSegment, FQPathType, FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument,
+    GenericLifetimeParameter, InherentMethod, InherentMethodPath, ParameterName, PathType,
+    RawPointer, Slice, TraitMethod, TraitMethodPath, Tuple, Type, TypeReference, UnknownPath,
     UnknownPrimitive, find_rustdoc_callable_items, find_rustdoc_item_type, resolve_fq_path_type,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
@@ -663,12 +663,11 @@ pub(crate) fn resolve_callable(
     };
     let used_by_package_id = &new_callable_path.package_id;
 
-    let (header, decl, fn_generics_defs, invocation_style) = match &callable_item.item.inner {
+    let (header, decl, fn_generics_defs) = match &callable_item.item.inner {
         ItemEnum::Function(f) => (
             &f.header,
             &f.sig,
             &f.generics,
-            InvocationStyle::FunctionCall,
         ),
         kind => {
             let item_kind = kind.kind().to_owned();
@@ -908,21 +907,40 @@ pub(crate) fn resolve_callable(
         _ => None,
     });
 
-    let callable_fq_path = fq_path_to_callable_path(&canonical_path, &callable_items, krate_collection)
-        .expect("Failed to convert generic arguments when building CallablePath");
+    let resolved_path = fq_path_to_resolved_path(&canonical_path, &callable_items, krate_collection)
+        .expect("Failed to convert generic arguments when building callable path");
 
-    let callable = Callable {
+    let fn_header = FnHeader {
         is_async: header.is_async,
-        takes_self_as_ref,
-        output: output_type_path,
-        path: callable_fq_path,
-        inputs: resolved_parameter_types,
-        invocation_style,
-        source_coordinates: Some(callable_item.item_id.clone()),
         abi: header.abi.clone(),
         is_unsafe: header.is_unsafe,
         is_c_variadic: decl.is_c_variadic,
         symbol_name,
+    };
+    let metadata = CallableMetadata {
+        output: output_type_path,
+        inputs: resolved_parameter_types,
+        source_coordinates: Some(callable_item.item_id.clone()),
+    };
+
+    let callable = match resolved_path {
+        ResolvedPath::FreeFunction(path) => Callable::FreeFunction(FreeFunction {
+            path,
+            metadata,
+            header: fn_header,
+        }),
+        ResolvedPath::InherentMethod(path) => Callable::InherentMethod(InherentMethod {
+            path,
+            metadata,
+            header: fn_header,
+            takes_self_as_ref,
+        }),
+        ResolvedPath::TraitMethod(path) => Callable::TraitMethod(TraitMethod {
+            path,
+            metadata,
+            header: fn_header,
+            takes_self_as_ref,
+        }),
     };
     Ok(callable)
 }
@@ -952,26 +970,31 @@ fn resolve_fq_generic_args(
         .collect()
 }
 
-/// Convert a canonical `FQPath` and the resolved `CallableItem` into a structured `CallablePath`.
-fn fq_path_to_callable_path(
+/// Internal helper to carry the resolved path before building the full `Callable`.
+enum ResolvedPath {
+    FreeFunction(FreeFunctionPath),
+    InherentMethod(InherentMethodPath),
+    TraitMethod(TraitMethodPath),
+}
+
+/// Convert a canonical `FQPath` and the resolved `CallableItem` into a structured path.
+fn fq_path_to_resolved_path(
     canonical_path: &FQPath,
     callable_items: &CallableItem,
     krate_collection: &CrateCollection,
-) -> Result<CallablePath, anyhow::Error> {
+) -> Result<ResolvedPath, anyhow::Error> {
     let crate_name = canonical_path.crate_name().to_owned();
     let package_id = canonical_path.package_id.clone();
 
     let result = match callable_items {
         CallableItem::Function(..) => {
-            // Segments: [crate, mod1, ..., modN, function_name]
-            // Last segment is the function, everything in between is modules.
             let n = canonical_path.segments.len();
             let last = &canonical_path.segments[n - 1];
             let module_path = canonical_path.segments[1..n - 1]
                 .iter()
                 .map(|s| s.ident.clone())
                 .collect();
-            CallablePath::FreeFunction(FreeFunctionPath {
+            ResolvedPath::FreeFunction(FreeFunctionPath {
                 package_id,
                 crate_name,
                 module_path,
@@ -984,8 +1007,6 @@ fn fq_path_to_callable_path(
             method_owner,
             ..
         } => {
-            // Trait method: segments = [crate, mod1, ..., TraitName, method_name]
-            // qualified_self is populated → TraitMethod
             let n = canonical_path.segments.len();
             let method_segment = &canonical_path.segments[n - 1];
             let trait_segment = &canonical_path.segments[n - 2];
@@ -998,8 +1019,6 @@ fn fq_path_to_callable_path(
                 .as_ref()
                 .map(|q| q.type_.clone())
                 .unwrap_or_else(|| {
-                    // Fall back: build from the method_owner path if qualified_self
-                    // wasn't propagated to canonical_path (shouldn't happen, but be defensive).
                     FQPathType::from(
                         Type::Path(PathType {
                             package_id: method_owner.0.item_id.package_id.clone(),
@@ -1010,7 +1029,7 @@ fn fq_path_to_callable_path(
                     )
                 });
             let self_type = resolve_fq_path_type(&fq_self_type, krate_collection)?;
-            CallablePath::TraitMethod(TraitMethodPath {
+            ResolvedPath::TraitMethod(TraitMethodPath {
                 package_id,
                 crate_name,
                 module_path,
@@ -1022,8 +1041,6 @@ fn fq_path_to_callable_path(
             })
         }
         CallableItem::Method { .. } => {
-            // Inherent method: segments = [crate, mod1, ..., TypeName, method_name]
-            // No qualified_self → InherentMethod
             let n = canonical_path.segments.len();
             let method_segment = &canonical_path.segments[n - 1];
             let type_segment = &canonical_path.segments[n - 2];
@@ -1031,7 +1048,7 @@ fn fq_path_to_callable_path(
                 .iter()
                 .map(|s| s.ident.clone())
                 .collect();
-            CallablePath::InherentMethod(InherentMethodPath {
+            ResolvedPath::InherentMethod(InherentMethodPath {
                 package_id,
                 crate_name,
                 module_path,

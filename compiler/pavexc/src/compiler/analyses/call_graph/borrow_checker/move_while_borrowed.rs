@@ -75,7 +75,7 @@ pub(super) fn move_while_borrowed(
                 .inputs_that_output_borrows_immutably_from()
                 .iter()
                 .map(|&i| {
-                    let t = &callable.inputs[i].type_;
+                    let t = &callable.inputs()[i].type_;
                     if let Type::Reference(r) = t {
                         r.inner.deref().to_owned()
                     } else {
@@ -87,7 +87,7 @@ pub(super) fn move_while_borrowed(
                 .inputs_with_lifetime_tied_with_output()
                 .iter()
                 .map(|&i| {
-                    let t = &callable.inputs[i].type_;
+                    let t = &callable.inputs()[i].type_;
                     if let Type::Reference(r) = t {
                         r.inner.deref().to_owned()
                     } else {
@@ -388,8 +388,8 @@ fn emit_ancestor_descendant_borrow_error(
     let (contended_component_id, contended_type) =
         get_component_id_and_type(call_graph, contended_node_id, computation_db, db);
 
-    let borrower_path = &borrower_callable.path;
-    let consumer_path = &consumer_callable.path;
+    let borrower_path = borrower_callable.to_string();
+    let consumer_path = consumer_callable.to_string();
     let mut error_msg =
         "I can't generate code that will pass the borrow checker *and* match the instructions \
         in your blueprint:\n"
@@ -513,8 +513,8 @@ fn emit_tried_to_borrow_mut_while_borrowed_immutably(
     let (_, contended_type) =
         get_component_id_and_type(call_graph, contended_node_id, computation_db, component_db);
 
-    let borrower_path = &borrower_callable.path;
-    let mut_borrower_path = &mut_borrower_callable.path;
+    let borrower_path = borrower_callable.to_string();
+    let mut_borrower_path = mut_borrower_callable.to_string();
     let mut error_msg =
         "I can't generate code that will pass the borrow checker *and* match the instructions \
         in your blueprint:\n"

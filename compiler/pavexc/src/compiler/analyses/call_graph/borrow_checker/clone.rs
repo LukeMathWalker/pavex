@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
-    Callable, CallableInput, CallablePath, InvocationStyle, Lifetime, ParameterName, PathType,
-    TraitMethodPath, Type, TypeReference,
+    Callable, CallableInput, CallableMetadata, FnHeader, Lifetime, ParameterName, PathType,
+    TraitMethod, TraitMethodPath, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -60,11 +60,8 @@ pub(super) fn get_clone_component_id(
         vec![]
     };
 
-    let clone_callable = Callable {
-        is_async: false,
-        takes_self_as_ref: true,
-        output: Some(output.clone()),
-        path: CallablePath::TraitMethod(TraitMethodPath {
+    let clone_callable = Callable::TraitMethod(TraitMethod {
+        path: TraitMethodPath {
             package_id: clone.package_id.clone(),
             crate_name,
             module_path,
@@ -73,22 +70,28 @@ pub(super) fn get_clone_component_id(
             self_type: output.clone().into(),
             method_name: "clone".into(),
             method_generics: vec![],
-        }),
-        inputs: vec![CallableInput {
-            name: ParameterName::new("_0".into()),
-            type_: Type::Reference(TypeReference {
-                is_mutable: false,
-                lifetime: Lifetime::Elided,
-                inner: Box::new(output),
-            }),
-        }],
-        invocation_style: InvocationStyle::FunctionCall,
-        source_coordinates: None,
-        abi: rustdoc_types::Abi::Rust,
-        is_unsafe: false,
-        is_c_variadic: false,
-        symbol_name: None,
-    };
+        },
+        metadata: CallableMetadata {
+            output: Some(output.clone()),
+            inputs: vec![CallableInput {
+                name: ParameterName::new("_0".into()),
+                type_: Type::Reference(TypeReference {
+                    is_mutable: false,
+                    lifetime: Lifetime::Elided,
+                    inner: Box::new(output),
+                }),
+            }],
+            source_coordinates: None,
+        },
+        header: FnHeader {
+            is_async: false,
+            abi: rustdoc_types::Abi::Rust,
+            is_unsafe: false,
+            is_c_variadic: false,
+            symbol_name: None,
+        },
+        takes_self_as_ref: true,
+    });
 
     let clone_computation_id =
         computation_db.get_or_intern(Computation::Callable(Cow::Owned(clone_callable)));

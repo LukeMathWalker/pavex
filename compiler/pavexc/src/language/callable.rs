@@ -8,7 +8,10 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{CallablePath, Lifetime, Type};
+use crate::language::{
+    EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, Lifetime, StructLiteralPath,
+    TraitMethodPath, Type,
+};
 use crate::rustdoc::GlobalItemId;
 
 /// A validated parameter name that is guaranteed to be a valid Rust identifier.
@@ -56,72 +59,217 @@ pub struct CallableInput {
     pub type_: Type,
 }
 
-#[derive(Clone, Hash, Eq, PartialEq)]
-/// A Rust type that can be invoked—e.g. a function, a method, a struct literal constructor.
-pub struct Callable {
-    /// `true` if the callable declaration uses the `async` keyword.
-    ///
-    /// # Implementation Gaps
-    ///
-    /// It is **NOT** set to `true` if the function doesn't use the `async` keyword but returns
-    /// a type that implements the `Future` trait.
-    pub is_async: bool,
-    /// `true` if the first input parameter to the callable is `&self` or `&mut self`.
-    /// This is relevant to determine borrow relationships between the callable inputs and outputs
-    /// in case some lifetime parameters were elided.
-    ///
-    /// See https://doc.rust-lang.org/nomicon/lifetime-elision.html for more details.
-    pub takes_self_as_ref: bool,
-    /// `None` if the callable returns the unit type (`()`).
-    /// Otherwise, the type of the callable return value.
+// ── Shared pieces ──────────────────────────────────────────
+
+/// Fields common to every callable.
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct CallableMetadata {
     pub output: Option<Type>,
-    /// The fully-qualified path pointing at this callable.
-    ///
-    /// E.g. `std::vec::Vec::new` for `Vec::new()`.
-    pub path: CallablePath,
-    /// The input parameters of the callable.
-    /// The list is ordered, matching the order in the callable declaration—this is relevant
-    /// to ensure correct invocations.
     pub inputs: Vec<CallableInput>,
-    /// Rust supports different types of callables which rely on different invocation syntax.
-    /// See [`InvocationStyle`] for more details.
-    pub invocation_style: InvocationStyle,
-    /// The ids required to locate this callable in the JSON docs for the package where it is
-    /// defined.
-    /// It is used exclusively for diagnostic purposes—i.e. retrieve the span where the callable
-    /// is defined in order to show parts of it in error messages.
-    ///
-    /// Source coordinares are optional since [`Callable`] is used to represent
-    /// callables that don't exist yet—i.e. that we will code-generate into the new server SDK
-    /// crate.
     pub source_coordinates: Option<GlobalItemId>,
-    /// The ABI (calling convention) of this callable.
+}
+
+/// Fields specific to callables that use function-call syntax.
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct FnHeader {
+    pub is_async: bool,
     pub abi: rustdoc_types::Abi,
-    /// `true` if the callable is declared as `unsafe`.
     pub is_unsafe: bool,
-    /// `true` if the callable accepts C-style variadic arguments (`...`).
     pub is_c_variadic: bool,
-    /// The export symbol name, from `#[no_mangle]` or `#[export_name = "..."]`.
     pub symbol_name: Option<String>,
 }
 
+// ── Per-variant structs ────────────────────────────────────
+
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct FreeFunction {
+    pub path: FreeFunctionPath,
+    pub metadata: CallableMetadata,
+    pub header: FnHeader,
+}
+
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct InherentMethod {
+    pub path: InherentMethodPath,
+    pub metadata: CallableMetadata,
+    pub header: FnHeader,
+    pub takes_self_as_ref: bool,
+}
+
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct TraitMethod {
+    pub path: TraitMethodPath,
+    pub metadata: CallableMetadata,
+    pub header: FnHeader,
+    pub takes_self_as_ref: bool,
+}
+
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct StructLiteralInit {
+    pub path: StructLiteralPath,
+    pub metadata: CallableMetadata,
+    /// Extra fields injected during codegen (e.g. `next` for middleware state).
+    pub extra_field2default_value: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub struct EnumVariantInit {
+    pub path: EnumVariantConstructorPath,
+    pub metadata: CallableMetadata,
+}
+
+// ── The enum ───────────────────────────────────────────────
+
+/// A Rust type that can be invoked—e.g. a function, a method, a struct literal constructor.
+#[derive(Clone, Hash, Eq, PartialEq)]
+pub enum Callable {
+    FreeFunction(FreeFunction),
+    InherentMethod(InherentMethod),
+    TraitMethod(TraitMethod),
+    StructLiteralInit(StructLiteralInit),
+    EnumVariantInit(EnumVariantInit),
+}
+
 impl Callable {
-    /// Replace all unassigned generic type parameters in this callable with the
-    /// concrete types specified in `bindings`.
-    ///
-    /// The newly "bound" callable will be returned.
-    /// Returns an iterator over the types of the input parameters.
-    pub fn input_types(&self) -> impl Iterator<Item = &Type> + '_ {
-        self.inputs.iter().map(|i| &i.type_)
+    // ── Metadata accessors ─────────────────────────────────
+
+    pub fn metadata(&self) -> &CallableMetadata {
+        match self {
+            Callable::FreeFunction(f) => &f.metadata,
+            Callable::InherentMethod(m) => &m.metadata,
+            Callable::TraitMethod(m) => &m.metadata,
+            Callable::StructLiteralInit(s) => &s.metadata,
+            Callable::EnumVariantInit(e) => &e.metadata,
+        }
     }
 
+    pub fn metadata_mut(&mut self) -> &mut CallableMetadata {
+        match self {
+            Callable::FreeFunction(f) => &mut f.metadata,
+            Callable::InherentMethod(m) => &mut m.metadata,
+            Callable::TraitMethod(m) => &mut m.metadata,
+            Callable::StructLiteralInit(s) => &mut s.metadata,
+            Callable::EnumVariantInit(e) => &mut e.metadata,
+        }
+    }
+
+    pub fn output(&self) -> Option<&Type> {
+        self.metadata().output.as_ref()
+    }
+
+    pub fn inputs(&self) -> &[CallableInput] {
+        &self.metadata().inputs
+    }
+
+    pub fn source_coordinates(&self) -> Option<&GlobalItemId> {
+        self.metadata().source_coordinates.as_ref()
+    }
+
+    /// Returns an iterator over the types of the input parameters.
+    pub fn input_types(&self) -> impl Iterator<Item = &Type> + '_ {
+        self.metadata().inputs.iter().map(|i| &i.type_)
+    }
+
+    /// Returns `true` if this callable is fallible—i.e. if it returns a `Result` type.
+    pub fn is_fallible(&self) -> bool {
+        if let Some(output) = self.output() {
+            output.is_result()
+        } else {
+            false
+        }
+    }
+
+    /// Returns `true` if the callable declaration uses the `async` keyword.
+    pub fn is_async(&self) -> bool {
+        match self {
+            Callable::FreeFunction(f) => f.header.is_async,
+            Callable::InherentMethod(m) => m.header.is_async,
+            Callable::TraitMethod(m) => m.header.is_async,
+            Callable::StructLiteralInit(_) | Callable::EnumVariantInit(_) => false,
+        }
+    }
+
+    // ── Path accessors ─────────────────────────────────────
+
+    pub fn package_id(&self) -> &PackageId {
+        match self {
+            Callable::FreeFunction(f) => &f.path.package_id,
+            Callable::InherentMethod(m) => &m.path.package_id,
+            Callable::TraitMethod(m) => &m.path.package_id,
+            Callable::StructLiteralInit(s) => &s.path.package_id,
+            Callable::EnumVariantInit(e) => &e.path.package_id,
+        }
+    }
+
+    #[allow(unused)]
+    pub fn callable_name(&self) -> &str {
+        match self {
+            Callable::FreeFunction(f) => &f.path.function_name,
+            Callable::InherentMethod(m) => &m.path.method_name,
+            Callable::TraitMethod(m) => &m.path.method_name,
+            Callable::StructLiteralInit(s) => &s.path.type_name,
+            Callable::EnumVariantInit(e) => &e.path.variant_name,
+        }
+    }
+
+    #[allow(unused)]
+    pub fn owner_name(&self) -> Option<&str> {
+        match self {
+            Callable::FreeFunction(_) => None,
+            Callable::InherentMethod(m) => Some(&m.path.type_name),
+            Callable::TraitMethod(m) => Some(&m.path.trait_name),
+            Callable::StructLiteralInit(_) => None,
+            Callable::EnumVariantInit(e) => Some(&e.path.enum_name),
+        }
+    }
+
+    pub fn render_as_expression_path(
+        &self,
+        id2name: &BiHashMap<PackageId, String>,
+        buffer: &mut String,
+    ) {
+        match self {
+            Callable::FreeFunction(f) => f.path.render_path(id2name, buffer),
+            Callable::InherentMethod(m) => m.path.render_path(id2name, buffer),
+            Callable::TraitMethod(m) => m.path.render_path(id2name, buffer),
+            Callable::StructLiteralInit(s) => s.path.render_path(id2name, buffer),
+            Callable::EnumVariantInit(e) => e.path.render_path(id2name, buffer),
+        }
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        match self {
+            Callable::FreeFunction(f) => f.path.render_for_error(buffer),
+            Callable::InherentMethod(m) => m.path.render_for_error(buffer),
+            Callable::TraitMethod(m) => m.path.render_for_error(buffer),
+            Callable::StructLiteralInit(s) => s.path.render_for_error(buffer),
+            Callable::EnumVariantInit(e) => e.path.render_for_error(buffer),
+        }
+    }
+
+    // ── Existing methods ───────────────────────────────────
+
+    /// Returns the set of all unassigned generic type parameters in this callable.
+    #[allow(unused)]
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
+        let mut result = IndexSet::new();
+        for input in self.input_types() {
+            result.extend(input.unassigned_generic_type_parameters());
+        }
+        if let Some(output) = self.output() {
+            result.extend(output.unassigned_generic_type_parameters());
+        }
+        result
+    }
+
+    /// Replace all unassigned generic type parameters in this callable with the
+    /// concrete types specified in `bindings`.
     pub fn bind_generic_type_parameters(
         &self,
         bindings: &HashMap<String, Type>,
     ) -> Callable {
-        // TODO: we should bind the generics on the path of the callable itself.
         let inputs = self
-            .inputs
+            .inputs()
             .iter()
             .map(|i| CallableInput {
                 name: i.name.clone(),
@@ -129,52 +277,27 @@ impl Callable {
             })
             .collect();
         let output = self
-            .output
-            .as_ref()
+            .output()
             .map(|t| t.bind_generic_type_parameters(bindings));
-        Self {
-            output,
-            inputs,
-            ..self.clone()
-        }
-    }
-
-    /// Returns the set of all unassigned generic type parameters in this callable.
-    ///
-    /// E.g. `[T]` for `fn f<T>() -> Json<T, u8>` or `[T, V]` for `fn g<T, V>() -> Json<T, V>`.
-    #[allow(unused)]
-    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
-        let mut result = IndexSet::new();
-        for input in self.input_types() {
-            result.extend(input.unassigned_generic_type_parameters());
-        }
-        if let Some(output) = &self.output {
-            result.extend(output.unassigned_generic_type_parameters());
-        }
+        let mut result = self.clone();
+        let metadata = result.metadata_mut();
+        metadata.inputs = inputs;
+        metadata.output = output;
         result
-    }
-
-    /// Returns `true` if this callable is fallible—i.e. if it returns a `Result` type.
-    pub fn is_fallible(&self) -> bool {
-        if let Some(output) = &self.output {
-            output.is_result()
-        } else {
-            false
-        }
     }
 
     /// Returns a new [`Callable`] where all lifetime parameters in the
     /// output type (if present) are explicitly named.
-    ///
-    /// This is relevant to ensure correct borrow relationships between the callable
-    /// inputs and outputs in case some lifetime parameters were elided.
     pub(crate) fn unelide_output_lifetimes(&self) -> Self {
-        if self.invocation_style != InvocationStyle::FunctionCall {
-            // Struct literals don't have lifetime elision.
+        // Struct literals and enum variant constructors don't have lifetime elision.
+        if matches!(
+            self,
+            Callable::StructLiteralInit(_) | Callable::EnumVariantInit(_)
+        ) {
             return self.clone();
         }
 
-        let Some(output) = &self.output else {
+        let Some(output) = self.output() else {
             return self.clone();
         };
         if !output.has_implicit_lifetime_parameters() {
@@ -182,7 +305,7 @@ impl Callable {
         }
 
         let mut elided_output_lifetime: String = "elided".to_string();
-        let mut inputs = self.inputs.clone();
+        let mut inputs = self.inputs().to_vec();
         for input in inputs.iter_mut() {
             if input.type_.has_implicit_lifetime_parameters() {
                 elided_output_lifetime = {
@@ -193,9 +316,6 @@ impl Callable {
                     named_lifetime_parameters.extend(output.named_lifetime_parameters());
 
                     if named_lifetime_parameters.contains("elided") {
-                        // Unlucky! Let's craft a lifetime name that for sure
-                        // doesn't belong to the set, leveraging that the set
-                        // is ordered in ascending order.
                         let last = named_lifetime_parameters.last().unwrap();
                         format!("{last}_")
                     } else {
@@ -217,20 +337,18 @@ impl Callable {
         let mut output = output.clone();
         output.set_implicit_lifetimes(elided_output_lifetime);
 
-        Self {
-            output: Some(output),
-            inputs,
-            ..self.clone()
-        }
+        let mut result = self.clone();
+        let metadata = result.metadata_mut();
+        metadata.output = Some(output);
+        metadata.inputs = inputs;
+        result
     }
 
     /// Returns the indices of all input parameters that the output type
     /// borrows immutably from (i.e. not `&mut`).
-    ///
-    /// E.g. `fn f(x: &T) -> &T` returns `[0]`.
     pub(crate) fn inputs_that_output_borrows_immutably_from(&self) -> Vec<usize> {
         let c = self.unelide_output_lifetimes();
-        let Some(output) = &c.output else {
+        let Some(output) = c.output() else {
             return vec![];
         };
 
@@ -255,11 +373,9 @@ impl Callable {
     }
 
     /// Returns the indices of all input parameters share a lifetime parameter with the output
-    ///
-    /// E.g. `fn f<'a, 'b>(x: Gen<'a>, y: &'b T) -> Min<'a>` returns `[0]`.
     pub(crate) fn inputs_with_lifetime_tied_with_output(&self) -> Vec<usize> {
         let c = self.unelide_output_lifetimes();
-        let Some(output) = &c.output else {
+        let Some(output) = c.output() else {
             return vec![];
         };
 
@@ -278,33 +394,10 @@ impl Callable {
         }
         borrowed_indexes
     }
-}
 
-/// Rust supports different types of callables which rely on different invocation syntax.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum InvocationStyle {
-    /// `<callable_path>(<comma-separated list of input parameters)`.
-    /// Used by functions and methods. The latter is only valid if the callable path
-    /// includes the name of the item that the method is attached to (e.g. `MyStruct::init()` is
-    /// valid, while `init()` will not point at the method even if `MyStruct` is in scope).
-    FunctionCall,
-    /// `<struct_name> { <field_name>: <field_value>, ...}`
-    /// An available option to build structs **if all their fields are public**.
-    StructLiteral {
-        /// Rust does not have default values for struct fields.
-        /// This is hack to allow us to inject the `next` field in the state we generate for
-        /// `Next` where the `next` field is not part of the struct definition and it must
-        /// be set to a pre-determined function pointer in order to work around the lack of
-        /// TAIT on stable.
-        /// TODO: remove when TAIT stabilizes.
-        extra_field2default_value: BTreeMap<String, String>,
-    },
-}
-
-impl Callable {
     pub fn render_signature(&self, package_ids2names: &BiHashMap<PackageId, String>) -> String {
         let mut buffer = String::new();
-        write!(&mut buffer, "{}", self.path).unwrap();
+        write!(&mut buffer, "{}", self).unwrap();
         write!(&mut buffer, "(").unwrap();
         let mut inputs = self.input_types().peekable();
         while let Some(input) = inputs.next() {
@@ -314,16 +407,36 @@ impl Callable {
             }
         }
         write!(&mut buffer, ")",).unwrap();
-        if let Some(output) = &self.output {
+        if let Some(output) = self.output() {
             write!(&mut buffer, " -> {}", output.render_type(package_ids2names)).unwrap();
         }
         buffer
+    }
+
+    /// Returns the `extra_field2default_value` map if this is a `StructLiteralInit`, otherwise `None`.
+    pub fn extra_field2default_value(&self) -> Option<&BTreeMap<String, String>> {
+        match self {
+            Callable::StructLiteralInit(s) => Some(&s.extra_field2default_value),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for Callable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Callable::FreeFunction(inner) => write!(f, "{}", inner.path),
+            Callable::InherentMethod(inner) => write!(f, "{}", inner.path),
+            Callable::TraitMethod(inner) => write!(f, "{}", inner.path),
+            Callable::StructLiteralInit(inner) => write!(f, "{}", inner.path),
+            Callable::EnumVariantInit(inner) => write!(f, "{}", inner.path),
+        }
     }
 }
 
 impl std::fmt::Debug for Callable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.path)?;
+        write!(f, "{}", self)?;
         write!(f, "(")?;
         let mut inputs = self.input_types().peekable();
         while let Some(input) = inputs.next() {
@@ -333,7 +446,7 @@ impl std::fmt::Debug for Callable {
             }
         }
         write!(f, ")")?;
-        if let Some(output) = &self.output {
+        if let Some(output) = self.output() {
             write!(f, " -> {output:?}")?;
         }
         Ok(())

@@ -16,7 +16,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
 use crate::language::{
-    Callable, CallableInput, CallablePath, EnumVariantConstructorPath, InvocationStyle,
+    Callable, CallableInput, CallableMetadata, EnumVariantConstructorPath, EnumVariantInit,
     ParameterName, Type,
 };
 use crate::rustdoc::CrateCollection;
@@ -85,7 +85,7 @@ pub(crate) fn request_scoped_call_graph(
     if tracing::enabled!(Level::DEBUG) {
         let component = component_db.hydrated_component(root_component_id, computation_db);
         if let Computation::Callable(c) = component.computation() {
-            graph_root = c.path.to_string();
+            graph_root = c.to_string();
         }
     }
     let span = tracing::debug_span!(
@@ -198,26 +198,21 @@ fn augment_preprocessing_graph(
             .last()
             .cloned()
             .unwrap_or_default();
-        let wrapper = Callable {
-            is_async: false,
-            takes_self_as_ref: false,
-            output: Some(component_db.pavex_processing.clone()),
-            path: CallablePath::EnumVariantConstructor(EnumVariantConstructorPath {
+        let wrapper = Callable::EnumVariantInit(EnumVariantInit {
+            path: EnumVariantConstructorPath {
                 package_id: processing_path.package_id.clone(),
                 crate_name,
                 module_path,
                 enum_name,
                 enum_generics: vec![],
                 variant_name: "EarlyReturn".into(),
-            }),
-            inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: output_type.to_owned() }],
-            invocation_style: InvocationStyle::FunctionCall,
-            source_coordinates: None,
-            abi: rustdoc_types::Abi::Rust,
-            is_unsafe: false,
-            is_c_variadic: false,
-            symbol_name: None,
-        };
+            },
+            metadata: CallableMetadata {
+                output: Some(component_db.pavex_processing.clone()),
+                inputs: vec![CallableInput { name: ParameterName::new("_0".into()), type_: output_type.to_owned() }],
+                source_coordinates: None,
+            },
+        });
         component_db.get_or_intern_transformer(
             computation_db.get_or_intern(wrapper),
             component_id,

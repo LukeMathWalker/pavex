@@ -106,7 +106,7 @@ impl ComponentDb {
                         format!(
                             "All unassigned generic parameters must be used by the output type.\n\
                             `{}`, one of your constructors, breaks this rule: {free_parameters} {subject_verb} only used by its input parameters.",
-                            callable.path));
+                            callable));
                 let help = if db.registration(id).kind.is_blueprint() {
                     Some("Assign concrete type(s) to the problematic \
                         generic parameter(s) when registering the constructor against the blueprint: \n\
@@ -137,7 +137,7 @@ impl ComponentDb {
                     callable: &Callable,
                     krate_collection: &CrateCollection,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let global_item_id = callable.source_coordinates()?;
                     let item = krate_collection.get_item_by_global_type_id(global_item_id);
                     let definition_span = item.span.as_ref()?;
                     let source_contents = diagnostic::read_source_file(
@@ -188,7 +188,7 @@ impl ComponentDb {
                     I don't take into account trait bounds when building your dependency graph. A constructor \
                     that returns a naked generic parameter is equivalent, in my eyes, to a constructor that can build \
                     **any** type, which is unlikely to be what you want!",
-                    callable.path
+                    callable
                 );
                 let error = anyhow::anyhow!(e).context(msg);
                 let d = CompilerDiagnostic::builder(error)
@@ -244,7 +244,7 @@ impl ComponentDb {
                     krate_collection: &CrateCollection,
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSource<NamedSource<String>>> {
-                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let global_item_id = callable.source_coordinates()?;
                     let item = krate_collection.get_item_by_global_type_id(global_item_id);
                     let definition_span = item.span.as_ref()?;
                     let source_contents = diagnostic::read_source_file(
@@ -318,7 +318,7 @@ impl ComponentDb {
                             "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
                             There should no unassigned generic parameters in request handlers, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
-                            callable.path));
+                            callable));
                 let d = CompilerDiagnostic::builder(error).optional_source(source)
                     .optional_source(definition_snippet)
                     .help(
@@ -426,7 +426,7 @@ impl ComponentDb {
                             "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
                             There should no unassigned generic parameters in wrapping middlewares apart from the one in `Next<_>`, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
-                            callable.path));
+                            callable));
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
@@ -503,7 +503,7 @@ impl ComponentDb {
                         format!(
                             "There must be no unassigned generic parameters in pre-processing middlewares, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type in `{}`.",
-                            callable.path));
+                            callable));
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
@@ -593,7 +593,7 @@ impl ComponentDb {
                             "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
                             There should no unassigned generic parameters in post-processing middlewares, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
-                            callable.path));
+                            callable));
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
@@ -624,7 +624,7 @@ impl ComponentDb {
             db.registration_target(id),
             format!("The {kind} was registered here"),
         );
-        let path = &callable.path;
+        let path = callable;
         let output = output.display_for_error();
         let error = anyhow::Error::from(e).context(format!(
             "`{output}` doesn't implement `pavex::IntoResponse`.\n\
@@ -820,7 +820,7 @@ impl ComponentDb {
                             "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
                             I can only infer the type of an unassigned generic parameter if it appears in the error type processed by this error handler. This is \
                             not the case for {free_parameters}, since {subject_verb} used by the error type.",
-                            callable.path));
+                            callable));
                 let diagnostic = CompilerDiagnostic::builder(error).optional_source(source)
                     .optional_source(definition_snippet)
                     .help(
@@ -898,7 +898,7 @@ impl ComponentDb {
             format!("The fallible {fallible_kind} was registered here"),
         );
         let fallible = &computation_db[fallible_id];
-        let err_ty = get_err_variant(fallible.output.as_ref().unwrap());
+        let err_ty = get_err_variant(fallible.output().unwrap());
         let error = anyhow::anyhow!(
             "There is no specific error handler for `{}`, the error returned by one of your {fallible_kind}s.\n\
             It'll be converted to `pavex::Error` and handled by the fallback error handler.",

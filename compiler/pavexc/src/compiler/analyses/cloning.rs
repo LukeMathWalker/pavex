@@ -82,7 +82,7 @@ fn must_be_cloneable(
     let output_type = type_.display_for_error();
     let error_msg = match kind {
         ComponentKind::Constructor => {
-            let callable_path = &computation_db[user_id].path;
+            let callable_path = &computation_db[user_id];
             format!(
                 "`{output_type}` doesn't implement the `Clone` trait, but its constructor, `{callable_path}`, is marked as `{clone_if_necessary}`."
             )

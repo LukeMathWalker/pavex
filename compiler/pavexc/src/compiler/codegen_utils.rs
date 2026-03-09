@@ -9,7 +9,7 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 
 use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
-use crate::language::{Callable, CanonicalType, InvocationStyle, Lifetime, Type, TypeReference};
+use crate::language::{Callable, CanonicalType, Lifetime, Type, TypeReference};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
@@ -97,7 +97,7 @@ where
                 "Trying to generated the code to invoke {}.\n\
                 Failed to find the code fragment for {dependency_index:?}, the node that should build `{dependency_type:?}.\n\
                 Available code fragments:\n{available_blocks}",
-                callable.path
+                callable
             );
         };
         let tokens = match fragment {
@@ -173,18 +173,19 @@ pub(crate) fn codegen_call(
     let callable_path: syn::ExprPath = {
         let mut buffer = String::new();
         callable
-            .path
             .render_as_expression_path(package_id2name, &mut buffer);
         match syn::parse_str(&buffer) {
             Ok(p) => p,
             Err(e) => panic!("Couldn't parse `{buffer}` as an expression path: {e}"),
         }
     };
-    let mut invocation = match &callable.invocation_style {
-        InvocationStyle::FunctionCall => {
-            let parameters = callable.input_types().map(|i| {
-                let canonical = i.canonicalize();
-                match variable_bindings.get(&canonical) {
+    let mut invocation = if let Some(extra_field2default_value) = callable.extra_field2default_value() {
+        let fields = callable.inputs()
+            .iter()
+            .map(|input| {
+                let field_name = format_ident!("{}", input.name.as_str());
+                let canonical = input.type_.canonicalize();
+                let binding = match variable_bindings.get(&canonical) {
                     Some(tokens) => tokens,
                     None => {
                         use std::fmt::Write as _;
@@ -194,61 +195,54 @@ pub(crate) fn codegen_call(
                             let _ = writeln!(&mut msg, "- {ty:?}`");
                         }
                         panic!(
-                            "There is no variable with type {i:?} in scope.\nTypes of bound variables:\n{msg}",
+                            "There is no variable with type {:?} in scope.\nTypes of bound variables:\n{msg}",
+                            input.type_,
                         )
                     }
+                };
+                quote! {
+                    #field_name: #binding
                 }
-            });
-            quote! {
-                #callable_path(#(#parameters),*)
+            })
+            .chain(
+                extra_field2default_value
+                    .iter()
+                    .map(|(field_name, default_value)| {
+                        let field_name = format_ident!("{}", field_name);
+                        let default_value = format_ident!("{}", default_value);
+                        quote! {
+                            #field_name: #default_value
+                        }
+                    }),
+            );
+        quote! {
+            #callable_path {
+                #(#fields),*
             }
         }
-        InvocationStyle::StructLiteral {
-            extra_field2default_value,
-        } => {
-            let fields = callable.inputs
-                .iter()
-                .map(|input| {
-                    let field_name = format_ident!("{}", input.name.as_str());
-                    let canonical = input.type_.canonicalize();
-                    let binding = match variable_bindings.get(&canonical) {
-                        Some(tokens) => tokens,
-                        None => {
-                            use std::fmt::Write as _;
+    } else {
+        let parameters = callable.input_types().map(|i| {
+            let canonical = i.canonicalize();
+            match variable_bindings.get(&canonical) {
+                Some(tokens) => tokens,
+                None => {
+                    use std::fmt::Write as _;
 
-                            let mut msg = String::new();
-                            for ty in variable_bindings.keys() {
-                                let _ = writeln!(&mut msg, "- {ty:?}`");
-                            }
-                            panic!(
-                                "There is no variable with type {:?} in scope.\nTypes of bound variables:\n{msg}",
-                                input.type_,
-                            )
-                        }
-                    };
-                    quote! {
-                        #field_name: #binding
+                    let mut msg = String::new();
+                    for ty in variable_bindings.keys() {
+                        let _ = writeln!(&mut msg, "- {ty:?}`");
                     }
-                })
-                .chain(
-                    extra_field2default_value
-                        .iter()
-                        .map(|(field_name, default_value)| {
-                            let field_name = format_ident!("{}", field_name);
-                            let default_value = format_ident!("{}", default_value);
-                            quote! {
-                                #field_name: #default_value
-                            }
-                        }),
-                );
-            quote! {
-                #callable_path {
-                    #(#fields),*
+                    panic!(
+                        "There is no variable with type {i:?} in scope.\nTypes of bound variables:\n{msg}",
+                    )
                 }
             }
+        });
+        quote! {
+            #callable_path(#(#parameters),*)
         }
     };
-    if callable.is_async {
+    if callable.is_async() {
         invocation = quote! { #invocation.await };
     }
     invocation

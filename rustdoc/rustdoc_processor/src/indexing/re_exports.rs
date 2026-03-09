@@ -4,7 +4,7 @@ use ahash::HashMap;
 
 use crate::compute::CannotGetCrateData;
 use crate::crate_data::CrateData;
-use crate::global_item_id::GlobalItemId;
+use rustdoc_ext::GlobalItemId;
 use crate::queries::Crate;
 use crate::queries::registry::CrateRegistry;
 
