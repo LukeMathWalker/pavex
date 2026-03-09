@@ -365,7 +365,7 @@ fn generate(
 
     let package_graph = package_graph::retrieve_or_compute_package_graph(precomputed_metadata)?;
     let sink = DiagnosticSink::new(package_graph.clone());
-    let krate_collection = CrateCollection::new(
+    let krate_collection = CrateCollection::new_pavex(
         docs_toolchain,
         package_graph,
         blueprint.creation_location.file.clone(),
