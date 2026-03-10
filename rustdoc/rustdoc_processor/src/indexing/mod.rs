@@ -82,7 +82,7 @@ impl CrateIndexer for NoAnnotations {
 pub trait IndexingVisitor {
     /// Called for every item discovered during traversal.
     fn on_item_discovered(&mut self, item: &rustdoc_types::Item, item_id: rustdoc_types::Id);
-    /// Called for items added to the import index (struct/enum/trait/fn/type_alias/primitive).
+    /// Called for items added to the import index (struct/enum/trait/fn/type_alias/primitive/static/union).
     fn on_type_indexed(&mut self, item_id: rustdoc_types::Id);
 }
 
@@ -268,6 +268,8 @@ pub(crate) fn index_local_types<'a, V: IndexingVisitor>(
                         | ItemEnum::Function(_)
                         | ItemEnum::Primitive(_)
                         | ItemEnum::TypeAlias(_)
+                        | ItemEnum::Static(_)
+                        | ItemEnum::Union(_)
                 ) {
                     // We keep track of the source path in our indexes.
                     // This is useful, in particular, if we don't have
@@ -325,9 +327,11 @@ pub(crate) fn index_local_types<'a, V: IndexingVisitor>(
         | ItemEnum::Function(_)
         | ItemEnum::Enum(_)
         | ItemEnum::Struct(_)
-        | ItemEnum::TypeAlias(_) => {
+        | ItemEnum::TypeAlias(_)
+        | ItemEnum::Static(_)
+        | ItemEnum::Union(_) => {
             let name = current_item.name.as_deref().expect(
-                "All 'struct', 'function', 'enum', 'type_alias', 'primitive' and 'trait' items have a 'name' property",
+                "All 'struct', 'function', 'enum', 'type_alias', 'primitive', 'trait', 'static' and 'union' items have a 'name' property",
             );
             if matches!(current_item.inner, ItemEnum::Primitive(_)) {
                 // E.g. `std::bool` won't work, `std::primitive::bool` does work but the `primitive` module
