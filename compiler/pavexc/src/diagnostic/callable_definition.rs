@@ -5,7 +5,6 @@ use crate::rustdoc::CrateCollection;
 use guppy::graph::PackageGraph;
 use miette::{NamedSource, SourceSpan};
 use pavex_cli_diagnostic::AnnotatedSource;
-use rustdoc_processor::queries::CrateRegistry;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 

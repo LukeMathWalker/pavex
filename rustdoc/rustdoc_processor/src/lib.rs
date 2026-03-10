@@ -8,7 +8,7 @@
 //!    in a SQLite database at `{cache_dir}/{fingerprint}.db`.
 //! 3. **Index** ([`index_local_types`]): build secondary indexes — import paths, item lookups,
 //!    and external re-export tracking.
-//! 4. **Query** ([`Crate`], [`CrateRegistry`]): look up items by path, resolve
+//! 4. **Query** ([`Crate`], [`CrateCollection`]): look up items by path, resolve
 //!    cross-crate references, and retrieve canonical import paths.
 
 pub mod cache;

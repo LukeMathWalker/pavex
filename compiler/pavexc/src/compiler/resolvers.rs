@@ -19,7 +19,6 @@ use crate::language::{
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
-use rustdoc_processor::queries::CrateRegistry;
 
 #[derive(Default)]
 pub(crate) struct GenericBindings {
