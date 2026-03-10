@@ -62,17 +62,11 @@ pub struct CallableInput {
 
 // ── Shared pieces ──────────────────────────────────────────
 
-/// Fields common to every callable.
-#[derive(Clone, Hash, Eq, PartialEq, Debug)]
-pub struct CallableMetadata {
-    pub output: Option<Type>,
-    pub inputs: Vec<CallableInput>,
-    pub source_coordinates: Option<GlobalItemId>,
-}
-
 /// Fields specific to callables that use function-call syntax.
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct FnHeader {
+    pub output: Option<Type>,
+    pub inputs: Vec<CallableInput>,
     pub is_async: bool,
     pub abi: rustdoc_types::Abi,
     pub is_unsafe: bool,
@@ -85,30 +79,32 @@ pub struct FnHeader {
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct FreeFunction {
     pub path: FreeFunctionPath,
-    pub metadata: CallableMetadata,
     pub header: FnHeader,
+    pub source_coordinates: Option<GlobalItemId>,
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct InherentMethod {
     pub path: InherentMethodPath,
-    pub metadata: CallableMetadata,
     pub header: FnHeader,
+    pub source_coordinates: Option<GlobalItemId>,
     pub takes_self_as_ref: bool,
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct TraitMethod {
     pub path: TraitMethodPath,
-    pub metadata: CallableMetadata,
     pub header: FnHeader,
+    pub source_coordinates: Option<GlobalItemId>,
     pub takes_self_as_ref: bool,
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct StructLiteralInit {
     pub path: StructLiteralPath,
-    pub metadata: CallableMetadata,
+    pub self_: Option<Type>,
+    pub fields: Vec<CallableInput>,
+    pub source_coordinates: Option<GlobalItemId>,
     /// Extra fields injected during codegen (e.g. `next` for middleware state).
     pub extra_field2default_value: BTreeMap<String, String>,
 }
@@ -116,7 +112,9 @@ pub struct StructLiteralInit {
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct EnumVariantInit {
     pub path: EnumVariantConstructorPath,
-    pub metadata: CallableMetadata,
+    pub self_: Option<Type>,
+    pub fields: Vec<CallableInput>,
+    pub source_coordinates: Option<GlobalItemId>,
 }
 
 // ── The enum ───────────────────────────────────────────────
@@ -132,43 +130,41 @@ pub enum Callable {
 }
 
 impl Callable {
-    // ── Metadata accessors ─────────────────────────────────
-
-    pub fn metadata(&self) -> &CallableMetadata {
-        match self {
-            Callable::FreeFunction(f) => &f.metadata,
-            Callable::InherentMethod(m) => &m.metadata,
-            Callable::TraitMethod(m) => &m.metadata,
-            Callable::StructLiteralInit(s) => &s.metadata,
-            Callable::EnumVariantInit(e) => &e.metadata,
-        }
-    }
-
-    pub fn metadata_mut(&mut self) -> &mut CallableMetadata {
-        match self {
-            Callable::FreeFunction(f) => &mut f.metadata,
-            Callable::InherentMethod(m) => &mut m.metadata,
-            Callable::TraitMethod(m) => &mut m.metadata,
-            Callable::StructLiteralInit(s) => &mut s.metadata,
-            Callable::EnumVariantInit(e) => &mut e.metadata,
-        }
-    }
+    // ── Accessors ──────────────────────────────────────────
 
     pub fn output(&self) -> Option<&Type> {
-        self.metadata().output.as_ref()
+        match self {
+            Callable::FreeFunction(f) => f.header.output.as_ref(),
+            Callable::InherentMethod(m) => m.header.output.as_ref(),
+            Callable::TraitMethod(m) => m.header.output.as_ref(),
+            Callable::StructLiteralInit(s) => s.self_.as_ref(),
+            Callable::EnumVariantInit(e) => e.self_.as_ref(),
+        }
     }
 
     pub fn inputs(&self) -> &[CallableInput] {
-        &self.metadata().inputs
+        match self {
+            Callable::FreeFunction(f) => &f.header.inputs,
+            Callable::InherentMethod(m) => &m.header.inputs,
+            Callable::TraitMethod(m) => &m.header.inputs,
+            Callable::StructLiteralInit(s) => &s.fields,
+            Callable::EnumVariantInit(e) => &e.fields,
+        }
     }
 
     pub fn source_coordinates(&self) -> Option<&GlobalItemId> {
-        self.metadata().source_coordinates.as_ref()
+        match self {
+            Callable::FreeFunction(f) => f.source_coordinates.as_ref(),
+            Callable::InherentMethod(m) => m.source_coordinates.as_ref(),
+            Callable::TraitMethod(m) => m.source_coordinates.as_ref(),
+            Callable::StructLiteralInit(s) => s.source_coordinates.as_ref(),
+            Callable::EnumVariantInit(e) => e.source_coordinates.as_ref(),
+        }
     }
 
     /// Returns an iterator over the types of the input parameters.
     pub fn input_types(&self) -> impl Iterator<Item = &Type> + '_ {
-        self.metadata().inputs.iter().map(|i| &i.type_)
+        self.inputs().iter().map(|i| &i.type_)
     }
 
     /// Returns `true` if this callable is fallible—i.e. if it returns a `Result` type.
@@ -244,7 +240,7 @@ impl Callable {
     /// Replace all unassigned generic type parameters in this callable with the
     /// concrete types specified in `bindings`.
     pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, Type>) -> Callable {
-        let inputs = self
+        let inputs: Vec<CallableInput> = self
             .inputs()
             .iter()
             .map(|i| CallableInput {
@@ -256,9 +252,28 @@ impl Callable {
             .output()
             .map(|t| t.bind_generic_type_parameters(bindings));
         let mut result = self.clone();
-        let metadata = result.metadata_mut();
-        metadata.inputs = inputs;
-        metadata.output = output;
+        match &mut result {
+            Callable::FreeFunction(f) => {
+                f.header.inputs = inputs;
+                f.header.output = output;
+            }
+            Callable::InherentMethod(m) => {
+                m.header.inputs = inputs;
+                m.header.output = output;
+            }
+            Callable::TraitMethod(m) => {
+                m.header.inputs = inputs;
+                m.header.output = output;
+            }
+            Callable::StructLiteralInit(s) => {
+                s.fields = inputs;
+                s.self_ = output;
+            }
+            Callable::EnumVariantInit(e) => {
+                e.fields = inputs;
+                e.self_ = output;
+            }
+        }
         result
     }
 
@@ -316,9 +331,22 @@ impl Callable {
         output.set_implicit_lifetimes(elided_output_lifetime);
 
         let mut result = self.clone();
-        let metadata = result.metadata_mut();
-        metadata.output = Some(output);
-        metadata.inputs = inputs;
+        match &mut result {
+            Callable::FreeFunction(f) => {
+                f.header.output = Some(output);
+                f.header.inputs = inputs;
+            }
+            Callable::InherentMethod(m) => {
+                m.header.output = Some(output);
+                m.header.inputs = inputs;
+            }
+            Callable::TraitMethod(m) => {
+                m.header.output = Some(output);
+                m.header.inputs = inputs;
+            }
+            // Early return above ensures we never reach here.
+            Callable::StructLiteralInit(_) | Callable::EnumVariantInit(_) => unreachable!(),
+        }
         result
     }
 

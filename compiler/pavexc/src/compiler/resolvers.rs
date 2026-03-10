@@ -8,11 +8,10 @@ use rustdoc_types::{GenericParamDefKind, ItemEnum, Type as RustdocType};
 use tracing_log_error::log_error;
 
 use crate::language::{
-    Callable, CallableInput, CallableItem, CallableMetadata, FQGenericArgument, FQPath,
-    FQPathSegment, FQPathType, FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument,
-    GenericLifetimeParameter, InherentMethod, InherentMethodPath, RustIdentifier, PathType,
-    TraitMethod, TraitMethodPath, Type, UnknownPath, find_rustdoc_callable_items,
-    find_rustdoc_item_type, resolve_fq_path_type,
+    Callable, CallableInput, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType,
+    FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument, GenericLifetimeParameter,
+    InherentMethod, InherentMethodPath, RustIdentifier, PathType, TraitMethod, TraitMethodPath,
+    Type, UnknownPath, find_rustdoc_callable_items, find_rustdoc_item_type, resolve_fq_path_type,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
 use rustdoc_ext::RustdocKindExt;
@@ -277,34 +276,32 @@ pub(crate) fn resolve_callable(
             .expect("Failed to convert generic arguments when building callable path");
 
     let fn_header = FnHeader {
+        output: output_type_path,
+        inputs: resolved_parameter_types,
         is_async: header.is_async,
         abi: header.abi.clone(),
         is_unsafe: header.is_unsafe,
         is_c_variadic: decl.is_c_variadic,
         symbol_name,
     };
-    let metadata = CallableMetadata {
-        output: output_type_path,
-        inputs: resolved_parameter_types,
-        source_coordinates: Some(callable_item.item_id.clone()),
-    };
+    let source_coordinates = Some(callable_item.item_id.clone());
 
     let callable = match resolved_path {
         ResolvedPath::FreeFunction(path) => Callable::FreeFunction(FreeFunction {
             path,
-            metadata,
             header: fn_header,
+            source_coordinates,
         }),
         ResolvedPath::InherentMethod(path) => Callable::InherentMethod(InherentMethod {
             path,
-            metadata,
             header: fn_header,
+            source_coordinates,
             takes_self_as_ref,
         }),
         ResolvedPath::TraitMethod(path) => Callable::TraitMethod(TraitMethod {
             path,
-            metadata,
             header: fn_header,
+            source_coordinates,
             takes_self_as_ref,
         }),
     };

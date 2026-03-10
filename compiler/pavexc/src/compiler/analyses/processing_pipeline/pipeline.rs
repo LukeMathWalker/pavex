@@ -24,9 +24,8 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
-    Callable, CallableInput, CallableMetadata, CanonicalType, GenericArgument,
-    GenericLifetimeParameter, Lifetime, RustIdentifier, PathType, PathTypeExt, StructLiteralInit,
-    Type, TypeReference,
+    Callable, CallableInput, CanonicalType, GenericArgument, GenericLifetimeParameter, Lifetime,
+    RustIdentifier, PathType, PathTypeExt, StructLiteralInit, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -690,17 +689,15 @@ impl RequestHandlerPipeline {
         // `next_type`.
         let next_state_constructor = Callable::StructLiteralInit(StructLiteralInit {
             path: next_state_type.callable_struct_literal_path(),
-            metadata: CallableMetadata {
-                output: Some(next_state_type.clone().into()),
-                inputs: next_state_parameters
-                    .iter()
-                    .map(|input| CallableInput {
-                        name: RustIdentifier::new(input.ident.clone()),
-                        type_: input.type_.clone(),
-                    })
-                    .collect(),
-                source_coordinates: None,
-            },
+            self_: Some(next_state_type.clone().into()),
+            fields: next_state_parameters
+                .iter()
+                .map(|input| CallableInput {
+                    name: RustIdentifier::new(input.ident.clone()),
+                    type_: input.type_.clone(),
+                })
+                .collect(),
+            source_coordinates: None,
             // TODO: remove when TAIT stabilises
             extra_field2default_value: BTreeMap::from([(
                 "next".into(),

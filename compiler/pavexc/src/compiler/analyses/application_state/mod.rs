@@ -20,8 +20,8 @@ use super::{
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
     language::{
-        Callable, CallableInput, CallableMetadata, GenericArgument, PathTypeExt, RustIdentifier,
-        StructLiteralInit, Type,
+        Callable, CallableInput, GenericArgument, PathTypeExt, RustIdentifier, StructLiteralInit,
+        Type,
     },
     rustdoc::CrateCollection,
 };
@@ -188,20 +188,18 @@ impl ApplicationState {
 
         Callable::StructLiteralInit(StructLiteralInit {
             path: ty_.callable_struct_literal_path(),
-            metadata: CallableMetadata {
-                output: Some(ty_.into()),
-                inputs: {
-                    // Ensure that the inputs are sorted by name.
-                    let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
-                    b.into_iter()
-                        .map(|(name, type_)| CallableInput {
-                            name: RustIdentifier::new(name.to_string()),
-                            type_: type_.clone(),
-                        })
-                        .collect()
-                },
-                source_coordinates: None,
+            self_: Some(ty_.into()),
+            fields: {
+                // Ensure that the inputs are sorted by name.
+                let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
+                b.into_iter()
+                    .map(|(name, type_)| CallableInput {
+                        name: RustIdentifier::new(name.to_string()),
+                        type_: type_.clone(),
+                    })
+                    .collect()
             },
+            source_coordinates: None,
             extra_field2default_value: Default::default(),
         })
     }

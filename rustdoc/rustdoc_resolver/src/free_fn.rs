@@ -5,9 +5,7 @@ use std::sync::Arc;
 use rustdoc_types::{Item, ItemEnum};
 
 use rustdoc_ext::GlobalItemId;
-use rustdoc_ir::{
-    CallableInput, CallableMetadata, FnHeader, FreeFunction, FreeFunctionPath, RustIdentifier,
-};
+use rustdoc_ir::{CallableInput, FnHeader, FreeFunction, FreeFunctionPath, RustIdentifier};
 use rustdoc_processor::CrateCollection;
 use rustdoc_processor::indexing::CrateIndexer;
 use rustdoc_processor::queries::Crate;
@@ -94,20 +92,18 @@ pub fn resolve_free_function<I: CrateIndexer>(
             function_name: canonical_path_segments[n_segments - 1].clone(),
             function_generics: vec![],
         },
-        metadata: CallableMetadata {
+        header: FnHeader {
             output,
             inputs,
-            source_coordinates: Some(GlobalItemId {
-                rustdoc_item_id: item.id,
-                package_id: krate.core.package_id.clone(),
-            }),
-        },
-        header: FnHeader {
             is_async: inner.header.is_async,
             abi: inner.header.abi.clone(),
             is_unsafe: inner.header.is_unsafe,
             is_c_variadic: inner.sig.is_c_variadic,
             symbol_name,
         },
+        source_coordinates: Some(GlobalItemId {
+            rustdoc_item_id: item.id,
+            package_id: krate.core.package_id.clone(),
+        }),
     })
 }

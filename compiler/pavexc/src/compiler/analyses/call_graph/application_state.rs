@@ -23,8 +23,8 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
-    Callable, CallableInput, CallableMetadata, EnumVariantConstructorPath, EnumVariantInit,
-    GenericArgument, PathType, RustIdentifier, Type,
+    Callable, CallableInput, EnumVariantConstructorPath, EnumVariantInit, GenericArgument, PathType,
+    RustIdentifier, Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -157,14 +157,12 @@ pub(crate) fn application_state_call_graph(
                     enum_generics: vec![],
                     variant_name: "Ok".into(),
                 },
-                metadata: CallableMetadata {
-                    output: Some(application_state_result.clone().into()),
-                    inputs: vec![CallableInput {
-                        name: RustIdentifier::new("_0".into()),
-                        type_: application_state.type_().into(),
-                    }],
-                    source_coordinates: None,
-                },
+                self_: Some(application_state_result.clone().into()),
+                fields: vec![CallableInput {
+                    name: RustIdentifier::new("_0".into()),
+                    type_: application_state.type_().into(),
+                }],
+                source_coordinates: None,
             })
         };
         let err_wrapper = {
@@ -177,14 +175,12 @@ pub(crate) fn application_state_call_graph(
                     enum_generics: vec![],
                     variant_name: "Err".into(),
                 },
-                metadata: CallableMetadata {
-                    output: Some(application_state_result.into()),
-                    inputs: vec![CallableInput {
-                        name: RustIdentifier::new("_0".into()),
-                        type_: error_enum.clone().into(),
-                    }],
-                    source_coordinates: None,
-                },
+                self_: Some(application_state_result.into()),
+                fields: vec![CallableInput {
+                    name: RustIdentifier::new("_0".into()),
+                    type_: error_enum.clone().into(),
+                }],
+                source_coordinates: None,
             })
         };
         component_db.get_or_intern_transformer(
@@ -263,14 +259,12 @@ pub(crate) fn application_state_call_graph(
                         enum_generics: vec![],
                         variant_name: error_type_name.to_owned(),
                     },
-                    metadata: CallableMetadata {
-                        output: Some(error_enum.clone().into()),
-                        inputs: vec![CallableInput {
-                            name: RustIdentifier::new("_0".into()),
-                            type_: error_type.to_owned(),
-                        }],
-                        source_coordinates: None,
-                    },
+                    self_: Some(error_enum.clone().into()),
+                    fields: vec![CallableInput {
+                        name: RustIdentifier::new("_0".into()),
+                        type_: error_type.to_owned(),
+                    }],
+                    source_coordinates: None,
                 });
                 let transformer_id = component_db.get_or_intern_transformer(
                     computation_db.get_or_intern(error_variant_constructor.clone()),
