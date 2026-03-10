@@ -3,11 +3,9 @@ use std::fmt::Formatter;
 use guppy::PackageId;
 use rustdoc_types::{GenericParamDefKind, ItemEnum, Type as RustdocType};
 
-use crate::compiler::resolvers::resolve_type;
 use crate::language::{PathType, Type};
 use crate::rustdoc::{Crate, CrateCollection};
-
-use super::resolvers::GenericBindings;
+use rustdoc_resolver::{GenericBindings, resolve_type};
 
 /// It returns an error if `type_` doesn't implement the specified trait.
 ///

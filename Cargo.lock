@@ -3252,6 +3252,7 @@ dependencies = [
  "rustdoc_ext",
  "rustdoc_ir",
  "rustdoc_processor",
+ "rustdoc_resolver",
  "rustdoc_types",
  "semver",
  "serde",
@@ -4296,6 +4297,22 @@ dependencies = [
  "tracing",
  "tracing_log_error",
  "xxhash-rust",
+]
+
+[[package]]
+name = "rustdoc_resolver"
+version = "0.2.10"
+dependencies = [
+ "ahash",
+ "anyhow",
+ "guppy",
+ "once_cell",
+ "rustdoc_ext",
+ "rustdoc_ir",
+ "rustdoc_processor",
+ "rustdoc_types",
+ "thiserror 2.0.17",
+ "tracing",
 ]
 
 [[package]]

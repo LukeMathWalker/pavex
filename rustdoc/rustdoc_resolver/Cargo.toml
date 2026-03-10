@@ -1,0 +1,23 @@
+[package]
+name = "rustdoc_resolver"
+description = "Convert rustdoc_types into rustdoc_ir types"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[lints]
+clippy = { large_enum_variant = "allow", result_large_err = "allow" }
+
+[dependencies]
+rustdoc-types = { workspace = true }
+rustdoc_ir = { workspace = true }
+rustdoc_processor = { path = "../rustdoc_processor" }
+rustdoc_ext = { path = "../rustdoc_ext" }
+guppy = { workspace = true }
+anyhow = { workspace = true }
+ahash = { workspace = true }
+once_cell = { workspace = true }
+tracing = { workspace = true, default-features = true }
+thiserror = { workspace = true }

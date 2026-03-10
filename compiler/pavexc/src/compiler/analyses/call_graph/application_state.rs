@@ -24,7 +24,7 @@ use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
     Callable, CallableInput, CallableMetadata, EnumVariantConstructorPath, EnumVariantInit,
-    GenericArgument, ParameterName, PathType, Type,
+    GenericArgument, PathType, RustIdentifier, Type,
 };
 use crate::rustdoc::{CORE_PACKAGE_ID_REPR, CrateCollection};
 
@@ -160,7 +160,7 @@ pub(crate) fn application_state_call_graph(
                 metadata: CallableMetadata {
                     output: Some(application_state_result.clone().into()),
                     inputs: vec![CallableInput {
-                        name: ParameterName::new("_0".into()),
+                        name: RustIdentifier::new("_0".into()),
                         type_: application_state.type_().into(),
                     }],
                     source_coordinates: None,
@@ -180,7 +180,7 @@ pub(crate) fn application_state_call_graph(
                 metadata: CallableMetadata {
                     output: Some(application_state_result.into()),
                     inputs: vec![CallableInput {
-                        name: ParameterName::new("_0".into()),
+                        name: RustIdentifier::new("_0".into()),
                         type_: error_enum.clone().into(),
                     }],
                     source_coordinates: None,
@@ -266,7 +266,7 @@ pub(crate) fn application_state_call_graph(
                     metadata: CallableMetadata {
                         output: Some(error_enum.clone().into()),
                         inputs: vec![CallableInput {
-                            name: ParameterName::new("_0".into()),
+                            name: RustIdentifier::new("_0".into()),
                             type_: error_type.to_owned(),
                         }],
                         source_coordinates: None,

@@ -13,7 +13,7 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
-    Callable, CallableInput, CallableMetadata, FnHeader, Lifetime, ParameterName, PathType,
+    Callable, CallableInput, CallableMetadata, FnHeader, Lifetime, RustIdentifier, PathType,
     TraitMethod, TraitMethodPath, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
@@ -74,7 +74,7 @@ pub(super) fn get_clone_component_id(
         metadata: CallableMetadata {
             output: Some(output.clone()),
             inputs: vec![CallableInput {
-                name: ParameterName::new("_0".into()),
+                name: RustIdentifier::new("_0".into()),
                 type_: Type::Reference(TypeReference {
                     is_mutable: false,
                     lifetime: Lifetime::Elided,

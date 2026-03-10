@@ -20,7 +20,7 @@ use super::{
 use crate::{
     compiler::app::GENERATED_APP_PACKAGE_ID,
     language::{
-        Callable, CallableInput, CallableMetadata, GenericArgument, ParameterName, PathTypeExt,
+        Callable, CallableInput, CallableMetadata, GenericArgument, PathTypeExt, RustIdentifier,
         StructLiteralInit, Type,
     },
     rustdoc::CrateCollection,
@@ -195,7 +195,7 @@ impl ApplicationState {
                     let b = self.bindings.iter().collect::<BTreeMap<_, _>>();
                     b.into_iter()
                         .map(|(name, type_)| CallableInput {
-                            name: ParameterName::new(name.to_string()),
+                            name: RustIdentifier::new(name.to_string()),
                             type_: type_.clone(),
                         })
                         .collect()

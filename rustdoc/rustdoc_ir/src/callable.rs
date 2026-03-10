@@ -14,19 +14,20 @@ use crate::{
 };
 use rustdoc_ext::GlobalItemId;
 
-/// A validated parameter name that is guaranteed to be a valid Rust identifier.
+/// A valid Rust identifier.
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
-pub struct ParameterName(String);
+pub struct RustIdentifier(String);
 
-impl ParameterName {
-    /// Create a new `ParameterName`, validating that it is a valid Rust identifier.
+impl RustIdentifier {
+    /// Create a new [`RustIdentifier`].
     ///
     /// # Panics
+    ///
     /// Panics if `name` is not a valid Rust identifier (`[a-zA-Z_][a-zA-Z0-9_]*`).
     pub fn new(name: String) -> Self {
         assert!(
             Self::is_valid_identifier(&name),
-            "Invalid parameter name: `{name}`"
+            "Invalid identifier: `{name}`"
         );
         Self(name)
     }
@@ -46,7 +47,7 @@ impl ParameterName {
     }
 }
 
-impl std::fmt::Display for ParameterName {
+impl std::fmt::Display for RustIdentifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
     }
@@ -55,7 +56,7 @@ impl std::fmt::Display for ParameterName {
 /// A named input parameter of a [`Callable`].
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct CallableInput {
-    pub name: ParameterName,
+    pub name: RustIdentifier,
     pub type_: Type,
 }
 

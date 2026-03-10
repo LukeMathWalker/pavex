@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use rustdoc_types::{Item, ItemEnum};
 
-use crate::compiler::resolvers::{GenericBindings, resolve_type};
+use rustdoc_resolver::{GenericBindings, resolve_type};
 use crate::language::{
     FQGenericArgument, FQPathType, UnknownCrate, krate2package_id, resolve_fq_path_type,
 };
