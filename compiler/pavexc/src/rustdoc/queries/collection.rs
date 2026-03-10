@@ -15,7 +15,7 @@ use super::super::annotations::AnnotationCoordinates;
 use super::super::indexer::PavexIndexer;
 use super::super::progress_reporter::ShellProgress;
 use super::CrateCollection;
-use rustdoc_processor::queries::{Crate, CrateRegistry};
+use rustdoc_processor::queries::Crate;
 use rustdoc_processor::{GlobalItemId, UnknownItemPath};
 
 /// Extension trait adding Pavex-specific methods to `CrateCollection`.
@@ -57,7 +57,7 @@ impl CrateCollectionExt for CrateCollection {
         cache_workspace_package_docs: bool,
         diagnostic_sink: crate::diagnostic::DiagnosticSink,
     ) -> Result<CrateCollection, anyhow::Error> {
-        let disk_cache = super::super::compute::pavex_rustdoc_cache(
+        let disk_cache = super::super::cache::pavex_rustdoc_cache(
             &toolchain_name,
             cache_workspace_package_docs,
             &package_graph,

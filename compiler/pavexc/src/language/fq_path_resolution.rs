@@ -13,7 +13,6 @@ use crate::rustdoc::{
     CannotGetCrateData, CrateCollection, CrateCollectionExt, GlobalItemId, ResolvedItem,
 };
 use rustdoc_ext::RustdocKindExt;
-use rustdoc_processor::queries::CrateRegistry;
 
 use super::RawIdentifiers;
 use super::fq_path::*;

@@ -5,4 +5,4 @@ pub type CrateCollection = rustdoc_processor::CrateCollection<super::indexer::Pa
 
 pub use collection::{CrateCollectionExt, ResolvedItem};
 pub use rustdoc_processor::GlobalItemId;
-pub use rustdoc_processor::queries::{Crate, CrateRegistry};
+pub use rustdoc_processor::queries::Crate;

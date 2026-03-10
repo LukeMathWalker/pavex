@@ -1,11 +1,9 @@
 //! Query layer for looking up items across crates.
 
 pub(crate) mod core;
-pub(crate) mod registry;
 pub(crate) mod resolution;
 
 pub use self::core::CrateCore;
-pub use registry::CrateRegistry;
 
 use resolution::CrateIdNeedle;
 use std::borrow::Cow;
@@ -17,11 +15,12 @@ use guppy::PackageId;
 use guppy::graph::PackageGraph;
 use rustdoc_types::Item;
 
+use crate::CrateCollection;
 use crate::compute::CannotGetCrateData;
 use crate::crate_data::CrateData;
 use crate::indexing::{
-    EagerImportPath2Id, ExternalReExport, ExternalReExports, ImportIndex, ImportPath2Id,
-    IndexingVisitor, NoopVisitor, index_local_types,
+    CrateIndexer, EagerImportPath2Id, ExternalReExport, ExternalReExports, ImportIndex,
+    ImportPath2Id, IndexingVisitor, NoopVisitor, index_local_types,
 };
 use crate::unknown_item_path::UnknownItemPath;
 use rustdoc_ext::GlobalItemId;
@@ -165,12 +164,12 @@ impl Crate {
     ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation
     /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
-    pub fn compute_package_id_for_crate_id(
+    pub fn compute_package_id_for_crate_id<I: CrateIndexer>(
         &self,
         crate_id: u32,
-        registry: &(impl CrateRegistry + ?Sized),
+        collection: &CrateCollection<I>,
     ) -> Result<PackageId, anyhow::Error> {
-        self.compute_package_id_for_crate_id_with_hint(crate_id, registry, None)
+        self.compute_package_id_for_crate_id_with_hint(crate_id, collection, None)
     }
 
     /// Given a crate id, return the corresponding [`PackageId`].
@@ -188,10 +187,10 @@ impl Crate {
     ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation
     /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
-    pub fn compute_package_id_for_crate_id_with_hint(
+    pub fn compute_package_id_for_crate_id_with_hint<I: CrateIndexer>(
         &self,
         crate_id: u32,
-        registry: &(impl CrateRegistry + ?Sized),
+        collection: &CrateCollection<I>,
         maybe_dependent_crate_name: Option<&str>,
     ) -> Result<PackageId, anyhow::Error> {
         let needle = CrateIdNeedle {
@@ -206,7 +205,7 @@ impl Crate {
         // If we don't have a cached entry, perform the graph traversal.
         let outcome = self.core.compute_package_id_for_crate_id(
             crate_id,
-            registry.package_graph(),
+            collection.package_graph(),
             maybe_dependent_crate_name,
         );
 
@@ -220,10 +219,10 @@ impl Crate {
         outcome
     }
 
-    pub fn get_item_id_by_path(
+    pub fn get_item_id_by_path<I: CrateIndexer>(
         &self,
         path: &[String],
-        registry: &(impl CrateRegistry + ?Sized),
+        collection: &CrateCollection<I>,
     ) -> Result<Result<GlobalItemId, UnknownItemPath>, CannotGetCrateData> {
         if let Some(id) = self.import_path2id.get(path) {
             return Ok(Ok(GlobalItemId::new(id, self.core.package_id.to_owned())));
@@ -252,13 +251,13 @@ impl Crate {
                     .core
                     .compute_package_id_for_crate_id(
                         *external_crate_id,
-                        registry.package_graph(),
+                        collection.package_graph(),
                         None,
                     )
                     .unwrap();
-                let source_krate = registry.get_or_compute_crate(&source_package_id).unwrap();
+                let source_krate = collection.get_or_compute(&source_package_id).unwrap();
                 if let Ok(source_id) =
-                    source_krate.get_item_id_by_path(&original_source_path, registry)
+                    source_krate.get_item_id_by_path(&original_source_path, collection)
                 {
                     return Ok(source_id);
                 }

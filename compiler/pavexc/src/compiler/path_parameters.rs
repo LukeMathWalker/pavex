@@ -19,7 +19,6 @@ use crate::diagnostic::DiagnosticSink;
 use crate::language::{GenericArgument, Type};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
-use rustdoc_processor::queries::CrateRegistry;
 
 use super::analyses::route_path::RoutePath;
 use super::traits::assert_trait_is_implemented;

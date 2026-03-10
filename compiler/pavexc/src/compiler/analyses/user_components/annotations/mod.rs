@@ -40,7 +40,6 @@ use crate::{
 use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_ext::RustdocKindExt;
-use rustdoc_processor::queries::CrateRegistry;
 use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
 /// An id pointing at the coordinates of an annotated component.
