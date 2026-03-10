@@ -44,7 +44,7 @@ anyhow = { workspace = true }
 fs-err = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh64"] }
 globwalk = { workspace = true }
-tracing = { workspace = true }
+tracing = { workspace = true, default-features = true }
 tracing_log_error = { workspace = true }
 num_cpus = { workspace = true }
 itertools = { workspace = true }
