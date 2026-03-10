@@ -25,7 +25,7 @@ use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
 use crate::language::{
     Callable, CallableInput, CallableMetadata, CanonicalType, GenericArgument,
-    GenericLifetimeParameter, Lifetime, ParameterName, PathType, PathTypeExt, StructLiteralInit,
+    GenericLifetimeParameter, Lifetime, RustIdentifier, PathType, PathTypeExt, StructLiteralInit,
     Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
@@ -695,7 +695,7 @@ impl RequestHandlerPipeline {
                 inputs: next_state_parameters
                     .iter()
                     .map(|input| CallableInput {
-                        name: ParameterName::new(input.ident.clone()),
+                        name: RustIdentifier::new(input.ident.clone()),
                         type_: input.type_.clone(),
                     })
                     .collect(),

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use rustdoc_types::ItemEnum;
 
-use crate::compiler::resolvers::{GenericBindings, resolve_type};
+use rustdoc_resolver::{GenericBindings, resolve_type};
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{Array, GenericArgument, Slice};

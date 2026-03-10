@@ -17,7 +17,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
 use crate::language::{
     Callable, CallableInput, CallableMetadata, EnumVariantConstructorPath, EnumVariantInit,
-    ParameterName, Type,
+    RustIdentifier, Type,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -213,7 +213,7 @@ fn augment_preprocessing_graph(
             metadata: CallableMetadata {
                 output: Some(component_db.pavex_processing.clone()),
                 inputs: vec![CallableInput {
-                    name: ParameterName::new("_0".into()),
+                    name: RustIdentifier::new("_0".into()),
                     type_: output_type.to_owned(),
                 }],
                 source_coordinates: None,

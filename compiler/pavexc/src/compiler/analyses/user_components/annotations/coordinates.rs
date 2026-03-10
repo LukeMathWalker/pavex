@@ -9,8 +9,9 @@ use pavexc_attr_parser::AnnotationProperties;
 
 use super::{
     AuxiliaryData, ConfigType, ImplInfo, annotated_item2type, cannot_resolve_callable_path,
-    invalid_config_type, rustdoc_free_fn2callable, rustdoc_method2callable, validate_route_path,
+    invalid_config_type, validate_route_path,
 };
+use rustdoc_resolver::{resolve_free_function, rustdoc_method2callable};
 use crate::compiler::analyses::user_components::{UserComponent, UserComponentId};
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
 use pavex_bp_schema::{CloningPolicy, Lint, LintSetting};
@@ -213,13 +214,14 @@ pub(crate) fn resolve_annotation_coordinates(
             Some(ImplInfo { attached_to, impl_ }) => {
                 rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection)
             }
-            None => rustdoc_free_fn2callable(&item, krate, krate_collection),
+            None => resolve_free_function(&item, krate, krate_collection)
+                .map(rustdoc_ir::Callable::FreeFunction),
         };
         let callable = match outcome {
             Ok(callable) => callable,
             Err(e) => {
                 cannot_resolve_callable_path(
-                    e,
+                    e.into(),
                     component_id,
                     aux,
                     krate_collection.package_graph(),

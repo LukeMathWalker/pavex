@@ -7,7 +7,7 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{
     Callable, CallableInput, CallableMetadata, FnHeader, InherentMethod, InherentMethodPath,
-    ParameterName, Type,
+    RustIdentifier, Type,
 };
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
@@ -55,7 +55,7 @@ pub(super) fn register_error_new_transformer(
         metadata: CallableMetadata {
             output: Some(pavex_error.clone().into()),
             inputs: vec![CallableInput {
-                name: ParameterName::new("_0".into()),
+                name: RustIdentifier::new("_0".into()),
                 type_: error.to_owned(),
             }],
             source_coordinates: None,
