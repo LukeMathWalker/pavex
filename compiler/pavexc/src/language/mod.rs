@@ -10,11 +10,10 @@ pub use krate_name::{
 };
 use pavex_bp_schema::CreatedAt;
 pub(crate) use resolved_type::{
-    Callable, CallableInput, CallableMetadata, CanonicalType, EnumVariantConstructorPath,
-    EnumVariantInit, FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument,
-    GenericLifetimeParameter, InherentMethod, InherentMethodPath, Lifetime, RustIdentifier,
-    PathType, PathTypeExt, RawPointer, StructLiteralInit, TraitMethod, TraitMethodPath, Tuple,
-    Type, TypeReference,
+    Callable, CallableInput, CanonicalType, EnumVariantConstructorPath, EnumVariantInit, FnHeader,
+    FreeFunction, FreeFunctionPath, Generic, GenericArgument, GenericLifetimeParameter,
+    InherentMethod, InherentMethodPath, Lifetime, RustIdentifier, PathType, PathTypeExt,
+    RawPointer, StructLiteralInit, TraitMethod, TraitMethodPath, Tuple, Type, TypeReference,
 };
 
 mod callable_path;

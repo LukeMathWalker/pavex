@@ -7,8 +7,8 @@ use rustdoc_types::{GenericArgs, Item, ItemEnum};
 
 use rustdoc_ext::GlobalItemId;
 use rustdoc_ir::{
-    Callable, CallableInput, CallableMetadata, FnHeader, GenericArgument, GenericLifetimeParameter,
-    InherentMethod, InherentMethodPath, RustIdentifier, TraitMethod, TraitMethodPath,
+    Callable, CallableInput, FnHeader, GenericArgument, GenericLifetimeParameter, InherentMethod,
+    InherentMethodPath, RustIdentifier, TraitMethod, TraitMethodPath,
 };
 use rustdoc_processor::CrateCollection;
 use rustdoc_processor::indexing::CrateIndexer;
@@ -228,31 +228,29 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
     });
 
     let fn_header = FnHeader {
+        output,
+        inputs,
         is_async: inner.header.is_async,
         abi: inner.header.abi.clone(),
         is_unsafe: inner.header.is_unsafe,
         is_c_variadic: inner.sig.is_c_variadic,
         symbol_name,
     };
-    let metadata = CallableMetadata {
-        output,
-        inputs,
-        source_coordinates: Some(GlobalItemId {
-            rustdoc_item_id: method_item.id,
-            package_id: krate.core.package_id.clone(),
-        }),
-    };
+    let source_coordinates = Some(GlobalItemId {
+        rustdoc_item_id: method_item.id,
+        package_id: krate.core.package_id.clone(),
+    });
     Ok(match callable_path {
         MethodPath::Trait(path) => Callable::TraitMethod(TraitMethod {
             path,
-            metadata,
             header: fn_header,
+            source_coordinates,
             takes_self_as_ref,
         }),
         MethodPath::Inherent(path) => Callable::InherentMethod(InherentMethod {
             path,
-            metadata,
             header: fn_header,
+            source_coordinates,
             takes_self_as_ref,
         }),
     })

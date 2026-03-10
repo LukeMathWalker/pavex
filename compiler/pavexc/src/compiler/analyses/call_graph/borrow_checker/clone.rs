@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
-    Callable, CallableInput, CallableMetadata, FnHeader, Lifetime, RustIdentifier, PathType,
-    TraitMethod, TraitMethodPath, Type, TypeReference,
+    Callable, CallableInput, FnHeader, Lifetime, RustIdentifier, PathType, TraitMethod,
+    TraitMethodPath, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -71,7 +71,7 @@ pub(super) fn get_clone_component_id(
             method_name: "clone".into(),
             method_generics: vec![],
         },
-        metadata: CallableMetadata {
+        header: FnHeader {
             output: Some(output.clone()),
             inputs: vec![CallableInput {
                 name: RustIdentifier::new("_0".into()),
@@ -81,15 +81,13 @@ pub(super) fn get_clone_component_id(
                     inner: Box::new(output),
                 }),
             }],
-            source_coordinates: None,
-        },
-        header: FnHeader {
             is_async: false,
             abi: rustdoc_types::Abi::Rust,
             is_unsafe: false,
             is_c_variadic: false,
             symbol_name: None,
         },
+        source_coordinates: None,
         takes_self_as_ref: true,
     });
 

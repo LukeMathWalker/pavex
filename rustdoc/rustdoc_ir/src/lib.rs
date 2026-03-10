@@ -17,8 +17,8 @@ mod type_reference;
 
 pub use array::Array;
 pub use callable::{
-    Callable, CallableInput, CallableMetadata, EnumVariantInit, FnHeader, FreeFunction,
-    InherentMethod, RustIdentifier, StructLiteralInit, TraitMethod,
+    Callable, CallableInput, EnumVariantInit, FnHeader, FreeFunction, InherentMethod,
+    RustIdentifier, StructLiteralInit, TraitMethod,
 };
 pub use callable_path::{
     EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,

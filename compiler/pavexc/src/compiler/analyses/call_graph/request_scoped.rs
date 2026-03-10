@@ -16,8 +16,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::Computation;
 use crate::language::{
-    Callable, CallableInput, CallableMetadata, EnumVariantConstructorPath, EnumVariantInit,
-    RustIdentifier, Type,
+    Callable, CallableInput, EnumVariantConstructorPath, EnumVariantInit, RustIdentifier, Type,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -210,14 +209,12 @@ fn augment_preprocessing_graph(
                 enum_generics: vec![],
                 variant_name: "EarlyReturn".into(),
             },
-            metadata: CallableMetadata {
-                output: Some(component_db.pavex_processing.clone()),
-                inputs: vec![CallableInput {
-                    name: RustIdentifier::new("_0".into()),
-                    type_: output_type.to_owned(),
-                }],
-                source_coordinates: None,
-            },
+            self_: Some(component_db.pavex_processing.clone()),
+            fields: vec![CallableInput {
+                name: RustIdentifier::new("_0".into()),
+                type_: output_type.to_owned(),
+            }],
+            source_coordinates: None,
         });
         component_db.get_or_intern_transformer(
             computation_db.get_or_intern(wrapper),
