@@ -371,7 +371,7 @@ fn precompute_crate_docs<'a, J>(
     package_ids.extend(imported_package_ids);
     let package_ids = package_ids.iter().map(|&p| p.to_owned());
 
-    if let Err(e) = krate_collection.bootstrap_collection(package_ids.clone()) {
+    if let Err(e) = krate_collection.bootstrap(package_ids.clone()) {
         let e = anyhow::anyhow!(e).context(
             "I failed to compute the JSON documentation for one or more crates in the workspace.",
         );

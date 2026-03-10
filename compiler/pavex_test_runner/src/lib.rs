@@ -13,7 +13,7 @@ use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
 use pavex_cli_shell::try_init_shell;
-use pavexc::rustdoc::CrateCollection;
+use pavexc::rustdoc::{CrateCollection, CrateCollectionExt};
 use pavexc::{DEFAULT_DOCS_TOOLCHAIN, DiagnosticSink};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sha2::Digest;
@@ -488,7 +488,7 @@ fn warm_up_rustdoc_cache(
     let n_packages = package_ids.len();
     println!("Pre-computing JSON documentation for {n_packages} crates",);
     crate_collection
-        .batch_compute_crates(package_ids.into_iter())
+        .compute_batch(package_ids.into_iter())
         .context("Failed to warm rustdoc JSON cache")?;
     println!(
         "Pre-computed JSON documentation for {n_packages} crates in {} seconds",

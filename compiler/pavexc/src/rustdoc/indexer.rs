@@ -42,11 +42,7 @@ impl CrateIndexer for PavexIndexer {
         self.index(crate_data, package_id)
     }
 
-    fn index(
-        &self,
-        crate_data: CrateData,
-        package_id: PackageId,
-    ) -> IndexResult<AnnotatedItems> {
+    fn index(&self, crate_data: CrateData, package_id: PackageId) -> IndexResult<AnnotatedItems> {
         let n_diagnostics = self.diagnostic_sink.len();
         let mut annotation_queue = BTreeSet::<QueueItem>::new();
         let mut visitor = PavexIndexingVisitor {
@@ -54,7 +50,8 @@ impl CrateIndexer for PavexIndexer {
             diagnostics: &self.diagnostic_sink,
         };
         let krate = Crate::index(crate_data, package_id, &mut visitor);
-        let annotated_items = annotations::process_queue(annotation_queue, &krate, &self.diagnostic_sink);
+        let annotated_items =
+            annotations::process_queue(annotation_queue, &krate, &self.diagnostic_sink);
         // No issues arose in the indexing phase if the diagnostic count hasn't changed.
         //
         // TODO: Since we're indexing in parallel, the counter may have been incremented

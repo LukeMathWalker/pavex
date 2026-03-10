@@ -9,7 +9,9 @@ use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, 
 use crate::language::krate_name::dependency_name2package_id;
 use crate::language::resolved_type::{Array, GenericArgument, Slice};
 use crate::language::{CallPath, InvalidCallPath, RawPointer, Tuple, Type, TypeReference};
-use crate::rustdoc::{CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem};
+use crate::rustdoc::{
+    CannotGetCrateData, CrateCollection, CrateCollectionExt, GlobalItemId, ResolvedItem,
+};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_processor::queries::CrateRegistry;
 
@@ -268,7 +270,7 @@ pub fn find_rustdoc_callable_items<'a>(
     path: &FQPath,
     krate_collection: &'a CrateCollection,
 ) -> Result<Result<CallableItem<'a>, UnknownPath>, CannotGetCrateData> {
-    let krate = krate_collection.get_or_compute_crate_by_package_id(&path.package_id)?;
+    let krate = krate_collection.get_or_compute(&path.package_id)?;
 
     let path_without_generics: Vec<_> = path
         .segments
@@ -354,8 +356,7 @@ pub fn find_rustdoc_callable_items<'a>(
                 unreachable!()
             }
         };
-        let search_krate =
-            krate_collection.get_or_compute_crate_by_package_id(&parent_item.item_id.package_id)?;
+        let search_krate = krate_collection.get_or_compute(&parent_item.item_id.package_id)?;
         for child_id in children_ids {
             let child = search_krate.get_item_by_local_type_id(child_id);
             match &child.inner {

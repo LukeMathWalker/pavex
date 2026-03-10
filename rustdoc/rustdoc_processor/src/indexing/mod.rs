@@ -10,7 +10,6 @@ pub use import_path::{EagerImportPath2Id, ImportPath2Id, LazyImportPath2Id};
 pub(crate) use re_exports::ExternalReExport;
 pub use re_exports::ExternalReExports;
 
-
 use guppy::PackageId;
 use indexmap::IndexSet;
 use rustdoc_types::{ItemEnum, Visibility};
@@ -35,11 +34,8 @@ pub trait CrateIndexer: Send + Sync {
     ) -> IndexResult<Self::Annotations>;
 
     /// Index pre-parsed crate data (e.g. from a partial cache hit).
-    fn index(
-        &self,
-        crate_data: CrateData,
-        package_id: PackageId,
-    ) -> IndexResult<Self::Annotations>;
+    fn index(&self, crate_data: CrateData, package_id: PackageId)
+    -> IndexResult<Self::Annotations>;
 }
 
 /// The result of indexing a single crate.
@@ -58,12 +54,10 @@ pub struct NoAnnotations;
 impl CrateIndexer for NoAnnotations {
     type Annotations = ();
 
-    fn index_raw(
-        &self,
-        krate: rustdoc_types::Crate,
-        package_id: PackageId,
-    ) -> IndexResult<()> {
-        use crate::crate_data::{CrateItemIndex, CrateItemPaths, EagerCrateItemIndex, EagerCrateItemPaths};
+    fn index_raw(&self, krate: rustdoc_types::Crate, package_id: PackageId) -> IndexResult<()> {
+        use crate::crate_data::{
+            CrateItemIndex, CrateItemPaths, EagerCrateItemIndex, EagerCrateItemPaths,
+        };
         let crate_data = CrateData {
             root_item_id: krate.root,
             index: CrateItemIndex::Eager(EagerCrateItemIndex { index: krate.index }),
@@ -74,11 +68,7 @@ impl CrateIndexer for NoAnnotations {
         self.index(crate_data, package_id)
     }
 
-    fn index(
-        &self,
-        crate_data: CrateData,
-        package_id: PackageId,
-    ) -> IndexResult<()> {
+    fn index(&self, crate_data: CrateData, package_id: PackageId) -> IndexResult<()> {
         let krate = Crate::index_without_visitor(crate_data, package_id);
         IndexResult {
             krate,

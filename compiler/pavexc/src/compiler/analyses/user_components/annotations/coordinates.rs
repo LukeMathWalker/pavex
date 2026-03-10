@@ -1,7 +1,9 @@
 use super::diagnostic::invalid_prebuilt_type;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::{
-    DiagnosticSink, compiler::analyses::computations::ComputationDb, rustdoc::CrateCollection,
+    DiagnosticSink,
+    compiler::analyses::computations::ComputationDb,
+    rustdoc::{CrateCollection, CrateCollectionExt},
 };
 use pavexc_attr_parser::AnnotationProperties;
 
@@ -113,7 +115,8 @@ pub(crate) fn resolve_annotation_coordinates(
                 }
                 Err(e) => {
                     let path_display = krate.import_index.items[&item.id]
-                        .canonical_path().to_vec()
+                        .canonical_path()
+                        .to_vec()
                         .join("::");
                     invalid_config_type(e, &path_display, component_id, aux, diagnostics)
                 }
@@ -152,7 +155,8 @@ pub(crate) fn resolve_annotation_coordinates(
                 }
                 Err(e) => {
                     let path_display = krate.import_index.items[&item.id]
-                        .canonical_path().to_vec()
+                        .canonical_path()
+                        .to_vec()
                         .join("::");
                     invalid_prebuilt_type(e, &path_display, component_id, aux, diagnostics)
                 }

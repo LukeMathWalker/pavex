@@ -25,7 +25,7 @@ use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
 use crate::language::{
     Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, PathTypeExt, Type, TypeReference,
 };
-use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{CrateCollection, CrateCollectionExt};
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
