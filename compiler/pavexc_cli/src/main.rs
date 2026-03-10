@@ -19,7 +19,7 @@ use pavex_bp_schema::Blueprint;
 use pavex_cli_deps::{IfAutoinstallable, RustdocJson, RustupToolchain, verify_installation};
 use pavex_cli_diagnostic::AnyhowBridge;
 use pavex_cli_shell::try_init_shell;
-use pavexc::rustdoc::CrateCollection;
+use pavexc::rustdoc::{CrateCollection, CrateCollectionExt};
 use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN, DiagnosticSink};
 use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;

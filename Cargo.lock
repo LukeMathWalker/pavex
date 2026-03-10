@@ -4271,6 +4271,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "camino",
+ "elsa",
  "fs-err",
  "globwalk",
  "guppy",

@@ -374,7 +374,8 @@ fn intern_annotated(
                 }
                 Err(e) => {
                     let path_display = krate.import_index.items[&item.id]
-                        .canonical_path().to_vec()
+                        .canonical_path()
+                        .to_vec()
                         .join("::");
                     invalid_config_type(e, &path_display, config_id, aux, diagnostics)
                 }
@@ -416,7 +417,8 @@ fn intern_annotated(
                 }
                 Err(e) => {
                     let path_display = krate.import_index.items[&item.id]
-                        .canonical_path().to_vec()
+                        .canonical_path()
+                        .to_vec()
                         .join("::");
                     invalid_prebuilt_type(e, &path_display, prebuilt_id, aux, diagnostics)
                 }
@@ -481,9 +483,7 @@ fn annotated_item2type(
                         return Err(());
                     }
                 };
-                let Ok(krate) =
-                    krate_collection.get_or_compute_crate_by_package_id(&imported_id.package_id)
-                else {
+                let Ok(krate) = krate_collection.get_or_compute(&imported_id.package_id) else {
                     return Err(());
                 };
                 (
@@ -619,8 +619,8 @@ fn rustdoc_free_fn2callable(
         unreachable!("Expected a function item");
     };
 
-    let canonical_path_segments: Vec<String> = krate.import_index.items[&item.id]
-        .canonical_path().to_vec();
+    let canonical_path_segments: Vec<String> =
+        krate.import_index.items[&item.id].canonical_path().to_vec();
     // A representation of the path that will be used in error paths
     let path_display = canonical_path_segments.join("::");
 
@@ -827,7 +827,8 @@ fn rustdoc_method2callable(
         })
     } else {
         let canonical_path_segments: Vec<String> = krate.import_index.items[&attached_to]
-            .canonical_path().to_vec();
+            .canonical_path()
+            .to_vec();
         let method_name = method_item.name.clone().expect("Method without a name");
         let n = canonical_path_segments.len();
         MethodPath::Inherent(InherentMethodPath {

@@ -12,6 +12,7 @@
 //!    cross-crate references, and retrieve canonical import paths.
 
 pub mod cache;
+mod collection;
 pub mod compute;
 pub mod crate_data;
 pub mod indexing;
@@ -21,6 +22,7 @@ mod utils;
 mod version_matcher;
 
 // Cross-cutting types re-exported at crate root
+pub use collection::CrateCollection;
 pub use rustdoc_ext::GlobalItemId;
 pub use unknown_item_path::UnknownItemPath;
 

@@ -36,6 +36,9 @@ semver = { workspace = true }
 indexmap = { workspace = true }
 rayon = { workspace = true }
 
+# In-memory frozen collections
+elsa = { workspace = true }
+
 # Utilities
 anyhow = { workspace = true }
 fs-err = { workspace = true }

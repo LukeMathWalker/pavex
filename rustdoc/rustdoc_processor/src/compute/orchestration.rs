@@ -53,7 +53,7 @@ pub fn compute_crate_docs<I, P>(
 ) -> Result<HashMap<PackageId, rustdoc_types::Crate>, anyhow::Error>
 where
     I: Iterator<Item = PackageId>,
-    P: ComputeProgress,
+    P: ComputeProgress + ?Sized,
 {
     let mut to_be_computed = vec![];
     let mut results = HashMap::new();
