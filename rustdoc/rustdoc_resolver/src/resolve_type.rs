@@ -526,9 +526,9 @@ fn skip_default<I: CrateIndexer>(krate_collection: &CrateCollection<I>, default:
                 .items
                 .iter()
                 .find(|(_, entry)| entry.canonical_path() == ["alloc", "alloc", "Global"])
-            {
-                return item_entry.1.canonical_path().to_vec();
-            }
+        {
+            return item_entry.1.canonical_path().to_vec();
+        }
         vec!["alloc".into(), "alloc".into(), "Global".into()]
     });
 
