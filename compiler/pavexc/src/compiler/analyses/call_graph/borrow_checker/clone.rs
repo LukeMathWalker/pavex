@@ -13,7 +13,7 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::resolve_type_path;
 use crate::language::{
-    Callable, CallableInput, FnHeader, Lifetime, RustIdentifier, PathType, TraitMethod,
+    Callable, CallableInput, FnHeader, Lifetime, PathType, RustIdentifier, TraitMethod,
     TraitMethodPath, Type, TypeReference,
 };
 use crate::rustdoc::CrateCollection;

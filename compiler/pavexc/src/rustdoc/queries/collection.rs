@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 use rustdoc_types::{Item, ItemEnum};
 
-use rustdoc_resolver::{GenericBindings, resolve_type};
 use crate::language::{
     FQGenericArgument, FQPathType, UnknownCrate, krate2package_id, resolve_fq_path_type,
 };
 use crate::rustdoc::CannotGetCrateData;
 use rustdoc_ext::RustdocKindExt;
+use rustdoc_resolver::{GenericBindings, resolve_type};
 
 use super::super::AnnotatedItem;
 use super::super::annotations::AnnotationCoordinates;

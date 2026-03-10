@@ -10,7 +10,7 @@ use tracing_log_error::log_error;
 use crate::language::{
     Callable, CallableInput, CallableItem, FQGenericArgument, FQPath, FQPathSegment, FQPathType,
     FnHeader, FreeFunction, FreeFunctionPath, Generic, GenericArgument, GenericLifetimeParameter,
-    InherentMethod, InherentMethodPath, RustIdentifier, PathType, TraitMethod, TraitMethodPath,
+    InherentMethod, InherentMethodPath, PathType, RustIdentifier, TraitMethod, TraitMethodPath,
     Type, UnknownPath, find_rustdoc_callable_items, find_rustdoc_item_type, resolve_fq_path_type,
 };
 use crate::rustdoc::{CannotGetCrateData, CrateCollection, ResolvedItem};
