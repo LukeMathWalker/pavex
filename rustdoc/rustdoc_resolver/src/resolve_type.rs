@@ -10,11 +10,11 @@ use rustdoc_ir::{
     Array, Generic, GenericArgument, GenericLifetimeParameter, PathType, RawPointer, Slice, Tuple,
     Type, TypeReference,
 };
-use rustdoc_processor::indexing::CrateIndexer;
 use rustdoc_processor::CrateCollection;
+use rustdoc_processor::indexing::CrateIndexer;
 
-use crate::errors::*;
 use crate::GenericBindings;
+use crate::errors::*;
 
 /// Convert a `rustdoc_types::Type` into a `rustdoc_ir::Type`, recursively resolving
 /// through type aliases and substituting generic bindings.
@@ -520,8 +520,8 @@ fn skip_default<I: CrateIndexer>(krate_collection: &CrateCollection<I>, default:
         // the canonical path.  Fall back to the well-known path if resolution
         // fails (e.g. alloc docs not available).
         let alloc_pid = PackageId::new(rustdoc_processor::ALLOC_PACKAGE_ID_REPR);
-        if let Some(krate) = krate_collection.get_crate_by_package_id(&alloc_pid) {
-            if let Some(item_entry) = krate
+        if let Some(krate) = krate_collection.get_crate_by_package_id(&alloc_pid)
+            && let Some(item_entry) = krate
                 .import_index
                 .items
                 .iter()
@@ -529,7 +529,6 @@ fn skip_default<I: CrateIndexer>(krate_collection: &CrateCollection<I>, default:
             {
                 return item_entry.1.canonical_path().to_vec();
             }
-        }
         vec!["alloc".into(), "alloc".into(), "Global".into()]
     });
 

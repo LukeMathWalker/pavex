@@ -2,15 +2,15 @@
 
 use rustdoc_types::{Item, ItemEnum};
 
-use rustdoc_ir::{Generic, GenericArgument, GenericLifetimeParameter, PathType, Type};
 use rustdoc_ext::RustdocKindExt;
+use rustdoc_ir::{Generic, GenericArgument, GenericLifetimeParameter, PathType, Type};
+use rustdoc_processor::CrateCollection;
 use rustdoc_processor::indexing::CrateIndexer;
 use rustdoc_processor::queries::Crate;
-use rustdoc_processor::CrateCollection;
 
+use crate::GenericBindings;
 use crate::errors::{TypeResolutionError, UnsupportedConstGeneric};
 use crate::resolve_type::resolve_type;
-use crate::GenericBindings;
 
 /// Convert an enum or a struct definition from the JSON documentation
 /// for a crate into our own representation for types.
@@ -18,7 +18,10 @@ use crate::GenericBindings;
 /// # Panics
 ///
 /// Panics if the item isn't of kind enum or struct.
-pub fn rustdoc_new_type_def2type(item: &Item, krate: &Crate) -> Result<Type, UnsupportedConstGeneric> {
+pub fn rustdoc_new_type_def2type(
+    item: &Item,
+    krate: &Crate,
+) -> Result<Type, UnsupportedConstGeneric> {
     assert!(
         matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_)),
         "Unexpected item type, `{}`. Expected a struct or an enum.",

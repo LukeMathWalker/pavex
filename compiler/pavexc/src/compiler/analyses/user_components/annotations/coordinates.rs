@@ -11,10 +11,10 @@ use super::{
     AuxiliaryData, ConfigType, ImplInfo, annotated_item2type, cannot_resolve_callable_path,
     invalid_config_type, validate_route_path,
 };
-use rustdoc_resolver::{resolve_free_function, rustdoc_method2callable};
 use crate::compiler::analyses::user_components::{UserComponent, UserComponentId};
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
 use pavex_bp_schema::{CloningPolicy, Lint, LintSetting};
+use rustdoc_resolver::{resolve_free_function, rustdoc_method2callable};
 
 /// Resolve coordinates to the annotation they point to.
 /// Then process the corresponding item.
