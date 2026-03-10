@@ -33,4 +33,4 @@ third-party = [
 ]
 
 [final-excludes]
-workspace-members = ["rustdoc_types", "rustdoc_ir", "rustdoc_ext", "rustdoc_processor"]
+workspace-members = ["rustdoc_types", "rustdoc_ir", "rustdoc_ext", "rustdoc_processor", "rustdoc_resolver"]
