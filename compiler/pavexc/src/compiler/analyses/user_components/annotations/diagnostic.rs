@@ -358,16 +358,6 @@ pub(super) fn cannot_resolve_callable_path(
     let component = &db[id];
     let kind = component.kind();
     match e {
-        CallableResolutionError::UnknownCallable(_) => {
-            let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
-                format!("The {kind} that we can't resolve"),
-            );
-            let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
-                    .help("Check that the path is spelled correctly and that the function (or method) is public.".into())
-                    .build();
-            diagnostics.push(diagnostic);
-        }
         CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
             let definition_snippet =
                 CallableDefSource::compute_from_item(&inner_error.callable_item, package_graph)
@@ -387,22 +377,6 @@ pub(super) fn cannot_resolve_callable_path(
                 .optional_source(definition_snippet)
                 .build();
             diagnostics.push(diagnostic);
-        }
-        CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
-            let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
-                format!("It was registered as a {kind} here"),
-            );
-            let message = format!(
-                "I can work with functions and methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.",
-                inner_error.import_path, inner_error.item_kind, kind
-            );
-            let error = anyhow::anyhow!(e).context(message);
-            diagnostics.push(
-                CompilerDiagnostic::builder(error)
-                    .optional_source(source)
-                    .build(),
-            );
         }
         CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
             let output_snippet =
@@ -425,16 +399,6 @@ pub(super) fn cannot_resolve_callable_path(
         }
         CallableResolutionError::CannotGetCrateData(_) => {
             diagnostics.push(CompilerDiagnostic::builder(e).build());
-        }
-        CallableResolutionError::GenericParameterResolutionError(_) => {
-            let source = diagnostics.annotated(
-                db.registration_target(&id),
-                format!("The {kind} was registered here"),
-            );
-            let diagnostic = CompilerDiagnostic::builder(e)
-                .optional_source(source)
-                .build();
-            diagnostics.push(diagnostic);
         }
         CallableResolutionError::SelfResolutionError(_) => {
             let source = diagnostics.annotated(

@@ -9,7 +9,7 @@ pub use rustdoc_processor::{
 };
 
 pub(crate) use annotations::{AnnotatedItem, AnnotationCoordinates, ImplInfo};
-pub use queries::{Crate, CrateCollection, CrateCollectionExt, GlobalItemId, ResolvedItem};
+pub use queries::{Crate, CrateCollection, CrateCollectionExt, GlobalItemId};
 pub use rustdoc_processor::compute::CannotGetCrateData;
 
 mod annotations;

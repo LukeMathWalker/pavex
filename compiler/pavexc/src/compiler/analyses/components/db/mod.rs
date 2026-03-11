@@ -19,12 +19,11 @@ use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
 use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
-    get_err_variant, get_ok_variant, resolve_framework_callable_path, resolve_type_path,
+    get_err_variant, get_ok_variant, resolve_framework_free_function,
+    resolve_framework_inherent_method, resolve_framework_trait_method, resolve_type_path,
 };
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
-use crate::language::{
-    Callable, FQPath, FQPathSegment, FQQualifiedSelf, Lifetime, PathTypeExt, Type, TypeReference,
-};
+use crate::language::{Callable, Lifetime, Type, TypeReference};
 use crate::rustdoc::{CrateCollection, CrateCollectionExt};
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
@@ -159,18 +158,17 @@ impl ComponentDb {
             })
         };
         let pavex_error_fallback_id = {
-            let callable = resolve_framework_callable_path(
-                "pavex::Error::to_response",
-                package_graph,
+            let callable = resolve_framework_inherent_method(
+                &["pavex", "Error"],
+                "to_response",
                 krate_collection,
             );
             let computation = Computation::Callable(Cow::Owned(callable));
             computation_db.get_or_intern(computation)
         };
         let pavex_noop_wrap_id = {
-            let callable = resolve_framework_callable_path(
-                "pavex::middleware::wrap_noop",
-                package_graph,
+            let callable = resolve_framework_free_function(
+                &["pavex", "middleware", "wrap_noop"],
                 krate_collection,
             );
             let computation = Computation::Callable(Cow::Owned(callable));
@@ -303,9 +301,9 @@ impl ComponentDb {
 
         // Add a synthetic constructor for the `pavex::middleware::Next` type.
         {
-            let callable = resolve_framework_callable_path(
-                "pavex::middleware::Next::new",
-                package_graph,
+            let callable = resolve_framework_inherent_method(
+                &["pavex", "middleware", "Next"],
+                "new",
                 krate_collection,
             );
             let computation = Computation::Callable(Cow::Owned(callable));
@@ -1275,7 +1273,6 @@ impl ComponentDb {
             };
             into_response
         };
-        let into_response_path = into_response.resolved_path();
         let iter: Vec<_> = self
             .interner
             .iter()
@@ -1341,21 +1338,15 @@ impl ComponentDb {
                 }
                 continue;
             }
-            let mut transformer_segments = into_response_path.segments.clone();
-            transformer_segments.push(FQPathSegment {
-                ident: "into_response".into(),
-                generic_arguments: vec![],
-            });
-            let transformer_path = FQPath {
-                segments: transformer_segments,
-                qualified_self: Some(FQQualifiedSelf {
-                    position: into_response_path.segments.len(),
-                    type_: output.clone().into(),
-                }),
-                package_id: into_response_path.package_id.clone(),
-            };
-            match computation_db.resolve_and_intern(krate_collection, &transformer_path, None) {
-                Ok(callable_id) => {
+            match resolve_framework_trait_method(
+                &["pavex", "IntoResponse"],
+                "into_response",
+                output.clone(),
+                krate_collection,
+            ) {
+                Ok(callable) => {
+                    let computation = Computation::Callable(Cow::Owned(callable));
+                    let callable_id = computation_db.get_or_intern(computation);
                     let transformer = UnregisteredComponent::Transformer {
                         computation_id: callable_id,
                         transformed_component_id: component_id,
