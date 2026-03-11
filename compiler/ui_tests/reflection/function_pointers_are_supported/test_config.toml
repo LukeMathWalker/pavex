@@ -1,4 +1,4 @@
 description = "pavex supports function pointer types as input parameters"
 
 [expectations]
-codegen = "fail"
+codegen = "pass"

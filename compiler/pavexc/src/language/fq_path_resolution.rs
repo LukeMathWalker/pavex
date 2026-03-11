@@ -6,7 +6,7 @@ use rustdoc_types::ItemEnum;
 
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::krate_name::dependency_name2package_id;
-use crate::language::resolved_type::{Array, GenericArgument, Slice};
+use crate::language::resolved_type::{Array, FunctionPointer, GenericArgument, Slice};
 use crate::language::{CallPath, InvalidCallPath, RawPointer, Tuple, Type, TypeReference};
 use crate::rustdoc::{
     CannotGetCrateData, CrateCollection, CrateCollectionExt, GlobalItemId, ResolvedItem,
@@ -143,6 +143,22 @@ pub fn resolve_fq_path_type(
             Ok(Type::RawPointer(RawPointer {
                 is_mutable: r.is_mutable,
                 inner: Box::new(inner),
+            }))
+        }
+        FQPathType::FunctionPointer(fp) => {
+            let inputs = fp
+                .inputs
+                .iter()
+                .map(|e| resolve_fq_path_type(e, krate_collection))
+                .collect::<Result<Vec<_>, _>>()?;
+            let output = fp
+                .output
+                .as_ref()
+                .map(|t| resolve_fq_path_type(t, krate_collection))
+                .transpose()?;
+            Ok(Type::FunctionPointer(FunctionPointer {
+                inputs,
+                output: output.map(Box::new),
             }))
         }
     }

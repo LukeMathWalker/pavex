@@ -4,11 +4,13 @@ use std::ops::Deref;
 
 use guppy::PackageId;
 use once_cell::sync::OnceCell;
-use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType};
+use rustdoc_types::{
+    Abi, GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType,
+};
 
 use rustdoc_ir::{
-    Array, Generic, GenericArgument, GenericLifetimeParameter, PathType, RawPointer, Slice, Tuple,
-    Type, TypeReference,
+    Array, FunctionPointer, Generic, GenericArgument, GenericLifetimeParameter, PathType,
+    RawPointer, Slice, Tuple, Type, TypeReference,
 };
 use rustdoc_processor::CrateCollection;
 use rustdoc_processor::indexing::CrateIndexer;
@@ -459,11 +461,69 @@ fn _resolve_type<I: CrateIndexer>(
         RustdocType::DynTrait(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "dyn trait" },
         )),
-        RustdocType::FunctionPointer(_) => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
-            UnsupportedTypeKind {
-                kind: "function pointer",
-            },
-        )),
+        RustdocType::FunctionPointer(fp) => {
+            if fp.header.is_unsafe {
+                return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+                    UnsupportedTypeKind {
+                        kind: "unsafe function pointer",
+                    },
+                ));
+            }
+            if !matches!(fp.header.abi, Abi::Rust) {
+                return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+                    UnsupportedTypeKind {
+                        kind: "extern function pointer",
+                    },
+                ));
+            }
+            if !fp.generic_params.is_empty() {
+                return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+                    UnsupportedTypeKind {
+                        kind: "higher-ranked function pointer",
+                    },
+                ));
+            }
+
+            let inputs = fp
+                .sig
+                .inputs
+                .iter()
+                .enumerate()
+                .map(|(i, (_, ty))| {
+                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings)
+                        .map_err(|source| {
+                            TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                                TypePartResolutionError {
+                                    role: format!("function pointer input {}", i),
+                                    source,
+                                },
+                            ))
+                        })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let output = fp
+                .sig
+                .output
+                .as_ref()
+                .map(|ty| {
+                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings)
+                        .map_err(|source| {
+                            TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                                TypePartResolutionError {
+                                    role: "function pointer output".into(),
+                                    source,
+                                },
+                            ))
+                        })
+                })
+                .transpose()?;
+
+            Ok(Type::FunctionPointer(FunctionPointer {
+                inputs,
+                output: output.map(Box::new),
+            }))
+        }
         RustdocType::Pat { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
             UnsupportedTypeKind { kind: "pattern" },
         )),

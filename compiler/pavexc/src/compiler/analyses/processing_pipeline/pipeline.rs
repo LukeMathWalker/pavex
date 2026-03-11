@@ -519,6 +519,10 @@ impl RequestHandlerPipeline {
                         Type::RawPointer(_) => {
                             continue;
                         }
+                        // Function pointers are trivially `Copy`, this analysis doesn't concern them.
+                        Type::FunctionPointer(_) => {
+                            continue;
+                        }
                         // We'd never encounter a raw slice as input type.
                         Type::Slice(_) |
                         // All types are concrete at this stage.

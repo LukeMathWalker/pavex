@@ -293,6 +293,7 @@ fn must_be_a_plain_struct(
         Type::Slice(s) => format!("`{s:?}` is a slice"),
         Type::Array(a) => format!("`{a:?}` is an array"),
         Type::RawPointer(r) => format!("`{r:?}` is a raw pointer"),
+        Type::FunctionPointer(fp) => format!("`{fp:?}` is a function pointer"),
         Type::Generic(_) => {
             unreachable!()
         }

@@ -395,7 +395,8 @@ impl CodegenedRequestHandlerPipeline {
                 | Type::Path(_)
                 | Type::Tuple(_)
                 | Type::ScalarPrimitive(_)
-                | Type::RawPointer(_) => type_,
+                | Type::RawPointer(_)
+                | Type::FunctionPointer(_) => type_,
                 Type::Generic(_) => {
                     unreachable!("Generic types should have been resolved by now")
                 }

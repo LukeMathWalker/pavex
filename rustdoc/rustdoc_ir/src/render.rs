@@ -220,6 +220,21 @@ impl Type {
                 }
                 r.inner.render_into(config, buffer);
             }
+            Type::FunctionPointer(fp) => {
+                write!(buffer, "fn(").unwrap();
+                let mut inputs = fp.inputs.iter().peekable();
+                while let Some(input) = inputs.next() {
+                    input.render_into(config, buffer);
+                    if inputs.peek().is_some() {
+                        write!(buffer, ", ").unwrap();
+                    }
+                }
+                write!(buffer, ")").unwrap();
+                if let Some(output) = &fp.output {
+                    write!(buffer, " -> ").unwrap();
+                    output.render_into(config, buffer);
+                }
+            }
             Type::Generic(t) => {
                 write!(buffer, "{}", t.name).unwrap();
             }

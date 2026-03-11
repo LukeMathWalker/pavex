@@ -248,6 +248,18 @@ pub(crate) fn implements_trait(
             }
             // TODO: handle other traits
         }
+        Type::FunctionPointer(_) => {
+            // Function pointers implement Copy, Clone, Send, Sync, and Unpin.
+            if expected_trait.base_type == COPY_TRAIT_PATH
+                || expected_trait.base_type == CLONE_TRAIT_PATH
+                || expected_trait.base_type == SEND_TRAIT_PATH
+                || expected_trait.base_type == SYNC_TRAIT_PATH
+                || expected_trait.base_type == UNPIN_TRAIT_PATH
+            {
+                return Ok(true);
+            }
+            // TODO: handle other traits
+        }
         Type::Generic(_) => {
             // TODO: handle blanket implementations. As a first approximation,
             //   we assume that if the type is generic, it implements all traits.

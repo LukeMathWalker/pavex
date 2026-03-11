@@ -483,6 +483,14 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &Type) {
         Type::RawPointer(r) => {
             collect_type_package_ids(package_ids, &r.inner);
         }
+        Type::FunctionPointer(fp) => {
+            for input in &fp.inputs {
+                collect_type_package_ids(package_ids, input);
+            }
+            if let Some(output) = &fp.output {
+                collect_type_package_ids(package_ids, output);
+            }
+        }
         Type::Generic(_) | Type::ScalarPrimitive(_) => {}
     }
 }
