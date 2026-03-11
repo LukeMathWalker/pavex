@@ -6,7 +6,6 @@ use crate::compiler::component::{
     PostProcessingMiddlewareValidationError, PreProcessingMiddlewareValidationError,
     RequestHandlerValidationError, WrappingMiddlewareValidationError,
 };
-use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
 use crate::diagnostic::{
     self, AnnotatedSource, CallableDefSource, CompilerDiagnostic, ComponentKind, SourceSpanExt,
@@ -644,7 +643,7 @@ impl ComponentDb {
     }
 
     pub(super) fn cannot_handle_into_response_implementation(
-        e: CallableResolutionError,
+        e: anyhow::Error,
         output_type: &Type,
         id: UserComponentId,
         db: &UserComponentDb,
@@ -655,7 +654,7 @@ impl ComponentDb {
             db.registration_target(id),
             format!("The {kind} was registered here"),
         );
-        let error = anyhow::Error::from(e).context(format!(
+        let error = e.context(format!(
             "Something went wrong when I tried to analyze the implementation of \
                 `pavex::IntoResponse` for {output_type:?}, the type returned by \
                 one of your {kind}s.\n\

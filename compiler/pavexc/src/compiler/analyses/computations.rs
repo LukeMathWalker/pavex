@@ -3,9 +3,7 @@ use ahash::HashMap;
 use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::computation::Computation;
 use crate::compiler::interner::Interner;
-use crate::compiler::resolvers::{CallableResolutionError, resolve_callable};
-use crate::language::{Callable, FQPath};
-use crate::rustdoc::CrateCollection;
+use crate::language::Callable;
 
 pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
 
@@ -32,18 +30,6 @@ impl ComputationDb {
             interner: Interner::new(),
             component_id2callable_id: Default::default(),
         }
-    }
-
-    /// Try to resolve a callable from a resolved path.
-    /// Returns the callable's id in the interner if it succeeds, an error otherwise.
-    pub(crate) fn resolve_and_intern(
-        &mut self,
-        krate_collection: &CrateCollection,
-        resolved_path: &FQPath,
-        user_component_id: Option<UserComponentId>,
-    ) -> Result<ComputationId, CallableResolutionError> {
-        let callable = resolve_callable(krate_collection, resolved_path)?;
-        Ok(self.get_or_intern_with_id(callable, user_component_id))
     }
 
     /// Intern a callable (or retrieve its id if it already exists).
