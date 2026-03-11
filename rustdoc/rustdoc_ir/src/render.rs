@@ -5,6 +5,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use serde::{Deserializer, Serializer};
 
+use crate::function_pointer::write_fn_pointer_prefix;
 use crate::{Lifetime, Type};
 
 /// Configuration for rendering types and generic arguments.
@@ -221,6 +222,7 @@ impl Type {
                 r.inner.render_into(config, buffer);
             }
             Type::FunctionPointer(fp) => {
+                write_fn_pointer_prefix(buffer, &fp.abi, fp.is_unsafe).unwrap();
                 write!(buffer, "fn(").unwrap();
                 let mut inputs = fp.inputs.iter().peekable();
                 while let Some(input) = inputs.next() {

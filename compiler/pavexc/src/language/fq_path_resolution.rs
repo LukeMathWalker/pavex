@@ -159,6 +159,8 @@ pub fn resolve_fq_path_type(
             Ok(Type::FunctionPointer(FunctionPointer {
                 inputs,
                 output: output.map(Box::new),
+                abi: fp.abi.clone(),
+                is_unsafe: fp.is_unsafe,
             }))
         }
     }

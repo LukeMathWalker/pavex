@@ -115,6 +115,8 @@ impl Type {
                     .output
                     .as_ref()
                     .map(|t| Box::new(t.bind_generic_type_parameters(bindings))),
+                abi: fp.abi.clone(),
+                is_unsafe: fp.is_unsafe,
             }),
             Type::Generic(g) => {
                 if let Some(bound_type) = bindings.get(&g.name) {
@@ -260,6 +262,11 @@ impl Type {
                         ._is_a_template_for(&concrete_ptr.inner, bindings)
             }
             (FunctionPointer(concrete_fp), FunctionPointer(templated_fp)) => {
+                if concrete_fp.abi != templated_fp.abi
+                    || concrete_fp.is_unsafe != templated_fp.is_unsafe
+                {
+                    return false;
+                }
                 if concrete_fp.inputs.len() != templated_fp.inputs.len() {
                     return false;
                 }
@@ -363,6 +370,9 @@ impl Type {
                         ._is_equivalent_to(&other_ptr.inner, self_id_gen, other_id_gen)
             }
             (FunctionPointer(self_fp), FunctionPointer(other_fp)) => {
+                if self_fp.abi != other_fp.abi || self_fp.is_unsafe != other_fp.is_unsafe {
+                    return false;
+                }
                 if self_fp.inputs.len() != other_fp.inputs.len() {
                     return false;
                 }
@@ -788,6 +798,8 @@ impl Type {
                 output: fp.output.as_ref().map(|t| {
                     Box::new(t._canonicalize(lifetime_counter, generic_counter, generic_name_map))
                 }),
+                abi: fp.abi.clone(),
+                is_unsafe: fp.is_unsafe,
             }),
             Type::ScalarPrimitive(_) => self.clone(),
             Type::Generic(g) => {

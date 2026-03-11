@@ -7,6 +7,8 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use itertools::Itertools;
 
+use rustdoc_ir::function_pointer::write_fn_pointer_prefix;
+
 use crate::language::Type;
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive};
 
@@ -176,6 +178,8 @@ impl From<Type> for FQPathType {
             Type::FunctionPointer(fp) => FQPathType::FunctionPointer(FQFunctionPointer {
                 inputs: fp.inputs.into_iter().map(|t| t.into()).collect(),
                 output: fp.output.map(|t| Box::new((*t).into())),
+                abi: fp.abi,
+                is_unsafe: fp.is_unsafe,
             }),
             Type::Generic(_) => {
                 // ResolvedPath doesn't support unassigned generic parameters.
@@ -223,6 +227,8 @@ pub struct FQRawPointer {
 pub struct FQFunctionPointer {
     pub inputs: Vec<FQPathType>,
     pub output: Option<Box<FQPathType>>,
+    pub abi: rustdoc_types::Abi,
+    pub is_unsafe: bool,
 }
 
 impl PartialEq for FQPath {
@@ -539,6 +545,7 @@ impl FQRawPointer {
 
 impl FQFunctionPointer {
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        write_fn_pointer_prefix(buffer, &self.abi, self.is_unsafe).unwrap();
         write!(buffer, "fn(").unwrap();
         let mut inputs = self.inputs.iter().peekable();
         while let Some(input) = inputs.next() {
@@ -555,6 +562,7 @@ impl FQFunctionPointer {
     }
 
     pub fn render_for_error(&self, buffer: &mut String) {
+        write_fn_pointer_prefix(buffer, &self.abi, self.is_unsafe).unwrap();
         write!(buffer, "fn(").unwrap();
         let mut inputs = self.inputs.iter().peekable();
         while let Some(input) = inputs.next() {
@@ -658,6 +666,7 @@ impl Display for FQRawPointer {
 
 impl Display for FQFunctionPointer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write_fn_pointer_prefix(f, &self.abi, self.is_unsafe)?;
         write!(f, "fn(")?;
         let last_input_index = self.inputs.len().saturating_sub(1);
         for (i, input) in self.inputs.iter().enumerate() {
