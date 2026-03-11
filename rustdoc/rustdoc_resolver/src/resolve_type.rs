@@ -4,9 +4,7 @@ use std::ops::Deref;
 
 use guppy::PackageId;
 use once_cell::sync::OnceCell;
-use rustdoc_types::{
-    Abi, GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType,
-};
+use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType};
 
 use rustdoc_ir::{
     Array, FunctionPointer, Generic, GenericArgument, GenericLifetimeParameter, PathType,
@@ -462,20 +460,6 @@ fn _resolve_type<I: CrateIndexer>(
             UnsupportedTypeKind { kind: "dyn trait" },
         )),
         RustdocType::FunctionPointer(fp) => {
-            if fp.header.is_unsafe {
-                return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
-                    UnsupportedTypeKind {
-                        kind: "unsafe function pointer",
-                    },
-                ));
-            }
-            if !matches!(fp.header.abi, Abi::Rust) {
-                return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
-                    UnsupportedTypeKind {
-                        kind: "extern function pointer",
-                    },
-                ));
-            }
             if !fp.generic_params.is_empty() {
                 return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
                     UnsupportedTypeKind {
@@ -522,6 +506,8 @@ fn _resolve_type<I: CrateIndexer>(
             Ok(Type::FunctionPointer(FunctionPointer {
                 inputs,
                 output: output.map(Box::new),
+                abi: fp.header.abi.clone(),
+                is_unsafe: fp.header.is_unsafe,
             }))
         }
         RustdocType::Pat { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(

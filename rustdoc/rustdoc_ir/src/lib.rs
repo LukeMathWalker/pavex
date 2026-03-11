@@ -1,7 +1,7 @@
 mod array;
 mod callable;
 mod callable_path;
-mod function_pointer;
+pub mod function_pointer;
 mod generic;
 mod generic_argument;
 pub(crate) mod generics_equivalence;
@@ -17,7 +17,6 @@ mod type_;
 mod type_reference;
 
 pub use array::Array;
-pub use function_pointer::FunctionPointer;
 pub use callable::{
     Callable, CallableInput, EnumVariantInit, FnHeader, FreeFunction, InherentMethod,
     RustIdentifier, StructLiteralInit, TraitMethod,
@@ -26,6 +25,7 @@ pub use callable_path::{
     EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,
     TraitMethodPath,
 };
+pub use function_pointer::FunctionPointer;
 pub use generic::Generic;
 pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
 pub use lifetime::Lifetime;
