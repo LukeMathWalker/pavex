@@ -57,7 +57,8 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                                 | Type::Reference(_)
                                 | Type::Slice(_)
                                 | Type::Array(_)
-                                | Type::RawPointer(_) => {
+                                | Type::RawPointer(_)
+                                | Type::FunctionPointer(_) => {
                                     return None;
                                 }
                                 Type::Path(_) | Type::Tuple(_) => {}

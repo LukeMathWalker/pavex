@@ -201,8 +201,8 @@ pub mod route_1 {
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::Response {
-        let v0 = app_9147b911::build_fn_pointer();
-        let v1 = app_9147b911::handler(v0);
+        let v0 = app::build_fn_pointer();
+        let v1 = app::handler(v0);
         <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     struct Next0<T>
@@ -240,8 +240,8 @@ pub mod route_2 {
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::Response {
-        let v0 = app_9147b911::build_fn_pointer_no_output();
-        let v1 = app_9147b911::handler_no_output(v0);
+        let v0 = app::build_fn_pointer_no_output();
+        let v1 = app::handler_no_output(v0);
         <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     struct Next0<T>
@@ -279,8 +279,8 @@ pub mod route_3 {
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::Response {
-        let v0 = app_9147b911::build_fn_pointer_no_input();
-        let v1 = app_9147b911::handler_no_input(v0);
+        let v0 = app::build_fn_pointer_no_input();
+        let v1 = app::handler_no_input(v0);
         <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     struct Next0<T>
@@ -318,8 +318,8 @@ pub mod route_4 {
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::Response {
-        let v0 = app_9147b911::build_fn_pointer_no_input_no_output();
-        let v1 = app_9147b911::handler_no_input_no_output(v0);
+        let v0 = app::build_fn_pointer_no_input_no_output();
+        let v1 = app::handler_no_input_no_output(v0);
         <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     struct Next0<T>
@@ -357,8 +357,8 @@ pub mod route_5 {
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::Response {
-        let v0 = app_9147b911::build_fn_pointer_two_inputs();
-        let v1 = app_9147b911::handler_two_inputs(v0);
+        let v0 = app::build_fn_pointer_two_inputs();
+        let v1 = app::handler_two_inputs(v0);
         <pavex::Response as pavex::IntoResponse>::into_response(v1)
     }
     struct Next0<T>

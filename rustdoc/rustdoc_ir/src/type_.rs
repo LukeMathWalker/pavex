@@ -5,8 +5,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    Array, Generic, GenericArgument, GenericLifetimeParameter, Lifetime, NamedLifetime, PathType,
-    RawPointer, Slice, Tuple, Type, TypeReference,
+    Array, FunctionPointer, Generic, GenericArgument, GenericLifetimeParameter, Lifetime,
+    NamedLifetime, PathType, RawPointer, Slice, Tuple, Type, TypeReference,
 };
 
 /// A `Type` with canonicalized names for lifetimes and unassigned generic type parameters.
@@ -105,6 +105,17 @@ impl Type {
                 is_mutable: r.is_mutable,
                 inner: Box::new(r.inner.bind_generic_type_parameters(bindings)),
             }),
+            Type::FunctionPointer(fp) => Type::FunctionPointer(FunctionPointer {
+                inputs: fp
+                    .inputs
+                    .iter()
+                    .map(|t| t.bind_generic_type_parameters(bindings))
+                    .collect(),
+                output: fp
+                    .output
+                    .as_ref()
+                    .map(|t| Box::new(t.bind_generic_type_parameters(bindings))),
+            }),
             Type::Generic(g) => {
                 if let Some(bound_type) = bindings.get(&g.name) {
                     bound_type.clone()
@@ -132,6 +143,10 @@ impl Type {
             Type::Slice(s) => s.element_type.is_a_template(),
             Type::Array(a) => a.element_type.is_a_template(),
             Type::RawPointer(r) => r.inner.is_a_template(),
+            Type::FunctionPointer(fp) => {
+                fp.inputs.iter().any(|t| t.is_a_template())
+                    || fp.output.as_ref().is_some_and(|t| t.is_a_template())
+            }
             Type::Generic(_) => true,
         }
     }
@@ -167,6 +182,14 @@ impl Type {
             Type::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
             Type::Array(a) => a.element_type._unassigned_generic_type_parameters(set),
             Type::RawPointer(r) => r.inner._unassigned_generic_type_parameters(set),
+            Type::FunctionPointer(fp) => {
+                for input in &fp.inputs {
+                    input._unassigned_generic_type_parameters(set);
+                }
+                if let Some(output) = &fp.output {
+                    output._unassigned_generic_type_parameters(set);
+                }
+            }
             Type::Generic(t) => {
                 set.insert(t.name.clone());
             }
@@ -235,6 +258,26 @@ impl Type {
                     && templated_ptr
                         .inner
                         ._is_a_template_for(&concrete_ptr.inner, bindings)
+            }
+            (FunctionPointer(concrete_fp), FunctionPointer(templated_fp)) => {
+                if concrete_fp.inputs.len() != templated_fp.inputs.len() {
+                    return false;
+                }
+                let inputs_match = concrete_fp
+                    .inputs
+                    .iter()
+                    .zip(templated_fp.inputs.iter())
+                    .all(|(concrete, templated)| templated._is_a_template_for(concrete, bindings));
+                if !inputs_match {
+                    return false;
+                }
+                match (&concrete_fp.output, &templated_fp.output) {
+                    (Some(concrete_out), Some(templated_out)) => {
+                        templated_out._is_a_template_for(concrete_out, bindings)
+                    }
+                    (None, None) => true,
+                    _ => false,
+                }
             }
             (_, Generic(parameter)) => {
                 let previous = bindings.insert(parameter.name.clone(), concrete_type.clone());
@@ -319,6 +362,24 @@ impl Type {
                         .inner
                         ._is_equivalent_to(&other_ptr.inner, self_id_gen, other_id_gen)
             }
+            (FunctionPointer(self_fp), FunctionPointer(other_fp)) => {
+                if self_fp.inputs.len() != other_fp.inputs.len() {
+                    return false;
+                }
+                let inputs_match = self_fp
+                    .inputs
+                    .iter()
+                    .zip(other_fp.inputs.iter())
+                    .all(|(s, o)| s._is_equivalent_to(o, self_id_gen, other_id_gen));
+                if !inputs_match {
+                    return false;
+                }
+                match (&self_fp.output, &other_fp.output) {
+                    (Some(s), Some(o)) => s._is_equivalent_to(o, self_id_gen, other_id_gen),
+                    (None, None) => true,
+                    _ => false,
+                }
+            }
             (Generic(self_g), Generic(other_g)) => {
                 let first_id = self_id_gen.id(&self_g.name);
                 let second_id = other_id_gen.id(&other_g.name);
@@ -360,6 +421,15 @@ impl Type {
             Type::Slice(s) => s.element_type.has_implicit_lifetime_parameters(),
             Type::Array(a) => a.element_type.has_implicit_lifetime_parameters(),
             Type::RawPointer(r) => r.inner.has_implicit_lifetime_parameters(),
+            Type::FunctionPointer(fp) => {
+                fp.inputs
+                    .iter()
+                    .any(|t| t.has_implicit_lifetime_parameters())
+                    || fp
+                        .output
+                        .as_ref()
+                        .is_some_and(|t| t.has_implicit_lifetime_parameters())
+            }
             Type::Generic(_) => false,
         }
     }
@@ -402,6 +472,14 @@ impl Type {
             Type::Slice(s) => s.element_type.set_implicit_lifetimes(inferred_lifetime),
             Type::Array(a) => a.element_type.set_implicit_lifetimes(inferred_lifetime),
             Type::RawPointer(r) => r.inner.set_implicit_lifetimes(inferred_lifetime),
+            Type::FunctionPointer(fp) => {
+                for input in fp.inputs.iter_mut() {
+                    input.set_implicit_lifetimes(inferred_lifetime.clone());
+                }
+                if let Some(output) = fp.output.as_mut() {
+                    output.set_implicit_lifetimes(inferred_lifetime);
+                }
+            }
             Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
     }
@@ -452,6 +530,14 @@ impl Type {
             Type::RawPointer(r) => {
                 r.inner.rename_lifetime_parameters(original2renamed);
             }
+            Type::FunctionPointer(fp) => {
+                for input in fp.inputs.iter_mut() {
+                    input.rename_lifetime_parameters(original2renamed);
+                }
+                if let Some(output) = fp.output.as_mut() {
+                    output.rename_lifetime_parameters(original2renamed);
+                }
+            }
             Type::Generic(_) | Type::ScalarPrimitive(_) => {}
         }
     }
@@ -489,6 +575,14 @@ impl Type {
             Type::Slice(s) => s.element_type._lifetime_parameters(set),
             Type::Array(a) => a.element_type._lifetime_parameters(set),
             Type::RawPointer(r) => r.inner._lifetime_parameters(set),
+            Type::FunctionPointer(fp) => {
+                for input in &fp.inputs {
+                    input._lifetime_parameters(set);
+                }
+                if let Some(output) = &fp.output {
+                    output._lifetime_parameters(set);
+                }
+            }
             Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
     }
@@ -534,6 +628,14 @@ impl Type {
             Type::Slice(s) => s.element_type._named_lifetime_parameters(set),
             Type::Array(a) => a.element_type._named_lifetime_parameters(set),
             Type::RawPointer(r) => r.inner._named_lifetime_parameters(set),
+            Type::FunctionPointer(fp) => {
+                for input in &fp.inputs {
+                    input._named_lifetime_parameters(set);
+                }
+                if let Some(output) = &fp.output {
+                    output._named_lifetime_parameters(set);
+                }
+            }
             Type::ScalarPrimitive(_) | Type::Generic(_) => {}
         }
     }
@@ -677,6 +779,16 @@ impl Type {
                     generic_name_map,
                 )),
             }),
+            Type::FunctionPointer(fp) => Type::FunctionPointer(FunctionPointer {
+                inputs: fp
+                    .inputs
+                    .iter()
+                    .map(|t| t._canonicalize(lifetime_counter, generic_counter, generic_name_map))
+                    .collect(),
+                output: fp.output.as_ref().map(|t| {
+                    Box::new(t._canonicalize(lifetime_counter, generic_counter, generic_name_map))
+                }),
+            }),
             Type::ScalarPrimitive(_) => self.clone(),
             Type::Generic(g) => {
                 let canonical_name = generic_name_map
@@ -701,6 +813,7 @@ impl Debug for Type {
             Type::Slice(s) => write!(f, "{s:?}"),
             Type::Array(a) => write!(f, "{a:?}"),
             Type::RawPointer(r) => write!(f, "{r:?}"),
+            Type::FunctionPointer(fp) => write!(f, "{fp:?}"),
             Type::Generic(g) => write!(f, "{g:?}"),
         }
     }
@@ -733,6 +846,12 @@ impl From<RawPointer> for Type {
 impl From<Array> for Type {
     fn from(value: Array) -> Self {
         Self::Array(value)
+    }
+}
+
+impl From<FunctionPointer> for Type {
+    fn from(value: FunctionPointer) -> Self {
+        Self::FunctionPointer(value)
     }
 }
 

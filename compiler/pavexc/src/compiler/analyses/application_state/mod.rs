@@ -305,6 +305,19 @@ fn _field_name_candidate(ty_: &Type, strategy: NamingStrategy, candidate: &mut S
             }
             _field_name_candidate(&raw_pointer.inner, strategy, candidate);
         }
+        Type::FunctionPointer(fp) => {
+            candidate.push_str("fn_");
+            for (i, input) in fp.inputs.iter().enumerate() {
+                if i > 0 {
+                    candidate.push('_');
+                }
+                _field_name_candidate(input, strategy, candidate);
+            }
+            if let Some(output) = &fp.output {
+                candidate.push_str("_ret_");
+                _field_name_candidate(output, strategy, candidate);
+            }
+        }
         Type::Generic(generic) => {
             // We don't have unassigned generics in the application state, so this should never happen.
             // But, should it happen, there's really no other way to name it.

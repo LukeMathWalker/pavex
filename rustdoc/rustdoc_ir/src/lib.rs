@@ -1,6 +1,7 @@
 mod array;
 mod callable;
 mod callable_path;
+mod function_pointer;
 mod generic;
 mod generic_argument;
 pub(crate) mod generics_equivalence;
@@ -16,6 +17,7 @@ mod type_;
 mod type_reference;
 
 pub use array::Array;
+pub use function_pointer::FunctionPointer;
 pub use callable::{
     Callable, CallableInput, EnumVariantInit, FnHeader, FreeFunction, InherentMethod,
     RustIdentifier, StructLiteralInit, TraitMethod,
@@ -53,6 +55,8 @@ pub enum Type {
     Array(Array),
     /// A raw pointer type, e.g. `*const u8` or `*mut u8`.
     RawPointer(RawPointer),
+    /// A function pointer type, e.g. `fn(u32) -> u8`.
+    FunctionPointer(FunctionPointer),
     /// An unassigned generic type parameter, e.g. `T`.
     Generic(Generic),
 }

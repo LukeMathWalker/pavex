@@ -120,6 +120,7 @@ pub enum FQPathType {
     Slice(FQSlice),
     Array(FQArray),
     RawPointer(FQRawPointer),
+    FunctionPointer(FQFunctionPointer),
 }
 
 impl From<Type> for FQPathType {
@@ -172,6 +173,10 @@ impl From<Type> for FQPathType {
                 is_mutable: r.is_mutable,
                 inner: Box::new((*r.inner).into()),
             }),
+            Type::FunctionPointer(fp) => FQPathType::FunctionPointer(FQFunctionPointer {
+                inputs: fp.inputs.into_iter().map(|t| t.into()).collect(),
+                output: fp.output.map(|t| Box::new((*t).into())),
+            }),
             Type::Generic(_) => {
                 // ResolvedPath doesn't support unassigned generic parameters.
                 unreachable!("UnassignedGeneric")
@@ -212,6 +217,12 @@ pub struct FQArray {
 pub struct FQRawPointer {
     pub is_mutable: bool,
     pub inner: Box<FQPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct FQFunctionPointer {
+    pub inputs: Vec<FQPathType>,
+    pub output: Option<Box<FQPathType>>,
 }
 
 impl PartialEq for FQPath {
@@ -366,6 +377,7 @@ impl FQPathType {
             FQPathType::Slice(s) => s.render_path(id2name, buffer),
             FQPathType::Array(a) => a.render_path(id2name, buffer),
             FQPathType::RawPointer(r) => r.render_path(id2name, buffer),
+            FQPathType::FunctionPointer(fp) => fp.render_path(id2name, buffer),
         }
     }
 
@@ -380,6 +392,7 @@ impl FQPathType {
             FQPathType::Slice(s) => s.render_for_error(buffer),
             FQPathType::Array(a) => a.render_for_error(buffer),
             FQPathType::RawPointer(r) => r.render_for_error(buffer),
+            FQPathType::FunctionPointer(fp) => fp.render_for_error(buffer),
         }
     }
 }
@@ -524,6 +537,40 @@ impl FQRawPointer {
     }
 }
 
+impl FQFunctionPointer {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        write!(buffer, "fn(").unwrap();
+        let mut inputs = self.inputs.iter().peekable();
+        while let Some(input) = inputs.next() {
+            input.render_path(id2name, buffer);
+            if inputs.peek().is_some() {
+                write!(buffer, ", ").unwrap();
+            }
+        }
+        write!(buffer, ")").unwrap();
+        if let Some(output) = &self.output {
+            write!(buffer, " -> ").unwrap();
+            output.render_path(id2name, buffer);
+        }
+    }
+
+    pub fn render_for_error(&self, buffer: &mut String) {
+        write!(buffer, "fn(").unwrap();
+        let mut inputs = self.inputs.iter().peekable();
+        while let Some(input) = inputs.next() {
+            input.render_for_error(buffer);
+            if inputs.peek().is_some() {
+                write!(buffer, ", ").unwrap();
+            }
+        }
+        write!(buffer, ")").unwrap();
+        if let Some(output) = &self.output {
+            write!(buffer, " -> ").unwrap();
+            output.render_for_error(buffer);
+        }
+    }
+}
+
 impl Display for FQPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let last_segment_index = self.segments.len().saturating_sub(1);
@@ -562,6 +609,9 @@ impl Display for FQPathType {
             }
             FQPathType::RawPointer(r) => {
                 write!(f, "{r}")
+            }
+            FQPathType::FunctionPointer(fp) => {
+                write!(f, "{fp}")
             }
         }
     }
@@ -603,6 +653,24 @@ impl Display for FQRawPointer {
             write!(f, "*const ")?;
         }
         write!(f, "{}", self.inner)
+    }
+}
+
+impl Display for FQFunctionPointer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "fn(")?;
+        let last_input_index = self.inputs.len().saturating_sub(1);
+        for (i, input) in self.inputs.iter().enumerate() {
+            write!(f, "{input}")?;
+            if i != last_input_index && !self.inputs.is_empty() {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, ")")?;
+        if let Some(output) = &self.output {
+            write!(f, " -> {output}")?;
+        }
+        Ok(())
     }
 }
 
