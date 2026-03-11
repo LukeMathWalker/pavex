@@ -329,6 +329,8 @@ members = [
   "reflection/tuples_are_supported/generated_app",
   "reflection/type_alias_are_supported",
   "reflection/type_alias_are_supported/generated_app",
+  "reflection/unions_are_supported",
+  "reflection/unions_are_supported/generated_app",
 ]
 resolver = "3"
 [workspace.package]

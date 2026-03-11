@@ -1,0 +1,4 @@
+description = "pavex supports union types as input parameters"
+
+[expectations]
+codegen = "pass"
