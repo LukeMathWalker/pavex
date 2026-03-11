@@ -299,6 +299,8 @@ members = [
   "reflection/crate_resolution/multiple_versions_for_the_same_crate_are_supported/generated_app",
   "reflection/crate_resolution/transitive_dependencies_can_be_renamed",
   "reflection/crate_resolution/transitive_dependencies_can_be_renamed/generated_app",
+  "reflection/function_pointers_are_supported",
+  "reflection/function_pointers_are_supported/generated_app",
   "reflection/generic_parameters_can_come_from_another_crate",
   "reflection/generic_parameters_can_come_from_another_crate/generated_app",
   "reflection/ids_can_conflict_across_crates",
