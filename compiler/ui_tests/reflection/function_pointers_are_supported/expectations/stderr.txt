@@ -1,0 +1,36 @@
+[31;1mERROR[0m:
+  [31m×[0m I don't know how to handle the type returned by
+  [31m│[0m `app::build_fn_pointer`.
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4mreflection/function_pointers_are_supported/src/lib.rs[0m:2:1]
+  [31m│[0m  [2m2[0m │
+  [31m│[0m  [2m3[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::request_scoped]
+  [31m│[0m  [2m4[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn build_fn_pointer() -> fn(u32) -> u8 {
+  [31m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [31m│[0m  [2m5[0m │         todo!()
+  [31m│[0m    ╰────
+  [31m│[0m    ╭─[[36;1;4mreflection/function_pointers_are_supported/src/lib.rs[0m:3:1]
+  [31m│[0m  [2m3[0m │ #[pavex::request_scoped]
+  [31m│[0m  [2m4[0m │ pub fn build_fn_pointer() -> fn(u32) -> u8 {
+  [31m│[0m    · [35;1m                             ──────┬──────[0m
+  [31m│[0m    ·                                    [35;1m╰── The output type that I can't handle[0m
+  [31m│[0m  [2m5[0m │     todo!()
+  [31m│[0m    ╰────
+[31;1mERROR[0m:
+  [31m×[0m One of the input parameters for `app::handler` has a type that I
+  [31m│[0m can't handle.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mreflection/function_pointers_are_supported/src/lib.rs[0m:7:1]
+  [31m│[0m  [2m 7[0m │
+  [31m│[0m  [2m 8[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/")]
+  [31m│[0m  [2m 9[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn handler(_f: fn(u32) -> u8) -> pavex::Response {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler was registered here[0m
+  [31m│[0m  [2m10[0m │         todo!()
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mreflection/function_pointers_are_supported/src/lib.rs[0m:8:1]
+  [31m│[0m  [2m 8[0m │ #[pavex::get(path = "/")]
+  [31m│[0m  [2m 9[0m │ pub fn handler(_f: fn(u32) -> u8) -> pavex::Response {
+  [31m│[0m     · [35;1m               ────────┬────────[0m
+  [31m│[0m     ·                        [35;1m╰── I don't know how handle this parameter[0m
+  [31m│[0m  [2m10[0m │     todo!()
+  [31m│[0m     ╰────
