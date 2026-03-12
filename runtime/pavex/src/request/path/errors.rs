@@ -92,21 +92,40 @@ impl ExtractPathParamsError {
     /// [`PathParams<T>`]: struct@crate::request::path::PathParams
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
+        let mut body = String::new();
+        self.response_body(&mut body)
+            .expect("Failed to write response body into a string buffer");
         match self {
-            ExtractPathParamsError::InvalidUtf8InPathParameter(e) => {
-                Response::bad_request().set_typed_body(format!("Invalid URL.\n{e}"))
-            }
+            ExtractPathParamsError::InvalidUtf8InPathParameter(_) => Response::bad_request(),
             ExtractPathParamsError::PathDeserializationError(e) => match e.kind {
                 ErrorKind::ParseErrorAtKey { .. } | ErrorKind::ParseError { .. } => {
-                    Response::bad_request().set_typed_body(format!("Invalid URL.\n{}", e.kind))
+                    Response::bad_request()
                 }
                 // We put the "custom" message variant here as well because it's not clear
                 // whether it's a programmer error or not. We err on the side of safety and
-                // prefer to return a 500 with an opaque error message.
+                // prefer to return a 500.
                 ErrorKind::Message(_) | ErrorKind::UnsupportedType { .. } => {
                     Response::internal_server_error()
-                        .set_typed_body("Something went wrong when trying to process the request")
                 }
+            },
+        }
+        .set_typed_body(body)
+    }
+
+    pub(crate) fn response_body<W: std::fmt::Write>(&self, writer: &mut W) -> std::fmt::Result {
+        write!(writer, "Invalid URL.")?;
+        match self {
+            ExtractPathParamsError::InvalidUtf8InPathParameter(e) => {
+                write!(writer, " {e}")
+            }
+            ExtractPathParamsError::PathDeserializationError(e) => match e.kind {
+                ErrorKind::ParseErrorAtKey { .. } | ErrorKind::ParseError { .. } => {
+                    write!(writer, " {e}")
+                }
+                // We put the "custom" message variant here as well because it's not clear
+                // whether it's a programmer error or not. We err on the side of safety and
+                // prefer to return an opaque error message.
+                ErrorKind::Message(_) | ErrorKind::UnsupportedType { .. } => Ok(()),
             },
         }
     }

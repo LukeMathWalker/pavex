@@ -1,7 +1,38 @@
 //! Errors that can occur while extracting information from the request body.
-use crate::Response;
+use crate::{Response, request::FromRequestError};
 use pavex_macros::methods;
 use ubyte::ByteUnit;
+
+/// An error that occurred while trying to extract information from the request body
+/// using one of the built-in extractors.
+///
+/// [`ExtractBodyError`] is an enum that wraps the different types of body extraction errors:
+/// - [`ExtractBufferedBodyError`] for buffered body extraction failures
+/// - [`ExtractJsonBodyError`] for JSON body extraction failures
+///
+/// This type is used by [`FromRequestError`] as a container for all body extraction errors.
+#[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
+pub enum ExtractBodyError {
+    #[error(transparent)]
+    /// See [`ExtractBufferedBodyError`] for details.
+    BufferedBody(#[from] ExtractBufferedBodyError),
+    #[error(transparent)]
+    /// See [`ExtractJsonBodyError`] for details.
+    Json(#[from] ExtractJsonBodyError),
+}
+
+impl From<ExtractBufferedBodyError> for FromRequestError {
+    fn from(e: ExtractBufferedBodyError) -> Self {
+        Self::Body(ExtractBodyError::BufferedBody(e))
+    }
+}
+
+impl From<ExtractJsonBodyError> for FromRequestError {
+    fn from(e: ExtractJsonBodyError) -> Self {
+        Self::Body(ExtractBodyError::Json(e))
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -25,12 +56,19 @@ impl ExtractJsonBodyError {
     /// Convert an [`ExtractJsonBodyError`] into an HTTP response.
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
+        let mut body = String::new();
+        self.response_body(&mut body)
+            .expect("Failed to write into a string buffer");
         match self {
             ExtractJsonBodyError::MissingContentType(_)
             | ExtractJsonBodyError::ContentTypeMismatch(_) => Response::unsupported_media_type(),
             ExtractJsonBodyError::DeserializationError(_) => Response::bad_request(),
         }
-        .set_typed_body(format!("{self}"))
+        .set_typed_body(body)
+    }
+
+    pub(crate) fn response_body<W: std::fmt::Write>(&self, writer: &mut W) -> std::fmt::Result {
+        write!(writer, "{self}")
     }
 }
 
@@ -53,11 +91,18 @@ impl ExtractBufferedBodyError {
     /// Convert an [`ExtractBufferedBodyError`] into an HTTP response.
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
+        let mut body = String::new();
+        self.response_body(&mut body)
+            .expect("Failed to write into a string buffer");
         match self {
             ExtractBufferedBodyError::SizeLimitExceeded(_) => Response::payload_too_large(),
             ExtractBufferedBodyError::UnexpectedBufferError(_) => Response::internal_server_error(),
         }
-        .set_typed_body(format!("{self}"))
+        .set_typed_body(body)
+    }
+
+    pub(crate) fn response_body<W: std::fmt::Write>(&self, writer: &mut W) -> std::fmt::Result {
+        write!(writer, "{self}")
     }
 }
 
