@@ -9,8 +9,8 @@ use pavex_cli_diagnostic::AnnotatedSource;
 
 use super::{
     ComponentKind, OptionalLabeledSpanExt, OptionalSourceSpanExt, ParsedSourceFile, Registration,
-    RegistrationKind, config_key_span, f_macro_span, imported_sources_span,
-    registration_locations::{attribute_span, impl_header_span, route_path_attr_span},
+    RegistrationKind, config_key_span, imported_sources_span,
+    registration_locations::{impl_header_span, route_path_attr_span},
     registration_span, route_path_span,
 };
 
@@ -115,13 +115,6 @@ impl DiagnosticSink {
                 }
             },
             TargetSpan::ConfigKeySpan(registration) => config_key_span(s.source(), registration),
-            TargetSpan::RawIdentifiers(registration, kind) => match registration.kind {
-                RegistrationKind::Attribute => {
-                    // TODO: Refine the span to point at the specific attribute/property we care about.
-                    attribute_span(s.source(), &registration.location, kind)
-                }
-                RegistrationKind::Blueprint => f_macro_span(s.source(), &registration.location),
-            },
             TargetSpan::ImportedSources(registration) => {
                 imported_sources_span(s.source(), &registration.location)
             }
@@ -144,12 +137,6 @@ pub enum TargetSpan<'a> {
     /// A span covering the config key argument specified when registering
     /// a configuration type.
     ConfigKeySpan(&'a Registration),
-    /// A span covering the raw identifiers for a component registration.
-    ///
-    /// This works for both blueprint invocations and macro attributes that
-    /// may include raw identifiers as arguments (e.g. an error handler specified
-    /// inside a `#[pavex::constructor]` attribute).
-    RawIdentifiers(&'a Registration, ComponentKind),
 }
 
 impl TargetSpan<'_> {
@@ -162,8 +149,7 @@ impl TargetSpan<'_> {
             | RoutePath(registration)
             | Impl(registration)
             | ImportedSources(registration)
-            | ConfigKeySpan(registration)
-            | RawIdentifiers(registration, ..) => &registration.location.file,
+            | ConfigKeySpan(registration) => &registration.location.file,
         }
     }
 

@@ -336,7 +336,7 @@ pub(super) fn invalid_config_type(
                     .unwrap();
                     write!(&mut error_msg, ".").unwrap();
                 }
-                Some("Set the generic parameters to concrete types when registering the type as configuration. E.g. `bp.config(t!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string())
+                Some("Set the generic parameters to concrete types when registering the type as configuration.".to_string())
             }
         }
     };
@@ -348,7 +348,7 @@ pub(super) fn invalid_config_type(
     diagnostics.push(diagnostic);
 }
 
-pub(super) fn cannot_resolve_callable_path(
+pub(super) fn callable_resolution_error(
     e: CallableResolutionError,
     id: UserComponentId,
     db: &AuxiliaryData,
@@ -369,7 +369,7 @@ pub(super) fn cannot_resolve_callable_path(
                         def.annotated_source
                     });
             let source = diagnostics.annotated(
-                TargetSpan::RawIdentifiers(&db.id2registration[id], kind),
+                db.registration_target(&id),
                 format!("The {kind} was registered here"),
             );
             let diagnostic = CompilerDiagnostic::builder(e.clone())

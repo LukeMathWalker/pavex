@@ -17,14 +17,16 @@ use crate::diagnostic::{ParsedSourceFile, ProcMacroSpanExt, convert_proc_macro_s
 /// For attributes, returns a span covering the attribute (e.g. `#[pavex::constructor]`) as well as the function/method
 /// signature.
 /// For blueprint registrations, returns a span pointing at the method argument that accepts the
-/// raw identifiers for that component.
+/// the component identifier.
 pub(crate) fn registration_span(
     source: &ParsedSourceFile,
     registration: &Registration,
     kind: ComponentKind,
 ) -> Option<SourceSpan> {
     match registration.kind {
-        RegistrationKind::Blueprint => f_macro_span(source, &registration.location),
+        RegistrationKind::Blueprint => {
+            blueprint_registration_arg_span(source, &registration.location)
+        }
         RegistrationKind::Attribute => attribute_span(source, &registration.location, kind),
     }
 }
@@ -141,26 +143,27 @@ pub(crate) fn impl_header_span(
 }
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
-/// `.` in the method invocation for `route` and `constructor`.
+/// `.` in the method invocation for `route`, `constructor`, etc.
 /// E.g.
 ///
 /// ```rust,ignore
-/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// bp.route(PING)
 /// //^ `location` points here!
 /// ```
 ///
-/// We build a `SourceSpan` that matches the `f!` invocation.
+/// We build a `SourceSpan` that matches the component argument.
 /// E.g.
 ///
 /// ```rust,ignore
-/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
-/// //                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/// //                     We want a SourceSpan that points at this for routes
-/// bp.constructor(f!(crate::extract_file), Lifecycle::Singleton)
-/// //             ^^^^^^^^^^^^^^^^^^^^^^^
-/// //             We want a SourceSpan that points at this for constructors
+/// bp.route(PING)
+/// //       ^^^^  <- we want this span
+/// bp.constructor(NEW_LOGGER)
+/// //             ^^^^^^^^^^  <- we want this span
 /// ```
-pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Option<SourceSpan> {
+pub(crate) fn blueprint_registration_arg_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
     match node {
@@ -235,7 +238,7 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
                         _ => {
                             tracing::trace!(
                             node = ?node,
-                            "We couldn't extract an f-macro invocation span from this function call node",
+                            "We couldn't extract a registration argument span from this function call node",
                             );
                             return None;
                         }
@@ -249,7 +252,7 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
             }
             tracing::trace!(
                 node = ?node,
-                "We couldn't extract an f-macro invocation span from this function call node",
+                "We couldn't extract a component identifier span from this function call node",
             );
             None
         }
@@ -261,7 +264,7 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
 /// E.g.
 ///
 /// ```rust,ignore
-/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// bp.route(GET, "/home", handler)
 /// //^ `location` points here!
 /// ```
 ///
@@ -269,7 +272,7 @@ pub(crate) fn f_macro_span(source: &ParsedSourceFile, location: &Location) -> Op
 /// E.g.
 ///
 /// ```rust,ignore
-/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// bp.route(GET, "/home", handler)
 /// //            ^^^^^^^
 /// //            We want a SourceSpan that points at this for routes
 /// ```
@@ -366,17 +369,17 @@ pub(crate) fn attribute_config_key_span(
 /// E.g.
 ///
 /// ```rust,ignore
-/// bp.config("home", t!(crate::Streamer))
+/// bp.config(MY_CONFIG)
 /// //^ `location` points here!
 /// ```
 ///
-/// We build a `SourceSpan` that matches the key argument.
+/// We build a `SourceSpan` that matches the config argument.
 /// E.g.
 ///
 /// ```rust,ignore
-/// bp.config("home", t!(crate::Streamer))
-/// //        ^^^^^^
-/// //        We want a SourceSpan that points at this for routes
+/// bp.config(MY_CONFIG)
+/// //        ^^^^^^^^^
+/// //        We want a SourceSpan that points at this
 /// ```
 pub(crate) fn bp_config_key_span(
     source: &ParsedSourceFile,
