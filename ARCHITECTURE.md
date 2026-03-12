@@ -59,22 +59,15 @@ pub fn stream_file(
 how the application is supposed to behave at runtime.
 
 ```rust
-use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-use pavex::blueprint::route::GET;
-use pavex::f;
+use pavex::Blueprint;
 
-/// The blueprint for our application.
-/// It lists all its routes and provides constructors for all the types
-/// that will be needed to invoke `stream_file`, our request handler.
-///
-/// This will be turned into a ready-to-run web server by `pavex_cli`.
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::load_configuration), Lifecycle::Singleton);
-    bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
-    bp.constructor(f!(crate::extract_path), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::logger), Lifecycle::Transient);
-    bp.route(GET, "/home", f!(crate::stream_file));
+    bp.singleton(LOAD_CONFIGURATION);
+    bp.singleton(HTTP_CLIENT);
+    bp.request_scoped(EXTRACT_PATH);
+    bp.transient(LOGGER);
+    bp.route(STREAM_FILE);
     bp
 }
 ```
@@ -187,24 +180,22 @@ You can get a structured representation of all the types in `library_name`.\
 This is what Pavex does: for each registered route handler and constructor, it builds the documentation for the crate
 it belongs to and extracts the relevant bits of information from `rustdoc`'s output.
 
-If you are going through the source code, this is the process that converts a `RawCallableIdentifiers` into a `Callable`,
-with `ResolvedPath` as an intermediate step.
+If you are going through the source code, this is the process that converts a `RawCallableIdentifiers` into a `Callable`.
 
-`Callable` looks like this:
+`Callable` is an enum:
 
 ```rust
-struct Callable {
-    pub output_fq_path: Type,
-    pub callable_fq_path: ResolvedPath,
-    pub inputs: Vec<Type>,
-}
-
-pub struct Type {
-    pub package_id: PackageId,
-    pub base_type: Vec<String>,
-    pub generic_arguments: Vec<Type>,
+enum Callable {
+    FreeFunction(FreeFunction),
+    InherentMethod(InherentMethod),
+    TraitMethod(TraitMethod),
+    StructLiteralInit(StructLiteralInit),
+    EnumVariantInit(EnumVariantInit),
 }
 ```
+
+Each variant carries its inputs (as `Vec<Type>`) and output type. `Type` is a `rustdoc_types::Type` enum
+with variants like `ResolvedPath`, `Generic`, `Primitive`, etc.
 
 After this phase, we have a collection of `Callable` instances representing our constructors and handlers.\
 It's a puzzle that we need to solve, starting from the handlers: how do we build instances of the types that they take

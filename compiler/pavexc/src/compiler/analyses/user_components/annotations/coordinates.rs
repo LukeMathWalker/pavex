@@ -8,7 +8,7 @@ use crate::{
 use pavexc_attr_parser::AnnotationProperties;
 
 use super::{
-    AuxiliaryData, ConfigType, ImplInfo, annotated_item2type, cannot_resolve_callable_path,
+    AuxiliaryData, ConfigType, ImplInfo, annotated_item2type, callable_resolution_error,
     invalid_config_type, validate_route_path,
 };
 use crate::compiler::analyses::user_components::{UserComponent, UserComponentId};
@@ -220,7 +220,7 @@ pub(crate) fn resolve_annotation_coordinates(
         let callable = match outcome {
             Ok(callable) => callable,
             Err(e) => {
-                cannot_resolve_callable_path(
+                callable_resolution_error(
                     e.into(),
                     component_id,
                     aux,

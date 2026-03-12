@@ -6,7 +6,7 @@ mod diagnostic;
 pub(super) use coordinates::resolve_annotation_coordinates;
 
 use diagnostic::{
-    cannot_resolve_callable_path, const_generics_are_not_supported, invalid_config_type,
+    callable_resolution_error, const_generics_are_not_supported, invalid_config_type,
     invalid_prebuilt_type, not_a_module, not_a_type_reexport, type_resolution_error,
     unknown_module_path, unresolved_external_reexport,
 };
@@ -187,7 +187,7 @@ pub(super) fn register_imported_components(
             let callable = match outcome {
                 Ok(callable) => callable,
                 Err(e) => {
-                    cannot_resolve_callable_path(
+                    callable_resolution_error(
                         CallableResolutionError::from(e),
                         user_component_id,
                         aux,

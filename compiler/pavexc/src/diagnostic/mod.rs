@@ -12,8 +12,8 @@ pub(crate) use pavex_cli_diagnostic::{
 pub(crate) use proc_macro_utils::ProcMacroSpanExt;
 pub(crate) use registration::{Registration, RegistrationKind};
 pub(crate) use registration_locations::{
-    bp_new_span, config_key_span, domain_span, f_macro_span, imported_sources_span,
-    nest_blueprint_span, prefix_span, registration_span, route_path_span,
+    bp_new_span, config_key_span, domain_span, imported_sources_span, nest_blueprint_span,
+    prefix_span, registration_span, route_path_span,
 };
 pub use sink::DiagnosticSink;
 pub(crate) use sink::TargetSpan;

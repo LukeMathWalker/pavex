@@ -105,16 +105,6 @@ impl ComponentDb {
                             "All unassigned generic parameters must be used by the output type.\n\
                             `{}`, one of your constructors, breaks this rule: {free_parameters} {subject_verb} only used by its input parameters.",
                             callable));
-                let help = if db.registration(id).kind.is_blueprint() {
-                    Some("Assign concrete type(s) to the problematic \
-                        generic parameter(s) when registering the constructor against the blueprint: \n\
-                        |  bp.constructor(\n\
-                        |    f!(my_crate::my_constructor::<ConcreteType>), \n\
-                        |    ..\n\
-                        |  )".to_string())
-                } else {
-                    None
-                };
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
@@ -122,9 +112,6 @@ impl ComponentDb {
                         "Can you restructure your constructor to remove those generic parameters from its signature?"
                             .into(),
                     )
-                    .optional_help(help)
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(d);
             }
@@ -309,7 +296,6 @@ impl ComponentDb {
                     buffer
                 };
                 let verb = if parameters.len() == 1 { "does" } else { "do" };
-                let plural = if parameters.len() == 1 { "" } else { "s" };
                 let error = anyhow::anyhow!(e)
                     .context(
                         format!(
@@ -317,16 +303,9 @@ impl ComponentDb {
                             There should no unassigned generic parameters in request handlers, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
                             callable));
-                let d = CompilerDiagnostic::builder(error).optional_source(source)
+                let d = CompilerDiagnostic::builder(error)
+                    .optional_source(source)
                     .optional_source(definition_snippet)
-                    .help(
-                        format!("Specify the concrete type{plural} for {free_parameters} when registering the request handler against the blueprint: \n\
-                        |  bp.route(\n\
-                        |    ..\n\
-                        |    f!(my_crate::my_handler::<ConcreteType>), \n\
-                        |  )"))
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(d);
             }
@@ -417,7 +396,6 @@ impl ComponentDb {
                     buffer
                 };
                 let verb = if parameters.len() == 1 { "does" } else { "do" };
-                let plural = if parameters.len() == 1 { "" } else { "s" };
                 let error = anyhow::anyhow!(e)
                     .context(
                         format!(
@@ -428,13 +406,6 @@ impl ComponentDb {
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
-                    .help(
-                        format!("Specify the concrete type{plural} for {free_parameters} when registering the wrapping middleware against the blueprint: \n\
-                        |  bp.wrap(\n\
-                        |    f!(my_crate::my_middleware::<ConcreteType>), \n\
-                        |  )"))
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(d);
             }
@@ -495,7 +466,6 @@ impl ComponentDb {
                     buffer
                 };
                 let verb = if parameters.len() == 1 { "does" } else { "do" };
-                let plural = if parameters.len() == 1 { "" } else { "s" };
                 let error = anyhow::anyhow!(e)
                     .context(
                         format!(
@@ -505,13 +475,6 @@ impl ComponentDb {
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
-                    .help(
-                        format!("Specify the concrete type{plural} for {free_parameters} when registering the pre-processing middleware against the blueprint: \n\
-                        |  bp.pre_process(\n\
-                        |    f!(my_crate::my_middleware::<ConcreteType>), \n\
-                        |  )"))
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(d);
             }
@@ -584,7 +547,6 @@ impl ComponentDb {
                     buffer
                 };
                 let verb = if parameters.len() == 1 { "does" } else { "do" };
-                let plural = if parameters.len() == 1 { "" } else { "s" };
                 let error = anyhow::anyhow!(e)
                     .context(
                         format!(
@@ -595,13 +557,6 @@ impl ComponentDb {
                 let d = CompilerDiagnostic::builder(error)
                     .optional_source(source)
                     .optional_source(definition_snippet)
-                    .help(
-                        format!("Specify the concrete type{plural} for {free_parameters} when registering the post-processing middleware against the blueprint: \n\
-                        |  bp.post_process(\n\
-                        |    f!(my_crate::my_middleware::<ConcreteType>), \n\
-                        |  )"))
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(d);
             }
@@ -717,11 +672,6 @@ impl ComponentDb {
                     get_snippet(callable, parameters, krate_collection);
                 let d = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_source(definition_snippet)
-                    .help(
-                        "Specify the concrete type(s) for the problematic \
-                        generic parameter(s) when registering the error observer against the blueprint: `f!(my_crate::my_observer::<ConcreteType>)`".into())
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(d);
             },
@@ -821,14 +771,6 @@ impl ComponentDb {
                             callable));
                 let diagnostic = CompilerDiagnostic::builder(error).optional_source(source)
                     .optional_source(definition_snippet)
-                    .help(
-                        "Specify the concrete type(s) for the problematic \
-                        generic parameter(s) when registering the error handler against the blueprint: \n\
-                        |  .error_handler(\n\
-                        |    f!(my_crate::my_error_handler::<ConcreteType>)\n\
-                        |  )".into())
-                    // ^ TODO: add a proper code snippet here, using the actual function that needs
-                    //    to be amended instead of a made signature
                     .build();
                 diagnostics.push(diagnostic);
             }

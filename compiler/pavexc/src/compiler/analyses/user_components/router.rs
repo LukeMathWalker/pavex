@@ -643,10 +643,10 @@ impl PathRouter {
                             // We are looking at a situation like the following:
                             //
                             // bp.nest_at("/path_prefix", {
-                            //    bp.fallback(f!(...));
+                            //    bp.fallback(MY_FALLBACK);
                             //    bp.nest({
-                            //        bp.route(GET, "/yo", f!(...));
-                            //        bp.fallback(f!(...));
+                            //        bp.route(MY_ROUTE);
+                            //        bp.fallback(MY_FALLBACK);
                             //    });
                             // });
                             //
