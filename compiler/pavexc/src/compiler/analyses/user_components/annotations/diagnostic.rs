@@ -2,7 +2,7 @@ use crate::{
     compiler::{
         analyses::user_components::{UserComponentId, imports::UnresolvedImport},
         component::{ConfigTypeValidationError, PrebuiltTypeValidationError},
-        resolvers::{TypeResolutionError, UnsupportedConstGeneric},
+        framework_rustdoc::{TypeResolutionError, UnsupportedConstGeneric},
     },
     diagnostic::{
         self, CallableDefSource, ComponentKind, DiagnosticSink, OptionalLabeledSpanExt,

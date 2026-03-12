@@ -3,7 +3,9 @@ use bimap::BiHashMap;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use crate::{compiler::utils::resolve_type_path, language::Type, rustdoc::CrateCollection};
+use crate::{
+    compiler::framework_rustdoc::resolve_type_path, language::Type, rustdoc::CrateCollection,
+};
 use pavex_bp_schema::{CloningPolicy, Lifecycle};
 
 /// The id for a framework item inside [`FrameworkItemDb`].

@@ -23,7 +23,7 @@ use crate::{
     compiler::{
         analyses::{computations::ComputationDb, prebuilt_types::PrebuiltTypeDb},
         component::{ConfigType, DefaultStrategy, PrebuiltType},
-        resolvers::CallableResolutionError,
+        framework_rustdoc::CallableResolutionError,
     },
     diagnostic::{ComponentKind, DiagnosticSink, Registration},
     language::Type,

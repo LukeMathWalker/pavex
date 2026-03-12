@@ -13,7 +13,7 @@ use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::compiler::utils::resolve_type_path;
+use crate::compiler::framework_rustdoc::resolve_type_path;
 use crate::diagnostic::CompilerDiagnostic;
 use crate::diagnostic::DiagnosticSink;
 use crate::language::{GenericArgument, Type};

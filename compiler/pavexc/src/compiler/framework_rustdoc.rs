@@ -1,10 +1,12 @@
+//! Resolution of framework types and callables from rustdoc.
+
 use std::ops::Deref;
 
 use guppy::PackageId;
 use rustdoc_types::ItemEnum;
 
 use crate::language::{Callable, GenericArgument, PathType, Type};
-use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{CannotGetCrateData, CrateCollection};
 use rustdoc_ext::GlobalItemId;
 use rustdoc_ir::{CallableInput, FnHeader, RustIdentifier, TraitMethod, TraitMethodPath};
 use rustdoc_processor::queries::Crate;
@@ -12,26 +14,39 @@ use rustdoc_resolver::{GenericBindings, resolve_type};
 
 use super::app::PAVEX_VERSION;
 
-pub(crate) fn get_ok_variant(t: &Type) -> &Type {
-    debug_assert!(t.is_result());
-    let Type::Path(t) = t else {
-        unreachable!();
-    };
-    let GenericArgument::TypeParameter(t) = &t.generic_arguments[0] else {
-        unreachable!()
-    };
-    t
+// Re-export types from `rustdoc_resolver` so that downstream code
+// within pavexc can keep importing them from this module.
+pub use rustdoc_resolver::{
+    InputParameterResolutionError, OutputTypeResolutionError, SelfResolutionError,
+    TypeResolutionError, UnsupportedConstGeneric,
+};
+
+#[derive(thiserror::Error, Debug, Clone)]
+pub(crate) enum CallableResolutionError {
+    #[error(transparent)]
+    SelfResolutionError(#[from] SelfResolutionError),
+    #[error(transparent)]
+    InputParameterResolutionError(#[from] InputParameterResolutionError),
+    #[error(transparent)]
+    OutputTypeResolutionError(#[from] OutputTypeResolutionError),
+    #[error(transparent)]
+    CannotGetCrateData(#[from] CannotGetCrateData),
 }
 
-pub(crate) fn get_err_variant(t: &Type) -> &Type {
-    debug_assert!(t.is_result());
-    let Type::Path(t) = t else {
-        unreachable!();
-    };
-    let GenericArgument::TypeParameter(t) = &t.generic_arguments[1] else {
-        unreachable!()
-    };
-    t
+impl From<rustdoc_resolver::CallableResolutionError> for CallableResolutionError {
+    fn from(e: rustdoc_resolver::CallableResolutionError) -> Self {
+        match e {
+            rustdoc_resolver::CallableResolutionError::SelfResolutionError(e) => {
+                CallableResolutionError::SelfResolutionError(e)
+            }
+            rustdoc_resolver::CallableResolutionError::InputParameterResolutionError(e) => {
+                CallableResolutionError::InputParameterResolutionError(e)
+            }
+            rustdoc_resolver::CallableResolutionError::OutputTypeResolutionError(e) => {
+                CallableResolutionError::OutputTypeResolutionError(e)
+            }
+        }
+    }
 }
 
 /// Get the `PackageId` for the `pavex` crate.
@@ -71,6 +86,12 @@ fn strip_generics_from_path(raw_path: &str) -> Vec<String> {
 ///
 /// Generic arguments in the path (e.g. `Foo::<'a, T>`) are stripped for the
 /// rustdoc lookup; the resolved type's generics come from the type definition.
+///
+/// The path must resolve to a struct, enum, or trait.
+///
+/// # Panics
+///
+/// Panics if the resolved item is not a struct, enum, or trait.
 pub(crate) fn resolve_type_path(raw_path: &str, krate_collection: &CrateCollection) -> Type {
     // Strip generic arguments from the path for rustdoc lookup.
     // E.g. "pavex::request::path::RawPathParams::<'server, 'request>"
@@ -115,26 +136,20 @@ pub(crate) fn resolve_type_path(raw_path: &str, krate_collection: &CrateCollecti
         ItemEnum::Struct(s) => &s.generics.params,
         ItemEnum::Enum(e) => &e.generics.params,
         ItemEnum::Trait(t) => &t.generics.params,
-        _ => {
-            // No generics for primitives, etc.
-            return PathType {
-                package_id: canonical_global_id.package_id().to_owned(),
-                rustdoc_id: Some(canonical_global_id.rustdoc_item_id),
-                base_type: base_type.to_vec(),
-                generic_arguments: vec![],
-            }
-            .into();
+        other => {
+            panic!(
+                "Expected `{raw_path}` to resolve to a struct, enum, or trait, \
+                 but it resolved to a {other:?}"
+            );
         }
     };
 
     let mut generic_arguments = vec![];
     for generic_def in generic_defs {
         let arg = match &generic_def.kind {
-            rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
-                GenericArgument::Lifetime(rustdoc_ir::GenericLifetimeParameter::from_name(
-                    &generic_def.name,
-                ))
-            }
+            rustdoc_types::GenericParamDefKind::Lifetime { .. } => GenericArgument::Lifetime(
+                rustdoc_ir::GenericLifetimeParameter::from_name(&generic_def.name),
+            ),
             rustdoc_types::GenericParamDefKind::Type { default, .. } => {
                 if let Some(default) = default {
                     let default = resolve_type(
@@ -307,13 +322,12 @@ pub(crate) fn resolve_framework_trait_method(
     let mut inputs = Vec::new();
     let mut takes_self_as_ref = false;
     for (parameter_index, (param_name, parameter_type)) in fn_item.sig.inputs.iter().enumerate() {
-        if parameter_index == 0 {
-            if let rustdoc_types::Type::BorrowedRef { type_, .. } = parameter_type
-                && let rustdoc_types::Type::Generic(g) = type_.deref()
-                && g == "Self"
-            {
-                takes_self_as_ref = true;
-            }
+        if parameter_index == 0
+            && let rustdoc_types::Type::BorrowedRef { type_, .. } = parameter_type
+            && let rustdoc_types::Type::Generic(g) = type_.deref()
+            && g == "Self"
+        {
+            takes_self_as_ref = true;
         }
         let resolved = resolve_type(
             parameter_type,
@@ -395,34 +409,4 @@ pub(crate) fn resolve_framework_trait_method(
         }),
         takes_self_as_ref,
     }))
-}
-
-/// A generator of unique lifetime names.
-#[derive(Debug, Clone)]
-pub struct LifetimeGenerator {
-    next: usize,
-}
-
-impl LifetimeGenerator {
-    const ALPHABET: [char; 26] = [
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    ];
-
-    pub fn new() -> Self {
-        Self { next: 0 }
-    }
-
-    /// Generates a new lifetime name.
-    pub fn next(&mut self) -> String {
-        let next = self.next;
-        self.next += 1;
-        let round = next / Self::ALPHABET.len();
-        let letter = Self::ALPHABET[next % Self::ALPHABET.len()];
-        if round == 0 {
-            format!("{letter}")
-        } else {
-            format!("{letter}{round}")
-        }
-    }
 }

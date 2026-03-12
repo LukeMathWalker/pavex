@@ -1,5 +1,57 @@
 pub use rustdoc_ir::*;
 
+pub(crate) fn get_ok_variant(t: &Type) -> &Type {
+    debug_assert!(t.is_result());
+    let Type::Path(t) = t else {
+        unreachable!();
+    };
+    let GenericArgument::TypeParameter(t) = &t.generic_arguments[0] else {
+        unreachable!()
+    };
+    t
+}
+
+pub(crate) fn get_err_variant(t: &Type) -> &Type {
+    debug_assert!(t.is_result());
+    let Type::Path(t) = t else {
+        unreachable!();
+    };
+    let GenericArgument::TypeParameter(t) = &t.generic_arguments[1] else {
+        unreachable!()
+    };
+    t
+}
+
+/// A generator of unique lifetime names.
+#[derive(Debug, Clone)]
+pub struct LifetimeGenerator {
+    next: usize,
+}
+
+impl LifetimeGenerator {
+    const ALPHABET: [char; 26] = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    ];
+
+    pub fn new() -> Self {
+        Self { next: 0 }
+    }
+
+    /// Generates a new lifetime name.
+    pub fn next(&mut self) -> String {
+        let next = self.next;
+        self.next += 1;
+        let round = next / Self::ALPHABET.len();
+        let letter = Self::ALPHABET[next % Self::ALPHABET.len()];
+        if round == 0 {
+            format!("{letter}")
+        } else {
+            format!("{letter}{round}")
+        }
+    }
+}
+
 pub(crate) trait PathTypeExt {
     fn callable_struct_literal_path(&self) -> StructLiteralPath;
 }

@@ -8,11 +8,8 @@ mod codegen;
 mod codegen_utils;
 mod component;
 mod computation;
+mod framework_rustdoc;
 mod generated_app;
 mod interner;
 mod path_parameters;
-// HACK: breaking encapsulation because resolver logic is split across this module
-// and `resolved_path` in `language`.
-pub mod resolvers;
 mod traits;
-mod utils;
