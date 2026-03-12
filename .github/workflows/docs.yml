@@ -1742,6 +1742,7 @@ jobs:
         lycheeVersion: v0.16.1
         args: |
           --base site
+          --accept 200,429
           --exclude-loopback
           --exclude-path="site/api_reference/pavex/http"
           --exclude-path="site/api_reference/pavex/time"
