@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use crate::compiler::component::CannotTakeMutReferenceError;
-use crate::compiler::utils::get_err_variant;
+use crate::language::get_err_variant;
 use ahash::HashMap;
 use indexmap::IndexSet;
 use itertools::Itertools;

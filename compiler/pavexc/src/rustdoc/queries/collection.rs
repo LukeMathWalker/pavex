@@ -7,8 +7,8 @@ use super::super::annotations::AnnotationCoordinates;
 use super::super::indexer::PavexIndexer;
 use super::super::progress_reporter::ShellProgress;
 use super::CrateCollection;
-use rustdoc_processor::queries::Crate;
 use rustdoc_processor::GlobalItemId;
+use rustdoc_processor::queries::Crate;
 
 /// Extension trait adding Pavex-specific methods to `CrateCollection`.
 pub trait CrateCollectionExt {

@@ -16,14 +16,14 @@ use crate::compiler::component::{
     PostProcessingMiddleware, PreProcessingMiddleware, RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::{Computation, MatchResult};
+use crate::compiler::framework_rustdoc::{
+    resolve_framework_free_function, resolve_framework_inherent_method,
+    resolve_framework_trait_method, resolve_type_path,
+};
 use crate::compiler::interner::Interner;
 use crate::compiler::traits::assert_trait_is_implemented;
-use crate::compiler::utils::{
-    get_err_variant, get_ok_variant, resolve_framework_free_function,
-    resolve_framework_inherent_method, resolve_framework_trait_method, resolve_type_path,
-};
 use crate::diagnostic::{ParsedSourceFile, Registration, TargetSpan};
-use crate::language::{Callable, Lifetime, Type, TypeReference};
+use crate::language::{Callable, Lifetime, Type, TypeReference, get_err_variant, get_ok_variant};
 use crate::rustdoc::{CrateCollection, CrateCollectionExt};
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;

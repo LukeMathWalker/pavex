@@ -21,8 +21,8 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
-use crate::compiler::utils::LifetimeGenerator;
 use crate::diagnostic::{AnnotatedSource, CompilerDiagnostic, HelpWithSnippet};
+use crate::language::LifetimeGenerator;
 use crate::language::{
     Callable, CallableInput, CanonicalType, GenericArgument, GenericLifetimeParameter, Lifetime,
     PathType, PathTypeExt, RustIdentifier, StructLiteralInit, Type, TypeReference,

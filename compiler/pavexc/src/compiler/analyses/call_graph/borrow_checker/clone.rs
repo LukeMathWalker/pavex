@@ -11,7 +11,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
-use crate::compiler::utils::resolve_type_path;
+use crate::compiler::framework_rustdoc::resolve_type_path;
 use crate::language::{
     Callable, CallableInput, FnHeader, Lifetime, PathType, RustIdentifier, TraitMethod,
     TraitMethodPath, Type, TypeReference,
