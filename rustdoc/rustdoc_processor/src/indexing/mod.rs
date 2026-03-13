@@ -329,9 +329,10 @@ pub(crate) fn index_local_types<'a, V: IndexingVisitor>(
         | ItemEnum::Struct(_)
         | ItemEnum::TypeAlias(_)
         | ItemEnum::Static(_)
-        | ItemEnum::Union(_) => {
+        | ItemEnum::Union(_)
+        | ItemEnum::Constant { .. } => {
             let name = current_item.name.as_deref().expect(
-                "All 'struct', 'function', 'enum', 'type_alias', 'primitive', 'trait', 'static' and 'union' items have a 'name' property",
+                "All 'struct', 'function', 'enum', 'type_alias', 'primitive', 'trait', 'static', 'union' and 'constant' items have a 'name' property",
             );
             if matches!(current_item.inner, ItemEnum::Primitive(_)) {
                 // E.g. `std::bool` won't work, `std::primitive::bool` does work but the `primitive` module
