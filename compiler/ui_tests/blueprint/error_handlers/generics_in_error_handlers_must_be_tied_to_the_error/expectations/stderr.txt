@@ -22,11 +22,6 @@
   [31m│[0m     ·                    [33;1m╰── ..because it is not used here[0m
   [31m│[0m  [2m31[0m │     _generic_input: GenericType<T>,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete type(s) for the problematic generic parameter(s)
-  [31m│[0m         when registering the error handler against the blueprint:
-  [31m│[0m         |  .error_handler(
-  [31m│[0m         |    f!(my_crate::my_error_handler::<ConcreteType>)
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::doubly_generic_error_handler`.
@@ -52,11 +47,6 @@
   [31m│[0m     ·                    [32;1m╰── ..because they are not used here[0m
   [31m│[0m  [2m39[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete type(s) for the problematic generic parameter(s)
-  [31m│[0m         when registering the error handler against the blueprint:
-  [31m│[0m         |  .error_handler(
-  [31m│[0m         |    f!(my_crate::my_error_handler::<ConcreteType>)
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::triply_generic_error_handler`.
@@ -83,8 +73,3 @@
   [31m│[0m     ·                    [35;1m╰── ..because they are not used here[0m
   [31m│[0m  [2m48[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete type(s) for the problematic generic parameter(s)
-  [31m│[0m         when registering the error handler against the blueprint:
-  [31m│[0m         |  .error_handler(
-  [31m│[0m         |    f!(my_crate::my_error_handler::<ConcreteType>)
-  [31m│[0m         |  )

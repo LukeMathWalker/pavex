@@ -18,11 +18,6 @@
   [31m│[0m    ·                [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m8[0m │     todo!()
   [31m│[0m    ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete type for `T` when registering the post-processing
-  [31m│[0m         middleware against the blueprint:
-  [31m│[0m         |  bp.post_process(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::doubly_generic`.
@@ -45,11 +40,6 @@
   [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m13[0m │     _response: Response,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete types for `T` and `S` when registering the post-
-  [31m│[0m         processing middleware against the blueprint:
-  [31m│[0m         |  bp.post_process(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::triply_generic`.
@@ -73,8 +63,3 @@
   [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m22[0m │     _response: Response,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete types for `T`, `S` and `U` when registering the
-  [31m│[0m         post-processing middleware against the blueprint:
-  [31m│[0m         |  bp.post_process(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
