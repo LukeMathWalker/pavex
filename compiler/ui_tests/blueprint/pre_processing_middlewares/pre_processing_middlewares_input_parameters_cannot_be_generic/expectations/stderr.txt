@@ -17,11 +17,6 @@
   [31m│[0m    ·                [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m9[0m │     todo!()
   [31m│[0m    ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete type for `T` when registering the pre-processing
-  [31m│[0m         middleware against the blueprint:
-  [31m│[0m         |  bp.pre_process(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m There must be no unassigned generic parameters in pre-processing
   [31m│[0m middlewares, but `T` and `S` do not seem to have been assigned a concrete
@@ -42,11 +37,6 @@
   [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m14[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete types for `T` and `S` when registering the pre-
-  [31m│[0m         processing middleware against the blueprint:
-  [31m│[0m         |  bp.pre_process(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m There must be no unassigned generic parameters in pre-processing
   [31m│[0m middlewares, but `T`, `S` and `U` do not seem to have been assigned a
@@ -68,8 +58,3 @@
   [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m19[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete types for `T`, `S` and `U` when registering the
-  [31m│[0m         pre-processing middleware against the blueprint:
-  [31m│[0m         |  bp.pre_process(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )

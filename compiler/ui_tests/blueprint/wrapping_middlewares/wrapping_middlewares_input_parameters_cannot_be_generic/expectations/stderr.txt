@@ -19,11 +19,6 @@
   [31m│[0m    ·                   [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m9[0m │ where
   [31m│[0m    ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete type for `T` when registering the wrapping
-  [31m│[0m         middleware against the blueprint:
-  [31m│[0m         |  bp.wrap(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::doubly_generic`.
@@ -46,11 +41,6 @@
   [31m│[0m     ·                          [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m17[0m │ where
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete types for `T` and `S` when registering the
-  [31m│[0m         wrapping middleware against the blueprint:
-  [31m│[0m         |  bp.wrap(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
 [31;1mERROR[0m:
   [31m×[0m I am not smart enough to figure out the concrete type for all the generic
   [31m│[0m parameters in `app::triply_generic`.
@@ -74,8 +64,3 @@
   [31m│[0m     ·                          [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m25[0m │     _next: Next<A>,
   [31m│[0m     ╰────
-  [31m│[0m   [36mhelp:[0m Specify the concrete types for `T`, `S` and `U` when registering the
-  [31m│[0m         wrapping middleware against the blueprint:
-  [31m│[0m         |  bp.wrap(
-  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
-  [31m│[0m         |  )
