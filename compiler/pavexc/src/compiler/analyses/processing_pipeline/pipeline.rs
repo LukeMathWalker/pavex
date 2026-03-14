@@ -507,6 +507,7 @@ impl RequestHandlerPipeline {
                             }
                         }
                         Type::Path(_) |
+                        Type::TypeAlias(_) |
                         Type::Tuple(_) |
                         Type::Array(_) => {
                             type2info.entry(ty.clone()).or_default().consumed_by.push(ConsumerInfo { middleware_index: index, component_id });

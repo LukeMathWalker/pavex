@@ -266,7 +266,7 @@ fn must_be_a_plain_struct(
     extracted_type: &Type,
 ) -> Result<rustdoc_types::Item, ()> {
     let error_suffix = match extracted_type {
-        Type::Path(t) => {
+        Type::Path(t) | Type::TypeAlias(t) => {
             let Some(item_id) = t.rustdoc_id else {
                 unreachable!()
             };

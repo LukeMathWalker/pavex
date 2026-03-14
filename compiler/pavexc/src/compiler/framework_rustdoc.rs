@@ -10,7 +10,7 @@ use crate::rustdoc::{CannotGetCrateData, CrateCollection};
 use rustdoc_ext::GlobalItemId;
 use rustdoc_ir::{CallableInput, FnHeader, RustIdentifier, TraitMethod, TraitMethodPath};
 use rustdoc_processor::queries::Crate;
-use rustdoc_resolver::{GenericBindings, resolve_type};
+use rustdoc_resolver::{GenericBindings, TypeAliasResolution, resolve_type};
 
 use super::app::PAVEX_VERSION;
 
@@ -157,6 +157,7 @@ pub(crate) fn resolve_type_path(raw_path: &str, krate_collection: &CrateCollecti
                         &global_id.package_id,
                         krate_collection,
                         &GenericBindings::default(),
+                        TypeAliasResolution::ResolveThrough,
                     )
                     .expect("Failed to resolve default generic type");
                     GenericArgument::TypeParameter(default)
@@ -334,6 +335,7 @@ pub(crate) fn resolve_framework_trait_method(
             &krate.core.package_id,
             krate_collection,
             &generic_bindings,
+            TypeAliasResolution::ResolveThrough,
         )
         .map_err(|e| {
             anyhow::anyhow!(
@@ -357,6 +359,7 @@ pub(crate) fn resolve_framework_trait_method(
                 &krate.core.package_id,
                 krate_collection,
                 &generic_bindings,
+                TypeAliasResolution::ResolveThrough,
             )
             .map_err(|e| {
                 anyhow::anyhow!(

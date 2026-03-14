@@ -11,7 +11,7 @@ use rustdoc_processor::indexing::CrateIndexer;
 use rustdoc_processor::queries::Crate;
 
 use crate::errors::*;
-use crate::resolve_type::resolve_type;
+use crate::resolve_type::{TypeAliasResolution, resolve_type};
 
 /// Convert a free function from `rustdoc_types` into a [`FreeFunction`].
 pub fn resolve_free_function<I: CrateIndexer>(
@@ -35,6 +35,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
             &krate.core.package_id,
             krate_collection,
             &Default::default(),
+            TypeAliasResolution::ResolveThrough,
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
@@ -62,6 +63,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
                 &krate.core.package_id,
                 krate_collection,
                 &Default::default(),
+                TypeAliasResolution::ResolveThrough,
             ) {
                 Ok(t) => Some(t),
                 Err(e) => {
