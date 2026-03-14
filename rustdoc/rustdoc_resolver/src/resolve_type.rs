@@ -16,6 +16,19 @@ use rustdoc_processor::indexing::CrateIndexer;
 use crate::GenericBindings;
 use crate::errors::*;
 
+/// Controls whether type aliases are resolved through to their underlying type
+/// or kept as-is.
+#[derive(Debug, Clone, Copy, Default)]
+pub enum TypeAliasResolution {
+    /// Resolve through type aliases to the underlying concrete type.
+    /// E.g. `type Foo = Bar;` → `Bar`.
+    #[default]
+    ResolveThrough,
+    /// Stop at the type alias and return it as a path type, without
+    /// resolving to the underlying type.
+    StopAtAlias,
+}
+
 /// Convert a `rustdoc_types::Type` into a `rustdoc_ir::Type`, recursively resolving
 /// through type aliases and substituting generic bindings.
 pub fn resolve_type<I: CrateIndexer>(
@@ -25,12 +38,14 @@ pub fn resolve_type<I: CrateIndexer>(
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection<I>,
     generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<Type, TypeResolutionError> {
     _resolve_type(
         type_,
         used_by_package_id,
         krate_collection,
         generic_bindings,
+        alias_resolution,
     )
     .map_err(|details| TypeResolutionError {
         ty: type_.to_owned(),
@@ -45,6 +60,7 @@ fn _resolve_type<I: CrateIndexer>(
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection<I>,
     generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<Type, TypeResolutionErrorDetails> {
     match type_ {
         RustdocType::ResolvedPath(rustdoc_types::Path {
@@ -79,6 +95,62 @@ fn _resolve_type<I: CrateIndexer>(
             let type_item = krate_collection.get_item_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
+                if matches!(alias_resolution, TypeAliasResolution::StopAtAlias) {
+                    // Return the alias as a path type without resolving through it.
+                    let mut generics = vec![];
+                    if let Some(args) = args {
+                        if let GenericArgs::AngleBracketed { args, .. } = args.deref() {
+                            for (i, arg) in args.iter().enumerate() {
+                                let generic_argument = match arg {
+                                    GenericArg::Lifetime(l) => GenericArgument::Lifetime(
+                                        GenericLifetimeParameter::from_name(l),
+                                    ),
+                                    GenericArg::Type(generic_type) => {
+                                        GenericArgument::TypeParameter(resolve_type(
+                                            generic_type,
+                                            used_by_package_id,
+                                            krate_collection,
+                                            generic_bindings,
+                                            alias_resolution,
+                                        )
+                                        .map_err(|source| {
+                                            TypeResolutionErrorDetails::TypePartResolutionError(
+                                                Box::new(TypePartResolutionError {
+                                                    role: format!(
+                                                        "generic argument {} of type alias",
+                                                        i
+                                                    ),
+                                                    source,
+                                                }),
+                                            )
+                                        })?)
+                                    }
+                                    GenericArg::Const(_) => {
+                                        return Err(
+                                            TypeResolutionErrorDetails::UnsupportedConstGeneric(
+                                                UnsupportedConstGeneric {
+                                                    name: format!("const generic arg {}", i),
+                                                },
+                                            ),
+                                        );
+                                    }
+                                    GenericArg::Infer => {
+                                        unreachable!()
+                                    }
+                                };
+                                generics.push(generic_argument);
+                            }
+                        }
+                    }
+                    let t = PathType {
+                        package_id: global_type_id.package_id().to_owned(),
+                        rustdoc_id: Some(global_type_id.rustdoc_item_id),
+                        base_type: base_type.to_vec(),
+                        generic_arguments: generics,
+                    };
+                    return Ok(Type::Path(t));
+                }
+
                 let mut alias_generic_bindings = GenericBindings::default();
                 // The generic arguments that have been passed to the type alias.
                 // E.g. `u32` in `Foo<u32>` for `type Foo<T=u64> = Bar<T>;`
@@ -105,6 +177,7 @@ fn _resolve_type<I: CrateIndexer>(
                                         used_by_package_id,
                                         krate_collection,
                                         generic_bindings,
+                                        alias_resolution,
                                     )
                                     .map_err(|source| {
                                         TypeResolutionErrorDetails::TypePartResolutionError(
@@ -138,6 +211,7 @@ fn _resolve_type<I: CrateIndexer>(
                                     &global_type_id.package_id,
                                     krate_collection,
                                     generic_bindings,
+                                    alias_resolution,
                                 )
                                 .map_err(|source| {
                                     TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -206,6 +280,7 @@ fn _resolve_type<I: CrateIndexer>(
                     &global_type_id.package_id,
                     krate_collection,
                     &alias_generic_bindings,
+                    alias_resolution,
                 )
                 .map_err(|source| {
                     TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -277,6 +352,7 @@ fn _resolve_type<I: CrateIndexer>(
                                                     used_by_package_id,
                                                     krate_collection,
                                                     generic_bindings,
+                                                    alias_resolution,
                                                 )
                                                 .map_err(|source| {
                                                     TypeResolutionErrorDetails::TypePartResolutionError(
@@ -296,6 +372,7 @@ fn _resolve_type<I: CrateIndexer>(
                                                 &global_type_id.package_id,
                                                 krate_collection,
                                                 generic_bindings,
+                                                alias_resolution,
                                             )
                                             .map_err(|source| {
                                                 TypeResolutionErrorDetails::TypePartResolutionError(
@@ -363,6 +440,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -394,6 +472,7 @@ fn _resolve_type<I: CrateIndexer>(
                     used_by_package_id,
                     krate_collection,
                     generic_bindings,
+                    alias_resolution,
                 )
                 .map_err(|source| {
                     TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -418,6 +497,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -443,6 +523,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -475,7 +556,7 @@ fn _resolve_type<I: CrateIndexer>(
                 .iter()
                 .enumerate()
                 .map(|(i, (_, ty))| {
-                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings)
+                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings, alias_resolution)
                         .map_err(|source| {
                             TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
                                 TypePartResolutionError {
@@ -492,7 +573,7 @@ fn _resolve_type<I: CrateIndexer>(
                 .output
                 .as_ref()
                 .map(|ty| {
-                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings)
+                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings, alias_resolution)
                         .map_err(|source| {
                             TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
                                 TypePartResolutionError {
@@ -528,6 +609,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(

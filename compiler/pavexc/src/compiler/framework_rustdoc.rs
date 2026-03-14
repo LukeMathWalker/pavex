@@ -10,7 +10,7 @@ use crate::rustdoc::{CannotGetCrateData, CrateCollection};
 use rustdoc_ext::GlobalItemId;
 use rustdoc_ir::{CallableInput, FnHeader, RustIdentifier, TraitMethod, TraitMethodPath};
 use rustdoc_processor::queries::Crate;
-use rustdoc_resolver::{GenericBindings, resolve_type};
+use rustdoc_resolver::{GenericBindings, TypeAliasResolution, resolve_type};
 
 use super::app::PAVEX_VERSION;
 
@@ -157,6 +157,7 @@ pub(crate) fn resolve_type_path(raw_path: &str, krate_collection: &CrateCollecti
                         &global_id.package_id,
                         krate_collection,
                         &GenericBindings::default(),
+                        TypeAliasResolution::ResolveThrough,
                     )
                     .expect("Failed to resolve default generic type");
                     GenericArgument::TypeParameter(default)
@@ -198,7 +199,7 @@ pub(crate) fn resolve_framework_free_function(
         .unwrap_or_else(|e| panic!("Unknown free function path {}: {e:?}", segments.join("::")));
 
     let item = krate.get_item_by_local_type_id(&global_id.rustdoc_item_id);
-    let free_fn = rustdoc_resolver::resolve_free_function(&item, krate, krate_collection)
+    let free_fn = rustdoc_resolver::resolve_free_function(&item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
         .expect("Failed to resolve free function");
     Callable::FreeFunction(free_fn)
 }
@@ -249,6 +250,7 @@ pub(crate) fn resolve_framework_inherent_method(
                     &item,
                     krate,
                     krate_collection,
+                    TypeAliasResolution::ResolveThrough,
                 )
                 .expect("Failed to resolve inherent method");
                 return callable;
@@ -334,6 +336,7 @@ pub(crate) fn resolve_framework_trait_method(
             &krate.core.package_id,
             krate_collection,
             &generic_bindings,
+            TypeAliasResolution::ResolveThrough,
         )
         .map_err(|e| {
             anyhow::anyhow!(
@@ -357,6 +360,7 @@ pub(crate) fn resolve_framework_trait_method(
                 &krate.core.package_id,
                 krate_collection,
                 &generic_bindings,
+                TypeAliasResolution::ResolveThrough,
             )
             .map_err(|e| {
                 anyhow::anyhow!(

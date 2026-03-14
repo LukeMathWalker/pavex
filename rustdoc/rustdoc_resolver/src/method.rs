@@ -16,6 +16,7 @@ use rustdoc_processor::queries::Crate;
 
 use crate::GenericBindings;
 use crate::errors::*;
+use crate::resolve_type::TypeAliasResolution;
 use crate::resolve_type::resolve_type;
 
 /// Convert a method item retrieved from `rustdoc`'s JSON output to Pavex's internal
@@ -37,6 +38,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
     method_item: &Item,
     krate: &Crate,
     krate_collection: &CrateCollection<I>,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<Callable, CallableResolutionError> {
     let impl_item = krate.get_item_by_local_type_id(&impl_id);
     let ItemEnum::Impl(impl_item) = &impl_item.inner else {
@@ -50,6 +52,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
         &krate.core.package_id,
         krate_collection,
         &generic_bindings,
+        alias_resolution,
     ) {
         Ok(t) => t,
         Err(e) => {
@@ -110,6 +113,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
                             &krate.core.package_id,
                             krate_collection,
                             &generic_bindings,
+                            alias_resolution,
                         ) else {
                             todo!()
                         };
@@ -178,6 +182,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
             &krate.core.package_id,
             krate_collection,
             &generic_bindings,
+            alias_resolution,
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
@@ -205,6 +210,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
                 &krate.core.package_id,
                 krate_collection,
                 &generic_bindings,
+                alias_resolution,
             ) {
                 Ok(t) => Some(t),
                 Err(e) => {

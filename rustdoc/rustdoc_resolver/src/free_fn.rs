@@ -11,6 +11,7 @@ use rustdoc_processor::indexing::CrateIndexer;
 use rustdoc_processor::queries::Crate;
 
 use crate::errors::*;
+use crate::resolve_type::TypeAliasResolution;
 use crate::resolve_type::resolve_type;
 
 /// Convert a free function from `rustdoc_types` into a [`FreeFunction`].
@@ -18,6 +19,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
     item: &Item,
     krate: &Crate,
     krate_collection: &CrateCollection<I>,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<FreeFunction, CallableResolutionError> {
     let ItemEnum::Function(inner) = &item.inner else {
         unreachable!("Expected a function item");
@@ -35,6 +37,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
             &krate.core.package_id,
             krate_collection,
             &Default::default(),
+            alias_resolution,
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
@@ -62,6 +65,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
                 &krate.core.package_id,
                 krate_collection,
                 &Default::default(),
+                alias_resolution,
             ) {
                 Ok(t) => Some(t),
                 Err(e) => {

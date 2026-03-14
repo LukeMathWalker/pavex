@@ -10,6 +10,7 @@ use rustdoc_processor::queries::Crate;
 
 use crate::GenericBindings;
 use crate::errors::{TypeResolutionError, UnsupportedConstGeneric};
+use crate::resolve_type::TypeAliasResolution;
 use crate::resolve_type::resolve_type;
 
 /// Convert an enum or a struct definition from the JSON documentation
@@ -81,6 +82,7 @@ pub fn rustdoc_type_alias2type<I: CrateIndexer>(
         &krate.core.package_id,
         krate_collection,
         &GenericBindings::default(),
+        TypeAliasResolution::ResolveThrough,
     )?;
     Ok(resolved)
 }

@@ -5,7 +5,7 @@ use rustdoc_types::{GenericParamDefKind, ItemEnum, Type as RustdocType};
 
 use crate::language::{PathType, Type};
 use crate::rustdoc::{Crate, CrateCollection};
-use rustdoc_resolver::{GenericBindings, resolve_type};
+use rustdoc_resolver::{GenericBindings, TypeAliasResolution, resolve_type};
 
 /// It returns an error if `type_` doesn't implement the specified trait.
 ///
@@ -102,6 +102,7 @@ pub(crate) fn implements_trait(
                                 &our_path_type.package_id,
                                 krate_collection,
                                 &generic_bindings,
+                                TypeAliasResolution::ResolveThrough,
                             )?;
                             generic_bindings
                                 .types
@@ -122,6 +123,7 @@ pub(crate) fn implements_trait(
                     &our_path_type.package_id,
                     krate_collection,
                     &generic_bindings,
+                    TypeAliasResolution::ResolveThrough,
                 )?;
                 if implements_trait(krate_collection, &type_, expected_trait)? {
                     return Ok(true);
