@@ -134,7 +134,7 @@ impl Type {
     /// [`Type::render_with_inferred_lifetimes_into`], and [`Type::display_for_error_into`].
     pub(crate) fn render_into<W: fmt::Write>(&self, config: &RenderConfig<'_>, buffer: &mut W) {
         match self {
-            Type::Path(t) => {
+            Type::Path(t) | Type::TypeAlias(t) => {
                 match config.path {
                     PathStyle::CrateLookup(id2name) => {
                         let crate_name = id2name

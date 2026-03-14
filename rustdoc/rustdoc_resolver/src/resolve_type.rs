@@ -16,6 +16,15 @@ use rustdoc_processor::indexing::CrateIndexer;
 use crate::GenericBindings;
 use crate::errors::*;
 
+/// Controls whether `resolve_type` resolves through type aliases or preserves them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypeAliasResolution {
+    /// Resolve through type aliases, returning the underlying type (current default).
+    ResolveThrough,
+    /// Stop at type aliases, returning `Type::TypeAlias(PathType)`.
+    Preserve,
+}
+
 /// Convert a `rustdoc_types::Type` into a `rustdoc_ir::Type`, recursively resolving
 /// through type aliases and substituting generic bindings.
 pub fn resolve_type<I: CrateIndexer>(
@@ -25,12 +34,14 @@ pub fn resolve_type<I: CrateIndexer>(
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection<I>,
     generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<Type, TypeResolutionError> {
     _resolve_type(
         type_,
         used_by_package_id,
         krate_collection,
         generic_bindings,
+        alias_resolution,
     )
     .map_err(|details| TypeResolutionError {
         ty: type_.to_owned(),
@@ -45,6 +56,7 @@ fn _resolve_type<I: CrateIndexer>(
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection<I>,
     generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<Type, TypeResolutionErrorDetails> {
     match type_ {
         RustdocType::ResolvedPath(rustdoc_types::Path {
@@ -94,6 +106,11 @@ fn _resolve_type<I: CrateIndexer>(
                 // The generic parameters that have been defined for the type alias.
                 // E.g. `T` in `type Foo<T> = Bar<T, u64>;`
                 let generic_param_defs = &type_alias.generics.params;
+
+                // When preserving, we need to resolve the generic arguments
+                // for the alias's own identity, but we don't resolve through.
+                let mut resolved_alias_generics = vec![];
+
                 for (i, generic_param_def) in generic_param_defs.iter().enumerate() {
                     match &generic_param_def.kind {
                         GenericParamDefKind::Type { default, .. } => {
@@ -105,6 +122,7 @@ fn _resolve_type<I: CrateIndexer>(
                                         used_by_package_id,
                                         krate_collection,
                                         generic_bindings,
+                                        alias_resolution,
                                     )
                                     .map_err(|source| {
                                         TypeResolutionErrorDetails::TypePartResolutionError(
@@ -138,6 +156,7 @@ fn _resolve_type<I: CrateIndexer>(
                                     &global_type_id.package_id,
                                     krate_collection,
                                     generic_bindings,
+                                    alias_resolution,
                                 )
                                 .map_err(|source| {
                                     TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -162,7 +181,8 @@ fn _resolve_type<I: CrateIndexer>(
                             };
                             alias_generic_bindings
                                 .types
-                                .insert(generic_param_def.name.to_string(), generic_type);
+                                .insert(generic_param_def.name.to_string(), generic_type.clone());
+                            resolved_alias_generics.push(GenericArgument::TypeParameter(generic_type));
                         }
                         GenericParamDefKind::Lifetime { .. } => {
                             let provided_arg = generic_args.and_then(|v| v.get(i));
@@ -190,7 +210,10 @@ fn _resolve_type<I: CrateIndexer>(
                             .to_owned();
                             alias_generic_bindings
                                 .lifetimes
-                                .insert(generic_param_def.name.to_string(), lifetime);
+                                .insert(generic_param_def.name.to_string(), lifetime.clone());
+                            resolved_alias_generics.push(GenericArgument::Lifetime(
+                                GenericLifetimeParameter::from_name(lifetime),
+                            ));
                         }
                         GenericParamDefKind::Const { .. } => {
                             return Err(TypeResolutionErrorDetails::UnsupportedConstGeneric(
@@ -201,11 +224,23 @@ fn _resolve_type<I: CrateIndexer>(
                         }
                     }
                 }
+
+                if alias_resolution == TypeAliasResolution::Preserve {
+                    let alias_path = PathType {
+                        package_id: global_type_id.package_id().to_owned(),
+                        rustdoc_id: Some(global_type_id.rustdoc_item_id),
+                        base_type: base_type.to_vec(),
+                        generic_arguments: resolved_alias_generics,
+                    };
+                    return Ok(Type::TypeAlias(alias_path));
+                }
+
                 let type_ = resolve_type(
                     &type_alias.type_,
                     &global_type_id.package_id,
                     krate_collection,
                     &alias_generic_bindings,
+                    alias_resolution,
                 )
                 .map_err(|source| {
                     TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -277,6 +312,7 @@ fn _resolve_type<I: CrateIndexer>(
                                                     used_by_package_id,
                                                     krate_collection,
                                                     generic_bindings,
+                                                    alias_resolution,
                                                 )
                                                 .map_err(|source| {
                                                     TypeResolutionErrorDetails::TypePartResolutionError(
@@ -296,6 +332,7 @@ fn _resolve_type<I: CrateIndexer>(
                                                 &global_type_id.package_id,
                                                 krate_collection,
                                                 generic_bindings,
+                                                alias_resolution,
                                             )
                                             .map_err(|source| {
                                                 TypeResolutionErrorDetails::TypePartResolutionError(
@@ -363,6 +400,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -394,6 +432,7 @@ fn _resolve_type<I: CrateIndexer>(
                     used_by_package_id,
                     krate_collection,
                     generic_bindings,
+                    alias_resolution,
                 )
                 .map_err(|source| {
                     TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -418,6 +457,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -443,6 +483,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
@@ -475,7 +516,7 @@ fn _resolve_type<I: CrateIndexer>(
                 .iter()
                 .enumerate()
                 .map(|(i, (_, ty))| {
-                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings)
+                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings, alias_resolution)
                         .map_err(|source| {
                             TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
                                 TypePartResolutionError {
@@ -492,7 +533,7 @@ fn _resolve_type<I: CrateIndexer>(
                 .output
                 .as_ref()
                 .map(|ty| {
-                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings)
+                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings, alias_resolution)
                         .map_err(|source| {
                             TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
                                 TypePartResolutionError {
@@ -528,6 +569,7 @@ fn _resolve_type<I: CrateIndexer>(
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
+                alias_resolution,
             )
             .map_err(|source| {
                 TypeResolutionErrorDetails::TypePartResolutionError(Box::new(

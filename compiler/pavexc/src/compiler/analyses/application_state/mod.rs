@@ -226,7 +226,7 @@ fn field_name_candidate(ty_: &Type, strategy: NamingStrategy) -> String {
 
 fn _field_name_candidate(ty_: &Type, strategy: NamingStrategy, candidate: &mut String) {
     match ty_ {
-        Type::Path(path_type) => match strategy {
+        Type::Path(path_type) | Type::TypeAlias(path_type) => match strategy {
             NamingStrategy::LastSegment => {
                 let last = path_type
                     .base_type

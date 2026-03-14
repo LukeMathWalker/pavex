@@ -16,7 +16,7 @@ use rustdoc_processor::queries::Crate;
 
 use crate::GenericBindings;
 use crate::errors::*;
-use crate::resolve_type::resolve_type;
+use crate::resolve_type::{TypeAliasResolution, resolve_type};
 
 /// Convert a method item retrieved from `rustdoc`'s JSON output to Pavex's internal
 /// representation for callables (i.e. methods and functions).
@@ -50,6 +50,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
         &krate.core.package_id,
         krate_collection,
         &generic_bindings,
+        TypeAliasResolution::ResolveThrough,
     ) {
         Ok(t) => t,
         Err(e) => {
@@ -110,6 +111,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
                             &krate.core.package_id,
                             krate_collection,
                             &generic_bindings,
+                            TypeAliasResolution::ResolveThrough,
                         ) else {
                             todo!()
                         };
@@ -178,6 +180,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
             &krate.core.package_id,
             krate_collection,
             &generic_bindings,
+            TypeAliasResolution::ResolveThrough,
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
@@ -205,6 +208,7 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
                 &krate.core.package_id,
                 krate_collection,
                 &generic_bindings,
+                TypeAliasResolution::ResolveThrough,
             ) {
                 Ok(t) => Some(t),
                 Err(e) => {

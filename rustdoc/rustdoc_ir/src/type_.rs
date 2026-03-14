@@ -60,7 +60,8 @@ impl Type {
     /// `t`. You are not required to bind all of them.
     pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, Type>) -> Type {
         match self {
-            Type::Path(t) => {
+            Type::Path(t) | Type::TypeAlias(t) => {
+                let is_alias = matches!(self, Type::TypeAlias(_));
                 let mut bound_generics = Vec::with_capacity(t.generic_arguments.len());
                 for generic in &t.generic_arguments {
                     let bound_generic = match generic {
@@ -71,13 +72,14 @@ impl Type {
                     };
                     bound_generics.push(bound_generic);
                 }
-                Type::Path(PathType {
+                let path = PathType {
                     package_id: t.package_id.clone(),
                     // Should we set this to `None`?
                     rustdoc_id: t.rustdoc_id,
                     base_type: t.base_type.clone(),
                     generic_arguments: bound_generics,
-                })
+                };
+                if is_alias { Type::TypeAlias(path) } else { Type::Path(path) }
             }
             Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
@@ -131,7 +133,7 @@ impl Type {
     /// Check if a type can be used as a "template"—i.e. if it has any unassigned generic parameters.
     pub fn is_a_template(&self) -> bool {
         match self {
-            Type::Path(path) => path.generic_arguments.iter().any(|arg| match arg {
+            Type::Path(path) | Type::TypeAlias(path) => path.generic_arguments.iter().any(|arg| match arg {
                 GenericArgument::TypeParameter(g) => g.is_a_template(),
                 GenericArgument::Lifetime(
                     GenericLifetimeParameter::Static
@@ -164,7 +166,7 @@ impl Type {
 
     fn _unassigned_generic_type_parameters(&self, set: &mut IndexSet<String>) {
         match self {
-            Type::Path(path) => {
+            Type::Path(path) | Type::TypeAlias(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
                         GenericArgument::TypeParameter(g) => {
@@ -225,7 +227,8 @@ impl Type {
         }
         use Type::*;
         match (concrete_type, self) {
-            (Path(concrete_path), Path(templated_path)) => {
+            (Path(concrete_path), Path(templated_path))
+            | (TypeAlias(concrete_path), TypeAlias(templated_path)) => {
                 templated_path._is_a_resolved_path_type_template_for(concrete_path, bindings)
             }
             (Slice(concrete_slice), Slice(templated_slice)) => templated_slice
@@ -331,7 +334,8 @@ impl Type {
     ) -> bool {
         use Type::*;
         match (self, other) {
-            (Path(self_path), Path(other_path)) => {
+            (Path(self_path), Path(other_path))
+            | (TypeAlias(self_path), TypeAlias(other_path)) => {
                 self_path._is_equivalent_to(other_path, self_id_gen, other_id_gen)
             }
             (Slice(self_slice), Slice(other_slice)) => self_slice.element_type._is_equivalent_to(
@@ -404,7 +408,7 @@ impl Type {
     /// E.g. `&'_ str` and `&str` would both return `true`. `&'static str` or `&'a str` wouldn't.
     pub fn has_implicit_lifetime_parameters(&self) -> bool {
         match self {
-            Type::Path(path) => path.generic_arguments.iter().any(|arg| match arg {
+            Type::Path(path) | Type::TypeAlias(path) => path.generic_arguments.iter().any(|arg| match arg {
                 GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
                 GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => true,
                 GenericArgument::Lifetime(
@@ -448,7 +452,7 @@ impl Type {
     /// the provided named lifetime.
     pub fn set_implicit_lifetimes(&mut self, inferred_lifetime: String) {
         match self {
-            Type::Path(path) => {
+            Type::Path(path) | Type::TypeAlias(path) => {
                 for arg in path.generic_arguments.iter_mut() {
                     match arg {
                         GenericArgument::Lifetime(lifetime) => {
@@ -499,7 +503,7 @@ impl Type {
     /// You don't need to provide a mapping for lifetimes that you don't want to rename.
     pub fn rename_lifetime_parameters(&mut self, original2renamed: &IndexMap<String, String>) {
         match self {
-            Type::Path(t) => {
+            Type::Path(t) | Type::TypeAlias(t) => {
                 for arg in t.generic_arguments.iter_mut() {
                     match arg {
                         GenericArgument::TypeParameter(tp) => {
@@ -561,7 +565,7 @@ impl Type {
 
     fn _lifetime_parameters(&self, set: &mut IndexSet<Lifetime>) {
         match self {
-            Type::Path(path) => {
+            Type::Path(path) | Type::TypeAlias(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
                         GenericArgument::TypeParameter(g) => {
@@ -606,7 +610,7 @@ impl Type {
 
     fn _named_lifetime_parameters(&self, set: &mut IndexSet<String>) {
         match self {
-            Type::Path(path) => {
+            Type::Path(path) | Type::TypeAlias(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
                         GenericArgument::TypeParameter(g) => {
@@ -726,7 +730,8 @@ impl Type {
         }
 
         match self {
-            Type::Path(t) => {
+            Type::Path(t) | Type::TypeAlias(t) => {
+                let is_alias = matches!(self, Type::TypeAlias(_));
                 let generic_arguments = t
                     .generic_arguments
                     .iter()
@@ -743,12 +748,13 @@ impl Type {
                         ),
                     })
                     .collect();
-                Type::Path(PathType {
+                let path = PathType {
                     package_id: t.package_id.clone(),
                     rustdoc_id: t.rustdoc_id,
                     base_type: t.base_type.clone(),
                     generic_arguments,
-                })
+                };
+                if is_alias { Type::TypeAlias(path) } else { Type::Path(path) }
             }
             Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
@@ -818,7 +824,7 @@ impl Type {
 impl Debug for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::Path(t) => write!(f, "{t:?}"),
+            Type::Path(t) | Type::TypeAlias(t) => write!(f, "{t:?}"),
             Type::Reference(r) => write!(f, "{r:?}"),
             Type::Tuple(t) => write!(f, "{t:?}"),
             Type::ScalarPrimitive(s) => write!(f, "{s:?}"),

@@ -59,4 +59,7 @@ pub enum Type {
     FunctionPointer(FunctionPointer),
     /// An unassigned generic type parameter, e.g. `T`.
     Generic(Generic),
+    /// A type alias, preserving the alias identity rather than resolving through.
+    /// Contains the alias's path (package, base_type, generic arguments).
+    TypeAlias(PathType),
 }

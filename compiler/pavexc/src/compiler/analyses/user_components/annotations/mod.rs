@@ -33,8 +33,8 @@ use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_resolver::{
-    resolve_free_function, rustdoc_method2callable, rustdoc_new_type_def2type,
-    rustdoc_type_alias2type,
+    TypeAliasResolution, resolve_free_function, rustdoc_method2callable,
+    rustdoc_new_type_def2type, rustdoc_type_alias2type,
 };
 use rustdoc_types::{Item, ItemEnum};
 
@@ -521,7 +521,7 @@ fn rustdoc_item_def2type(
                 Err(())
             }
         },
-        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(item, krate, krate_collection) {
+        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(item, krate, krate_collection, TypeAliasResolution::ResolveThrough) {
             Ok(t) => Ok(t),
             Err(e) => {
                 type_resolution_error(e, item, diagnostics);

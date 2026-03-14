@@ -61,7 +61,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                                 | Type::FunctionPointer(_) => {
                                     return None;
                                 }
-                                Type::Path(_) | Type::Tuple(_) => {}
+                                Type::Path(_) | Type::TypeAlias(_) | Type::Tuple(_) => {}
                                 Type::Generic(_) => unreachable!(),
                             };
                             let InputParameterSource::Component(id) = source else {

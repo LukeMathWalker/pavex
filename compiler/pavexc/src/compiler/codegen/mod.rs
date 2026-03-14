@@ -459,7 +459,7 @@ fn collect_callable_package_ids(package_ids: &mut IndexSet<PackageId>, c: &Calla
 
 fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &Type) {
     match t {
-        Type::Path(t) => {
+        Type::Path(t) | Type::TypeAlias(t) => {
             package_ids.insert(t.package_id.clone());
             for generic in &t.generic_arguments {
                 match generic {
