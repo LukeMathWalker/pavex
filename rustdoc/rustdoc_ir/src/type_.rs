@@ -79,7 +79,11 @@ impl Type {
                     base_type: t.base_type.clone(),
                     generic_arguments: bound_generics,
                 };
-                if is_alias { Type::TypeAlias(path) } else { Type::Path(path) }
+                if is_alias {
+                    Type::TypeAlias(path)
+                } else {
+                    Type::Path(path)
+                }
             }
             Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,
@@ -133,14 +137,16 @@ impl Type {
     /// Check if a type can be used as a "template"—i.e. if it has any unassigned generic parameters.
     pub fn is_a_template(&self) -> bool {
         match self {
-            Type::Path(path) | Type::TypeAlias(path) => path.generic_arguments.iter().any(|arg| match arg {
-                GenericArgument::TypeParameter(g) => g.is_a_template(),
-                GenericArgument::Lifetime(
-                    GenericLifetimeParameter::Static
-                    | GenericLifetimeParameter::Named(_)
-                    | GenericLifetimeParameter::Inferred,
-                ) => false,
-            }),
+            Type::Path(path) | Type::TypeAlias(path) => {
+                path.generic_arguments.iter().any(|arg| match arg {
+                    GenericArgument::TypeParameter(g) => g.is_a_template(),
+                    GenericArgument::Lifetime(
+                        GenericLifetimeParameter::Static
+                        | GenericLifetimeParameter::Named(_)
+                        | GenericLifetimeParameter::Inferred,
+                    ) => false,
+                })
+            }
             Type::Reference(r) => r.inner.is_a_template(),
             Type::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
             Type::ScalarPrimitive(_) => false,
@@ -334,8 +340,7 @@ impl Type {
     ) -> bool {
         use Type::*;
         match (self, other) {
-            (Path(self_path), Path(other_path))
-            | (TypeAlias(self_path), TypeAlias(other_path)) => {
+            (Path(self_path), Path(other_path)) | (TypeAlias(self_path), TypeAlias(other_path)) => {
                 self_path._is_equivalent_to(other_path, self_id_gen, other_id_gen)
             }
             (Slice(self_slice), Slice(other_slice)) => self_slice.element_type._is_equivalent_to(
@@ -408,13 +413,15 @@ impl Type {
     /// E.g. `&'_ str` and `&str` would both return `true`. `&'static str` or `&'a str` wouldn't.
     pub fn has_implicit_lifetime_parameters(&self) -> bool {
         match self {
-            Type::Path(path) | Type::TypeAlias(path) => path.generic_arguments.iter().any(|arg| match arg {
-                GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
-                GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => true,
-                GenericArgument::Lifetime(
-                    GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Static,
-                ) => false,
-            }),
+            Type::Path(path) | Type::TypeAlias(path) => {
+                path.generic_arguments.iter().any(|arg| match arg {
+                    GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Inferred) => true,
+                    GenericArgument::Lifetime(
+                        GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Static,
+                    ) => false,
+                })
+            }
             Type::Reference(r) => {
                 match &r.lifetime {
                     Lifetime::Inferred => {
@@ -754,7 +761,11 @@ impl Type {
                     base_type: t.base_type.clone(),
                     generic_arguments,
                 };
-                if is_alias { Type::TypeAlias(path) } else { Type::Path(path) }
+                if is_alias {
+                    Type::TypeAlias(path)
+                } else {
+                    Type::Path(path)
+                }
             }
             Type::Reference(r) => Type::Reference(TypeReference {
                 is_mutable: r.is_mutable,

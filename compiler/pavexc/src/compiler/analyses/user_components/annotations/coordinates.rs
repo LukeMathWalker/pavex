@@ -211,11 +211,21 @@ pub(crate) fn resolve_annotation_coordinates(
         }
 
         let outcome = match annotation.impl_ {
-            Some(ImplInfo { attached_to, impl_ }) => {
-                rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
-            }
-            None => resolve_free_function(&item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
-                .map(rustdoc_ir::Callable::FreeFunction),
+            Some(ImplInfo { attached_to, impl_ }) => rustdoc_method2callable(
+                attached_to,
+                impl_,
+                &item,
+                krate,
+                krate_collection,
+                TypeAliasResolution::ResolveThrough,
+            ),
+            None => resolve_free_function(
+                &item,
+                krate,
+                krate_collection,
+                TypeAliasResolution::ResolveThrough,
+            )
+            .map(rustdoc_ir::Callable::FreeFunction),
         };
         let callable = match outcome {
             Ok(callable) => callable,

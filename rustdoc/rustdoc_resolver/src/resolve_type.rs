@@ -25,7 +25,6 @@ pub enum TypeAliasResolution {
     Preserve,
 }
 
-
 /// Convert a `rustdoc_types::Type` into a `rustdoc_ir::Type`, recursively resolving
 /// through type aliases and substituting generic bindings.
 pub fn resolve_type<I: CrateIndexer>(
@@ -183,7 +182,8 @@ fn _resolve_type<I: CrateIndexer>(
                             alias_generic_bindings
                                 .types
                                 .insert(generic_param_def.name.to_string(), generic_type.clone());
-                            resolved_alias_generics.push(GenericArgument::TypeParameter(generic_type));
+                            resolved_alias_generics
+                                .push(GenericArgument::TypeParameter(generic_type));
                         }
                         GenericParamDefKind::Lifetime { .. } => {
                             let provided_arg = generic_args.and_then(|v| v.get(i));
@@ -517,15 +517,21 @@ fn _resolve_type<I: CrateIndexer>(
                 .iter()
                 .enumerate()
                 .map(|(i, (_, ty))| {
-                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings, alias_resolution)
-                        .map_err(|source| {
-                            TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
-                                TypePartResolutionError {
-                                    role: format!("function pointer input {}", i),
-                                    source,
-                                },
-                            ))
-                        })
+                    resolve_type(
+                        ty,
+                        used_by_package_id,
+                        krate_collection,
+                        generic_bindings,
+                        alias_resolution,
+                    )
+                    .map_err(|source| {
+                        TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                            TypePartResolutionError {
+                                role: format!("function pointer input {}", i),
+                                source,
+                            },
+                        ))
+                    })
                 })
                 .collect::<Result<Vec<_>, _>>()?;
 
@@ -534,15 +540,21 @@ fn _resolve_type<I: CrateIndexer>(
                 .output
                 .as_ref()
                 .map(|ty| {
-                    resolve_type(ty, used_by_package_id, krate_collection, generic_bindings, alias_resolution)
-                        .map_err(|source| {
-                            TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
-                                TypePartResolutionError {
-                                    role: "function pointer output".into(),
-                                    source,
-                                },
-                            ))
-                        })
+                    resolve_type(
+                        ty,
+                        used_by_package_id,
+                        krate_collection,
+                        generic_bindings,
+                        alias_resolution,
+                    )
+                    .map_err(|source| {
+                        TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                            TypePartResolutionError {
+                                role: "function pointer output".into(),
+                                source,
+                            },
+                        ))
+                    })
                 })
                 .transpose()?;
 

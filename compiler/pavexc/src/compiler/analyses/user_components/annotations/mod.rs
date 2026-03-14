@@ -33,8 +33,8 @@ use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_resolver::{
-    TypeAliasResolution, resolve_free_function, rustdoc_method2callable,
-    rustdoc_new_type_def2type, rustdoc_type_alias2type,
+    TypeAliasResolution, resolve_free_function, rustdoc_method2callable, rustdoc_new_type_def2type,
+    rustdoc_type_alias2type,
 };
 use rustdoc_types::{Item, ItemEnum};
 
@@ -178,11 +178,21 @@ pub(super) fn register_imported_components(
             }
 
             let outcome = match annotation.impl_ {
-                Some(ImplInfo { attached_to, impl_ }) => {
-                    rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
-                }
-                None => resolve_free_function(&item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
-                    .map(rustdoc_ir::Callable::FreeFunction),
+                Some(ImplInfo { attached_to, impl_ }) => rustdoc_method2callable(
+                    attached_to,
+                    impl_,
+                    &item,
+                    krate,
+                    krate_collection,
+                    TypeAliasResolution::ResolveThrough,
+                ),
+                None => resolve_free_function(
+                    &item,
+                    krate,
+                    krate_collection,
+                    TypeAliasResolution::ResolveThrough,
+                )
+                .map(rustdoc_ir::Callable::FreeFunction),
             };
             let callable = match outcome {
                 Ok(callable) => callable,
@@ -521,7 +531,12 @@ fn rustdoc_item_def2type(
                 Err(())
             }
         },
-        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(item, krate, krate_collection, TypeAliasResolution::ResolveThrough) {
+        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(
+            item,
+            krate,
+            krate_collection,
+            TypeAliasResolution::ResolveThrough,
+        ) {
             Ok(t) => Ok(t),
             Err(e) => {
                 type_resolution_error(e, item, diagnostics);
