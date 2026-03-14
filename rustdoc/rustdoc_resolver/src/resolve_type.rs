@@ -234,6 +234,7 @@ fn _resolve_type<I: CrateIndexer>(
                             let generic_arg_defs = match &type_item.inner {
                                 ItemEnum::Struct(s) => &s.generics,
                                 ItemEnum::Enum(e) => &e.generics,
+                                ItemEnum::Union(u) => &u.generics,
                                 i => {
                                     unimplemented!(
                                         "I don't know how to handle a `{:?}` yet, sorry!",
