@@ -199,7 +199,7 @@ pub(crate) fn resolve_framework_free_function(
         .unwrap_or_else(|e| panic!("Unknown free function path {}: {e:?}", segments.join("::")));
 
     let item = krate.get_item_by_local_type_id(&global_id.rustdoc_item_id);
-    let free_fn = rustdoc_resolver::resolve_free_function(&item, krate, krate_collection)
+    let free_fn = rustdoc_resolver::resolve_free_function(&item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
         .expect("Failed to resolve free function");
     Callable::FreeFunction(free_fn)
 }
@@ -250,6 +250,7 @@ pub(crate) fn resolve_framework_inherent_method(
                     &item,
                     krate,
                     krate_collection,
+                    TypeAliasResolution::ResolveThrough,
                 )
                 .expect("Failed to resolve inherent method");
                 return callable;
