@@ -25,6 +25,7 @@ pub enum TypeAliasResolution {
     Preserve,
 }
 
+
 /// Convert a `rustdoc_types::Type` into a `rustdoc_ir::Type`, recursively resolving
 /// through type aliases and substituting generic bindings.
 pub fn resolve_type<I: CrateIndexer>(

@@ -14,7 +14,7 @@ use super::{
 use crate::compiler::analyses::user_components::{UserComponent, UserComponentId};
 use crate::compiler::component::{DefaultStrategy, PrebuiltType};
 use pavex_bp_schema::{CloningPolicy, Lint, LintSetting};
-use rustdoc_resolver::{resolve_free_function, rustdoc_method2callable};
+use rustdoc_resolver::{TypeAliasResolution, resolve_free_function, rustdoc_method2callable};
 
 /// Resolve coordinates to the annotation they point to.
 /// Then process the corresponding item.
@@ -212,9 +212,9 @@ pub(crate) fn resolve_annotation_coordinates(
 
         let outcome = match annotation.impl_ {
             Some(ImplInfo { attached_to, impl_ }) => {
-                rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection)
+                rustdoc_method2callable(attached_to, impl_, &item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
             }
-            None => resolve_free_function(&item, krate, krate_collection)
+            None => resolve_free_function(&item, krate, krate_collection, TypeAliasResolution::ResolveThrough)
                 .map(rustdoc_ir::Callable::FreeFunction),
         };
         let callable = match outcome {

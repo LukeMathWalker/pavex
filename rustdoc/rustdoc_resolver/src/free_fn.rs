@@ -18,6 +18,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
     item: &Item,
     krate: &Crate,
     krate_collection: &CrateCollection<I>,
+    alias_resolution: TypeAliasResolution,
 ) -> Result<FreeFunction, CallableResolutionError> {
     let ItemEnum::Function(inner) = &item.inner else {
         unreachable!("Expected a function item");
@@ -35,7 +36,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
             &krate.core.package_id,
             krate_collection,
             &Default::default(),
-            TypeAliasResolution::ResolveThrough,
+            alias_resolution,
         ) {
             Ok(t) => {
                 inputs.push(CallableInput {
@@ -63,7 +64,7 @@ pub fn resolve_free_function<I: CrateIndexer>(
                 &krate.core.package_id,
                 krate_collection,
                 &Default::default(),
-                TypeAliasResolution::ResolveThrough,
+                alias_resolution,
             ) {
                 Ok(t) => Some(t),
                 Err(e) => {
