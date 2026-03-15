@@ -313,6 +313,8 @@ members = [
   "reflection/local_glob_reexports_are_supported/generated_app",
   "reflection/non_static_methods_are_supported",
   "reflection/non_static_methods_are_supported/generated_app",
+  "reflection/nonnull_is_supported",
+  "reflection/nonnull_is_supported/generated_app",
   "reflection/output_parameter_cannot_be_handled",
   "reflection/output_parameter_cannot_be_handled/generated_app",
   "reflection/pattern_bindings_in_input_parameters_are_supported",

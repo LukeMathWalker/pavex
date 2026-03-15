@@ -113,6 +113,21 @@ impl Crate {
             }
         }
 
+        // Also index local items under their definition path from krate.paths.
+        // This handles types defined in private modules (e.g. core::ptr::non_null::NonNull)
+        // that are publicly re-exported under a shorter path (core::ptr::NonNull).
+        // The local crate's rustdoc JSON records the definition path, so we need
+        // both paths to be resolvable.
+        for (id, summary) in krate.paths.iter() {
+            if summary.crate_id() == 0
+                && !matches!(summary.kind(), ItemKind::Macro | ItemKind::ProcDerive)
+                && import_index.items.contains_key(&id)
+            {
+                let path = summary.path().into_owned();
+                import_path2id.entry(path).or_insert(id);
+            }
+        }
+
         Crate::new(
             CrateCore { package_id, krate },
             ImportPath2Id::Eager(EagerImportPath2Id(import_path2id)),
