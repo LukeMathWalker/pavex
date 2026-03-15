@@ -226,7 +226,10 @@ impl Type {
                 write!(buffer, "fn(").unwrap();
                 let mut inputs = fp.inputs.iter().peekable();
                 while let Some(input) = inputs.next() {
-                    input.render_into(config, buffer);
+                    if let Some(name) = &input.name {
+                        write!(buffer, "{name}: ").unwrap();
+                    }
+                    input.type_.render_into(config, buffer);
                     if inputs.peek().is_some() {
                         write!(buffer, ", ").unwrap();
                     }

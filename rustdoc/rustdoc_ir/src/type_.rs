@@ -5,8 +5,9 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    Array, FunctionPointer, Generic, GenericArgument, GenericLifetimeParameter, Lifetime,
-    NamedLifetime, PathType, RawPointer, Slice, Tuple, Type, TypeReference,
+    Array, FunctionPointer, FunctionPointerInput, Generic, GenericArgument,
+    GenericLifetimeParameter, Lifetime, NamedLifetime, PathType, RawPointer, Slice, Tuple, Type,
+    TypeReference,
 };
 
 /// A `Type` with canonicalized names for lifetimes and unassigned generic type parameters.
@@ -115,7 +116,10 @@ impl Type {
                 inputs: fp
                     .inputs
                     .iter()
-                    .map(|t| t.bind_generic_type_parameters(bindings))
+                    .map(|input| FunctionPointerInput {
+                        name: input.name.clone(),
+                        type_: input.type_.bind_generic_type_parameters(bindings),
+                    })
                     .collect(),
                 output: fp
                     .output
@@ -154,7 +158,7 @@ impl Type {
             Type::Array(a) => a.element_type.is_a_template(),
             Type::RawPointer(r) => r.inner.is_a_template(),
             Type::FunctionPointer(fp) => {
-                fp.inputs.iter().any(|t| t.is_a_template())
+                fp.inputs.iter().any(|input| input.type_.is_a_template())
                     || fp.output.as_ref().is_some_and(|t| t.is_a_template())
             }
             Type::Generic(_) => true,
@@ -194,7 +198,7 @@ impl Type {
             Type::RawPointer(r) => r.inner._unassigned_generic_type_parameters(set),
             Type::FunctionPointer(fp) => {
                 for input in &fp.inputs {
-                    input._unassigned_generic_type_parameters(set);
+                    input.type_._unassigned_generic_type_parameters(set);
                 }
                 if let Some(output) = &fp.output {
                     output._unassigned_generic_type_parameters(set);
@@ -283,7 +287,11 @@ impl Type {
                     .inputs
                     .iter()
                     .zip(templated_fp.inputs.iter())
-                    .all(|(concrete, templated)| templated._is_a_template_for(concrete, bindings));
+                    .all(|(concrete, templated)| {
+                        templated
+                            .type_
+                            ._is_a_template_for(&concrete.type_, bindings)
+                    });
                 if !inputs_match {
                     return false;
                 }
@@ -385,11 +393,15 @@ impl Type {
                 if self_fp.inputs.len() != other_fp.inputs.len() {
                     return false;
                 }
-                let inputs_match = self_fp
-                    .inputs
-                    .iter()
-                    .zip(other_fp.inputs.iter())
-                    .all(|(s, o)| s._is_equivalent_to(o, self_id_gen, other_id_gen));
+                let inputs_match =
+                    self_fp
+                        .inputs
+                        .iter()
+                        .zip(other_fp.inputs.iter())
+                        .all(|(s, o)| {
+                            s.type_
+                                ._is_equivalent_to(&o.type_, self_id_gen, other_id_gen)
+                        });
                 if !inputs_match {
                     return false;
                 }
@@ -445,7 +457,7 @@ impl Type {
             Type::FunctionPointer(fp) => {
                 fp.inputs
                     .iter()
-                    .any(|t| t.has_implicit_lifetime_parameters())
+                    .any(|input| input.type_.has_implicit_lifetime_parameters())
                     || fp
                         .output
                         .as_ref()
@@ -495,7 +507,9 @@ impl Type {
             Type::RawPointer(r) => r.inner.set_implicit_lifetimes(inferred_lifetime),
             Type::FunctionPointer(fp) => {
                 for input in fp.inputs.iter_mut() {
-                    input.set_implicit_lifetimes(inferred_lifetime.clone());
+                    input
+                        .type_
+                        .set_implicit_lifetimes(inferred_lifetime.clone());
                 }
                 if let Some(output) = fp.output.as_mut() {
                     output.set_implicit_lifetimes(inferred_lifetime);
@@ -553,7 +567,7 @@ impl Type {
             }
             Type::FunctionPointer(fp) => {
                 for input in fp.inputs.iter_mut() {
-                    input.rename_lifetime_parameters(original2renamed);
+                    input.type_.rename_lifetime_parameters(original2renamed);
                 }
                 if let Some(output) = fp.output.as_mut() {
                     output.rename_lifetime_parameters(original2renamed);
@@ -598,7 +612,7 @@ impl Type {
             Type::RawPointer(r) => r.inner._lifetime_parameters(set),
             Type::FunctionPointer(fp) => {
                 for input in &fp.inputs {
-                    input._lifetime_parameters(set);
+                    input.type_._lifetime_parameters(set);
                 }
                 if let Some(output) = &fp.output {
                     output._lifetime_parameters(set);
@@ -651,7 +665,7 @@ impl Type {
             Type::RawPointer(r) => r.inner._named_lifetime_parameters(set),
             Type::FunctionPointer(fp) => {
                 for input in &fp.inputs {
-                    input._named_lifetime_parameters(set);
+                    input.type_._named_lifetime_parameters(set);
                 }
                 if let Some(output) = &fp.output {
                     output._named_lifetime_parameters(set);
@@ -810,7 +824,14 @@ impl Type {
                 inputs: fp
                     .inputs
                     .iter()
-                    .map(|t| t._canonicalize(lifetime_counter, generic_counter, generic_name_map))
+                    .map(|input| FunctionPointerInput {
+                        name: None,
+                        type_: input.type_._canonicalize(
+                            lifetime_counter,
+                            generic_counter,
+                            generic_name_map,
+                        ),
+                    })
                     .collect(),
                 output: fp.output.as_ref().map(|t| {
                     Box::new(t._canonicalize(lifetime_counter, generic_counter, generic_name_map))

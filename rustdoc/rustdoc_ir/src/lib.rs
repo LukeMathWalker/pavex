@@ -25,7 +25,7 @@ pub use callable_path::{
     EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,
     TraitMethodPath,
 };
-pub use function_pointer::FunctionPointer;
+pub use function_pointer::{FunctionPointer, FunctionPointerInput};
 pub use generic::Generic;
 pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
 pub use lifetime::Lifetime;
