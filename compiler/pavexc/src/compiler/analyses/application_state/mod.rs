@@ -311,7 +311,7 @@ fn _field_name_candidate(ty_: &Type, strategy: NamingStrategy, candidate: &mut S
                 if i > 0 {
                     candidate.push('_');
                 }
-                _field_name_candidate(input, strategy, candidate);
+                _field_name_candidate(&input.type_, strategy, candidate);
             }
             if let Some(output) = &fp.output {
                 candidate.push_str("_ret_");

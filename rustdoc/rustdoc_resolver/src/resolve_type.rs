@@ -7,8 +7,8 @@ use once_cell::sync::OnceCell;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType};
 
 use rustdoc_ir::{
-    Array, FunctionPointer, Generic, GenericArgument, GenericLifetimeParameter, PathType,
-    RawPointer, Slice, Tuple, Type, TypeReference,
+    Array, FunctionPointer, FunctionPointerInput, Generic, GenericArgument,
+    GenericLifetimeParameter, PathType, RawPointer, Slice, Tuple, Type, TypeReference,
 };
 use rustdoc_processor::CrateCollection;
 use rustdoc_processor::indexing::CrateIndexer;
@@ -516,8 +516,8 @@ fn _resolve_type<I: CrateIndexer>(
                 .inputs
                 .iter()
                 .enumerate()
-                .map(|(i, (_, ty))| {
-                    resolve_type(
+                .map(|(i, (name, ty))| {
+                    let resolved_ty = resolve_type(
                         ty,
                         used_by_package_id,
                         krate_collection,
@@ -531,6 +531,14 @@ fn _resolve_type<I: CrateIndexer>(
                                 source,
                             },
                         ))
+                    })?;
+                    let name = match name.as_str() {
+                        "" | "_" => None,
+                        s => Some(s.to_owned()),
+                    };
+                    Ok(FunctionPointerInput {
+                        name,
+                        type_: resolved_ty,
                     })
                 })
                 .collect::<Result<Vec<_>, _>>()?;

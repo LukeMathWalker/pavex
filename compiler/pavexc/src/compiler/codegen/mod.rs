@@ -485,7 +485,7 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &Type) {
         }
         Type::FunctionPointer(fp) => {
             for input in &fp.inputs {
-                collect_type_package_ids(package_ids, input);
+                collect_type_package_ids(package_ids, &input.type_);
             }
             if let Some(output) = &fp.output {
                 collect_type_package_ids(package_ids, output);

@@ -4,11 +4,23 @@ use rustdoc_types::Abi;
 
 use crate::Type;
 
+/// A single input parameter for a function pointer type.
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub struct FunctionPointerInput {
+    /// The name of the parameter, if any.
+    ///
+    /// `None` for unnamed parameters (e.g. `fn(usize)`),
+    /// `Some` for named parameters (e.g. `fn(a: usize)`).
+    pub name: Option<String>,
+    /// The type of the parameter.
+    pub type_: Type,
+}
+
 /// A Rust function pointer type—e.g. `fn(u32) -> u8` or `unsafe extern "C" fn()`.
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub struct FunctionPointer {
-    /// The input parameter types.
-    pub inputs: Vec<Type>,
+    /// The input parameters, including optional names and types.
+    pub inputs: Vec<FunctionPointerInput>,
     /// The return type. `None` means the unit type `()`.
     pub output: Option<Box<Type>>,
     /// The ABI of the function pointer (e.g. `Abi::Rust`, `Abi::C { unwind: false }`).
@@ -65,7 +77,10 @@ impl Debug for FunctionPointer {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{:?}", input)?;
+            if let Some(name) = &input.name {
+                write!(f, "{name}: ")?;
+            }
+            write!(f, "{:?}", input.type_)?;
         }
         write!(f, ")")?;
         if let Some(output) = &self.output {
