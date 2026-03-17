@@ -295,6 +295,8 @@ members = [
   "reflection/bitflags_are_supported/generated_app",
   "reflection/common_response_types_are_supported",
   "reflection/common_response_types_are_supported/generated_app",
+  "reflection/const_generics_are_supported",
+  "reflection/const_generics_are_supported/generated_app",
   "reflection/crate_resolution/dependencies_can_register_local_items",
   "reflection/crate_resolution/dependencies_can_register_local_items/generated_app",
   "reflection/crate_resolution/multiple_versions_for_the_same_crate_are_supported",

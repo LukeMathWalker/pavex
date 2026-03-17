@@ -464,7 +464,7 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &Type) {
             for generic in &t.generic_arguments {
                 match generic {
                     GenericArgument::TypeParameter(t) => collect_type_package_ids(package_ids, t),
-                    GenericArgument::Lifetime(_) => {}
+                    GenericArgument::Lifetime(_) | GenericArgument::Const(_) => {}
                 }
             }
         }

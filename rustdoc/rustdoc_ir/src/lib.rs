@@ -27,7 +27,7 @@ pub use callable_path::{
 };
 pub use function_pointer::{FunctionPointer, FunctionPointerInput};
 pub use generic::Generic;
-pub use generic_argument::{GenericArgument, GenericLifetimeParameter};
+pub use generic_argument::{ConstGenericArgument, GenericArgument, GenericLifetimeParameter};
 pub use lifetime::Lifetime;
 pub use named_lifetime::NamedLifetime;
 pub use path_type::PathType;

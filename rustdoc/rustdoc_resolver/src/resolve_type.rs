@@ -7,7 +7,7 @@ use once_cell::sync::OnceCell;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type as RustdocType};
 
 use rustdoc_ir::{
-    Array, FunctionPointer, FunctionPointerInput, Generic, GenericArgument,
+    Array, ConstGenericArgument, FunctionPointer, FunctionPointerInput, Generic, GenericArgument,
     GenericLifetimeParameter, PathType, RawPointer, Slice, Tuple, Type, TypeReference,
 };
 use rustdoc_processor::CrateCollection;
@@ -217,12 +217,25 @@ fn _resolve_type<I: CrateIndexer>(
                                 GenericLifetimeParameter::from_name(lifetime),
                             ));
                         }
-                        GenericParamDefKind::Const { .. } => {
-                            return Err(TypeResolutionErrorDetails::UnsupportedConstGeneric(
-                                UnsupportedConstGeneric {
-                                    name: generic_param_def.name.to_owned(),
-                                },
-                            ));
+                        GenericParamDefKind::Const { default, .. } => {
+                            let provided_arg = generic_args.and_then(|v| v.get(i));
+                            let value = if let Some(GenericArg::Const(constant)) = provided_arg {
+                                let raw = constant.value.as_ref().unwrap_or(&constant.expr);
+                                generic_bindings
+                                    .consts
+                                    .get(raw)
+                                    .cloned()
+                                    .unwrap_or_else(|| raw.clone())
+                            } else if let Some(default) = default {
+                                default.clone()
+                            } else {
+                                generic_param_def.name.clone()
+                            };
+                            alias_generic_bindings
+                                .consts
+                                .insert(generic_param_def.name.to_string(), value.clone());
+                            resolved_alias_generics
+                                .push(GenericArgument::Const(ConstGenericArgument { value }));
                         }
                     }
                 }
@@ -364,14 +377,26 @@ fn _resolve_type<I: CrateIndexer>(
                                             .insert(arg_def.name.clone(), resolved.clone());
                                         GenericArgument::TypeParameter(resolved)
                                     }
-                                    GenericParamDefKind::Const { .. } => {
-                                        return Err(
-                                            TypeResolutionErrorDetails::UnsupportedConstGeneric(
-                                                UnsupportedConstGeneric {
-                                                    name: arg_def.name.to_owned(),
-                                                },
-                                            ),
-                                        );
+                                    GenericParamDefKind::Const { default, .. } => {
+                                        let value = if let Some(GenericArg::Const(constant)) =
+                                            args.get(i)
+                                        {
+                                            let raw =
+                                                constant.value.as_ref().unwrap_or(&constant.expr);
+                                            local_generic_bindings
+                                                .consts
+                                                .get(raw)
+                                                .cloned()
+                                                .unwrap_or_else(|| raw.clone())
+                                        } else if let Some(default) = default {
+                                            default.clone()
+                                        } else {
+                                            arg_def.name.clone()
+                                        };
+                                        local_generic_bindings
+                                            .consts
+                                            .insert(arg_def.name.clone(), value.clone());
+                                        GenericArgument::Const(ConstGenericArgument { value })
                                     }
                                 };
                                 generics.push(generic_argument);

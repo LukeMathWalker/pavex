@@ -167,8 +167,16 @@ pub(crate) fn resolve_type_path(raw_path: &str, krate_collection: &CrateCollecti
                     }))
                 }
             }
-            rustdoc_types::GenericParamDefKind::Const { .. } => {
-                unimplemented!("const generic parameters are not supported yet")
+            rustdoc_types::GenericParamDefKind::Const { default, .. } => {
+                if let Some(default) = default {
+                    GenericArgument::Const(rustdoc_ir::ConstGenericArgument {
+                        value: default.clone(),
+                    })
+                } else {
+                    GenericArgument::Const(rustdoc_ir::ConstGenericArgument {
+                        value: generic_def.name.clone(),
+                    })
+                }
             }
         };
         generic_arguments.push(arg);

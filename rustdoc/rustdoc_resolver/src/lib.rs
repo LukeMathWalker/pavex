@@ -29,6 +29,8 @@ pub struct GenericBindings {
     pub lifetimes: HashMap<String, String>,
     /// Mapping from type parameter names to their resolved types.
     pub types: HashMap<String, Type>,
+    /// Mapping from const parameter names to their evaluated values.
+    pub consts: HashMap<String, String>,
 }
 
 impl std::fmt::Debug for GenericBindings {
@@ -45,6 +47,13 @@ impl std::fmt::Debug for GenericBindings {
             write!(f, "types: {{ ")?;
             for (name, value) in &self.types {
                 writeln!(f, "{} -> {}, ", name, value.display_for_error())?;
+            }
+            write!(f, "}}, ")?;
+        }
+        if !self.consts.is_empty() {
+            write!(f, "consts: {{ ")?;
+            for (name, value) in &self.consts {
+                writeln!(f, "{name} -> {value}, ")?;
             }
             write!(f, "}}, ")?;
         }

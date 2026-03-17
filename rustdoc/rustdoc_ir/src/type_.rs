@@ -69,7 +69,9 @@ impl Type {
                         GenericArgument::TypeParameter(t) => {
                             GenericArgument::TypeParameter(t.bind_generic_type_parameters(bindings))
                         }
-                        GenericArgument::Lifetime(_) => generic.to_owned(),
+                        GenericArgument::Lifetime(_) | GenericArgument::Const(_) => {
+                            generic.to_owned()
+                        }
                     };
                     bound_generics.push(bound_generic);
                 }
@@ -149,6 +151,7 @@ impl Type {
                         | GenericLifetimeParameter::Named(_)
                         | GenericLifetimeParameter::Inferred,
                     ) => false,
+                    GenericArgument::Const(_) => false,
                 })
             }
             Type::Reference(r) => r.inner.is_a_template(),
@@ -182,7 +185,7 @@ impl Type {
                         GenericArgument::TypeParameter(g) => {
                             g._unassigned_generic_type_parameters(set);
                         }
-                        GenericArgument::Lifetime(_) => {}
+                        GenericArgument::Lifetime(_) | GenericArgument::Const(_) => {}
                     }
                 }
             }
@@ -432,6 +435,7 @@ impl Type {
                     GenericArgument::Lifetime(
                         GenericLifetimeParameter::Named(_) | GenericLifetimeParameter::Static,
                     ) => false,
+                    GenericArgument::Const(_) => false,
                 })
             }
             Type::Reference(r) => {
@@ -483,6 +487,7 @@ impl Type {
                         GenericArgument::TypeParameter(t) => {
                             t.set_implicit_lifetimes(inferred_lifetime.clone());
                         }
+                        GenericArgument::Const(_) => {}
                     }
                 }
             }
@@ -537,6 +542,7 @@ impl Type {
                                 *l = GenericLifetimeParameter::from_name(new_name.clone());
                             }
                         }
+                        GenericArgument::Const(_) => {}
                     }
                 }
             }
@@ -595,6 +601,7 @@ impl Type {
                         GenericArgument::Lifetime(l) => {
                             set.insert(l.clone().into());
                         }
+                        GenericArgument::Const(_) => {}
                     }
                 }
             }
@@ -643,6 +650,7 @@ impl Type {
                         GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
                             set.insert(l.as_str().to_owned());
                         }
+                        GenericArgument::Const(_) => {}
                     }
                 }
             }
@@ -767,6 +775,7 @@ impl Type {
                         GenericArgument::Lifetime(l) => GenericArgument::Lifetime(
                             canonicalize_generic_lifetime(l, lifetime_counter),
                         ),
+                        GenericArgument::Const(_) => arg.clone(),
                     })
                     .collect();
                 let path = PathType {
