@@ -23,7 +23,7 @@ use rustdoc_ir::Type;
 ///
 /// Used to substitute generic parameters with concrete types when resolving
 /// type aliases and generic instantiations.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct GenericBindings {
     /// Mapping from lifetime parameter names to their resolved lifetime names.
     pub lifetimes: HashMap<String, String>,

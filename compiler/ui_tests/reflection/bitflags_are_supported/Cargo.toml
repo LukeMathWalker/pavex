@@ -1,0 +1,18 @@
+[package]
+name = "app_ad701040"
+version = "0.1.0"
+edition.workspace = true
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[dependencies]
+enumflags2 = "0.7"
+workspace_hack = { version = "0.1", path = "../../workspace_hack" }
+
+[dependencies.pavex]
+workspace = true
+
+[dependencies.pavex_cli_client]
+workspace = true

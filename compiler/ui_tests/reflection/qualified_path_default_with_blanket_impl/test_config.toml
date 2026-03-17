@@ -1,0 +1,7 @@
+description = "pavex returns a clear error when a qualified path default relies on a blanket impl"
+
+[expectations]
+codegen = "fail"
+
+[ephemeral_dependencies]
+dep = { path = "dep.rs" }
