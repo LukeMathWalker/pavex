@@ -507,7 +507,12 @@ fn _resolve_type<I: CrateIndexer>(
             }))
         }
         RustdocType::Array { type_, len } => {
-            let len: usize = len.parse().map_err(|_| {
+            let resolved_len = generic_bindings
+                .consts
+                .get(len)
+                .map(|s| s.as_str())
+                .unwrap_or(len);
+            let len: usize = resolved_len.parse().map_err(|_| {
                 TypeResolutionErrorDetails::UnsupportedArrayLength(UnsupportedArrayLength {
                     len: len.clone(),
                 })

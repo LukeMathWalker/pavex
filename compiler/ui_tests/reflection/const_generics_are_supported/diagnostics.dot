@@ -29,15 +29,17 @@ digraph "GET / - 0" {
 }
 
 digraph "GET / - 1" {
-    0 [ label = "0| app_e22d4bbe::character() -> app_e22d4bbe::CharConst<'a'>"]
-    1 [ label = "1| app_e22d4bbe::boolean() -> app_e22d4bbe::BoolConst<true>"]
-    2 [ label = "2| app_e22d4bbe::numeric() -> app_e22d4bbe::NumericConst<8>"]
-    3 [ label = "3| app_e22d4bbe::handler(app_e22d4bbe::NumericConst<8>, app_e22d4bbe::BoolConst<true>, app_e22d4bbe::CharConst<'a'>) -> pavex::Response"]
-    4 [ label = "4| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
-    0 -> 3 [ ]
-    1 -> 3 [ ]
-    2 -> 3 [ ]
+    0 [ label = "0| app_e22d4bbe::sized_array() -> app_e22d4bbe::SizedArray<4>"]
+    1 [ label = "1| app_e22d4bbe::character() -> app_e22d4bbe::CharConst<'a'>"]
+    2 [ label = "2| app_e22d4bbe::boolean() -> app_e22d4bbe::BoolConst<true>"]
+    3 [ label = "3| app_e22d4bbe::numeric() -> app_e22d4bbe::NumericConst<8>"]
+    4 [ label = "4| app_e22d4bbe::handler(app_e22d4bbe::NumericConst<8>, app_e22d4bbe::BoolConst<true>, app_e22d4bbe::CharConst<'a'>, app_e22d4bbe::SizedArray<4>) -> pavex::Response"]
+    5 [ label = "5| <pavex::Response as pavex::IntoResponse>::into_response(pavex::Response) -> pavex::Response"]
+    0 -> 4 [ ]
+    1 -> 4 [ ]
+    2 -> 4 [ ]
     3 -> 4 [ ]
+    4 -> 5 [ ]
 }
 
 digraph app_state {

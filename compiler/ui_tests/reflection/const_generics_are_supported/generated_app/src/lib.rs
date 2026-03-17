@@ -149,11 +149,12 @@ pub mod route_1 {
         <pavex::Response as pavex::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::Response {
-        let v0 = app_e22d4bbe::character();
-        let v1 = app_e22d4bbe::boolean();
-        let v2 = app_e22d4bbe::numeric();
-        let v3 = app_e22d4bbe::handler(v2, v1, v0);
-        <pavex::Response as pavex::IntoResponse>::into_response(v3)
+        let v0 = app_e22d4bbe::sized_array();
+        let v1 = app_e22d4bbe::character();
+        let v2 = app_e22d4bbe::boolean();
+        let v3 = app_e22d4bbe::numeric();
+        let v4 = app_e22d4bbe::handler(v3, v2, v1, v0);
+        <pavex::Response as pavex::IntoResponse>::into_response(v4)
     }
     struct Next0<T>
     where
