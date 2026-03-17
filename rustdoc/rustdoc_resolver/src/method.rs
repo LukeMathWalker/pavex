@@ -118,8 +118,14 @@ pub fn rustdoc_method2callable<I: CrateIndexer>(
                         };
                         GenericArgument::TypeParameter(t)
                     }
-                    rustdoc_types::GenericArg::Const(_) => {
-                        todo!()
+                    rustdoc_types::GenericArg::Const(constant) => {
+                        let raw = constant.value.as_ref().unwrap_or(&constant.expr);
+                        let value = generic_bindings
+                            .consts
+                            .get(raw)
+                            .cloned()
+                            .unwrap_or_else(|| raw.clone());
+                        GenericArgument::Const(rustdoc_ir::ConstGenericArgument { value })
                     }
                     rustdoc_types::GenericArg::Infer => {
                         unreachable!()

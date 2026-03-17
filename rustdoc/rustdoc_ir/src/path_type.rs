@@ -108,7 +108,17 @@ impl PathType {
                 (Lifetime(_), Lifetime(_)) => {
                     // Lifetimes are not relevant for specialization (yet).
                 }
-                (TypeParameter(_), Lifetime(_)) | (Lifetime(_), TypeParameter(_)) => {
+                (Const(a), Const(b)) => {
+                    if a != b {
+                        return false;
+                    }
+                }
+                (TypeParameter(_), Lifetime(_))
+                | (Lifetime(_), TypeParameter(_))
+                | (Const(_), TypeParameter(_))
+                | (TypeParameter(_), Const(_))
+                | (Const(_), Lifetime(_))
+                | (Lifetime(_), Const(_)) => {
                     return false;
                 }
             }

@@ -14,6 +14,15 @@ pub enum GenericArgument {
     TypeParameter(Type),
     /// A lifetime parameter, e.g. `'a` in `Cow<'a, str>`.
     Lifetime(GenericLifetimeParameter),
+    /// A const generic argument with a concrete evaluated value, e.g. `8` in `Size<8>`.
+    Const(ConstGenericArgument),
+}
+
+/// A const generic argument with a concrete evaluated value, e.g. `8` in `Size<8>`.
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub struct ConstGenericArgument {
+    /// The evaluated value as a string, e.g. "8", "true", "'a'".
+    pub value: String,
 }
 
 /// A lifetime used as a generic argument—e.g. `'a` in `Cow<'a, str>`.
@@ -103,6 +112,9 @@ impl GenericArgument {
                     }
                 },
             },
+            GenericArgument::Const(c) => {
+                write!(buffer, "{}", c.value).unwrap();
+            }
         }
     }
 }
@@ -122,6 +134,7 @@ impl Display for GenericArgument {
         match self {
             GenericArgument::TypeParameter(t) => write!(f, "{t}"),
             GenericArgument::Lifetime(l) => write!(f, "{l}"),
+            GenericArgument::Const(c) => write!(f, "{}", c.value),
         }
     }
 }
@@ -131,6 +144,7 @@ impl Debug for GenericArgument {
         match self {
             GenericArgument::TypeParameter(r) => write!(f, "{r:?}"),
             GenericArgument::Lifetime(l) => write!(f, "{l:?}"),
+            GenericArgument::Const(c) => write!(f, "{}", c.value),
         }
     }
 }

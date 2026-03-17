@@ -3,7 +3,9 @@
 use rustdoc_types::{Item, ItemEnum};
 
 use rustdoc_ext::RustdocKindExt;
-use rustdoc_ir::{Generic, GenericArgument, GenericLifetimeParameter, PathType, Type};
+use rustdoc_ir::{
+    ConstGenericArgument, Generic, GenericArgument, GenericLifetimeParameter, PathType, Type,
+};
 use rustdoc_processor::CrateCollection;
 use rustdoc_processor::indexing::CrateIndexer;
 use rustdoc_processor::queries::Crate;
@@ -46,7 +48,11 @@ pub fn rustdoc_new_type_def2type(
                     name: arg.name.clone(),
                 }))
             }
-            rustdoc_types::GenericParamDefKind::Const { .. } => todo!(),
+            rustdoc_types::GenericParamDefKind::Const { .. } => {
+                GenericArgument::Const(ConstGenericArgument {
+                    value: arg.name.clone(),
+                })
+            }
         };
         generic_arguments.push(arg);
     }

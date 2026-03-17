@@ -1,0 +1,4 @@
+description = "pavex supports types with concrete const generic parameters"
+
+[expectations]
+codegen = "pass"
