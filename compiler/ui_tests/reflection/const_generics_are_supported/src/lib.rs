@@ -3,6 +3,7 @@ use pavex::{blueprint::from, Blueprint};
 pub struct NumericConst<const N: usize>;
 pub struct BoolConst<const B: bool>;
 pub struct CharConst<const C: char>;
+pub struct SizedArray<const N: usize>(pub [u8; N]);
 
 #[pavex::request_scoped]
 pub fn numeric() -> NumericConst<8> {
@@ -19,11 +20,17 @@ pub fn character() -> CharConst<'a'> {
     CharConst
 }
 
+#[pavex::request_scoped]
+pub fn sized_array() -> SizedArray<4> {
+    SizedArray([0; 4])
+}
+
 #[pavex::get(path = "/")]
 pub fn handler(
     _n: NumericConst<8>,
     _b: BoolConst<true>,
     _c: CharConst<'a'>,
+    _s: SizedArray<4>,
 ) -> pavex::Response {
     todo!()
 }
