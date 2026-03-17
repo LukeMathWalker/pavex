@@ -65,6 +65,9 @@ impl std::fmt::Display for TypeResolutionError {
             TypeResolutionErrorDetails::TypePartResolutionError(source) => {
                 write!(f, "Failed to resolve {}:\n{}", source.role, source.source)
             }
+            TypeResolutionErrorDetails::AssociatedTypeResolutionError(e) => {
+                write!(f, "{e}")
+            }
         }
     }
 }
@@ -83,6 +86,10 @@ pub enum TypeResolutionErrorDetails {
     GenericKindMismatch(GenericKindMismatch),
     ItemResolutionError(anyhow::Error),
     TypePartResolutionError(Box<TypePartResolutionError>),
+    /// We couldn't find a concrete `impl Trait for Type` block that defines the associated type.
+    /// This can happen when the implementation is provided via a blanket impl (e.g.,
+    /// `impl<T: Bound> Trait for T`), which we cannot resolve from rustdoc's JSON output.
+    AssociatedTypeResolutionError(AssociatedTypeResolutionError),
 }
 
 /// A const generic parameter was encountered, which is not yet supported.
@@ -117,6 +124,33 @@ pub struct UnsupportedTypeKind {
 #[derive(Debug)]
 pub struct UnsupportedArrayLength {
     pub len: String,
+}
+
+/// We couldn't find a concrete `impl Trait for Type` block that defines the associated type.
+#[derive(Debug)]
+pub struct AssociatedTypeResolutionError {
+    /// The associated type name (e.g., "Numeric").
+    pub assoc_type_name: String,
+    /// The trait path (e.g., ["enumflags2", "_internal", "RawBitFlags"]).
+    pub trait_path: Vec<String>,
+    /// The concrete self type that we resolved.
+    pub self_type: rustdoc_ir::Type,
+}
+
+impl std::fmt::Display for AssociatedTypeResolutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let trait_str = self.trait_path.join("::");
+        write!(
+            f,
+            "Failed to resolve the associated type `{t}::{name}` for `{self_type:?}`. \
+             No concrete `impl {t} for {self_type:?}` block was found that defines this \
+             associated type. This can happen when the implementation is provided via a blanket \
+             impl (e.g., `impl<T: Bound> {t} for T`), which we cannot resolve.",
+            t = trait_str,
+            name = self.assoc_type_name,
+            self_type = self.self_type,
+        )
+    }
 }
 
 /// A generic argument did not match the expected kind (type vs lifetime vs const).

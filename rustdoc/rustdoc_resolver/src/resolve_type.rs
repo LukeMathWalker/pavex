@@ -11,6 +11,7 @@ use rustdoc_ir::{
     GenericLifetimeParameter, PathType, RawPointer, Slice, Tuple, Type, TypeReference,
 };
 use rustdoc_processor::CrateCollection;
+use rustdoc_processor::GlobalItemId;
 use rustdoc_processor::indexing::CrateIndexer;
 
 use crate::GenericBindings;
@@ -280,6 +281,11 @@ fn _resolve_type<I: CrateIndexer>(
                             }
                             .params
                             .as_slice();
+                            // Track resolved type parameters so that defaults for
+                            // later parameters can reference earlier ones.
+                            // E.g. `BitFlags<T, N = <T as RawBitFlags>::Numeric>` —
+                            // when resolving N's default, T must already be bound.
+                            let mut local_generic_bindings = generic_bindings.clone();
                             for (i, arg_def) in generic_arg_defs.iter().enumerate() {
                                 let generic_argument = match &arg_def.kind {
                                     GenericParamDefKind::Lifetime { .. } => {
@@ -292,23 +298,21 @@ fn _resolve_type<I: CrateIndexer>(
                                         )
                                     }
                                     GenericParamDefKind::Type { default, .. } => {
-                                        if let Some(GenericArg::Type(generic_type)) = args.get(i) {
+                                        let resolved = if let Some(GenericArg::Type(generic_type)) =
+                                            args.get(i)
+                                        {
                                             if let RustdocType::Generic(generic) = generic_type {
                                                 if let Some(resolved_type) =
                                                     generic_bindings.types.get(generic)
                                                 {
-                                                    GenericArgument::TypeParameter(
-                                                        resolved_type.to_owned(),
-                                                    )
+                                                    resolved_type.to_owned()
                                                 } else {
-                                                    GenericArgument::TypeParameter(Type::Generic(
-                                                        Generic {
-                                                            name: generic.to_owned(),
-                                                        },
-                                                    ))
+                                                    Type::Generic(Generic {
+                                                        name: generic.to_owned(),
+                                                    })
                                                 }
                                             } else {
-                                                GenericArgument::TypeParameter(resolve_type(
+                                                resolve_type(
                                                     generic_type,
                                                     used_by_package_id,
                                                     krate_collection,
@@ -325,14 +329,14 @@ fn _resolve_type<I: CrateIndexer>(
                                                             source,
                                                         }),
                                                     )
-                                                })?)
+                                                })?
                                             }
                                         } else if let Some(default) = default {
                                             let default = resolve_type(
                                                 default,
                                                 &global_type_id.package_id,
                                                 krate_collection,
-                                                generic_bindings,
+                                                &local_generic_bindings,
                                                 alias_resolution,
                                             )
                                             .map_err(|source| {
@@ -349,12 +353,16 @@ fn _resolve_type<I: CrateIndexer>(
                                             if skip_default(krate_collection, &default) {
                                                 continue;
                                             }
-                                            GenericArgument::TypeParameter(default)
+                                            default
                                         } else {
-                                            GenericArgument::TypeParameter(Type::Generic(Generic {
+                                            Type::Generic(Generic {
                                                 name: arg_def.name.clone(),
-                                            }))
-                                        }
+                                            })
+                                        };
+                                        local_generic_bindings
+                                            .types
+                                            .insert(arg_def.name.clone(), resolved.clone());
+                                        GenericArgument::TypeParameter(resolved)
                                     }
                                     GenericParamDefKind::Const { .. } => {
                                         return Err(
@@ -605,12 +613,331 @@ fn _resolve_type<I: CrateIndexer>(
                 inner: Box::new(resolved),
             }))
         }
-        RustdocType::QualifiedPath { .. } => Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
-            UnsupportedTypeKind {
-                kind: "qualified path",
-            },
-        )),
+        RustdocType::QualifiedPath {
+            name,
+            self_type,
+            trait_,
+            args: _,
+        } => {
+            // 1. Resolve self_type to a concrete type
+            let resolved_self = resolve_type(
+                self_type,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+                alias_resolution,
+            )
+            .map_err(|source| {
+                TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                    TypePartResolutionError {
+                        role: "self type of qualified path".into(),
+                        source,
+                    },
+                ))
+            })?;
+
+            // 2. Get the trait (if present)
+            let Some(trait_path) = trait_ else {
+                return Err(TypeResolutionErrorDetails::UnsupportedTypeKind(
+                    UnsupportedTypeKind {
+                        kind: "inherent associated type",
+                    },
+                ));
+            };
+
+            // 3. Find the associated type in the impl
+            resolve_associated_type(
+                &resolved_self,
+                trait_path,
+                name,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+                alias_resolution,
+            )
+        }
     }
+}
+
+/// Resolve `<SelfType as Trait>::AssocType` by finding the concrete impl block
+/// and looking up the associated type definition.
+fn resolve_associated_type<I: CrateIndexer>(
+    resolved_self: &Type,
+    trait_path: &rustdoc_types::Path,
+    assoc_type_name: &str,
+    used_by_package_id: &PackageId,
+    krate_collection: &CrateCollection<I>,
+    generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
+) -> Result<Type, TypeResolutionErrorDetails> {
+    // Resolve the trait path to get its GlobalItemId and canonical path.
+    let (trait_global_id, trait_canonical_path) = krate_collection
+        .get_canonical_path_by_local_type_id(used_by_package_id, &trait_path.id, None)
+        .map_err(TypeResolutionErrorDetails::ItemResolutionError)?;
+
+    // Try to find the associated type in the concrete type's impls first,
+    // then fall back to the trait's implementations list.
+    if let Some(result) = find_trait_assoc_type_in_type_impls(
+        resolved_self,
+        trait_canonical_path,
+        assoc_type_name,
+        krate_collection,
+        generic_bindings,
+        alias_resolution,
+    )? {
+        return Ok(result);
+    }
+
+    if let Some(result) = find_assoc_type_in_trait_impls(
+        resolved_self,
+        &trait_global_id,
+        assoc_type_name,
+        krate_collection,
+        generic_bindings,
+        alias_resolution,
+    )? {
+        return Ok(result);
+    }
+
+    Err(TypeResolutionErrorDetails::AssociatedTypeResolutionError(
+        AssociatedTypeResolutionError {
+            assoc_type_name: assoc_type_name.to_owned(),
+            trait_path: trait_canonical_path.to_vec(),
+            self_type: resolved_self.clone(),
+        },
+    ))
+}
+
+/// Search through the concrete type's `impls` list to find a matching trait impl
+/// and extract the associated type.
+fn find_trait_assoc_type_in_type_impls<I: CrateIndexer>(
+    resolved_self: &Type,
+    trait_canonical_path: &[String],
+    assoc_type_name: &str,
+    krate_collection: &CrateCollection<I>,
+    generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
+) -> Result<Option<Type>, TypeResolutionErrorDetails> {
+    // This may not be general enough—i.e. does the self type in a qualified
+    // path need to be a `Type::Path`?
+    // Without looking too deep into it, my gut feeling is "no", but we
+    // can generalize later.
+    let Type::Path(self_path) = resolved_self else {
+        return Ok(None);
+    };
+
+    let type_package_id = &self_path.package_id;
+    let Some(type_crate) = krate_collection.get_crate_by_package_id(type_package_id) else {
+        return Ok(None);
+    };
+
+    // Find the type definition to get its impls list.
+    let Some(rustdoc_id) = &self_path.rustdoc_id else {
+        return Ok(None);
+    };
+    let type_item = type_crate.get_item_by_local_type_id(rustdoc_id);
+    let impls = match &type_item.inner {
+        ItemEnum::Struct(s) => &s.impls,
+        ItemEnum::Enum(e) => &e.impls,
+        ItemEnum::Union(u) => &u.impls,
+        _ => return Ok(None),
+    };
+
+    search_impls_for_assoc_type(
+        impls,
+        type_package_id,
+        trait_canonical_path,
+        assoc_type_name,
+        krate_collection,
+        generic_bindings,
+        alias_resolution,
+    )
+}
+
+/// Search through the trait's `implementations` list to find a matching impl
+/// and extract the associated type.
+fn find_assoc_type_in_trait_impls<I: CrateIndexer>(
+    resolved_self: &Type,
+    trait_global_id: &GlobalItemId,
+    assoc_type_name: &str,
+    krate_collection: &CrateCollection<I>,
+    generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
+) -> Result<Option<Type>, TypeResolutionErrorDetails> {
+    let trait_item = krate_collection.get_item_by_global_type_id(trait_global_id);
+    let ItemEnum::Trait(trait_def) = &trait_item.inner else {
+        return Ok(None);
+    };
+
+    let resolved_self = resolved_self.canonicalize();
+
+    // The trait's implementations are local to the trait's crate.
+    let trait_package_id = &trait_global_id.package_id;
+    let Some(trait_crate) = krate_collection.get_crate_by_package_id(trait_package_id) else {
+        return Ok(None);
+    };
+    for impl_id in &trait_def.implementations {
+        let Some(impl_item) = trait_crate.maybe_get_item_by_local_type_id(impl_id) else {
+            continue;
+        };
+        let ItemEnum::Impl(impl_) = &impl_item.inner else {
+            continue;
+        };
+        if impl_.is_negative {
+            continue;
+        }
+        // Skip generic/blanket impls — same reasoning as in `search_impls_for_assoc_type`.
+        if impl_
+            .generics
+            .params
+            .iter()
+            .any(|p| matches!(p.kind, GenericParamDefKind::Type { .. }))
+        {
+            continue;
+        }
+        // Try to resolve the impl's `for_` type. If resolution fails, skip.
+        let Ok(resolved_for) = resolve_type(
+            &impl_.for_,
+            trait_package_id,
+            krate_collection,
+            &GenericBindings::default(),
+            alias_resolution,
+        ) else {
+            continue;
+        };
+        if resolved_for.canonicalize() != resolved_self {
+            continue;
+        }
+
+        // Found a matching impl, now look for the associated type.
+        if let Some(result) = extract_assoc_type_from_impl_items(
+            &impl_.items,
+            trait_package_id,
+            assoc_type_name,
+            krate_collection,
+            generic_bindings,
+            alias_resolution,
+        )? {
+            return Ok(Some(result));
+        }
+    }
+
+    Ok(None)
+}
+
+/// Search a list of impl IDs for a matching trait impl and extract the associated type.
+fn search_impls_for_assoc_type<I: CrateIndexer>(
+    impl_ids: &[rustdoc_types::Id],
+    impl_crate_package_id: &PackageId,
+    trait_canonical_path: &[String],
+    assoc_type_name: &str,
+    krate_collection: &CrateCollection<I>,
+    generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
+) -> Result<Option<Type>, TypeResolutionErrorDetails> {
+    let Some(impl_crate) = krate_collection.get_crate_by_package_id(impl_crate_package_id) else {
+        return Ok(None);
+    };
+
+    for impl_id in impl_ids {
+        let Some(item) = impl_crate.maybe_get_item_by_local_type_id(impl_id) else {
+            continue;
+        };
+        let ItemEnum::Impl(impl_) = &item.inner else {
+            continue;
+        };
+        if impl_.is_negative {
+            continue;
+        }
+        // Skip generic/blanket impls (e.g., `impl<T> Trait for T` or
+        // `impl<T: Clone> Trait for T`). We can't verify trait bounds,
+        // and the associated type value may reference the impl's own
+        // generic parameters.
+        if impl_
+            .generics
+            .params
+            .iter()
+            .any(|p| matches!(p.kind, GenericParamDefKind::Type { .. }))
+        {
+            continue;
+        }
+        // Check if this impl is for the right trait.
+        let Some(impl_trait) = &impl_.trait_ else {
+            continue;
+        };
+        let Ok((_, impl_trait_path)) = krate_collection.get_canonical_path_by_local_type_id(
+            impl_crate_package_id,
+            &impl_trait.id,
+            None,
+        ) else {
+            continue;
+        };
+        if impl_trait_path != trait_canonical_path {
+            continue;
+        }
+
+        // Found a matching trait impl, look for the associated type.
+        if let Some(result) = extract_assoc_type_from_impl_items(
+            &impl_.items,
+            impl_crate_package_id,
+            assoc_type_name,
+            krate_collection,
+            generic_bindings,
+            alias_resolution,
+        )? {
+            return Ok(Some(result));
+        }
+    }
+
+    Ok(None)
+}
+
+/// Extract an associated type by name from an impl block's items.
+fn extract_assoc_type_from_impl_items<I: CrateIndexer>(
+    items: &[rustdoc_types::Id],
+    package_id: &PackageId,
+    assoc_type_name: &str,
+    krate_collection: &CrateCollection<I>,
+    generic_bindings: &GenericBindings,
+    alias_resolution: TypeAliasResolution,
+) -> Result<Option<Type>, TypeResolutionErrorDetails> {
+    let Some(crate_) = krate_collection.get_crate_by_package_id(package_id) else {
+        return Ok(None);
+    };
+
+    for item_id in items {
+        let Some(item) = crate_.maybe_get_item_by_local_type_id(item_id) else {
+            continue;
+        };
+        if item.name.as_deref() != Some(assoc_type_name) {
+            continue;
+        }
+        if let ItemEnum::AssocType {
+            type_: Some(concrete_type),
+            ..
+        } = &item.inner
+        {
+            // Resolve the concrete type. It's defined in this crate.
+            let resolved = resolve_type(
+                concrete_type,
+                package_id,
+                krate_collection,
+                generic_bindings,
+                alias_resolution,
+            )
+            .map_err(|source| {
+                TypeResolutionErrorDetails::TypePartResolutionError(Box::new(
+                    TypePartResolutionError {
+                        role: format!("associated type `{}`", assoc_type_name),
+                        source,
+                    },
+                ))
+            })?;
+            return Ok(Some(resolved));
+        }
+    }
+
+    Ok(None)
 }
 
 /// This is a gigantic hack to work around an issue with `std`'s collections:

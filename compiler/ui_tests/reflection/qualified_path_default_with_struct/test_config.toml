@@ -1,0 +1,7 @@
+description = "pavex resolves qualified path defaults like <T as Trait>::Assoc on structs"
+
+[expectations]
+codegen = "pass"
+
+[ephemeral_dependencies]
+dep = { path = "dep.rs" }

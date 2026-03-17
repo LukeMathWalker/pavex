@@ -1,0 +1,36 @@
+[31;1mERROR[0m:
+  [31m×[0m I don't know how to handle the type returned by
+  [31m│[0m `app::get_container`.
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4mreflection/qualified_path_default_with_blanket_impl/src/lib.rs[0m:5:1]
+  [31m│[0m  [2m5[0m │
+  [31m│[0m  [2m6[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::request_scoped]
+  [31m│[0m  [2m7[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn get_container() -> Container<MyType> {
+  [31m│[0m    · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
+  [31m│[0m  [2m8[0m │         Container(std::marker::PhantomData)
+  [31m│[0m    ╰────
+  [31m│[0m    ╭─[[36;1;4mreflection/qualified_path_default_with_blanket_impl/src/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │ #[pavex::request_scoped]
+  [31m│[0m  [2m7[0m │ pub fn get_container() -> Container<MyType> {
+  [31m│[0m    · [35;1m                          ────────┬────────[0m
+  [31m│[0m    ·                                   [35;1m╰── The output type that I can't handle[0m
+  [31m│[0m  [2m8[0m │     Container(std::marker::PhantomData)
+  [31m│[0m    ╰────
+[31;1mERROR[0m:
+  [31m×[0m One of the input parameters for `app::handler` has a type that I
+  [31m│[0m can't handle.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mreflection/qualified_path_default_with_blanket_impl/src/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │
+  [31m│[0m  [2m11[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m #[pavex::get(path = "/")]
+  [31m│[0m  [2m12[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m pub fn handler(_c: Container<MyType>) -> pavex::Response {
+  [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe request handler was registered here[0m
+  [31m│[0m  [2m13[0m │         todo!()
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mreflection/qualified_path_default_with_blanket_impl/src/lib.rs[0m:11:1]
+  [31m│[0m  [2m11[0m │ #[pavex::get(path = "/")]
+  [31m│[0m  [2m12[0m │ pub fn handler(_c: Container<MyType>) -> pavex::Response {
+  [31m│[0m     · [35;1m               ──────────┬──────────[0m
+  [31m│[0m     ·                          [35;1m╰── I don't know how handle this parameter[0m
+  [31m│[0m  [2m13[0m │     todo!()
+  [31m│[0m     ╰────
