@@ -51,10 +51,15 @@ pub(crate) fn compute_package_id_for_crate_id(
     package_graph: &PackageGraph,
 ) -> Result<PackageId, anyhow::Error> {
     #[derive(Debug, Hash, Eq, PartialEq)]
-    struct PackageLinkMetadata<'a> {
-        id: &'a PackageId,
-        name: &'a str,
-        version: &'a Version,
+    struct PackageLinkMetadata {
+        id: PackageId,
+        name: String,
+        version: Version,
+    }
+
+    enum ResolvedDependency {
+        Found(PackageId),
+        Ambiguous(IndexSet<PackageLinkMetadata>),
     }
 
     /// Find a transitive dependency of `search_root` given its name (and maybe the version).
@@ -66,7 +71,8 @@ pub(crate) fn compute_package_id_for_crate_id(
         version: Option<&Version>,
     ) -> Option<PackageId> {
         match _find_transitive_dependency(package_graph, search_root, name, version) {
-            Ok(v) => v,
+            Ok(ResolvedDependency::Found(id)) => Some(id),
+            Ok(ResolvedDependency::Ambiguous(_)) => None,
             Err(e) => {
                 log_error!(
                     *e,
@@ -86,7 +92,7 @@ pub(crate) fn compute_package_id_for_crate_id(
         search_root: &PackageId,
         name: &str,
         version: Option<&Version>,
-    ) -> Result<Option<PackageId>, anyhow::Error> {
+    ) -> Result<ResolvedDependency, anyhow::Error> {
         let transitive_dependencies = package_graph
             .query_forward([search_root])
             .with_context(|| {
@@ -103,9 +109,9 @@ pub(crate) fn compute_package_id_for_crate_id(
             .map(|link| {
                 let l = link.to();
                 PackageLinkMetadata {
-                    id: l.id(),
-                    name: l.name(),
-                    version: l.version(),
+                    id: l.id().to_owned(),
+                    name: l.name().to_owned(),
+                    version: l.version().clone(),
                 }
             })
             .collect();
@@ -116,14 +122,16 @@ pub(crate) fn compute_package_id_for_crate_id(
             )
         }
         if package_candidates.len() == 1 {
-            return Ok(Some(package_candidates.first().unwrap().id.to_owned()));
+            return Ok(ResolvedDependency::Found(
+                package_candidates.into_iter().next().unwrap().id,
+            ));
         }
 
         if let Some(expected_link_version) = version {
             let version_matcher = VersionMatcher::new(expected_link_version);
             let filtered_candidates: Vec<_> = package_candidates
                 .iter()
-                .filter(|l| version_matcher.matches(l.version))
+                .filter(|l| version_matcher.matches(&l.version))
                 .collect();
             if filtered_candidates.is_empty() {
                 let candidates = package_candidates
@@ -141,11 +149,13 @@ pub(crate) fn compute_package_id_for_crate_id(
                 )
             }
             if filtered_candidates.len() == 1 {
-                return Ok(Some(filtered_candidates.first().unwrap().id.to_owned()));
+                return Ok(ResolvedDependency::Found(
+                    filtered_candidates.first().unwrap().id.to_owned(),
+                ));
             }
         }
 
-        Ok(None)
+        Ok(ResolvedDependency::Ambiguous(package_candidates))
     }
 
     if crate_id == 0 {
@@ -163,14 +173,26 @@ pub(crate) fn compute_package_id_for_crate_id(
         return Ok(PackageId::new(external_crate.name.clone()));
     }
     let external_crate_version = get_external_crate_version(external_crate);
-    if let Some(id) = find_transitive_dependency(
+    let ambiguous_candidates = match _find_transitive_dependency(
         package_graph,
         package_id,
         &external_crate.name,
         external_crate_version.as_ref(),
     ) {
-        return Ok(id);
-    }
+        Ok(ResolvedDependency::Found(id)) => return Ok(id),
+        Ok(ResolvedDependency::Ambiguous(candidates)) => Some(candidates),
+        Err(e) => {
+            log_error!(
+                *e,
+                level: tracing::Level::WARN,
+                external_crate.name = %external_crate.name,
+                external_crate.version = ?external_crate_version,
+                search_root = %package_id.repr(),
+                "Failed to find transitive dependency"
+            );
+            None
+        }
+    };
 
     // We have multiple packages with the same name.
     // We need to disambiguate among them.
@@ -198,8 +220,19 @@ pub(crate) fn compute_package_id_for_crate_id(
         }
     }
 
+    let candidates_list = ambiguous_candidates
+        .as_ref()
+        .map(|candidates| {
+            let list = candidates
+                .iter()
+                .map(|l| format!("- {} v{} ({})", l.name, l.version, l.id.repr()))
+                .collect::<Vec<_>>()
+                .join("\n");
+            format!(":\n{list}\n")
+        })
+        .unwrap_or_else(|| ". ".to_owned());
     Err(anyhow!(
-        "There are multiple packages named `{}` among the dependencies of {}. \
+        "There are multiple packages named `{}` among the dependencies of {}{}\
             In order to disambiguate among them, I need to know their versions.\n\
             Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
             JSON documentation for `{}`.\n\
@@ -207,6 +240,7 @@ pub(crate) fn compute_package_id_for_crate_id(
             to track progress on this issue.",
         external_crate.name,
         package_id.repr(),
+        candidates_list,
         external_crate.name,
         package_id.repr()
     ))
