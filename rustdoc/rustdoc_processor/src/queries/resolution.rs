@@ -60,6 +60,7 @@ pub(crate) fn compute_package_id_for_crate_id(
     enum ResolvedDependency {
         Found(PackageId),
         Ambiguous(IndexSet<PackageLinkMetadata>),
+        NotFound,
     }
 
     /// Find a transitive dependency of `search_root` given its name (and maybe the version).
@@ -72,7 +73,7 @@ pub(crate) fn compute_package_id_for_crate_id(
     ) -> Option<PackageId> {
         match _find_transitive_dependency(package_graph, search_root, name, version) {
             Ok(ResolvedDependency::Found(id)) => Some(id),
-            Ok(ResolvedDependency::Ambiguous(_)) => None,
+            Ok(ResolvedDependency::Ambiguous(_) | ResolvedDependency::NotFound) => None,
             Err(e) => {
                 log_error!(
                     *e,
@@ -103,9 +104,13 @@ pub(crate) fn compute_package_id_for_crate_id(
             })?
             .resolve();
         let expected_link_name = normalize_crate_name(name);
+        eprintln!("Resolving dependencies for {}", search_root.repr());
         let package_candidates: IndexSet<_> = transitive_dependencies
             .links(guppy::graph::DependencyDirection::Forward)
-            .filter(|link| normalize_crate_name(link.to().name()) == expected_link_name)
+            .filter(|link| {
+                eprintln!("Visiting: {:?}", link);
+                normalize_crate_name(link.to().name()) == expected_link_name
+            })
             .map(|link| {
                 let l = link.to();
                 PackageLinkMetadata {
@@ -116,10 +121,7 @@ pub(crate) fn compute_package_id_for_crate_id(
             })
             .collect();
         if package_candidates.is_empty() {
-            anyhow::bail!(
-                "I could not find any crate named `{expected_link_name}` \
-                among the dependencies of {search_root}",
-            )
+            return Ok(ResolvedDependency::NotFound);
         }
         if package_candidates.len() == 1 {
             return Ok(ResolvedDependency::Found(
@@ -178,19 +180,16 @@ pub(crate) fn compute_package_id_for_crate_id(
         package_id,
         &external_crate.name,
         external_crate_version.as_ref(),
-    ) {
-        Ok(ResolvedDependency::Found(id)) => return Ok(id),
-        Ok(ResolvedDependency::Ambiguous(candidates)) => Some(candidates),
-        Err(e) => {
-            log_error!(
-                *e,
-                level: tracing::Level::WARN,
-                external_crate.name = %external_crate.name,
-                external_crate.version = ?external_crate_version,
-                search_root = %package_id.repr(),
-                "Failed to find transitive dependency"
-            );
-            None
+    )? {
+        ResolvedDependency::Found(id) => return Ok(id),
+        ResolvedDependency::Ambiguous(candidates) => candidates,
+        ResolvedDependency::NotFound => {
+            return Err(anyhow!(
+                "I could not find any crate named `{}` \
+                among the dependencies (either direct or transitive) of {}",
+                external_crate.name,
+                package_id.repr()
+            ));
         }
     };
 
@@ -221,18 +220,12 @@ pub(crate) fn compute_package_id_for_crate_id(
     }
 
     let candidates_list = ambiguous_candidates
-        .as_ref()
-        .map(|candidates| {
-            let list = candidates
-                .iter()
-                .map(|l| format!("- {} v{} ({})", l.name, l.version, l.id.repr()))
-                .collect::<Vec<_>>()
-                .join("\n");
-            format!(":\n{list}\n")
-        })
-        .unwrap_or_else(|| ". ".to_owned());
+        .iter()
+        .map(|l| format!("- {} v{} ({})", l.name, l.version, l.id.repr()))
+        .collect::<Vec<_>>()
+        .join("\n");
     Err(anyhow!(
-        "There are multiple packages named `{}` among the dependencies of {}{}\
+        "There are multiple packages named `{}` among the dependencies of {}:\n{}\n\
             In order to disambiguate among them, I need to know their versions.\n\
             Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
             JSON documentation for `{}`.\n\
