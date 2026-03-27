@@ -15,13 +15,6 @@ impl std::fmt::Display for TypeResolutionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Failed to resolve a type, {:?}.", self.ty)?;
         match &self.details {
-            TypeResolutionErrorDetails::UnsupportedConstGeneric(unsupported_const_generic) => {
-                write!(
-                    f,
-                    "It uses a const generic parameter, {}, which isn't currently supported.",
-                    &unsupported_const_generic.name
-                )
-            }
             TypeResolutionErrorDetails::UnsupportedFnPointer(unsupported_fn_pointer) => {
                 write!(
                     f,
@@ -77,7 +70,6 @@ impl std::error::Error for TypeResolutionError {}
 /// The specific reason a type could not be resolved.
 #[derive(Debug)]
 pub enum TypeResolutionErrorDetails {
-    UnsupportedConstGeneric(UnsupportedConstGeneric),
     UnsupportedFnPointer(UnsupportedFnPointer),
     UnsupportedReturnTypeNotation,
     UnsupportedTypeKind(UnsupportedTypeKind),
@@ -90,12 +82,6 @@ pub enum TypeResolutionErrorDetails {
     /// This can happen when the implementation is provided via a blanket impl (e.g.,
     /// `impl<T: Bound> Trait for T`), which we cannot resolve from rustdoc's JSON output.
     AssociatedTypeResolutionError(AssociatedTypeResolutionError),
-}
-
-/// A const generic parameter was encountered, which is not yet supported.
-#[derive(Debug)]
-pub struct UnsupportedConstGeneric {
-    pub name: String,
 }
 
 /// A function pointer type was encountered, which is not yet supported.

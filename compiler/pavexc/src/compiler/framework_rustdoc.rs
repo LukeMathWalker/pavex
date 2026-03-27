@@ -18,7 +18,7 @@ use super::app::PAVEX_VERSION;
 // within pavexc can keep importing them from this module.
 pub use rustdoc_resolver::{
     InputParameterResolutionError, OutputTypeResolutionError, SelfResolutionError,
-    TypeResolutionError, UnsupportedConstGeneric,
+    TypeResolutionError,
 };
 
 #[derive(thiserror::Error, Debug, Clone)]

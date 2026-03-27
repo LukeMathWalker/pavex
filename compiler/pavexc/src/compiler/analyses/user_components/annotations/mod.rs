@@ -6,9 +6,8 @@ mod diagnostic;
 pub(super) use coordinates::resolve_annotation_coordinates;
 
 use diagnostic::{
-    callable_resolution_error, const_generics_are_not_supported, invalid_config_type,
-    invalid_prebuilt_type, not_a_module, not_a_type_reexport, type_resolution_error,
-    unknown_module_path, unresolved_external_reexport,
+    callable_resolution_error, invalid_config_type, invalid_prebuilt_type, not_a_module,
+    not_a_type_reexport, type_resolution_error, unknown_module_path, unresolved_external_reexport,
 };
 
 use super::{
@@ -33,8 +32,7 @@ use pavex_bp_schema::{CloningPolicy, Lifecycle, Lint, LintSetting};
 use pavexc_attr_parser::{AnnotationKind, AnnotationProperties};
 use rustdoc_ext::RustdocKindExt;
 use rustdoc_resolver::{
-    TypeAliasResolution, resolve_free_function, rustdoc_method2callable, rustdoc_new_type_def2type,
-    rustdoc_type_alias2type,
+    TypeAliasResolution, resolve_free_function, rustdoc_item_def2type, rustdoc_method2callable,
 };
 use rustdoc_types::{Item, ItemEnum};
 
@@ -498,7 +496,10 @@ fn annotated_item2type(
                 )
             };
         match &imported_item.inner {
-            ItemEnum::Enum(_) | ItemEnum::Struct(_) | ItemEnum::TypeAlias(_) => {}
+            ItemEnum::Enum(_)
+            | ItemEnum::Struct(_)
+            | ItemEnum::Union(_)
+            | ItemEnum::TypeAlias(_) => {}
             other => {
                 not_a_type_reexport(item, other.kind(), ComponentKind::ConfigType, diagnostics);
                 return Err(());
@@ -508,44 +509,13 @@ fn annotated_item2type(
     }
 
     let (item, krate) = annotated_item2def(item, krate, krate_collection, diagnostics)?;
-    rustdoc_item_def2type(&item, krate, krate_collection, diagnostics)
-}
-
-/// Convert an enum, a struct or a type alias definition from the JSON documentation
-/// for a crate into our own representation for types.
-///
-/// # Panics
-///
-/// Panics if the item isn't of kind enum, struct or type alias.
-fn rustdoc_item_def2type(
-    item: &Item,
-    krate: &Crate,
-    krate_collection: &CrateCollection,
-    diagnostics: &DiagnosticSink,
-) -> Result<Type, ()> {
-    match item.inner {
-        ItemEnum::Struct(_) | ItemEnum::Enum(_) => match rustdoc_new_type_def2type(item, krate) {
-            Ok(t) => Ok(t),
-            Err(e) => {
-                const_generics_are_not_supported(e, item, diagnostics);
-                Err(())
-            }
-        },
-        ItemEnum::TypeAlias(_) => match rustdoc_type_alias2type(
-            item,
-            krate,
-            krate_collection,
-            TypeAliasResolution::ResolveThrough,
-        ) {
-            Ok(t) => Ok(t),
-            Err(e) => {
-                type_resolution_error(e, item, diagnostics);
-                Err(())
-            }
-        },
-        _ => unreachable!(
-            "Unexpected item type, `{}`. Expected a struct, an enum or a type alias.",
-            item.inner.kind()
-        ),
-    }
+    rustdoc_item_def2type(
+        &item,
+        krate,
+        krate_collection,
+        TypeAliasResolution::ResolveThrough,
+    )
+    .map_err(|e| {
+        type_resolution_error(e, &item, diagnostics);
+    })
 }

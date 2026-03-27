@@ -14,7 +14,7 @@ pub use errors::*;
 pub use free_fn::resolve_free_function;
 pub use method::rustdoc_method2callable;
 pub use resolve_type::{TypeAliasResolution, resolve_type};
-pub use type_def::{rustdoc_new_type_def2type, rustdoc_type_alias2type};
+pub use type_def::{rustdoc_item_def2type, rustdoc_new_type_def2type, rustdoc_type_alias2type};
 
 use ahash::HashMap;
 use rustdoc_ir::Type;

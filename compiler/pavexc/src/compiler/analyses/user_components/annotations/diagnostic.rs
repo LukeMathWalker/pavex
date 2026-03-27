@@ -2,7 +2,7 @@ use crate::{
     compiler::{
         analyses::user_components::{UserComponentId, imports::UnresolvedImport},
         component::{ConfigTypeValidationError, PrebuiltTypeValidationError},
-        framework_rustdoc::{TypeResolutionError, UnsupportedConstGeneric},
+        framework_rustdoc::TypeResolutionError,
     },
     diagnostic::{
         self, CallableDefSource, ComponentKind, DiagnosticSink, OptionalLabeledSpanExt,
@@ -15,35 +15,6 @@ use pavex_cli_diagnostic::CompilerDiagnostic;
 use rustdoc_types::Item;
 
 use super::{AuxiliaryData, CallableResolutionError};
-
-pub(super) fn const_generics_are_not_supported(
-    e: UnsupportedConstGeneric,
-    item: &Item,
-    diagnostics: &DiagnosticSink,
-) {
-    let source = item.span.as_ref().and_then(|s| {
-        diagnostics.annotated(
-            TargetSpan::Registration(&Registration::attribute(s), ComponentKind::Constructor),
-            "The annotated item",
-        )
-    });
-    let const_name = e.name;
-    let err_msg = match &item.name {
-        Some(name) => {
-            format!(
-                "Pavex does not support const generics.\n`{name}` uses at least one const generic parameter, named `{const_name}`.",
-            )
-        }
-        None => format!(
-            "Pavex does not support const generics.\nOne of your types uses at least one const generic parameter, named `{const_name}`."
-        ),
-    };
-    let diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(err_msg))
-        .optional_source(source)
-        .help("Remove the const generic parameter from your type definition, or use a different type.".into())
-        .build();
-    diagnostics.push(diagnostic);
-}
 
 pub(super) fn type_resolution_error(
     e: TypeResolutionError,
