@@ -19,6 +19,7 @@ mod error_handler;
 mod error_observer;
 mod fallback;
 mod from;
+mod from_request;
 mod methods;
 mod middlewares;
 mod path_params;
@@ -29,6 +30,22 @@ pub(crate) mod utils;
 #[proc_macro_derive(ConfigProfile, attributes(px))]
 pub fn derive_config_profile(input: TokenStream) -> TokenStream {
     config_profile::derive_config_profile(input)
+}
+
+#[proc_macro_derive(
+    FromRequest,
+    attributes(
+        path_param,
+        query_param,
+        path_params,
+        query_params,
+        header,
+        headers,
+        body
+    )
+)]
+pub fn derive_from_request(input: TokenStream) -> TokenStream {
+    from_request::derive_from_request(input)
 }
 
 #[proc_macro]

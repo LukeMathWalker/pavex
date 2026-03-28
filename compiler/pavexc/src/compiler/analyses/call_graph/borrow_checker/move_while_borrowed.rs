@@ -349,8 +349,7 @@ fn emit_ancestor_descendant_borrow_error(
     while let Some(node_id) = nodes_to_visit.pop_front() {
         let mut incoming_edges = call_graph.edges_directed(node_id, Direction::Incoming);
         if incoming_edges.clone().any(|edge_ref| {
-            edge_ref.weight() == &CallGraphEdgeMetadata::SharedBorrow
-                && edge_ref.source().id() == contended_node_id
+            edge_ref.weight().is_borrow() && edge_ref.source().id() == contended_node_id
         }) {
             downstream_borrow_node_id = Some(node_id);
             break;
