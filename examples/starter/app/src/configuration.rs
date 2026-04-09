@@ -37,24 +37,8 @@ pub struct ServerConfig {
     /// E.g. `1 minute` for a 1 minute timeout.
     ///
     /// Set the `PX_SERVER__GRACEFUL_SHUTDOWN_TIMEOUT` environment variable to override its value.
-    #[serde(deserialize_with = "deserialize_shutdown")]
+    #[serde(with = "pavex::time::fmt::serde::unsigned_duration::required")]
     pub graceful_shutdown_timeout: std::time::Duration,
-}
-
-fn deserialize_shutdown<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::Deserialize as _;
-
-    let duration = pavex::time::SignedDuration::deserialize(deserializer)?;
-    if duration.is_negative() {
-        Err(serde::de::Error::custom(
-            "graceful shutdown timeout must be positive",
-        ))
-    } else {
-        duration.try_into().map_err(serde::de::Error::custom)
-    }
 }
 
 impl ServerConfig {
