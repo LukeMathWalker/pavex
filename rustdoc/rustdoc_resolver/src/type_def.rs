@@ -98,6 +98,12 @@ pub fn rustdoc_item_def2type<I: CrateIndexer>(
 /// Convert a type alias definition from the JSON documentation
 /// for a crate into our own representation for types.
 ///
+/// With [`TypeAliasResolution::Resolve`], the alias is transparent and the
+/// returned type is the (recursively-resolved) right-hand side.
+/// With [`TypeAliasResolution::Preserve`], the alias identity is kept and the
+/// returned type is a [`Type::TypeAlias`] pointing at `item` itself — mirroring
+/// how [`rustdoc_new_type_def2type`] returns a [`Type::Path`] for nominal types.
+///
 /// # Panics
 ///
 /// Panics if the item isn't a type alias.
@@ -113,12 +119,43 @@ pub fn rustdoc_type_alias2type<I: CrateIndexer>(
             item.inner.kind()
         )
     };
-    let resolved = resolve_type(
-        &inner.type_,
-        &krate.core.package_id,
-        krate_collection,
-        &GenericBindings::default(),
-        alias_resolution,
-    )?;
-    Ok(resolved)
+    let ty = if alias_resolution != TypeAliasResolution::Preserve {
+        resolve_type(
+            &inner.type_,
+            &krate.core.package_id,
+            krate_collection,
+            &GenericBindings::default(),
+            alias_resolution,
+        )?
+    } else {
+        // Don't resolve the aliased type if the resolution strategy is set to "preserve".
+        let path = krate.import_index.items[&item.id].canonical_path();
+        let generic_arguments = inner
+            .generics
+            .params
+            .iter()
+            .map(|param| match &param.kind {
+                rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
+                    GenericArgument::Lifetime(GenericLifetimeParameter::from_name(&param.name))
+                }
+                rustdoc_types::GenericParamDefKind::Type { .. } => {
+                    GenericArgument::TypeParameter(Type::Generic(Generic {
+                        name: param.name.clone(),
+                    }))
+                }
+                rustdoc_types::GenericParamDefKind::Const { .. } => {
+                    GenericArgument::Const(ConstGenericArgument {
+                        value: param.name.clone(),
+                    })
+                }
+            })
+            .collect();
+        Type::TypeAlias(PathType {
+            package_id: krate.core.package_id.clone(),
+            rustdoc_id: Some(item.id),
+            base_type: path.into(),
+            generic_arguments,
+        })
+    };
+    Ok(ty)
 }
