@@ -25,6 +25,7 @@ use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{CanonicalType, Type};
+use crate::rustdoc::CrateCollection;
 
 /// Generate the dependency closure of the [`OrderedCallGraph`]'s root callable.
 ///
@@ -35,6 +36,7 @@ pub(crate) fn codegen_callable_closure(
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
+    krate_collection: &CrateCollection,
 ) -> Result<ItemFn, anyhow::Error> {
     let input_parameter_types = call_graph.required_input_types();
     let mut variable_generator = VariableNameGenerator::new();
@@ -43,7 +45,7 @@ pub(crate) fn codegen_callable_closure(
         .iter()
         .map(|type_| {
             let parameter_name = variable_generator.generate();
-            (type_.canonicalize(), parameter_name)
+            (type_.canonicalize(krate_collection), parameter_name)
         })
         .collect();
     let body = codegen_callable_closure_body(
@@ -53,11 +55,12 @@ pub(crate) fn codegen_callable_closure(
         component_db,
         computation_db,
         &mut variable_generator,
+        krate_collection,
     )?;
 
     let function = {
         let inputs = input_parameter_types.into_iter().map(|mut type_| {
-            let variable_name = &parameter_bindings[&type_.canonicalize()];
+            let variable_name = &parameter_bindings[&type_.canonicalize(krate_collection)];
             // We can set all the non-'static lifetimes to implied (i.e. '_) in function signatures.
             let original2renamed = type_
                 .named_lifetime_parameters()
@@ -209,6 +212,7 @@ fn codegen_callable_closure_body(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     variable_name_generator: &mut VariableNameGenerator,
+    krate_collection: &CrateCollection,
 ) -> Result<TokenStream, anyhow::Error> {
     let mut at_most_once_constructor_blocks = IndexMap::<NodeIndex, TokenStream>::new();
     let mut blocks = BTreeMap::<NodeIndex, Fragment>::new();
@@ -224,6 +228,7 @@ fn codegen_callable_closure_body(
         component_db,
         computation_db,
         variable_name_generator,
+        krate_collection,
         &mut at_most_once_constructor_blocks,
         &mut blocks,
         &mut dfs,
@@ -272,6 +277,7 @@ fn _codegen_callable_closure_body(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     variable_name_generator: &mut VariableNameGenerator,
+    krate_collection: &CrateCollection,
     at_most_once_constructor_blocks: &mut IndexMap<NodeIndex, TokenStream>,
     blocks: &mut BTreeMap<NodeIndex, Fragment>,
     dfs: &mut BasicBlockVisitor,
@@ -310,6 +316,7 @@ fn _codegen_callable_closure_body(
                             blocks,
                             variable_name_generator,
                             package_id2name,
+                            krate_collection,
                         )?;
                         // This is the last node!
                         // We don't need to assign its value to a variable.
@@ -348,7 +355,9 @@ fn _codegen_callable_closure_body(
             CallGraphNode::InputParameter {
                 type_: input_type, ..
             } => {
-                let parameter_name = parameter_bindings[&input_type.canonicalize()].clone();
+                let parameter_name = parameter_bindings
+                    [&input_type.canonicalize(krate_collection)]
+                    .clone();
                 blocks.insert(current_index, Fragment::VariableReference(parameter_name));
             }
             CallGraphNode::MatchBranching => {
@@ -395,6 +404,7 @@ fn _codegen_callable_closure_body(
                         component_db,
                         computation_db,
                         &mut variant_name_generator,
+                        krate_collection,
                         &mut at_most_once_constructor_blocks,
                         &mut variant_blocks,
                         &mut new_dfs,

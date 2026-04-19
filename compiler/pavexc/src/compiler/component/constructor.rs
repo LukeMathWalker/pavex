@@ -1,5 +1,6 @@
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::component::CannotTakeMutReferenceError;
+use crate::rustdoc::CrateCollection;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::{Computation, MatchResult};
@@ -18,6 +19,7 @@ impl<'a> Constructor<'a> {
         pavex_error: &Type,
         pavex_response: &Type,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
     ) -> Result<Self, ConstructorValidationError> {
         if c.output_type().is_none() {
             return Err(ConstructorValidationError::CannotReturnTheUnitType);
@@ -58,9 +60,9 @@ impl<'a> Constructor<'a> {
             return Err(ConstructorValidationError::CannotConstructPavexResponse);
         }
 
-        let canonical_output = output_type.canonicalize();
+        let canonical_output = output_type.canonicalize(krate_collection);
         for (_, framework_primitive_type) in framework_item_db.iter() {
-            let canonical_framework = framework_primitive_type.canonicalize();
+            let canonical_framework = framework_primitive_type.canonicalize(krate_collection);
             if canonical_output == canonical_framework {
                 return Err(
                     ConstructorValidationError::CannotConstructFrameworkPrimitive {
@@ -69,7 +71,7 @@ impl<'a> Constructor<'a> {
                 );
             }
             if let Type::Reference(ref_type) = &output_type
-                && ref_type.inner.canonicalize() == canonical_framework
+                && ref_type.inner.canonicalize(krate_collection) == canonical_framework
             {
                 return Err(
                     ConstructorValidationError::CannotConstructFrameworkPrimitive {

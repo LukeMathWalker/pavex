@@ -19,6 +19,7 @@ use crate::{
         router::{PathRouter, Router},
     },
     language::Type,
+    rustdoc::CrateCollection,
     utils::syn_debug_parse2,
 };
 
@@ -32,6 +33,7 @@ pub(super) fn codegen_router(
     request_scoped_bindings: &BiHashMap<Ident, Type>,
     package_id2name: &BiHashMap<PackageId, String>,
     framework_items_db: &FrameworkItemDb,
+    krate_collection: &CrateCollection,
 ) -> TokenStream {
     let struct_ = router_struct(router, sdk_deps);
     let impl_ = router_impl(
@@ -42,6 +44,7 @@ pub(super) fn codegen_router(
         request_scoped_bindings,
         package_id2name,
         framework_items_db,
+        krate_collection,
     );
     quote! {
         #struct_
@@ -81,6 +84,7 @@ fn router_impl(
     request_scoped_bindings: &BiHashMap<Ident, Type>,
     package_id2name: &BiHashMap<PackageId, String>,
     framework_items_db: &FrameworkItemDb,
+    krate_collection: &CrateCollection,
 ) -> TokenStream {
     let route_method_ident = format_ident!("route");
     match router {
@@ -102,6 +106,7 @@ fn router_impl(
                 framework_items_db,
                 package_id2name,
                 sdk_deps,
+                krate_collection,
             );
             route_request.vis = syn::Visibility::Public(Default::default());
             route_request.sig.ident = route_method_ident;
@@ -140,6 +145,7 @@ fn router_impl(
                     framework_items_db,
                     package_id2name,
                     sdk_deps,
+                    krate_collection,
                 );
                 route_request.sig.ident = format_ident!("route_domain_{i}");
 
@@ -157,6 +163,7 @@ fn router_impl(
                 framework_items_db,
                 package_id2name,
                 sdk_deps,
+                krate_collection,
             );
 
             let router_new = {
@@ -281,6 +288,7 @@ fn domain_router(
     framework_items_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
+    krate_collection: &CrateCollection,
 ) -> ItemFn {
     let http = sdk_deps.http_ident();
     let hyper = sdk_deps.hyper_ident();
@@ -305,6 +313,7 @@ fn domain_router(
         &state,
         package_id2name,
         sdk_deps,
+        krate_collection,
         false,
     );
     let request_head_id = FrameworkItemDb::request_head_id();
@@ -369,6 +378,7 @@ fn path_router(
     framework_item_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
+    krate_collection: &CrateCollection,
 ) -> ImplItemFn {
     static WELL_KNOWN_METHODS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
         HashSet::from_iter([
@@ -393,10 +403,14 @@ fn path_router(
         route_id2method_router.values().any(|r| {
             r.methods_and_pipelines
                 .iter()
-                .any(|(_, p)| p.needs_framework_item(framework_item_db, id))
+                .any(|(_, p)| p.needs_framework_item(framework_item_db, id, krate_collection))
                 || r.catch_all_pipeline
-                    .needs_framework_item(framework_item_db, id)
-        }) || fallback_codegened_pipeline.needs_framework_item(framework_item_db, id)
+                    .needs_framework_item(framework_item_db, id, krate_collection)
+        }) || fallback_codegened_pipeline.needs_framework_item(
+            framework_item_db,
+            id,
+            krate_collection,
+        )
     };
 
     let needs_request_body = needs_framework_item(FrameworkItemDb::raw_incoming_body_id());
@@ -455,15 +469,16 @@ fn path_router(
                 application_state,
                 request_scoped_bindings,
                 &server_state_ident,
+                krate_collection,
             );
             let mut framework_primitives = Vec::new();
-            if pipeline.needs_allowed_methods(framework_item_db) {
+            if pipeline.needs_allowed_methods(framework_item_db, krate_collection) {
                 framework_primitives.push(allowed_methods_init.clone());
             }
-            if pipeline.needs_connection_info(framework_item_db) {
+            if pipeline.needs_connection_info(framework_item_db, krate_collection) {
                 framework_primitives.push(connection_info_init.clone());
             }
-            if pipeline.needs_matched_route(framework_item_db) {
+            if pipeline.needs_matched_route(framework_item_db, krate_collection) {
                 framework_primitives.push(matched_route_init.clone());
             }
             quote! {
@@ -537,6 +552,7 @@ fn path_router(
         &server_state_ident,
         package_id2name,
         sdk_deps,
+        krate_collection,
         true,
     );
     let connection_info_ident = if needs_connection_info {
@@ -598,6 +614,7 @@ fn routing_failure_fallback_block(
     server_state_ident: &Ident,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
+    krate_collection: &CrateCollection,
     return_: bool,
 ) -> TokenStream {
     let pavex = sdk_deps.pavex_ident();
@@ -605,9 +622,10 @@ fn routing_failure_fallback_block(
         application_state,
         request_scoped_bindings,
         server_state_ident,
+        krate_collection,
     );
     let unmatched_route = fallback_codegened_pipeline
-        .needs_matched_route(framework_items_db)
+        .needs_matched_route(framework_items_db, krate_collection)
         .then(|| {
             let id = FrameworkItemDb::matched_route_template_id();
             let ident = framework_items_db.get_binding(id);
@@ -617,7 +635,7 @@ fn routing_failure_fallback_block(
             }
         });
     let allowed_methods = fallback_codegened_pipeline
-        .needs_allowed_methods(framework_items_db)
+        .needs_allowed_methods(framework_items_db, krate_collection)
         .then(|| {
             let id = FrameworkItemDb::allowed_methods_id();
             let ident = framework_items_db.get_binding(id);
@@ -627,7 +645,7 @@ fn routing_failure_fallback_block(
             }
         });
     let url_params = fallback_codegened_pipeline
-        .needs_url_params(framework_items_db)
+        .needs_url_params(framework_items_db, krate_collection)
         .then(|| {
             let id = FrameworkItemDb::url_params_id();
             let ident = framework_items_db.get_binding(id);
@@ -636,7 +654,7 @@ fn routing_failure_fallback_block(
             }
         });
     let unwrap_connection_info = fallback_codegened_pipeline
-        .needs_connection_info(framework_items_db)
+        .needs_connection_info(framework_items_db, krate_collection)
         .then(|| {
             let connection_info_ident = framework_items_db.get_binding(FrameworkItemDb::connection_info_id());
             quote! {

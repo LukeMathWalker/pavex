@@ -10,6 +10,7 @@ use quote::{ToTokens, format_ident, quote};
 
 use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
 use crate::language::{Callable, CanonicalType, Lifetime, Type, TypeReference};
+use crate::rustdoc::CrateCollection;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
@@ -55,6 +56,7 @@ pub(crate) fn codegen_call_block<I, J>(
     blocks: &mut BTreeMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
     package_id2name: &BiHashMap<PackageId, String>,
+    krate_collection: &CrateCollection,
 ) -> Result<Fragment, anyhow::Error>
 where
     I: Iterator<Item = (NodeIndex, Type, CallGraphEdgeMetadata)>,
@@ -140,14 +142,19 @@ where
                     lifetime: lifetime.to_owned(),
                     inner: inner.to_owned(),
                 })
-                .canonicalize(),
+                .canonicalize(krate_collection),
                 tokens.clone(),
             );
         }
 
-        dependency_bindings.insert(type_.canonicalize(), tokens);
+        dependency_bindings.insert(type_.canonicalize(krate_collection), tokens);
     }
-    let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
+    let constructor_invocation = codegen_call(
+        callable,
+        &dependency_bindings,
+        package_id2name,
+        krate_collection,
+    );
     let block: syn::Block = syn::parse2(quote! {
         {
             #before_block
@@ -169,6 +176,7 @@ pub(crate) fn codegen_call(
     callable: &Callable,
     variable_bindings: &HashMap<CanonicalType, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<PackageId, String>,
+    krate_collection: &CrateCollection,
 ) -> TokenStream {
     let callable_path: syn::ExprPath = {
         let mut buffer = String::new();
@@ -185,7 +193,7 @@ pub(crate) fn codegen_call(
             .iter()
             .map(|input| {
                 let field_name = format_ident!("{}", input.name.as_str());
-                let canonical = input.type_.canonicalize();
+                let canonical = input.type_.canonicalize(krate_collection);
                 let binding = match variable_bindings.get(&canonical) {
                     Some(tokens) => tokens,
                     None => {
@@ -223,7 +231,7 @@ pub(crate) fn codegen_call(
         }
     } else {
         let parameters = callable.input_types().map(|i| {
-            let canonical = i.canonicalize();
+            let canonical = i.canonicalize(krate_collection);
             match variable_bindings.get(&canonical) {
                 Some(tokens) => tokens,
                 None => {

@@ -27,7 +27,7 @@ use crate::compiler::analyses::router::Router;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, Type};
-use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
+use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, CrateCollection, TOOLCHAIN_CRATES};
 
 use self::application_config::ApplicationConfig;
 
@@ -51,6 +51,7 @@ pub(crate) fn codegen_app(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     framework_item_db: &FrameworkItemDb,
+    krate_collection: &CrateCollection,
 ) -> Result<TokenStream, anyhow::Error> {
     let sdk_deps = ServerSdkDeps::new(codegen_deps, package_id2name);
     let application_state_def = define_application_state(application_state, package_id2name);
@@ -72,6 +73,7 @@ pub(crate) fn codegen_app(
         package_id2name,
         component_db,
         computation_db,
+        krate_collection,
     )?;
     let application_state_new = get_application_state_new(
         &application_state_private_new,
@@ -93,6 +95,7 @@ pub(crate) fn codegen_app(
                 package_id2name,
                 component_db,
                 computation_db,
+                krate_collection,
             )
             .map(|p| (*id, p))
         })
@@ -124,6 +127,7 @@ pub(crate) fn codegen_app(
         request_scoped_framework_bindings,
         package_id2name,
         framework_item_db,
+        krate_collection,
     );
     let code = quote! {
         //! Do NOT edit this code.

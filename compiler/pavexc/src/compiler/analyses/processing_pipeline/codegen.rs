@@ -15,6 +15,7 @@ use crate::compiler::analyses::framework_items::{FrameworkItemDb, FrameworkItemI
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::language::{GenericArgument, GenericLifetimeParameter, Type};
+use crate::rustdoc::CrateCollection;
 
 use self::application_state::ApplicationState;
 
@@ -25,6 +26,7 @@ impl RequestHandlerPipeline {
         package_id2name: &BiHashMap<PackageId, String>,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
     ) -> Result<CodegenedRequestHandlerPipeline, anyhow::Error> {
         let id2codegened_fn = {
             let mut id2codegened_fn = IndexMap::new();
@@ -35,8 +37,12 @@ impl RequestHandlerPipeline {
                 }
                 let fn_ = CodegenedFn {
                     fn_: {
-                        let mut f =
-                            call_graph.codegen(package_id2name, component_db, computation_db)?;
+                        let mut f = call_graph.codegen(
+                            package_id2name,
+                            component_db,
+                            computation_db,
+                            krate_collection,
+                        )?;
                         f.sig.ident = format_ident!("{}", ident);
                         f.vis = Visibility::Inherited;
                         f
@@ -106,7 +112,7 @@ impl RequestHandlerPipeline {
                             .iter()
                             .map(|input_type| {
                                 match input_bindings
-                                    .get_expr_for_type(input_type) {
+                                    .get_expr_for_type(input_type, krate_collection) {
                                     None => {
                                         let bindings = input_bindings
                                             .0
@@ -123,7 +129,7 @@ impl RequestHandlerPipeline {
                                     }
                                     Some(i) => {
                                         let mut output = i.to_token_stream();
-                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(&input_type.canonicalize())
+                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(&input_type.canonicalize(krate_collection))
                                             && cloning_indexes.contains(&index) {
                                                 output = quote! { #i.clone() };
                                             }
@@ -232,7 +238,7 @@ impl RequestHandlerPipeline {
                         // as they appear in the field definitions
                         // to make sure that (possible) lifetime parameters
                         // are aligned.
-                        let Some(binding) = &bindings.find_exact_by_type(&input.type_) else {
+                        let Some(binding) = &bindings.find_exact_by_type(&input.type_, krate_collection) else {
                             panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input.type_, next_state.field_bindings);
                         };
                         let ty_ = binding.type_.syn_type(package_id2name);
@@ -286,7 +292,7 @@ impl RequestHandlerPipeline {
                     .input_parameters
                     .iter()
                     .map(|input| {
-                        let Some(binding) = field_bindings.find_exact_by_type(&input.type_) else {
+                        let Some(binding) = field_bindings.find_exact_by_type(&input.type_, krate_collection) else {
                             panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
                         };
                         let ident = format_ident!("{}", binding.ident);
@@ -371,6 +377,7 @@ impl CodegenedRequestHandlerPipeline {
         request_scoped_bindings: &BiHashMap<Ident, Type>,
         // The name of the variable that holds the application state.
         server_state_ident: &Ident,
+        krate_collection: &CrateCollection,
     ) -> TokenStream {
         let first_stage = &self.stages[0];
         let entrypoint = &first_stage.fn_;
@@ -402,10 +409,10 @@ impl CodegenedRequestHandlerPipeline {
                     unreachable!("Generic types should have been resolved by now")
                 }
             };
-            let canonical_inner = inner_type.canonicalize();
-            let canonical_type = type_.canonicalize();
+            let canonical_inner = inner_type.canonicalize(krate_collection);
+            let canonical_type = type_.canonicalize(krate_collection);
             if let Some(field_name) = application_state.bindings().iter()
-                .find(|(_, t)| t.canonicalize() == canonical_inner)
+                .find(|(_, t)| t.canonicalize(krate_collection) == canonical_inner)
                 .map(|(name, _)| name) {
                 if is_shared_reference {
                     quote! {
@@ -423,14 +430,14 @@ impl CodegenedRequestHandlerPipeline {
                     }
                 }
             } else if let Some(field_name) = request_scoped_bindings.iter()
-                .find(|(_, t)| t.canonicalize() == canonical_type)
+                .find(|(_, t)| t.canonicalize(krate_collection) == canonical_type)
                 .map(|(name, _)| name) {
                 quote! {
                     #field_name
                 }
             } else {
                 let Some(field_name) = request_scoped_bindings.iter()
-                    .find(|(_, t)| t.canonicalize() == canonical_inner)
+                    .find(|(_, t)| t.canonicalize(krate_collection) == canonical_inner)
                     .map(|(name, _)| name) else {
                     let rs_bindings = request_scoped_bindings
                         .iter()
@@ -470,36 +477,69 @@ impl CodegenedRequestHandlerPipeline {
 
     /// Returns `true` if the first stage of the pipeline (i.e. the entrypoint) needs the specified
     /// type as input.
-    pub(crate) fn needs_input_type(&self, input_type: &Type) -> bool {
-        let canonical_input = input_type.canonicalize();
+    pub(crate) fn needs_input_type(
+        &self,
+        input_type: &Type,
+        krate_collection: &CrateCollection,
+    ) -> bool {
+        let canonical_input = input_type.canonicalize(krate_collection);
         self.stages[0].input_parameters.iter().any(|t| {
-            if t.canonicalize() == canonical_input {
+            if t.canonicalize(krate_collection) == canonical_input {
                 return true;
             }
             if let Type::Reference(r) = t {
-                return r.inner.canonicalize() == canonical_input;
+                return r.inner.canonicalize(krate_collection) == canonical_input;
             }
 
             false
         })
     }
 
-    pub(crate) fn needs_allowed_methods(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        self.needs_framework_item(framework_item_db, FrameworkItemDb::allowed_methods_id())
+    pub(crate) fn needs_allowed_methods(
+        &self,
+        framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
+    ) -> bool {
+        self.needs_framework_item(
+            framework_item_db,
+            FrameworkItemDb::allowed_methods_id(),
+            krate_collection,
+        )
     }
 
-    pub(crate) fn needs_url_params(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        self.needs_framework_item(framework_item_db, FrameworkItemDb::url_params_id())
+    pub(crate) fn needs_url_params(
+        &self,
+        framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
+    ) -> bool {
+        self.needs_framework_item(
+            framework_item_db,
+            FrameworkItemDb::url_params_id(),
+            krate_collection,
+        )
     }
 
-    pub(crate) fn needs_connection_info(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        self.needs_framework_item(framework_item_db, FrameworkItemDb::connection_info_id())
+    pub(crate) fn needs_connection_info(
+        &self,
+        framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
+    ) -> bool {
+        self.needs_framework_item(
+            framework_item_db,
+            FrameworkItemDb::connection_info_id(),
+            krate_collection,
+        )
     }
 
-    pub(crate) fn needs_matched_route(&self, framework_item_db: &FrameworkItemDb) -> bool {
+    pub(crate) fn needs_matched_route(
+        &self,
+        framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
+    ) -> bool {
         self.needs_framework_item(
             framework_item_db,
             FrameworkItemDb::matched_route_template_id(),
+            krate_collection,
         )
     }
 
@@ -507,8 +547,9 @@ impl CodegenedRequestHandlerPipeline {
         &self,
         framework_item_db: &FrameworkItemDb,
         id: FrameworkItemId,
+        krate_collection: &CrateCollection,
     ) -> bool {
-        self.needs_input_type(framework_item_db.get_type(id))
+        self.needs_input_type(framework_item_db.get_type(id), krate_collection)
     }
 }
 

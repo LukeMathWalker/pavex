@@ -13,6 +13,7 @@ use crate::compiler::{
     },
     codegen_utils::VariableNameGenerator,
 };
+use crate::rustdoc::CrateCollection;
 
 use super::{ApplicationStateCallGraph, ComponentDb, Type, deps::ServerSdkDeps};
 
@@ -195,11 +196,13 @@ pub(super) fn get_application_state_private_new(
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
+    krate_collection: &CrateCollection,
 ) -> Result<ItemFn, anyhow::Error> {
     let mut function = application_state_call_graph.call_graph.codegen(
         package_id2name,
         component_db,
         computation_db,
+        krate_collection,
     )?;
     function.sig.ident = format_ident!("_new");
     function.vis = syn::Visibility::Inherited;

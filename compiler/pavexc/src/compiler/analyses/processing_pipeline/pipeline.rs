@@ -225,6 +225,7 @@ impl RequestHandlerPipeline {
                     computation_db,
                     component_db,
                     constructible_db,
+                    krate_collection,
                     diagnostics,
                 )?;
 
@@ -308,6 +309,7 @@ impl RequestHandlerPipeline {
                         component_db,
                         constructible_db,
                         framework_item_db,
+                        krate_collection,
                     )
                 {
                     if stage_index != 0 {
@@ -594,7 +596,7 @@ impl RequestHandlerPipeline {
 
                 let indexes: BTreeSet<_> =
                     consumers.into_iter().map(|v| v.middleware_index).collect();
-                type2cloning_indexes.insert(ty_.canonicalize(), indexes);
+                type2cloning_indexes.insert(ty_.canonicalize(krate_collection), indexes);
             }
             stage.type2cloning_indexes = type2cloning_indexes;
         }
@@ -665,6 +667,7 @@ impl RequestHandlerPipeline {
         component_db: &mut ComponentDb,
         constructible_db: &mut ConstructibleDb,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
     ) -> Option<ComponentId> {
         if !matches!(
             component_db.hydrated_component(middleware_id, computation_db),
@@ -721,7 +724,12 @@ impl RequestHandlerPipeline {
                 None,
             )
             .unwrap();
-        constructible_db.insert(next_state_constructor_id, component_db, computation_db);
+        constructible_db.insert(
+            next_state_constructor_id,
+            component_db,
+            computation_db,
+            krate_collection,
+        );
 
         // Since we now have the concrete type of the generic in `Next<_>`, we can bind
         // the generic type parameter of the middleware to that concrete type.
@@ -749,6 +757,7 @@ impl RequestHandlerPipeline {
             &bindings,
             computation_db,
             framework_item_db,
+            krate_collection,
         );
 
         let HydratedComponent::WrappingMiddleware(bound_mw) =
@@ -766,6 +775,7 @@ impl RequestHandlerPipeline {
                     component_db,
                     computation_db,
                     framework_item_db,
+                    krate_collection,
                 )
                 .is_some()
         );
@@ -1005,12 +1015,16 @@ impl Bindings {
     /// - `&mut name` if the caller wants an instance of `&mut Foo`
     ///
     /// In the last case, the binding is automatically marked as mutable.
-    pub(crate) fn get_expr_for_type(&mut self, type_: &Type) -> Option<syn::Expr> {
-        let canonical_type = type_.canonicalize();
+    pub(crate) fn get_expr_for_type(
+        &mut self,
+        type_: &Type,
+        krate_collection: &CrateCollection,
+    ) -> Option<syn::Expr> {
+        let canonical_type = type_.canonicalize(krate_collection);
         let binding = self
             .0
             .iter()
-            .find(|binding| binding.type_.canonicalize() == canonical_type);
+            .find(|binding| binding.type_.canonicalize(krate_collection) == canonical_type);
         if let Some(binding) = binding {
             let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
             let block = quote! { #ident };
@@ -1023,11 +1037,11 @@ impl Bindings {
             return None;
         };
 
-        let canonical_inner = ref_.inner.canonicalize();
+        let canonical_inner = ref_.inner.canonicalize(krate_collection);
         if let Some(binding) = self
             .0
             .iter_mut()
-            .find(|binding| binding.type_.canonicalize() == canonical_inner)
+            .find(|binding| binding.type_.canonicalize(krate_collection) == canonical_inner)
         {
             let mut_ = if ref_.is_mutable {
                 binding.mutable = true;
@@ -1048,11 +1062,10 @@ impl Bindings {
                 lifetime: ref_.lifetime.clone(),
                 inner: Box::new(ref_.inner.as_ref().clone()),
             });
-            let canonical_new_ref = new_ref.canonicalize();
-            let binding = self
-                .0
-                .iter()
-                .find(|binding| binding.type_.canonicalize() == canonical_new_ref);
+            let canonical_new_ref = new_ref.canonicalize(krate_collection);
+            let binding = self.0.iter().find(|binding| {
+                binding.type_.canonicalize(krate_collection) == canonical_new_ref
+            });
             if let Some(binding) = binding {
                 let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
                 let block = quote! { #ident };
@@ -1064,11 +1077,15 @@ impl Bindings {
     }
 
     /// Return the first binding with a given type.
-    pub(crate) fn find_exact_by_type(&self, type_: &Type) -> Option<&Binding> {
-        let canonical = type_.canonicalize();
+    pub(crate) fn find_exact_by_type(
+        &self,
+        type_: &Type,
+        krate_collection: &CrateCollection,
+    ) -> Option<&Binding> {
+        let canonical = type_.canonicalize(krate_collection);
         self.0
             .iter()
-            .find(|binding| binding.type_.canonicalize() == canonical)
+            .find(|binding| binding.type_.canonicalize(krate_collection) == canonical)
     }
 }
 

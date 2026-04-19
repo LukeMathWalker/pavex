@@ -62,6 +62,7 @@ pub(crate) fn application_state_call_graph(
             CloningPolicy::NeverClone,
             computation_db,
             framework_item_db,
+            krate_collection,
             None,
         )
         .unwrap();
@@ -77,6 +78,7 @@ pub(crate) fn application_state_call_graph(
         computation_db,
         component_db,
         constructible_db,
+        krate_collection,
         lifecycle2invocations,
         diagnostics,
     )
@@ -296,6 +298,7 @@ pub(crate) fn application_state_call_graph(
             computation_db,
             component_db,
             constructible_db,
+            krate_collection,
             lifecycle2invocations,
             diagnostics,
         ) else {

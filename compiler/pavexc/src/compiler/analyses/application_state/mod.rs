@@ -57,6 +57,7 @@ impl ApplicationState {
             framework_item_db,
             constructibles_db,
             component_db,
+            krate_collection,
         );
         runtime_singletons_are_thread_safe(
             &type2id,
@@ -331,6 +332,7 @@ fn extract_runtime_singletons<'a>(
     framework_item_db: &FrameworkItemDb,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
+    krate_collection: &CrateCollection,
 ) -> IndexSet<(Type, ComponentId)> {
     let mut type2id = IndexSet::new();
     for handler_pipeline in handler_pipelines {
@@ -363,6 +365,7 @@ fn extract_runtime_singletons<'a>(
                     root_component_scope_id,
                     required_input,
                     component_db.scope_graph(),
+                    krate_collection,
                 ) {
                     let lifecycle = component_db.lifecycle(component_id);
                     #[cfg(debug_assertions)]
