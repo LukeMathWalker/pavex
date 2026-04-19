@@ -7,6 +7,7 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::user_components::{ScopeId, UserComponentId};
 use crate::compiler::component::ErrorHandler;
 use crate::language::{CanonicalType, Type, TypeReference};
+use crate::rustdoc::CrateCollection;
 
 /// The set of error types that can be handled, for each scope.
 #[derive(Default)]
@@ -36,22 +37,28 @@ impl ErrorHandlersDb {
         error_handler: ErrorHandler,
         scope_id: ScopeId,
         id: UserComponentId,
+        krate_collection: &CrateCollection,
     ) {
         let scope_handlers = self
             .scope_id2error_handlers
             .entry(scope_id)
             .or_insert_with(ErrorHandlersInScope::new);
-        scope_handlers.insert(error_handler, id);
+        scope_handlers.insert(error_handler, id, krate_collection);
     }
 
     /// Record that an error handler was registered for the given type, even
     /// though the callable didn't pass our validation checks.
-    pub(crate) fn insert_invalid(&mut self, error_type_ref: &Type, scope_id: ScopeId) {
+    pub(crate) fn insert_invalid(
+        &mut self,
+        error_type_ref: &Type,
+        scope_id: ScopeId,
+        krate_collection: &CrateCollection,
+    ) {
         let scope_handlers = self
             .scope_id2error_handlers
             .entry(scope_id)
             .or_insert_with(ErrorHandlersInScope::new);
-        scope_handlers.insert_invalid(error_type_ref);
+        scope_handlers.insert_invalid(error_type_ref, krate_collection);
     }
 
     /// Find the error handler for a given error type in a given scope.
@@ -69,12 +76,13 @@ impl ErrorHandlersDb {
         scope_id: ScopeId,
         type_: &Type,
         component_db: &ComponentDb,
+        krate_collection: &CrateCollection,
     ) -> Option<ErrorHandlerEntry> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
             if let Some(handlers) = self.scope_id2error_handlers.get_mut(&scope_id)
-                && let Some(output) = handlers.get_or_try_bind(type_)
+                && let Some(output) = handlers.get_or_try_bind(type_, krate_collection)
             {
                 return Some(output);
             }
@@ -123,16 +131,24 @@ impl ErrorHandlersInScope {
     }
 
     /// Retrieve the handler for a given error type, if it exists.
-    fn get(&self, type_: &Type) -> Option<&ErrorHandlerEntry> {
-        self.concrete.get(&type_.canonicalize())
+    fn get(
+        &self,
+        type_: &Type,
+        krate_collection: &CrateCollection,
+    ) -> Option<&ErrorHandlerEntry> {
+        self.concrete.get(&type_.canonicalize(krate_collection))
     }
 
     /// Retrieve the handler for a given error type, if it exists.
     ///
     /// If it doesn't exist, check the templated handlers to see if there is one
     /// that can be specialized to handle the given type.
-    fn get_or_try_bind(&mut self, type_: &Type) -> Option<ErrorHandlerEntry> {
-        if let Some(handler) = self.get(type_) {
+    fn get_or_try_bind(
+        &mut self,
+        type_: &Type,
+        krate_collection: &CrateCollection,
+    ) -> Option<ErrorHandlerEntry> {
+        if let Some(handler) = self.get(type_, krate_collection) {
             return Some(handler.to_owned());
         }
         let matched = self
@@ -159,8 +175,8 @@ impl ErrorHandlersInScope {
                 component_id,
             });
         }
-        self.insert(bound_handler, component_id);
-        let bound = self.get(type_);
+        self.insert(bound_handler, component_id, krate_collection);
+        let bound = self.get(type_, krate_collection);
         assert!(
             bound.is_some(),
             "I used {:?} as a templated error handler to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
@@ -176,7 +192,12 @@ impl ErrorHandlersInScope {
     }
 
     /// Register a type and its handler.
-    fn insert(&mut self, error_handler: ErrorHandler, component_id: UserComponentId) {
+    fn insert(
+        &mut self,
+        error_handler: ErrorHandler,
+        component_id: UserComponentId,
+        krate_collection: &CrateCollection,
+    ) {
         let error_type_ref = error_handler.error_type_ref();
         let Type::Reference(TypeReference { inner, .. }) = error_type_ref else {
             unreachable!()
@@ -189,13 +210,14 @@ impl ErrorHandlersInScope {
         if error_type.is_a_template() {
             self.templated.insert(error_type, entry);
         } else {
-            self.concrete.insert(error_type.canonicalize(), entry);
+            self.concrete
+                .insert(error_type.canonicalize(krate_collection), entry);
         }
     }
 
     /// Record that an error handler was registered for the given type, even
     /// though the callable didn't pass our validation checks.
-    fn insert_invalid(&mut self, error_type_ref: &Type) {
+    fn insert_invalid(&mut self, error_type_ref: &Type, krate_collection: &CrateCollection) {
         let Type::Reference(TypeReference { inner, .. }) = error_type_ref else {
             return;
         };
@@ -204,8 +226,10 @@ impl ErrorHandlersInScope {
             self.templated
                 .insert(error_type, ErrorHandlerEntry::Invalid);
         } else {
-            self.concrete
-                .insert(error_type.canonicalize(), ErrorHandlerEntry::Invalid);
+            self.concrete.insert(
+                error_type.canonicalize(krate_collection),
+                ErrorHandlerEntry::Invalid,
+            );
         }
     }
 }

@@ -12,6 +12,7 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::language::Type;
+use crate::rustdoc::CrateCollection;
 
 /// A [`CallGraph`] with nodes globally ordered according to their node index.
 /// Walking the graph according to the specified ordering guarantees that the generated code will
@@ -43,11 +44,18 @@ impl OrderedCallGraph {
         package_id2name: &BiHashMap<PackageId, String>,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
     ) -> Result<ItemFn, anyhow::Error> {
         if tracing::event_enabled!(tracing::Level::TRACE) {
             self.print_debug_dot("Application state", component_db, computation_db);
         }
-        codegen_callable_closure(self, package_id2name, component_db, computation_db)
+        codegen_callable_closure(
+            self,
+            package_id2name,
+            component_db,
+            computation_db,
+            krate_collection,
+        )
     }
 
     /// Return the set of types that must be provided as input to (recursively) build the handler's

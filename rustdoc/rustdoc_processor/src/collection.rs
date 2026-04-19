@@ -492,6 +492,14 @@ impl<I: CrateIndexer> CrateCollection<I> {
     }
 }
 
+impl<I: CrateIndexer> rustdoc_ir::CanonicalPathResolver for CrateCollection<I> {
+    fn canonical_path(&self, id: &GlobalItemId) -> Option<Vec<String>> {
+        self.get_canonical_path_by_global_type_id(id)
+            .ok()
+            .map(<[String]>::to_vec)
+    }
+}
+
 impl<I: CrateIndexer> Drop for CrateCollection<I> {
     fn drop(&mut self) {
         let access_log = std::mem::take(&mut self.access_log);

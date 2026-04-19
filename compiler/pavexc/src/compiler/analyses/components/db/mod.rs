@@ -277,6 +277,7 @@ impl ComponentDb {
                 needs_error_handler,
                 computation_db,
                 &mut error_handlers_db,
+                krate_collection,
                 diagnostics,
             );
         }
@@ -574,6 +575,7 @@ impl ComponentDb {
         needs_error_handler: IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
         error_handlers_db: &mut ErrorHandlersDb,
+        krate_collection: &CrateCollection,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         let default_fallback_handler = {
@@ -595,7 +597,7 @@ impl ComponentDb {
             let error_type = get_err_variant(fallible_computation.output_type().unwrap());
 
             if let Some(error_handler) =
-                error_handlers_db.get_or_try_bind(scope_id, error_type, self)
+                error_handlers_db.get_or_try_bind(scope_id, error_type, self, krate_collection)
             {
                 if let ErrorHandlerEntry::Valid {
                     error_handler,
@@ -637,9 +639,12 @@ impl ComponentDb {
                 );
             }
 
-            if let Some(error_handler) =
-                error_handlers_db.get_or_try_bind(scope_id, &self.pavex_error, self)
-            {
+            if let Some(error_handler) = error_handlers_db.get_or_try_bind(
+                scope_id,
+                &self.pavex_error,
+                self,
+                krate_collection,
+            ) {
                 if let ErrorHandlerEntry::Valid {
                     error_handler,
                     component_id,
@@ -713,6 +718,7 @@ impl ComponentDb {
                 &self.pavex_error,
                 &self.pavex_response,
                 framework_item_db,
+                krate_collection,
             ) {
                 Err(e) => {
                     Self::invalid_constructor(
@@ -1166,13 +1172,22 @@ impl ComponentDb {
                         error_ref_input_index,
                     ) {
                         Ok(e) => {
-                            error_handlers_db.insert(e, scope_id, error_handler_user_component_id);
+                            error_handlers_db.insert(
+                                e,
+                                scope_id,
+                                error_handler_user_component_id,
+                                krate_collection,
+                            );
                         }
                         Err(e) => {
                             if let Some(error_input) =
                                 error_handler_callable.inputs().get(error_ref_input_index)
                             {
-                                error_handlers_db.insert_invalid(&error_input.type_, scope_id);
+                                error_handlers_db.insert_invalid(
+                                    &error_input.type_,
+                                    scope_id,
+                                    krate_collection,
+                                );
                             }
                             Self::invalid_error_handler(
                                 e,
@@ -1404,6 +1419,7 @@ impl ComponentDb {
         cloning_policy: CloningPolicy,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
@@ -1412,6 +1428,7 @@ impl ComponentDb {
             &self.pavex_error,
             &self.pavex_response,
             framework_item_db,
+            krate_collection,
         )?;
         let constructor_component = UnregisteredComponent::SyntheticConstructor {
             lifecycle,
@@ -1889,6 +1906,7 @@ impl ComponentDb {
         bindings: &HashMap<String, Type>,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
     ) -> ComponentId {
         fn _get_root_component_id(
             component_id: ComponentId,
@@ -1943,6 +1961,7 @@ impl ComponentDb {
                     cloning_policy,
                     computation_db,
                     framework_item_db,
+                    krate_collection,
                     Some(unbound_root_id),
                 )
                 .unwrap()

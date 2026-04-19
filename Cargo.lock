@@ -4287,6 +4287,7 @@ dependencies = [
  "rusqlite",
  "rustc-hash",
  "rustdoc_ext",
+ "rustdoc_ir",
  "rustdoc_types",
  "semver",
  "serde",

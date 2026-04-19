@@ -46,6 +46,7 @@ pub struct App {
     codegen_deps: HashMap<String, guppy::PackageId>,
     component_db: ComponentDb,
     computation_db: ComputationDb,
+    krate_collection: CrateCollection,
 }
 
 impl App {
@@ -194,6 +195,7 @@ impl App {
                 application_state,
                 application_config,
                 codegen_deps,
+                krate_collection,
             },
             diagnostics,
         ))
@@ -227,6 +229,7 @@ impl App {
             &self.component_db,
             &self.computation_db,
             &self.framework_item_db,
+            &self.krate_collection,
         )?;
         Ok(GeneratedApp {
             lib_rs,

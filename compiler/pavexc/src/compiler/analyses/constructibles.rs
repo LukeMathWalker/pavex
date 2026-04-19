@@ -56,7 +56,7 @@ impl ConstructibleDb {
         framework_items_db: &FrameworkItemDb,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) -> Self {
-        let mut self_ = Self::_build(component_db, computation_db);
+        let mut self_ = Self::_build(component_db, computation_db, krate_collection);
         self_.detect_missing_constructors(
             component_db,
             computation_db,
@@ -65,22 +65,32 @@ impl ConstructibleDb {
             diagnostics,
         );
         self_.verify_singleton_ambiguity(component_db, computation_db, diagnostics);
-        self_.verify_lifecycle_of_singleton_dependencies(component_db, computation_db, diagnostics);
+        self_.verify_lifecycle_of_singleton_dependencies(
+            component_db,
+            computation_db,
+            krate_collection,
+            diagnostics,
+        );
         self_.error_observers_cannot_depend_on_fallible_components(
             component_db,
             computation_db,
+            krate_collection,
             diagnostics,
         );
 
         self_
     }
 
-    fn _build(component_db: &ComponentDb, computation_db: &ComputationDb) -> Self {
+    fn _build(
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
+    ) -> Self {
         let mut self_ = Self {
             scope_id2constructibles: IndexMap::new(),
         };
         for (component_id, _) in component_db.constructors(computation_db) {
-            self_.insert(component_id, component_db, computation_db);
+            self_.insert(component_id, component_db, computation_db, krate_collection);
         }
         self_
     }
@@ -226,6 +236,7 @@ impl ConstructibleDb {
                     component_db,
                     computation_db,
                     framework_items_db,
+                    krate_collection,
                 ) else {
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         self.missing_constructor(
@@ -471,6 +482,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         for (component_id, _) in component_db.iter() {
@@ -480,9 +492,12 @@ impl ConstructibleDb {
             let component = component_db.hydrated_component(component_id, computation_db);
             let component_scope = component_db.scope_id(component_id);
             for input_type in component.input_types() {
-                if let Some((input_constructor_id, _)) =
-                    self.get(component_scope, input_type, component_db.scope_graph())
-                    && component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped
+                if let Some((input_constructor_id, _)) = self.get(
+                    component_scope,
+                    input_type,
+                    component_db.scope_graph(),
+                    krate_collection,
+                ) && component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped
                 {
                     Self::singleton_must_not_depend_on_request_scoped(
                         component_id,
@@ -511,6 +526,7 @@ impl ConstructibleDb {
         &self,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
         diagnostics: &crate::diagnostic::DiagnosticSink,
     ) {
         'outer: for (error_observer_id, _) in component_db.iter() {
@@ -535,6 +551,7 @@ impl ConstructibleDb {
                     component_db.scope_id(error_observer_id),
                     &input,
                     component_db.scope_graph(),
+                    krate_collection,
                 ) else {
                     continue 'inner;
                 };
@@ -584,12 +601,13 @@ impl ConstructibleDb {
         scope_id: ScopeId,
         type_: &Type,
         scope_graph: &ScopeGraph,
+        krate_collection: &CrateCollection,
     ) -> Option<(ComponentId, ConsumptionMode)> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
             if let Some(constructibles) = self.scope_id2constructibles.get(&scope_id)
-                && let Some(output) = constructibles.get(type_)
+                && let Some(output) = constructibles.get(type_, krate_collection)
             {
                 return Some(output);
             }
@@ -604,6 +622,7 @@ impl ConstructibleDb {
         component_id: ComponentId,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
     ) {
         let component = component_db.hydrated_component(component_id, computation_db);
         assert!(matches!(component, HydratedComponent::Constructor(_)));
@@ -613,7 +632,7 @@ impl ConstructibleDb {
             .entry(scope_id)
             .or_insert_with(ConstructiblesInScope::new);
         let output = component.output_type();
-        scope_constructibles.insert(output.unwrap().to_owned(), component_id);
+        scope_constructibles.insert(output.unwrap().to_owned(), component_id, krate_collection);
     }
 
     /// Find the constructor for a given type in a given scope.
@@ -634,6 +653,7 @@ impl ConstructibleDb {
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
     ) -> Option<(ComponentId, ConsumptionMode)> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
@@ -644,6 +664,7 @@ impl ConstructibleDb {
                     component_db,
                     computation_db,
                     framework_item_db,
+                    krate_collection,
                 )
             {
                 return Some(output);
@@ -960,15 +981,19 @@ impl ConstructiblesInScope {
 
     /// Retrieve the constructor for a given type, if it exists.
     /// Only searches concrete (non-templated) types.
-    fn get(&self, type_: &Type) -> Option<(ComponentId, ConsumptionMode)> {
-        let normalized = type_.canonicalize();
+    fn get(
+        &self,
+        type_: &Type,
+        krate_collection: &CrateCollection,
+    ) -> Option<(ComponentId, ConsumptionMode)> {
+        let normalized = type_.canonicalize(krate_collection);
         if let Some(constructor_id) = self.concrete.get(&normalized).copied() {
             return Some((constructor_id, ConsumptionMode::Move));
         }
 
         match type_ {
             Type::Reference(ref_) if !ref_.lifetime.is_static() => {
-                let normalized_inner = ref_.inner.canonicalize();
+                let normalized_inner = ref_.inner.canonicalize(krate_collection);
                 if let Some(constructor_id) = self.concrete.get(&normalized_inner).copied() {
                     return Some((
                         constructor_id,
@@ -996,8 +1021,9 @@ impl ConstructiblesInScope {
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
     ) -> Option<(ComponentId, ConsumptionMode)> {
-        if let Some(output) = self.get(type_) {
+        if let Some(output) = self.get(type_, krate_collection) {
             return Some(output);
         }
         let matched = self
@@ -1018,9 +1044,10 @@ impl ConstructiblesInScope {
                 component_db,
                 computation_db,
                 framework_item_db,
+                krate_collection,
                 &bindings,
             );
-            let bound = self.get(type_);
+            let bound = self.get(type_, krate_collection);
             assert!(
                 bound.is_some(),
                 "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
@@ -1042,6 +1069,7 @@ impl ConstructiblesInScope {
                     component_db,
                     computation_db,
                     framework_item_db,
+                    krate_collection,
                 )?;
                 let lifecycle = component_db.lifecycle(component_id);
                 if ref_.is_mutable {
@@ -1070,11 +1098,17 @@ impl ConstructiblesInScope {
     }
 
     /// Register a type and its constructor.
-    fn insert(&mut self, output: Type, component_id: ComponentId) {
+    fn insert(
+        &mut self,
+        output: Type,
+        component_id: ComponentId,
+        krate_collection: &CrateCollection,
+    ) {
         if output.is_a_template() {
             self.templated.insert(output, component_id);
         } else {
-            self.concrete.insert(output.canonicalize(), component_id);
+            self.concrete
+                .insert(output.canonicalize(krate_collection), component_id);
         }
     }
 
@@ -1087,6 +1121,7 @@ impl ConstructiblesInScope {
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         framework_item_db: &FrameworkItemDb,
+        krate_collection: &CrateCollection,
         bindings: &HashMap<String, Type>,
     ) {
         let bound_component_id = component_db.bind_generic_type_parameters(
@@ -1094,6 +1129,7 @@ impl ConstructiblesInScope {
             bindings,
             computation_db,
             framework_item_db,
+            krate_collection,
         );
 
         let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);
@@ -1102,8 +1138,10 @@ impl ConstructiblesInScope {
         for derived_component_id in derived_component_ids {
             let component = component_db.hydrated_component(derived_component_id, computation_db);
             if let HydratedComponent::Constructor(c) = component {
-                self.concrete
-                    .insert(c.output_type().canonicalize(), derived_component_id);
+                self.concrete.insert(
+                    c.output_type().canonicalize(krate_collection),
+                    derived_component_id,
+                );
             }
         }
     }

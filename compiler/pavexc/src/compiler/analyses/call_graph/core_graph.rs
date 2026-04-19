@@ -18,6 +18,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{Lifetime, Type, TypeReference};
+use crate::rustdoc::CrateCollection;
 
 use super::dependency_graph::DependencyGraph;
 
@@ -66,6 +67,7 @@ pub(super) fn build_call_graph<F>(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     constructible_db: &ConstructibleDb,
+    krate_collection: &CrateCollection,
     lifecycle2n_allowed_invocations: F,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()>
@@ -78,6 +80,7 @@ where
         computation_db,
         component_db,
         constructible_db,
+        krate_collection,
         error_observer_ids,
         lifecycle2n_allowed_invocations.clone(),
     )
@@ -233,9 +236,12 @@ where
                     }
                 };
                 for input_type in input_types {
-                    if let Some((constructor_id, consumption_mode)) =
-                        constructible_db.get(root_scope_id, &input_type, component_db.scope_graph())
-                    {
+                    if let Some((constructor_id, consumption_mode)) = constructible_db.get(
+                        root_scope_id,
+                        &input_type,
+                        component_db.scope_graph(),
+                        krate_collection,
+                    ) {
                         nodes_to_be_visited.insert(VisitorStackElement {
                             node_index: add_node_for_component(
                                 &mut call_graph,

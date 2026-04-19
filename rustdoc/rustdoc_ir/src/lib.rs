@@ -1,6 +1,7 @@
 mod array;
 mod callable;
 mod callable_path;
+mod canonical_path_resolver;
 pub mod function_pointer;
 mod generic;
 mod generic_argument;
@@ -25,6 +26,7 @@ pub use callable_path::{
     EnumVariantConstructorPath, FreeFunctionPath, InherentMethodPath, StructLiteralPath,
     TraitMethodPath,
 };
+pub use canonical_path_resolver::{CanonicalPathResolver, NoOpResolver};
 pub use function_pointer::{FunctionPointer, FunctionPointerInput};
 pub use generic::Generic;
 pub use generic_argument::{ConstGenericArgument, GenericArgument, GenericLifetimeParameter};

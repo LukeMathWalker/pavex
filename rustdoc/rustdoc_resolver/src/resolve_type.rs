@@ -799,7 +799,7 @@ fn find_assoc_type_in_trait_impls<I: CrateIndexer>(
         return Ok(None);
     };
 
-    let resolved_self = resolved_self.canonicalize();
+    let resolved_self = resolved_self.canonicalize(krate_collection);
 
     // The trait's implementations are local to the trait's crate.
     let trait_package_id = &trait_global_id.package_id;
@@ -835,7 +835,7 @@ fn find_assoc_type_in_trait_impls<I: CrateIndexer>(
         ) else {
             continue;
         };
-        if resolved_for.canonicalize() != resolved_self {
+        if resolved_for.canonicalize(krate_collection) != resolved_self {
             continue;
         }
 

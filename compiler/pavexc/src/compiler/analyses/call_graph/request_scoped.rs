@@ -47,6 +47,7 @@ pub(crate) fn request_scoped_ordered_call_graph(
         computation_db,
         component_db,
         constructible_db,
+        krate_collection,
         diagnostics,
     )
     else {
@@ -78,6 +79,7 @@ pub(crate) fn request_scoped_call_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
+    krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()> {
     let mut graph_root = String::new();
@@ -100,6 +102,7 @@ pub(crate) fn request_scoped_call_graph(
         computation_db,
         component_db,
         constructible_db,
+        krate_collection,
         diagnostics,
     )?;
     if component_db.is_pre_processing_middleware(root_component_id) {
@@ -111,6 +114,7 @@ pub(crate) fn request_scoped_call_graph(
             computation_db,
             component_db,
             constructible_db,
+            krate_collection,
             diagnostics,
         )
     } else {
@@ -127,6 +131,7 @@ fn _request_scoped_call_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
+    krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()> {
     fn lifecycle2invocations(l: Lifecycle) -> Option<NumberOfAllowedInvocations> {
@@ -143,6 +148,7 @@ fn _request_scoped_call_graph(
         computation_db,
         component_db,
         constructible_db,
+        krate_collection,
         lifecycle2invocations,
         diagnostics,
     )
@@ -161,6 +167,7 @@ fn augment_preprocessing_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
+    krate_collection: &CrateCollection,
     diagnostics: &crate::diagnostic::DiagnosticSink,
 ) -> Result<CallGraph, ()> {
     assert!(component_db.is_pre_processing_middleware(root_component_id));
@@ -235,6 +242,7 @@ fn augment_preprocessing_graph(
         computation_db,
         component_db,
         constructible_db,
+        krate_collection,
         diagnostics,
     )
 }

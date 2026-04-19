@@ -2,10 +2,11 @@ use std::fmt::{Debug, Formatter};
 
 use ahash::{HashMap, HashMapExt};
 use indexmap::{IndexMap, IndexSet};
+use rustdoc_ext::GlobalItemId;
 
 use crate::generics_equivalence::UnassignedIdGenerator;
 use crate::{
-    Array, FunctionPointer, FunctionPointerInput, Generic, GenericArgument,
+    Array, CanonicalPathResolver, FunctionPointer, FunctionPointerInput, Generic, GenericArgument,
     GenericLifetimeParameter, Lifetime, NamedLifetime, PathType, RawPointer, Slice, Tuple, Type,
     TypeReference,
 };
@@ -690,11 +691,16 @@ impl Type {
     /// - Unassigned generic type parameters: renamed with fresh positional names (A, B, ...),
     ///   **preserving** identity (two occurrences of `T` both become `A`).
     /// - Static lifetimes and scalar primitives are preserved as-is.
-    pub fn canonicalize(&self) -> CanonicalType {
+    /// - For [`Type::Path`] and [`Type::TypeAlias`], when a `rustdoc_id` is available, the
+    ///   `base_type` is rewritten to the canonical shortest importable path reported by
+    ///   the supplied [`CanonicalPathResolver`]. This ensures that the same type reached
+    ///   via different exports canonicalizes to the same value.
+    pub fn canonicalize(&self, resolver: &dyn CanonicalPathResolver) -> CanonicalType {
         let mut lifetime_counter = 0usize;
         let mut generic_counter = 0usize;
         let mut generic_name_map: HashMap<String, String> = HashMap::new();
         CanonicalType(self._canonicalize(
+            resolver,
             &mut lifetime_counter,
             &mut generic_counter,
             &mut generic_name_map,
@@ -703,6 +709,7 @@ impl Type {
 
     fn _canonicalize(
         &self,
+        resolver: &dyn CanonicalPathResolver,
         lifetime_counter: &mut usize,
         generic_counter: &mut usize,
         generic_name_map: &mut HashMap<String, String>,
@@ -767,6 +774,7 @@ impl Type {
                     .map(|arg| match arg {
                         GenericArgument::TypeParameter(inner) => {
                             GenericArgument::TypeParameter(inner._canonicalize(
+                                resolver,
                                 lifetime_counter,
                                 generic_counter,
                                 generic_name_map,
@@ -778,10 +786,18 @@ impl Type {
                         GenericArgument::Const(_) => arg.clone(),
                     })
                     .collect();
+                let base_type = if let Some(rustdoc_id) = t.rustdoc_id {
+                    let id = GlobalItemId::new(rustdoc_id, t.package_id.clone());
+                    resolver
+                        .canonical_path(&id)
+                        .unwrap_or_else(|| t.base_type.clone())
+                } else {
+                    t.base_type.clone()
+                };
                 let path = PathType {
                     package_id: t.package_id.clone(),
                     rustdoc_id: t.rustdoc_id,
-                    base_type: t.base_type.clone(),
+                    base_type,
                     generic_arguments,
                 };
                 if is_alias {
@@ -794,6 +810,7 @@ impl Type {
                 is_mutable: r.is_mutable,
                 lifetime: canonicalize_lifetime(&r.lifetime, lifetime_counter),
                 inner: Box::new(r.inner._canonicalize(
+                    resolver,
                     lifetime_counter,
                     generic_counter,
                     generic_name_map,
@@ -803,11 +820,19 @@ impl Type {
                 elements: t
                     .elements
                     .iter()
-                    .map(|e| e._canonicalize(lifetime_counter, generic_counter, generic_name_map))
+                    .map(|e| {
+                        e._canonicalize(
+                            resolver,
+                            lifetime_counter,
+                            generic_counter,
+                            generic_name_map,
+                        )
+                    })
                     .collect(),
             }),
             Type::Slice(s) => Type::Slice(Slice {
                 element_type: Box::new(s.element_type._canonicalize(
+                    resolver,
                     lifetime_counter,
                     generic_counter,
                     generic_name_map,
@@ -815,6 +840,7 @@ impl Type {
             }),
             Type::Array(a) => Type::Array(Array {
                 element_type: Box::new(a.element_type._canonicalize(
+                    resolver,
                     lifetime_counter,
                     generic_counter,
                     generic_name_map,
@@ -824,6 +850,7 @@ impl Type {
             Type::RawPointer(r) => Type::RawPointer(RawPointer {
                 is_mutable: r.is_mutable,
                 inner: Box::new(r.inner._canonicalize(
+                    resolver,
                     lifetime_counter,
                     generic_counter,
                     generic_name_map,
@@ -836,6 +863,7 @@ impl Type {
                     .map(|input| FunctionPointerInput {
                         name: None,
                         type_: input.type_._canonicalize(
+                            resolver,
                             lifetime_counter,
                             generic_counter,
                             generic_name_map,
@@ -843,7 +871,12 @@ impl Type {
                     })
                     .collect(),
                 output: fp.output.as_ref().map(|t| {
-                    Box::new(t._canonicalize(lifetime_counter, generic_counter, generic_name_map))
+                    Box::new(t._canonicalize(
+                        resolver,
+                        lifetime_counter,
+                        generic_counter,
+                        generic_name_map,
+                    ))
                 }),
                 abi: fp.abi.clone(),
                 is_unsafe: fp.is_unsafe,

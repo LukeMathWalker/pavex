@@ -6,6 +6,7 @@ use pavex_bp_schema::Lifecycle;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::rustdoc::CrateCollection;
 use crate::{
     compiler::{
         analyses::{
@@ -37,6 +38,7 @@ impl DependencyGraph {
         computation_db: &ComputationDb,
         component_db: &ComponentDb,
         constructible_db: &ConstructibleDb,
+        krate_collection: &CrateCollection,
         error_observer_ids: &[ComponentId],
         lifecycle2n_allowed_invocations: F,
     ) -> Self
@@ -175,6 +177,7 @@ impl DependencyGraph {
                             component_scope,
                             &input_type,
                             component_db.scope_graph(),
+                            krate_collection,
                         ) {
                             nodes_to_be_visited.insert(VisitorStackElement {
                                 component_id: constructor_id,
