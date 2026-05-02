@@ -10,9 +10,7 @@ use crate::queries::Crate;
 use rustdoc_ext::GlobalItemId;
 
 /// Track re-exports of types (or entire modules!) from other crates.
-#[derive(
-    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ExternalReExports {
     /// Key: the path of the re-exported type in the current crate.
     /// Value: the id of the `rustdoc` item of kind `use` that performed the re-export.

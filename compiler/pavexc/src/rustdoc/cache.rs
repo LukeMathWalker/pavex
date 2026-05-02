@@ -3,10 +3,11 @@
 use guppy::graph::PackageGraph;
 
 use rustdoc_processor::cache::RustdocGlobalFsCache;
+use serde::de::DeserializeOwned;
 
 /// Construct a [`RustdocGlobalFsCache`] pre-configured with Pavex's cache fingerprint
 /// and default cache directory (`~/.pavex/rustdoc/cache`).
-pub(crate) fn pavex_rustdoc_cache<A: Default + bincode::Decode<()>>(
+pub(crate) fn pavex_rustdoc_cache<A: Default + DeserializeOwned>(
     toolchain_name: &str,
     cache_workspace_package_docs: bool,
     package_graph: &PackageGraph,

@@ -436,6 +436,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dd9dc738b7a8311c7ade152424974d8115f2cdad61e8dab8dac9f2362298510"
 
 [[package]]
+name = "bytecheck"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0caa33a2c0edca0419d15ac723dff03f1956f7978329b1e3b5fdaaaed9d3ca8b"
+dependencies = [
+ "bytecheck_derive",
+ "ptr_meta",
+ "rancor",
+ "simdutf8",
+]
+
+[[package]]
+name = "bytecheck_derive"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89385e82b5d1821d2219e0b095efa2cc1f246cbf99080f3be46a1a85c0d392d9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bytemuck"
 version = "1.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3249,11 +3272,11 @@ dependencies = [
  "relative-path",
  "rkyv",
  "rustc-hash",
+ "rustdoc-types",
  "rustdoc_ext",
  "rustdoc_ir",
  "rustdoc_processor",
  "rustdoc_resolver",
- "rustdoc_types",
  "semver",
  "serde",
  "serde_json",
@@ -3277,8 +3300,8 @@ dependencies = [
  "pavex_bp_schema",
  "pavexc_attr_parser",
  "px_workspace_hack",
+ "rustdoc-types",
  "rustdoc_ext",
- "rustdoc_types",
  "serde",
 ]
 
@@ -3998,6 +4021,9 @@ name = "rend"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cadadef317c2f20755a64d7fdc48f9e7178ee6b0e1f7fce33fa60f1d68a276e6"
+dependencies = [
+ "bytecheck",
+]
 
 [[package]]
 name = "reqwest"
@@ -4128,6 +4154,7 @@ version = "0.8.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "360b333c61ae24e5af3ae7c8660bd6b21ccd8200dbbc5d33c2454421e85b9c69"
 dependencies = [
+ "bytecheck",
  "bytes",
  "hashbrown 0.16.1",
  "indexmap",
@@ -4240,11 +4267,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustdoc-types"
+version = "0.57.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e6919c49bdd9cca072b3b502d16c073d0a4d3b7283ff6e0c86a5f6e6b07bbfe"
+dependencies = [
+ "rkyv",
+ "rustc-hash",
+ "serde",
+ "serde_derive",
+]
+
+[[package]]
 name = "rustdoc_ext"
 version = "0.2.10"
 dependencies = [
  "guppy",
- "rustdoc_types",
+ "rustdoc-types",
 ]
 
 [[package]]
@@ -4256,8 +4295,8 @@ dependencies = [
  "bimap",
  "guppy",
  "indexmap",
+ "rustdoc-types",
  "rustdoc_ext",
- "rustdoc_types",
  "serde",
  "syn",
  "thiserror 2.0.17",
@@ -4286,9 +4325,9 @@ dependencies = [
  "rkyv",
  "rusqlite",
  "rustc-hash",
+ "rustdoc-types",
  "rustdoc_ext",
  "rustdoc_ir",
- "rustdoc_types",
  "semver",
  "serde",
  "serde_json",
@@ -4308,23 +4347,12 @@ dependencies = [
  "anyhow",
  "guppy",
  "once_cell",
+ "rustdoc-types",
  "rustdoc_ext",
  "rustdoc_ir",
  "rustdoc_processor",
- "rustdoc_types",
  "thiserror 2.0.17",
  "tracing",
-]
-
-[[package]]
-name = "rustdoc_types"
-version = "0.2.10"
-dependencies = [
- "bincode",
- "rkyv",
- "rustc-hash",
- "serde",
- "serde_derive",
 ]
 
 [[package]]
@@ -4730,6 +4758,12 @@ name = "simd-adler32"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
+
+[[package]]
+name = "simdutf8"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
 name = "similar"
