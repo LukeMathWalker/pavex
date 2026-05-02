@@ -4,6 +4,7 @@ use std::borrow::Cow;
 
 use guppy::PackageId;
 use rusqlite::params;
+use serde::de::DeserializeOwned;
 use tracing::instrument;
 
 use super::entry::{CacheEntry, SecondaryIndexes};
@@ -31,7 +32,7 @@ impl ToolchainCache {
         level=tracing::Level::DEBUG,
         fields(crate.name = %name)
     )]
-    pub(super) fn get<A: bincode::Decode<()> + Default>(
+    pub(super) fn get<A: DeserializeOwned + Default>(
         &self,
         name: &str,
         cargo_fingerprint: &str,
@@ -167,7 +168,7 @@ impl CacheEntry<'_> {
     /// We hydrate all mappings eagerly, but we avoid re-hydrating the item index eagerly,
     /// since it can be quite large and deserialization can be slow for large crates.
     /// The item index is stored as rkyv-serialized bytes for zero-copy access.
-    pub fn hydrate<A: bincode::Decode<()> + Default>(
+    pub fn hydrate<A: DeserializeOwned + Default>(
         self,
         package_id: PackageId,
     ) -> Result<HydratedCacheEntry<A>, anyhow::Error> {
@@ -175,9 +176,12 @@ impl CacheEntry<'_> {
 
         let crate_data = CrateData {
             root_item_id: rustdoc_types::Id(self.root_item_id.to_owned()),
-            external_crates: bincode::decode_from_slice(&self.external_crates, BINCODE_CONFIG)
-                .context("Failed to deserialize external_crates")?
-                .0,
+            external_crates: bincode::serde::decode_from_slice(
+                &self.external_crates,
+                BINCODE_CONFIG,
+            )
+            .context("Failed to deserialize external_crates")?
+            .0,
             paths: CrateItemPaths::Lazy(LazyCrateItemPaths {
                 bytes: self.paths.into_owned(),
             }),
@@ -191,16 +195,17 @@ impl CacheEntry<'_> {
         };
 
         let import_index =
-            bincode::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
+            bincode::serde::decode_from_slice(&secondary_indexes.import_index, BINCODE_CONFIG)
                 .context("Failed to deserialize import_index")?
                 .0;
 
-        let re_exports = bincode::decode_from_slice(&secondary_indexes.re_exports, BINCODE_CONFIG)
-            .context("Failed to deserialize re-exports")?
-            .0;
+        let re_exports =
+            bincode::serde::decode_from_slice(&secondary_indexes.re_exports, BINCODE_CONFIG)
+                .context("Failed to deserialize re-exports")?
+                .0;
 
         let annotated_items: A = if let Some(data) = secondary_indexes.annotated_items {
-            bincode::decode_from_slice(&data, BINCODE_CONFIG)
+            bincode::serde::decode_from_slice(&data, BINCODE_CONFIG)
                 .context("Failed to deserialize annotated_items")?
                 .0
         } else {

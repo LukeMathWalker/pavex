@@ -7,6 +7,7 @@ mod toolchain;
 pub mod utils;
 
 pub use entry::{CacheEntry, SecondaryIndexes};
+use serde::de::DeserializeOwned;
 pub use utils::RkyvCowBytes;
 
 use std::collections::BTreeSet;
@@ -126,7 +127,7 @@ impl<'a> RustdocCacheKey<'a> {
     }
 }
 
-impl<A: bincode::Decode<()> + Default> RustdocGlobalFsCache<A> {
+impl<A: DeserializeOwned + Default> RustdocGlobalFsCache<A> {
     /// Initialize a new instance of the cache.
     ///
     /// The `cache_fingerprint` is used to determine the database file name.

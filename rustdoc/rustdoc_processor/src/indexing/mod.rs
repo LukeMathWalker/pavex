@@ -24,7 +24,7 @@ use crate::queries::Crate;
 /// `#[pavex(...)]` attributes, while a plain consumer may use `()` annotations.
 pub trait CrateIndexer: Send + Sync {
     /// The annotation payload stored alongside each indexed crate.
-    type Annotations: Default + Send + Sync + serde::Serialize + bincode::Decode<()>;
+    type Annotations: Default + Send + Sync + serde::Serialize + serde::de::DeserializeOwned;
 
     /// Index a freshly-computed rustdoc JSON crate.
     fn index_raw(

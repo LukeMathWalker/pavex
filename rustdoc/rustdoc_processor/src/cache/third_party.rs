@@ -7,6 +7,7 @@ use camino::Utf8Path;
 use guppy::graph::feature::StandardFeatures;
 use guppy::graph::{PackageGraph, PackageMetadata};
 use rusqlite::params;
+use serde::de::DeserializeOwned;
 use tracing::instrument;
 use tracing_log_error::log_error;
 
@@ -44,14 +45,14 @@ impl ThirdPartyCrateCache {
         level=tracing::Level::DEBUG,
         fields(crate.id = %package_metadata.id(), cache_key = tracing::field::Empty, hit = tracing::field::Empty)
     )]
-    pub(super) fn get<A: bincode::Decode<()> + Default>(
+    pub(super) fn get<A: DeserializeOwned + Default>(
         &self,
         package_metadata: &PackageMetadata,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
         package_graph: &PackageGraph,
     ) -> Result<Option<HydratedCacheEntry<A>>, anyhow::Error> {
-        fn _get<A: bincode::Decode<()> + Default>(
+        fn _get<A: DeserializeOwned + Default>(
             package_metadata: &PackageMetadata,
             cargo_fingerprint: &str,
             connection: &rusqlite::Connection,

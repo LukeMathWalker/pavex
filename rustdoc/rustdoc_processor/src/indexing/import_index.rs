@@ -6,9 +6,7 @@ use std::collections::BTreeSet;
 use ahash::HashMap;
 
 /// An index of all importable items in a crate.
-#[derive(
-    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ImportIndex {
     /// A mapping that keeps track of all modules defined in the current crate.
     ///
@@ -24,9 +22,7 @@ pub struct ImportIndex {
 }
 
 /// An entry in [`ImportIndex`].
-#[derive(
-    Debug, Clone, Default, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ImportIndexEntry {
     /// All the public paths that can be used to import the item.
     pub public_paths: BTreeSet<SortablePath>,

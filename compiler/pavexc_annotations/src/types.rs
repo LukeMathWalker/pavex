@@ -6,9 +6,7 @@ use pavex_bp_schema::CreatedAt;
 use pavexc_attr_parser::AnnotationProperties;
 
 /// All the annotated items for a given package.
-#[derive(
-    Default, Debug, Clone, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode,
-)]
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnnotatedItems {
     item_id2details: BTreeMap<rustdoc_types::Id, AnnotatedItem>,
     annotation_id2item_id: BTreeMap<String, rustdoc_types::Id>,
@@ -63,7 +61,7 @@ pub struct IdConflict {
 }
 
 /// An item decorated with a Pavex annotation.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnnotatedItem {
     /// The identifier of the annotated item.
     pub id: rustdoc_types::Id,
@@ -74,7 +72,7 @@ pub struct AnnotatedItem {
 }
 
 /// Information about the `impl` block the item belongs to, if any.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, bincode::Encode, bincode::Decode)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ImplInfo {
     /// The `id` of the item this `impl` block was attached to.
     /// For inherent methods, that's the `Self` type.
