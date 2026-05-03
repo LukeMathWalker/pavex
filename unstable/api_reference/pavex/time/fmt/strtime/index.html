@@ -59,7 +59,7 @@ report the error to you without any panicking:</p>
 <span class="kw">let </span>t = time(<span class="number">23</span>, <span class="number">59</span>, <span class="number">59</span>, <span class="number">0</span>);
 <span class="macro">assert_eq!</span>(
     strtime::format(<span class="string">"%Y"</span>, t).unwrap_err().to_string(),
-    <span class="string">"strftime formatting failed: %Y failed: requires date to format year"</span>,
+    <span class="string">"strftime formatting failed: %Y failed: requires date to format"</span>,
 );</code></pre></div><h2 id="advice"><a class="doc-anchor" href="#advice">§</a>Advice</h2>
 <p>The formatting machinery supported by this module is not especially expressive.
 The pattern language is a simple sequence of conversion specifiers interspersed
@@ -177,7 +177,8 @@ spaces. The exceptions are the locale (<code>%c</code>, <code>%r</code>, <code>%
 <p>Moreover, any number of decimal digits can be inserted after the (possibly
 absent) flag and before the directive, so long as the parsed number is less
 than 256. The number formed by these digits will correspond to the minimum
-amount of padding (to the left).</p>
+amount of padding (to the left). Note that padding is clamped to a maximum of
+<code>20</code>.</p>
 <p>The flags and padding amount above may be used when parsing as well. Most
 settings are ignored during parsing except for padding. For example, if one
 wanted to parse <code>003</code> as the day <code>3</code>, then one should use <code>%03d</code>. Otherwise, by

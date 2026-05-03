@@ -548,46 +548,76 @@ generally be competitive for equivalent operations. It’s generally not
 possible for Chrono or Jiff to always be faster than the other, since
 they each use different representations for fundamental types. This in turn
 makes some operations faster and others slower, depending on what you’re
-trying to do.</p>
+trying to do. With that said, Jiff is uniformly faster than Chrono when it
+comes to printing and parsing.</p>
 <div class="example-wrap"><pre class="language-text"><code>$ cd bench
 $ cargo bench -- --save-baseline base
 [.. snip ..]
 $ critcmp base -g &#39;(.*)/(?:jiff|chrono)$&#39;
-group                                                           base//chrono                         base//jiff
------                                                           ------------                         ----------
-civil_datetime/add_days/diffyear/duration                       1.00      8.3±0.07ns        ? ?/sec    1.77     14.6±0.29ns        ? ?/sec
-civil_datetime/add_days/sameyear/duration                       1.00      6.4±0.07ns        ? ?/sec    2.29     14.6±0.23ns        ? ?/sec
-civil_datetime/to_datetime_static/bundled                       1.00     22.3±0.31ns        ? ?/sec
-civil_datetime/to_datetime_static/zoneinfo                      1.12     18.2±0.33ns        ? ?/sec    1.00     16.2±0.17ns        ? ?/sec
-civil_datetime/to_timestamp_tzdb_lookup/bundled                 1.00     32.0±0.28ns        ? ?/sec
-civil_datetime/to_timestamp_tzdb_lookup/zoneinfo                52.41     2.1±0.01µs        ? ?/sec    1.00     40.7±0.17ns        ? ?/sec
-date/add_days/diffyear/duration                                 1.00      5.9±0.04ns        ? ?/sec    1.11      6.5±0.04ns        ? ?/sec
-date/add_days/sameyear/duration                                 1.00      2.1±0.03ns        ? ?/sec    3.08      6.5±0.05ns        ? ?/sec
-date/difference_days/duration                                   1.23      3.4±0.03ns        ? ?/sec    1.00      2.8±0.02ns        ? ?/sec
-date/tomorrow/diff-month                                        1.00      0.4±0.00ns        ? ?/sec    3.24      1.3±0.01ns        ? ?/sec
-date/tomorrow/diff-year                                         1.24      1.8±0.02ns        ? ?/sec    1.00      1.4±0.01ns        ? ?/sec
-date/tomorrow/same-month                                        1.00      0.4±0.02ns        ? ?/sec    1.93      0.8±0.01ns        ? ?/sec
-date/yesterday/diff-month                                       1.00      0.4±0.00ns        ? ?/sec    3.31      1.3±0.01ns        ? ?/sec
-date/yesterday/diff-year                                        1.96      2.1±0.02ns        ? ?/sec    1.00      1.1±0.01ns        ? ?/sec
-date/yesterday/same-month                                       1.00      0.4±0.00ns        ? ?/sec    1.75      0.7±0.01ns        ? ?/sec
-parse/civil_datetime                                            3.13     73.6±0.69ns        ? ?/sec    1.00     23.5±0.17ns        ? ?/sec
-parse/rfc2822                                                   2.41     62.9±0.35ns        ? ?/sec    1.00     26.1±0.30ns        ? ?/sec
-parse/strptime/oneshot                                          2.93    172.8±3.46ns        ? ?/sec    1.00     59.0±0.94ns        ? ?/sec
-parse/strptime/prebuilt                                         1.00     91.0±1.25ns        ? ?/sec
-print/civil_datetime                                            3.08    155.6±3.81ns        ? ?/sec    1.00     50.5±0.18ns        ? ?/sec
-timestamp/add_time_secs/duration                                2.14      5.8±0.04ns        ? ?/sec    1.00      2.7±0.02ns        ? ?/sec
-timestamp/add_time_subsec/duration                              1.84      5.8±0.04ns        ? ?/sec    1.00      3.1±0.05ns        ? ?/sec
-timestamp/every_hour_in_week/byhand                             15.83  1654.8±2.72ns        ? ?/sec    1.00    104.5±1.31ns        ? ?/sec
-timestamp/to_civil_datetime_offset_conversion                   1.61      7.1±0.04ns        ? ?/sec    1.00      4.4±0.04ns        ? ?/sec
-timestamp/to_civil_datetime_static/America-New-York/bundled     1.00     21.3±0.12ns        ? ?/sec
-timestamp/to_civil_datetime_static/America-New-York/zoneinfo    1.15     20.5±0.18ns        ? ?/sec    1.00     17.7±0.15ns        ? ?/sec
-timestamp/to_civil_datetime_static/Asia-Shanghai/bundled        1.00     20.8±0.21ns        ? ?/sec
-timestamp/to_civil_datetime_static/Asia-Shanghai/zoneinfo       2.60     18.7±0.09ns        ? ?/sec    1.00      7.2±0.05ns        ? ?/sec
-zoned/fixed_offset_add_time/duration                            1.00      6.0±0.03ns        ? ?/sec    3.50     20.9±0.11ns        ? ?/sec
-zoned/fixed_offset_to_civil_datetime                            5.92      5.4±0.01ns        ? ?/sec    1.00      0.9±0.02ns        ? ?/sec
-zoned/fixed_offset_to_timestamp                                 3.17      1.2±0.01ns        ? ?/sec    1.00      0.4±0.01ns        ? ?/sec</code></pre></div>
-<p>Questions about benchmarks are
-welcome in
+group                                                           baseline//chrono                       baseline//jiff
+-----                                                           ----------------                       --------------
+civil_datetime/add_days/diffyear/duration                       1.00      8.5±0.08ns        ? ?/sec    1.56     13.3±0.15ns        ? ?/sec
+civil_datetime/add_days/diffyear/span                                                                  1.00     23.9±0.13ns        ? ?/sec
+civil_datetime/add_days/sameyear/duration                       1.00      6.8±0.05ns        ? ?/sec    1.96     13.3±0.17ns        ? ?/sec
+civil_datetime/add_days/sameyear/span                                                                  1.00     23.8±0.13ns        ? ?/sec
+civil_datetime/to_timestamp_static/bundled                      2.05     22.3±0.24ns        ? ?/sec    1.00     10.9±0.14ns        ? ?/sec
+civil_datetime/to_timestamp_static/zoneinfo                     1.53     16.2±0.15ns        ? ?/sec    1.00     10.6±0.09ns        ? ?/sec
+civil_datetime/to_timestamp_tzdb_lookup/bundled                 1.00     32.0±0.15ns        ? ?/sec
+civil_datetime/to_timestamp_tzdb_lookup/zoneinfo                45.85  1919.7±6.17ns        ? ?/sec    1.00     41.9±0.15ns        ? ?/sec
+date/add_days/diffyear/duration                                 1.00      5.8±0.05ns        ? ?/sec    1.12      6.5±0.04ns        ? ?/sec
+date/add_days/diffyear/span                                                                            1.00      6.5±0.04ns        ? ?/sec
+date/add_days/one/duration                                      1.00      2.1±0.02ns        ? ?/sec    2.55      5.4±0.05ns        ? ?/sec
+date/add_days/one/span                                                                                 1.00      5.8±0.02ns        ? ?/sec
+date/add_days/sameyear/duration                                 1.00      2.1±0.01ns        ? ?/sec    3.08      6.5±0.05ns        ? ?/sec
+date/add_days/sameyear/span                                                                            1.00      6.5±0.05ns        ? ?/sec
+date/difference_days/duration                                   1.18      3.4±0.04ns        ? ?/sec    1.00      2.9±0.02ns        ? ?/sec
+date/difference_days/span                                                                              1.00      2.5±0.02ns        ? ?/sec
+date/tomorrow/diff-month                                        1.00      0.4±0.00ns        ? ?/sec    3.25      1.3±0.01ns        ? ?/sec
+date/tomorrow/diff-year                                         1.16      1.7±0.01ns        ? ?/sec    1.00      1.4±0.01ns        ? ?/sec
+date/tomorrow/same-month                                        1.00      0.4±0.00ns        ? ?/sec    1.99      0.8±0.00ns        ? ?/sec
+date/yesterday/diff-month                                       1.00      0.4±0.02ns        ? ?/sec    3.17      1.3±0.01ns        ? ?/sec
+date/yesterday/diff-year                                        1.85      2.0±0.01ns        ? ?/sec    1.00      1.1±0.01ns        ? ?/sec
+date/yesterday/same-month                                       1.00      0.4±0.03ns        ? ?/sec    1.72      0.7±0.02ns        ? ?/sec
+parse/civil_datetime                                            2.95     73.6±0.72ns        ? ?/sec    1.00     24.9±0.19ns        ? ?/sec
+parse/rfc2822                                                   3.09     59.9±0.30ns        ? ?/sec    1.00     19.3±0.17ns        ? ?/sec
+parse/strptime/oneshot                                          3.11    197.8±0.80ns        ? ?/sec    1.00     63.6±1.19ns        ? ?/sec
+parse/strptime/prebuilt                                         1.00     77.1±1.44ns        ? ?/sec
+print/civil_datetime                                            13.10   147.4±0.60ns        ? ?/sec    1.00     11.3±0.04ns        ? ?/sec
+print/iso8601_duration/long-time/duration/buffer                2.38     46.5±0.34ns        ? ?/sec    1.00     19.5±0.04ns        ? ?/sec
+print/iso8601_duration/long-time/duration/to_string             3.13     71.7±0.36ns        ? ?/sec    1.00     23.0±0.07ns        ? ?/sec
+print/iso8601_duration/short/duration/buffer                    2.65     32.3±0.30ns        ? ?/sec    1.00     12.2±0.04ns        ? ?/sec
+print/iso8601_duration/short/duration/to_string                 2.08     36.8±0.33ns        ? ?/sec    1.00     17.7±0.05ns        ? ?/sec
+print/iso8601_duration/tiny/duration/buffer                     2.74     31.6±0.32ns        ? ?/sec    1.00     11.6±0.03ns        ? ?/sec
+print/iso8601_duration/tiny/duration/to_string                  2.28     36.5±0.40ns        ? ?/sec    1.00     16.0±0.08ns        ? ?/sec
+print/rfc2822/buffer                                            4.91     64.6±0.59ns        ? ?/sec    1.00     13.2±0.03ns        ? ?/sec
+print/rfc2822/to_string                                         5.75    111.0±0.37ns        ? ?/sec    1.00     19.3±0.05ns        ? ?/sec
+print/rfc3339/buffer                                            3.79     64.2±0.56ns        ? ?/sec    1.00     17.0±0.14ns        ? ?/sec
+print/rfc3339/to_string                                         4.75    112.4±0.33ns        ? ?/sec    1.00     23.6±0.11ns        ? ?/sec
+print/rfc9557/buffer                                                                                   1.00     16.2±0.05ns        ? ?/sec
+print/rfc9557/to_string                                                                                1.00     22.2±0.07ns        ? ?/sec
+print/strftime/oneshot/buffer                                   3.90    213.9±1.99ns        ? ?/sec    1.00     54.8±0.32ns        ? ?/sec
+print/strftime/oneshot/to_string                                3.63    261.3±1.26ns        ? ?/sec    1.00     72.1±0.49ns        ? ?/sec
+print/strftime/oneshot/zoned                                                                           1.00     65.5±0.64ns        ? ?/sec
+print/strftime/prebuilt/buffer                                  1.00     85.4±0.52ns        ? ?/sec
+print/strftime/prebuilt/to_string                               1.00    147.4±0.76ns        ? ?/sec
+timestamp/add_time_secs/duration                                2.42      6.1±0.08ns        ? ?/sec    1.00      2.5±0.03ns        ? ?/sec
+timestamp/add_time_secs/span                                                                           1.00      3.8±0.06ns        ? ?/sec
+timestamp/add_time_subsec/duration                              2.10      6.1±0.04ns        ? ?/sec    1.00      2.9±0.02ns        ? ?/sec
+timestamp/add_time_subsec/span                                                                         1.00      8.1±0.09ns        ? ?/sec
+timestamp/every_hour_in_week/byhand                             16.15  1679.6±6.13ns        ? ?/sec    1.00    104.0±0.72ns        ? ?/sec
+timestamp/every_hour_in_week/series                                                                    1.00    105.9±0.66ns        ? ?/sec
+timestamp/from_seconds/integer                                  14.45     4.7±0.03ns        ? ?/sec    1.00      0.3±0.00ns        ? ?/sec
+timestamp/to_civil_datetime_offset_conversion                   1.65      7.3±0.02ns        ? ?/sec    1.00      4.4±0.04ns        ? ?/sec
+timestamp/to_civil_datetime_offset_holistic                                                            1.00      4.4±0.04ns        ? ?/sec
+timestamp/to_civil_datetime_static/America-New-York/bundled     1.00     16.0±0.16ns        ? ?/sec
+timestamp/to_civil_datetime_static/America-New-York/zoneinfo    1.42     18.4±0.11ns        ? ?/sec    1.00     13.0±0.11ns        ? ?/sec
+timestamp/to_civil_datetime_static/Asia-Shanghai/bundled        1.00     15.2±0.16ns        ? ?/sec
+timestamp/to_civil_datetime_static/Asia-Shanghai/zoneinfo       3.16     15.7±0.11ns        ? ?/sec    1.00      5.0±0.05ns        ? ?/sec
+zoned/fixed_offset_add_time/duration                            1.00      6.1±0.06ns        ? ?/sec    1.56      9.5±0.05ns        ? ?/sec
+zoned/fixed_offset_add_time/span                                                                       1.00     16.6±0.09ns        ? ?/sec
+zoned/fixed_offset_to_civil_datetime                            1.23      5.6±0.01ns        ? ?/sec    1.00      4.5±0.01ns        ? ?/sec
+zoned/fixed_offset_to_timestamp                                 3.15      1.2±0.01ns        ? ?/sec    1.00      0.4±0.00ns        ? ?/sec</code></pre></div>
+<p>Questions about benchmarks are welcome in
 <a href="https://github.com/BurntSushi/jiff/discussions">Discussions on GitHub</a>.</p>
 <h3 id="time-v0336"><a class="doc-anchor" href="#time-v0336">§</a><a href="https://docs.rs/time"><code>time</code></a> (v0.3.36)</h3>
 <p><code>time</code> is a Rust datetime library that provides a time zone offset aware
@@ -596,14 +626,17 @@ datetime type.</p>
 should be able to run any of the programs in this section:</p>
 <div class="example-wrap"><pre class="language-toml"><code>anyhow = &quot;1.0.81&quot;
 jiff = { version = &quot;0.2.0&quot;, features = [&quot;serde&quot;] }
-time = { version = &quot;0.3.36&quot;, features = [&quot;local-offset&quot;, &quot;macros&quot;, &quot;parsing&quot;] }</code></pre></div><h4 id="time-zone-database-integration-1"><a class="doc-anchor" href="#time-zone-database-integration-1">§</a>Time zone database integration</h4>
+time = { version = &quot;0.3.36&quot;, features = [&quot;local-offset&quot;, &quot;macros&quot;, &quot;parsing&quot;] }
+time-tz = &quot;2.0.0&quot;</code></pre></div><h4 id="time-zone-database-integration-1"><a class="doc-anchor" href="#time-zone-database-integration-1">§</a>Time zone database integration</h4>
 <p>Like <code>chrono</code>, the <code>time</code> crate does not come with any out of the box
-functionality for reading your system’s copy of the Time Zone Database. Unlike
-Chrono, however, <code>time</code> does not have any way to use the Time Zone Database at
-all. That is, there is nothing like <code>chrono-tz</code> or <code>tzfile</code> for <code>time</code>, and
-<code>time</code> does not provide the extension points necessary in its API for such
-a thing to exist. (The <code>chrono-tz</code> and <code>tzfile</code> crates work by implementing
-Chrono’s <code>TimeZone</code> trait.)</p>
+functionality for reading your system’s copy of the Time Zone Database.
+However, there is a third party crate, <a href="https://docs.rs/time-tz"><code>time-tz</code></a>
+that provides some time zone support in a fashion similar to <code>chrono-tz</code>. That
+is, it requires bundling the time zone data into your binary and does not
+support reading the system copy of the Time Zone Database when available.</p>
+<p>Note also that <code>time</code> does not provide the extension points necessary in its API
+to make handling time zone aware datetimes ergonomic. Indeed, many operations
+are not expressible at all.</p>
 <p>The main thing <code>time</code> supports is a concept of “local” time. In particular, it
 is limited to determining your system’s default time zone offset, but nothing
 more. That is, it doesn’t support DST safe arithmetic:</p>
@@ -638,60 +671,37 @@ only create a datetime with an offset, but with a <em>time zone</em>:</p>
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
+<p>If you use <code>time-tz</code>, then you can make the above example with <code>time</code> work:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anyhow::Context;
+<span class="kw">use </span>time::{ext::NumericalDuration, macros::datetime, Duration};
+<span class="kw">use </span>time_tz::{OffsetDateTimeExt, Tz};
+
+<span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>tz = time_tz::timezones::db::america::NEW_YORK;
+
+    <span class="comment">// We create a fixed datetime for testing purposes,
+    // but it's the same sort of value we would get back
+    // from `OffsetDateTime::now_local()`.
+    </span><span class="kw">let </span>dt1 = <span class="macro">datetime!</span>(<span class="number">2024</span>-<span class="number">03</span>-<span class="number">10 01</span>:<span class="number">30</span>:<span class="number">00 </span>-<span class="number">05</span>:<span class="number">00</span>);
+    <span class="kw">let </span>dt2 = dt1.checked_add(<span class="number">1</span>.hours())
+      .context(<span class="string">"datetime arithmetic failed"</span>)<span class="question-mark">?
+      </span>.to_timezone(tz);
+    <span class="macro">assert_eq!</span>(dt2.to_string(), <span class="string">"2024-03-10 3:30:00.0 -04:00:00"</span>);
+
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+<p>But note that you have to be careful to call <code>.to_timezone()</code> before printing
+the datetime. In particular, there is no time zone aware datetime type.</p>
 <p>In my comparison with Chrono I went through a lot of examples involving
 time zones. I did this because Chrono supports DST safe arithmetic generally,
 but with a lot of nuanced differences from what Jiff supports. Conversely,
-<code>time</code> doesn’t really support time zones at all. (The main exception is that
-<code>time</code> can return the system configured offset by virtue of platform APIs like
-<code>libc</code>. But time zone support stops there.) So at this time, in this document,
+<code>time</code> doesn’t have a time zone aware datetime type. And the time zone support
+provided by <code>time-tz</code> is extremely limited. So at this time, in this document,
 we won’t belabor the point.</p>
-<h4 id="jiff-allows-getting-the-current-time-safely-from-multiple-threads"><a class="doc-anchor" href="#jiff-allows-getting-the-current-time-safely-from-multiple-threads">§</a>Jiff allows getting the current time safely from multiple threads</h4>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Zoned;
-
-<span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>handle = std::thread::spawn(|| {
-        <span class="macro">println!</span>(<span class="string">"{}"</span>, Zoned::now());
-    });
-    handle.join().unwrap();
-
-    <span class="prelude-val">Ok</span>(())
-}</code></pre></div>
-<p>The output on my system of the above program is:</p>
-<div class="example-wrap"><pre class="language-text"><code>2024-07-12T15:02:15.92054241-04:00[America/New_York]</code></pre></div>
-<p>Conversely, this program using the <code>time</code> crate:</p>
-
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>time::OffsetDateTime;
-
-<span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>handle = std::thread::spawn(|| {
-        <span class="macro">println!</span>(<span class="string">"{}"</span>, OffsetDateTime::now_local().unwrap());
-    });
-    handle.join().unwrap();
-
-    <span class="prelude-val">Ok</span>(())
-}</code></pre></div>
-<p>Has this output:</p>
-<div class="example-wrap"><pre class="language-text"><code>thread &#39;&lt;unnamed&gt;&#39; panicked at main.rs:7:52:
-called `Result::unwrap()` on an `Err` value: IndeterminateOffset
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-thread &#39;main&#39; panicked at main.rs:9:19:
-called `Result::unwrap()` on an `Err` value: Any { .. }</code></pre></div>
-<p>The reason for this is that <code>time</code> uses <code>libc</code> APIs for querying the local
-time. These <code>libc</code> APIs may access the environment in a way that is not
-synchronized with Rust’s standard library, which leads to a path where safe
-Rust code can be written to cause undefined behavior. <code>time</code> mitigates this
-by checking how many threads are active. If it’s a value other than <code>1</code>, then
-<code>now_local()</code> fails.</p>
-<p>Jiff avoids this by avoiding <code>libc</code>. Jiff does still read environment
-variables, but only does so through Rust’s standard library <code>std::env</code> module.
-This makes Jiff’s access to the environment sound.</p>
-<p>The <code>time</code> crate does provide a way to change this behavior by
-explicitly opting into the possibility of undefined behavior via
-<code>time::util::local_offset::set_soundness</code>. Aside from that, it is likely that
-this is a temporary state for <code>time</code> until it either implements the <code>libc</code>
-functionality it needs by itself, or until <a href="https://doc.rust-lang.org/std/env/fn.set_var.html"><code>std::env::set_var</code></a> is marked
-<code>unsafe</code>. (Which will likely happen in Rust 2024.)</p>
 <h4 id="time-supports-its-own-custom-format-description"><a class="doc-anchor" href="#time-supports-its-own-custom-format-description">§</a><code>time</code> supports its own custom format description</h4>
+<p>Some users may find this easier to use:</p>
+
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>time::{macros::format_description, OffsetDateTime};
 
 <span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
@@ -705,8 +715,33 @@ functionality it needs by itself, or until <a href="https://doc.rust-lang.org/st
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
 <p>Jiff does support a <code>strptime</code>/<code>strftime</code> style API via the
-<code>jiff::fmt::strtime</code> module.</p>
-<h4 id="jiff-supports-rounding-datetimes"><a class="doc-anchor" href="#jiff-supports-rounding-datetimes">§</a>Jiff supports rounding datetimes</h4>
+<code>jiff::fmt::strtime</code> module:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>jiff::Zoned;
+
+<span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>zdt = Zoned::strptime(
+      <span class="string">"%Y-%m-%d %H:%M:%S %:z"</span>,
+      <span class="string">"2024-07-11 22:49:00 -04:00:00"</span>,
+    )<span class="question-mark">?</span>;
+    <span class="macro">assert_eq!</span>(zdt.to_string(), <span class="string">"2024-07-11T22:49:00-04:00[-04:00]"</span>);
+
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+<p><code>time</code> also supports <code>strptime</code>/<code>strftime</code> style APIs:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>time::OffsetDateTime;
+
+<span class="kw">fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
+    <span class="comment">// I don't believe `time` supports `%:z`, so we just drop the colons here.
+    </span><span class="kw">let </span>format = time::format_description::parse_strftime_borrowed(
+        <span class="string">"%Y-%m-%d %H:%M:%S %z"
+    </span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>odt = OffsetDateTime::parse(<span class="string">"2024-07-11 22:49:00 -0400"</span>, <span class="kw-2">&amp;</span>format)<span class="question-mark">?</span>;
+    <span class="macro">assert_eq!</span>(odt.to_string(), <span class="string">"2024-07-11 22:49:00.0 -04:00:00"</span>);
+
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div><h4 id="jiff-supports-rounding-datetimes"><a class="doc-anchor" href="#jiff-supports-rounding-datetimes">§</a>Jiff supports rounding datetimes</h4>
 <p>We use a <code>Zoned</code> with a <code>TimeZone</code> that has a fixed offset. This is same as
 <code>time</code>’s <code>OffsetDateTime</code> type:</p>
 
@@ -829,46 +864,72 @@ do the arithmetic yourself:</p>
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div><h4 id="jiff-is-generally-faster-than-time"><a class="doc-anchor" href="#jiff-is-generally-faster-than-time">§</a>Jiff is generally faster than <code>time</code></h4>
-<p>Unlike Chrono, at least for Jiff’s benchmarks, there are few cases where <code>time</code>
-is meaningfully faster than Jiff.</p>
-<p>The following results were collected with <code>time 0.3.38</code>.</p>
+<p>When it comes to parsing and printing, Jiff is generally faster than <code>time</code>
+although not always. <code>time</code> is sometimes faster than Jiff on date arithmetic,
+but not by much. (Some of these may be due to faster equality comparisons on
+date values, on which <code>time</code> is legitimately faster at than Jiff at present.)</p>
+<p>The following results were collected with <code>time 0.3.47</code>.</p>
 <div class="example-wrap"><pre class="language-text"><code>$ cd bench
-$ cargo bench -- --save-baseline base
+$ cargo bench -- --save-baseline baseline
 [.. snip ..]
 $ critcmp base -g &#39;(.*)/(?:jiff|time)$&#39;
-group                                                           update//time                           update//jiff
------                                                           ------------                           ------------
-civil_datetime/add_days/diffyear/duration                       1.19     16.2±0.10ns        ? ?/sec    1.00     13.6±0.12ns        ? ?/sec
-civil_datetime/add_days/sameyear/duration                       1.22     16.6±0.12ns        ? ?/sec    1.00     13.6±0.15ns        ? ?/sec
-date/add_days/diffyear/duration                                 1.11      7.3±0.07ns        ? ?/sec    1.00      6.6±0.07ns        ? ?/sec
-date/add_days/one/duration                                      1.34      7.3±0.05ns        ? ?/sec    1.00      5.4±0.04ns        ? ?/sec
-date/add_days/sameyear/duration                                 1.16      7.6±0.08ns        ? ?/sec    1.00      6.6±0.07ns        ? ?/sec
-date/days_in_month/leap/feb                                     13.11     5.1±0.16ns        ? ?/sec    1.00      0.4±0.01ns        ? ?/sec
-date/days_in_month/leap/nofeb                                   9.11      3.5±0.16ns        ? ?/sec    1.00      0.4±0.00ns        ? ?/sec
-date/days_in_month/noleap/feb                                   12.66     4.9±0.17ns        ? ?/sec    1.00      0.4±0.01ns        ? ?/sec
-date/days_in_month/noleap/nofeb                                 8.40      3.3±0.10ns        ? ?/sec    1.00      0.4±0.00ns        ? ?/sec
-date/difference_days/duration                                   1.42      4.1±0.05ns        ? ?/sec    1.00      2.9±0.03ns        ? ?/sec
-date/tomorrow/diff-month                                        1.00      0.4±0.01ns        ? ?/sec    3.17      1.3±0.01ns        ? ?/sec
-date/tomorrow/diff-year                                         1.00      0.5±0.01ns        ? ?/sec    2.99      1.4±0.02ns        ? ?/sec
-date/tomorrow/same-month                                        1.00      0.4±0.01ns        ? ?/sec    2.00      0.8±0.01ns        ? ?/sec
-date/yesterday/diff-month                                       1.00      0.3±0.01ns        ? ?/sec    4.08      1.3±0.01ns        ? ?/sec
-date/yesterday/diff-year                                        1.00      0.7±0.01ns        ? ?/sec    1.57      1.1±0.01ns        ? ?/sec
-date/yesterday/same-month                                       1.00      0.3±0.01ns        ? ?/sec    2.23      0.7±0.01ns        ? ?/sec
-parse/civil_datetime                                            1.25     31.4±0.33ns        ? ?/sec    1.00     25.0±0.08ns        ? ?/sec
-parse/rfc2822                                                   3.10     80.9±1.19ns        ? ?/sec    1.00     26.1±0.41ns        ? ?/sec
-parse/strptime/oneshot                                                                                 1.00     59.9±1.03ns        ? ?/sec
-parse/strptime/prebuilt                                         1.00    112.8±1.06ns        ? ?/sec
-print/civil_datetime                                            1.00     37.6±0.49ns        ? ?/sec    1.48     55.7±0.31ns        ? ?/sec
-timestamp/add_time_secs/duration                                7.05     19.1±0.20ns        ? ?/sec    1.00      2.7±0.03ns        ? ?/sec
-timestamp/add_time_subsec/duration                              6.19     19.1±0.15ns        ? ?/sec    1.00      3.1±0.03ns        ? ?/sec
-timestamp/every_hour_in_week/byhand                             32.25     3.4±0.03µs        ? ?/sec    1.00    105.0±0.83ns        ? ?/sec
-timestamp/to_civil_datetime_offset_conversion                   3.14     14.6±0.16ns        ? ?/sec    1.00      4.7±0.05ns        ? ?/sec
-timestamp/to_civil_datetime_offset_holistic                     4.02     18.7±0.07ns        ? ?/sec    1.00      4.7±0.04ns        ? ?/sec
-zoned/fixed_offset_add_time/duration                            2.41     23.3±0.26ns        ? ?/sec    1.00      9.7±0.07ns        ? ?/sec
-zoned/fixed_offset_to_civil_datetime                            1.00      0.8±0.00ns        ? ?/sec    1.26      1.0±0.03ns        ? ?/sec
-zoned/fixed_offset_to_timestamp                                 6.92      2.7±0.02ns        ? ?/sec    1.00      0.4±0.00ns        ? ?/sec</code></pre></div>
-<p>Questions about benchmarks are
-welcome in
+group                                                           baseline//time                       baseline//jiff
+-----                                                           --------------                       --------------
+civil_datetime/add_days/diffyear/duration                       1.00      7.8±0.08ns        ? ?/sec  1.67     12.9±0.19ns        ? ?/sec
+civil_datetime/add_days/diffyear/span                                                                1.00     18.0±0.28ns        ? ?/sec
+civil_datetime/add_days/sameyear/duration                       1.00      7.8±0.11ns        ? ?/sec  1.66     12.9±0.16ns        ? ?/sec
+civil_datetime/add_days/sameyear/span                                                                1.00     18.0±0.25ns        ? ?/sec
+date/add_days/diffyear/duration                                 1.00      3.8±0.02ns        ? ?/sec  1.67      6.3±0.04ns        ? ?/sec
+date/add_days/diffyear/span                                                                          1.00      4.9±0.05ns        ? ?/sec
+date/add_days/one/duration                                      1.00      3.8±0.03ns        ? ?/sec  1.38      5.2±0.03ns        ? ?/sec
+date/add_days/one/span                                                                               1.00      5.8±0.06ns        ? ?/sec
+date/add_days/sameyear/duration                                 1.00      3.8±0.04ns        ? ?/sec  1.68      6.4±0.07ns        ? ?/sec
+date/add_days/sameyear/span                                                                          1.00      4.9±0.05ns        ? ?/sec
+date/days_in_month/leap/feb                                     1.90      1.1±0.01ns        ? ?/sec  1.00      0.6±0.03ns        ? ?/sec
+date/days_in_month/leap/nofeb                                   2.70      1.0±0.01ns        ? ?/sec  1.00      0.4±0.00ns        ? ?/sec
+date/days_in_month/noleap/feb                                   2.78      1.1±0.02ns        ? ?/sec  1.00      0.4±0.01ns        ? ?/sec
+date/days_in_month/noleap/nofeb                                 2.70      1.0±0.02ns        ? ?/sec  1.00      0.4±0.00ns        ? ?/sec
+date/difference_days/duration                                   1.00      2.1±0.02ns        ? ?/sec  1.41      2.9±0.04ns        ? ?/sec
+date/difference_days/span                                                                            1.00      2.4±0.03ns        ? ?/sec
+date/tomorrow/diff-month                                        1.00      0.4±0.02ns        ? ?/sec  3.42      1.4±0.01ns        ? ?/sec
+date/tomorrow/diff-year                                         1.00      1.0±0.01ns        ? ?/sec  1.59      1.5±0.01ns        ? ?/sec
+date/tomorrow/same-month                                        1.00      0.4±0.00ns        ? ?/sec  2.25      0.9±0.01ns        ? ?/sec
+date/yesterday/diff-month                                       1.00      0.4±0.01ns        ? ?/sec  3.65      1.4±0.02ns        ? ?/sec
+date/yesterday/diff-year                                        1.00      0.9±0.01ns        ? ?/sec  1.35      1.2±0.02ns        ? ?/sec
+date/yesterday/same-month                                       1.00      0.4±0.02ns        ? ?/sec  2.06      0.8±0.01ns        ? ?/sec
+datetime/add_years_months_days                                                                       1.00     29.1±0.18ns        ? ?/sec
+parse/civil_datetime                                            1.00     12.9±0.19ns        ? ?/sec  1.63     21.1±0.19ns        ? ?/sec
+parse/rfc2822                                                   2.24     43.4±1.90ns        ? ?/sec  1.00     19.4±0.15ns        ? ?/sec
+parse/strptime/oneshot                                                                               1.00     62.2±0.39ns        ? ?/sec
+parse/strptime/prebuilt                                         1.00     73.7±0.91ns        ? ?/sec
+print/civil_datetime                                            3.27     37.4±0.32ns        ? ?/sec  1.00     11.4±0.04ns        ? ?/sec
+print/rfc2822/buffer                                            1.55     20.4±0.08ns        ? ?/sec  1.00     13.2±0.05ns        ? ?/sec
+print/rfc2822/to_string                                         3.61     72.0±1.25ns        ? ?/sec  1.00     19.9±0.06ns        ? ?/sec
+print/rfc3339/buffer                                            1.33     22.1±0.29ns        ? ?/sec  1.00     16.7±0.11ns        ? ?/sec
+print/rfc3339/to_string                                         2.91     68.1±1.30ns        ? ?/sec  1.00     23.4±0.12ns        ? ?/sec
+print/rfc9557/buffer                                                                                 1.00     16.2±0.07ns        ? ?/sec
+print/rfc9557/to_string                                                                              1.00     22.6±0.20ns        ? ?/sec
+print/strftime/oneshot/buffer                                   6.88    421.5±1.39ns        ? ?/sec  1.00     61.3±0.82ns        ? ?/sec
+print/strftime/oneshot/to_string                                5.59    434.0±1.44ns        ? ?/sec  1.00     77.7±0.96ns        ? ?/sec
+print/strftime/oneshot/zoned                                                                         1.00     74.6±1.07ns        ? ?/sec
+print/strftime/prebuilt/buffer                                  1.00     97.7±0.99ns        ? ?/sec
+print/strftime/prebuilt/buffer/bespoke                          1.00    105.8±1.45ns        ? ?/sec
+print/strftime/prebuilt/to_string                               1.00    165.3±1.19ns        ? ?/sec
+print/strftime/prebuilt/to_string/bespoke                       1.00    175.0±1.79ns        ? ?/sec
+timestamp/add_time_secs/duration                                3.82      9.6±0.04ns        ? ?/sec  1.00      2.5±0.03ns        ? ?/sec
+timestamp/add_time_secs/span                                                                         1.00      3.7±0.05ns        ? ?/sec
+timestamp/add_time_subsec/duration                              3.33      9.7±0.09ns        ? ?/sec  1.00      2.9±0.03ns        ? ?/sec
+timestamp/add_time_subsec/span                                                                       1.00      7.8±0.08ns        ? ?/sec
+timestamp/every_hour_in_week/byhand                             14.30 1530.8±16.96ns        ? ?/sec  1.00    107.1±0.74ns        ? ?/sec
+timestamp/every_hour_in_week/series                                                                  1.00    105.8±1.01ns        ? ?/sec
+timestamp/from_seconds/integer                                  11.69     4.4±0.03ns        ? ?/sec  1.00      0.4±0.01ns        ? ?/sec
+timestamp/to_civil_datetime_offset_conversion                   1.00      3.9±0.03ns        ? ?/sec  1.49      5.8±0.04ns        ? ?/sec
+timestamp/to_civil_datetime_offset_holistic                     1.00      4.6±0.03ns        ? ?/sec  1.04      4.8±0.04ns        ? ?/sec
+zoned/fixed_offset_add_time/duration                            1.00      9.6±0.09ns        ? ?/sec  1.06     10.3±0.08ns        ? ?/sec
+zoned/fixed_offset_add_time/span                                                                     1.00     16.9±0.12ns        ? ?/sec
+zoned/fixed_offset_to_civil_datetime                            1.00      0.6±0.00ns        ? ?/sec  7.32      4.2±0.01ns        ? ?/sec
+zoned/fixed_offset_to_timestamp                                 6.08      1.8±0.02ns        ? ?/sec  1.00      0.3±0.01ns        ? ?/sec</code></pre></div>
+<p>Questions about benchmarks are welcome in
 <a href="https://github.com/BurntSushi/jiff/discussions">Discussions on GitHub</a>.</p>
 <h3 id="hifitime-v390"><a class="doc-anchor" href="#hifitime-v390">§</a><a href="https://docs.rs/hifitime"><code>hifitime</code></a> (v3.9.0)</h3>
 <p><code>hifitime</code> is a datetime library with a focus on engineering and scientific

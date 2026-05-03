@@ -216,7 +216,9 @@ confusability with minutes:</p>
 <span class="comment">// In contrast, Jiff will reject `1M`:
 </span><span class="macro">assert_eq!</span>(
     <span class="string">"1M"</span>.parse::&lt;jiff::Span&gt;().unwrap_err().to_string(),
-    <span class="string">"failed to parse \"1M\" in the \"friendly\" format: expected to find unit designator suffix (e.g., 'years' or 'secs'), but found input beginning with \"M\" instead"</span>,
+    <span class="string">"failed to parse input in the \"friendly\" duration format: \
+     expected to find unit designator suffix \
+     (e.g., `years` or `secs`) after parsing integer"</span>,
 );
 </code></pre></div>
 <p>In the other direction, Jiff’s default formatting for the friendly duration
@@ -282,7 +284,9 @@ gets this right and specifically prevents you from getting it wrong.</p>
 <span class="comment">// Jiff is saving you from doing something wrong
 </span><span class="macro">assert_eq!</span>(
     <span class="string">"1 day"</span>.parse::&lt;SignedDuration&gt;().unwrap_err().to_string(),
-    <span class="string">"failed to parse \"1 day\" in the \"friendly\" format: parsing day units into a `SignedDuration` is not supported (perhaps try parsing into a `Span` instead)"</span>,
+    <span class="string">"failed to parse input in the \"friendly\" duration format: \
+     parsing calendar units (days in this case) in this context \
+     is not supported (perhaps try parsing into a `jiff::Span` instead)"</span>,
 );</code></pre></div>
 <p>As the error message suggests, parsing into a <a href="../../struct.Span.html" title="struct pavex::time::Span"><code>Span</code></a> works fine:</p>
 
