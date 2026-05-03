@@ -12,16 +12,11 @@ pub(crate) fn pavex_rustdoc_cache<A: Default + DeserializeOwned>(
     cache_workspace_package_docs: bool,
     package_graph: &PackageGraph,
 ) -> Result<RustdocGlobalFsCache<A>, anyhow::Error> {
-    let fingerprint = format!(
-        "{}-{}",
-        rustdoc_processor::CRATE_VERSION,
-        env!("RUSTDOC_CACHE_SOURCE_HASH")
-    );
     let cache_dir = xdg_home::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Failed to get the user's home directory"))?
         .join(".pavex/rustdoc/cache");
     RustdocGlobalFsCache::new(
-        &fingerprint,
+        rustdoc_processor::CRATE_VERSION,
         toolchain_name,
         cache_workspace_package_docs,
         package_graph,
