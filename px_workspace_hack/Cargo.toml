@@ -21,7 +21,6 @@ ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
 bincode = { version = "2", features = ["serde"] }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -73,6 +72,7 @@ serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 serde_spanned = { version = "1" }
 sha2 = { version = "0.10", features = ["oid"] }
+slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 spin = { version = "0.9" }
 sqlx = { version = "0.8", features = ["mysql", "postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
@@ -86,15 +86,18 @@ syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "vis
 textwrap = { version = "0.16" }
 time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
-toml = { version = "0.9", features = ["preserve_order"] }
-toml_datetime = { version = "0.7", features = ["serde"] }
+toml-274715c4dabd11b0 = { package = "toml", version = "0.9", features = ["preserve_order"] }
+toml-dff4ba8e3ae991db = { package = "toml", version = "1" }
+toml_datetime-ca01ad9e24f5d932 = { package = "toml_datetime", version = "0.7", features = ["serde"] }
+toml_datetime-dff4ba8e3ae991db = { package = "toml_datetime", version = "1", default-features = false, features = ["serde", "std"] }
 toml_parser = { version = "1" }
 toml_writer = { version = "1" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
 uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
-winnow = { version = "0.7" }
+winnow-ca01ad9e24f5d932 = { package = "winnow", version = "0.7" }
+winnow-dff4ba8e3ae991db = { package = "winnow", version = "1" }
 zeroize = { version = "1" }
 
 [build-dependencies]
@@ -102,7 +105,6 @@ ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 base64 = { version = "0.22" }
 bincode = { version = "2", features = ["serde"] }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
@@ -154,6 +156,7 @@ serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 serde_spanned = { version = "1" }
 sha2 = { version = "0.10", features = ["oid"] }
+slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 spin = { version = "0.9" }
 sqlx = { version = "0.8", features = ["mysql", "postgres", "runtime-tokio-rustls", "sqlite", "uuid"] }
@@ -169,15 +172,18 @@ syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "vis
 textwrap = { version = "0.16" }
 time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
-toml = { version = "0.9", features = ["preserve_order"] }
-toml_datetime = { version = "0.7", features = ["serde"] }
+toml-274715c4dabd11b0 = { package = "toml", version = "0.9", features = ["preserve_order"] }
+toml-dff4ba8e3ae991db = { package = "toml", version = "1" }
+toml_datetime-ca01ad9e24f5d932 = { package = "toml_datetime", version = "0.7", features = ["serde"] }
+toml_datetime-dff4ba8e3ae991db = { package = "toml_datetime", version = "1", default-features = false, features = ["serde", "std"] }
 toml_parser = { version = "1" }
 toml_writer = { version = "1" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
 uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
-winnow = { version = "0.7" }
+winnow-ca01ad9e24f5d932 = { package = "winnow", version = "0.7" }
+winnow-dff4ba8e3ae991db = { package = "winnow", version = "1" }
 zeroize = { version = "1" }
 
 ### END HAKARI SECTION

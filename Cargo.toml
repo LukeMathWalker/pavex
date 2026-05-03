@@ -5,7 +5,6 @@ members = [
     "compiler/pavex*",
     "compiler/generate_from_path",
     "compiler/persist_if_changed",
-    "rustdoc/*",
     "px_workspace_hack",
 ]
 resolver = "3"
@@ -36,9 +35,6 @@ pavex_test_runner = { path = "compiler/pavex_test_runner", version = "0.2.7" }
 pavexc = { path = "compiler/pavexc", version = "0.2.10" }
 pavexc_attr_parser = { path = "compiler/pavexc_attr_parser", version = "0.2.10" }
 pavexc_cli_client = { path = "compiler/pavexc_cli_client", version = "0.2.10" }
-rustdoc_ir = { path = "rustdoc/rustdoc_ir", version = "0.2.10" }
-rustdoc_processor = { path = "rustdoc/rustdoc_processor", version = "0.2.10" }
-rustdoc_resolver = { path = "rustdoc/rustdoc_resolver", version = "0.2.10" }
 pavexc_annotations = { path = "compiler/pavexc_annotations", version = "0.2.10" }
 persist_if_changed = { path = "compiler/persist_if_changed", version = "0.2.10" }
 
@@ -125,6 +121,10 @@ reqwest = { version = "0.12", default-features = false, features = [
 reqwest-middleware = "0.4"
 reqwest-retry = "0.8.0"
 reqwest-tracing = "0.5.8"
+rustdoc_ext = "0.1.0"
+rustdoc_ir = "0.1.0"
+rustdoc_processor = "0.1.0"
+rustdoc_resolver = "0.1.0"
 rustls = { version = "0.23", default-features = false }
 rustls-platform-verifier = "0.6.2"
 ring = "0.17.14"
