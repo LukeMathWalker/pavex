@@ -1,0 +1,6 @@
+error: There are multiple conflicting sources for field `a`.
+       Use only **one** of #[path_param] or #[path_params] as source.
+ --> tests/from_request/fail/multiple_sources.rs:8:5
+  |
+8 |     a: u64,
+  |     ^

@@ -77,6 +77,12 @@ impl<'server, 'request> Iterator for RawPathParamsIter<'_, 'server, 'request> {
     }
 }
 
+impl<'server, 'request> ExactSizeIterator for RawPathParamsIter<'_, 'server, 'request> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
 /// A wrapper around a percent-encoded path parameter, obtained via [`RawPathParams`].
 ///
 /// Use [`decode`](Self::decode) to extract the percent-encoded value.

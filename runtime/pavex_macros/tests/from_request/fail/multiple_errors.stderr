@@ -1,0 +1,13 @@
+error: There are multiple conflicting sources for field `a`.
+       Use only **one** of #[path_param] or #[path_params] as source.
+ --> tests/from_request/fail/multiple_errors.rs:8:5
+  |
+8 |     a: u64,
+  |     ^
+
+error: Field `b` must specify a source.
+       Use one of the following: #[path_param], #[query_param], #[header], #[body], #[query_params], #[path_params], or #[headers].
+  --> tests/from_request/fail/multiple_errors.rs:11:5
+   |
+11 |     b: String,
+   |     ^

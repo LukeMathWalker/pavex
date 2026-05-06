@@ -27,9 +27,15 @@ impl ExtractQueryParamsError {
     /// It returns a `400 Bad Request` to the caller.
     #[error_handler(pavex = crate)]
     pub fn into_response(&self) -> Response {
+        let mut body = String::new();
+        self.response_body(&mut body).unwrap();
+        Response::bad_request().set_typed_body(body)
+    }
+
+    pub(crate) fn response_body<W: std::fmt::Write>(&self, writer: &mut W) -> std::fmt::Result {
         match self {
             Self::QueryDeserializationError(e) => {
-                Response::bad_request().set_typed_body(format!("Invalid query parameters.\n{e:?}"))
+                write!(writer, "Invalid query parameters. {e:?}")
             }
         }
     }

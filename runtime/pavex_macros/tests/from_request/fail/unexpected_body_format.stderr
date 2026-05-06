@@ -1,0 +1,5 @@
+error: `fantasy` isn't one of the supported formats for the `#[body(..)]` attribute in `#[derive(FromRequest)].`
+ --> tests/from_request/fail/unexpected_body_format.rs:6:5
+  |
+6 |     b: String,
+  |     ^

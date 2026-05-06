@@ -1,0 +1,15 @@
+error: `Private` must be `pub`.
+
+       help: Add `pub` in front of the `struct` keyword.
+ --> tests/from_request/fail/must_be_pub.rs:4:8
+  |
+4 | struct Private {
+  |        ^^^^^^^
+
+error: `PubWithRestrictions` must be `pub`, with no additional visibility restrictions.
+
+       help: Remove the highlighted visibility modifier.
+  --> tests/from_request/fail/must_be_pub.rs:10:4
+   |
+10 | pub(crate) struct PubWithRestrictions {
+   |    ^^^^^^^

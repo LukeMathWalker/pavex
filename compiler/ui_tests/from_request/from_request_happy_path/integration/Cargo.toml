@@ -1,0 +1,29 @@
+[package]
+name = "integration_0389e07d"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+workspace_hack = { version = "0.1", path = "../../../workspace_hack" }
+
+[dependencies.application]
+path = "../generated_app"
+package = "application_0389e07d"
+
+[dependencies.app]
+path = ".."
+package = "app_0389e07d"
+
+[dev-dependencies.tokio]
+workspace = true
+features = ["full"]
+
+[dev-dependencies.reqwest]
+workspace = true
+
+[dev-dependencies.pavex]
+workspace = true
+
+[dev-dependencies.tracing-subscriber]
+version = "0.3"
+features = ["env-filter", "fmt"]
