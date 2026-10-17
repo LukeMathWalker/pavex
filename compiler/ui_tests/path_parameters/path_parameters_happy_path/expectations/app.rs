@@ -80,7 +80,7 @@ impl Router {
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_1::entrypoint(url_params).await,
+                    &pavex::http::Method::GET => route_1::entrypoint(&url_params).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -92,7 +92,7 @@ impl Router {
             }
             1u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_2::entrypoint(url_params).await,
+                    &pavex::http::Method::GET => route_2::entrypoint(&url_params).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -104,7 +104,7 @@ impl Router {
             }
             2u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_3::entrypoint(url_params).await,
+                    &pavex::http::Method::GET => route_3::entrypoint(&url_params).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -161,20 +161,20 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn entrypoint<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    pub async fn entrypoint<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    async fn stage_1<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::Response {
         let v1 = crate::route_1::Next0 {
             s_0: v0,
@@ -185,7 +185,7 @@ pub mod route_1 {
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
     async fn handler(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::Response {
         let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
@@ -202,14 +202,14 @@ pub mod route_1 {
         let v3 = app::get_home(v2);
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    struct Next0<'a, 'b, T>
+    struct Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::Response>,
     {
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+        next: fn(&'c pavex::request::path::RawPathParams<'a, 'b>) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::Response>,
     {
@@ -221,20 +221,20 @@ pub mod route_1 {
     }
 }
 pub mod route_2 {
-    pub async fn entrypoint<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    pub async fn entrypoint<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    async fn stage_1<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::Response {
         let v1 = crate::route_2::Next0 {
             s_0: v0,
@@ -245,7 +245,7 @@ pub mod route_2 {
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
     async fn handler(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::Response {
         let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
@@ -262,14 +262,14 @@ pub mod route_2 {
         let v3 = app::get_room(v2);
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    struct Next0<'a, 'b, T>
+    struct Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::Response>,
     {
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+        next: fn(&'c pavex::request::path::RawPathParams<'a, 'b>) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::Response>,
     {
@@ -281,20 +281,20 @@ pub mod route_2 {
     }
 }
 pub mod route_3 {
-    pub async fn entrypoint<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    pub async fn entrypoint<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a, 'b>(
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
+    async fn stage_1<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
     ) -> pavex::Response {
         let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::Response {
         let v1 = crate::route_3::Next0 {
             s_0: v0,
@@ -305,7 +305,7 @@ pub mod route_3 {
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
     async fn handler(
-        v0: pavex::request::path::RawPathParams<'_, '_>,
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::Response {
         let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
@@ -322,14 +322,14 @@ pub mod route_3 {
         let v3 = app::get_town(v2);
         <pavex::Response as pavex::IntoResponse>::into_response(v3)
     }
-    struct Next0<'a, 'b, T>
+    struct Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::Response>,
     {
-        s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+        next: fn(&'c pavex::request::path::RawPathParams<'a, 'b>) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::Response>,
     {

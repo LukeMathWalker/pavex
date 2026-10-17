@@ -82,7 +82,7 @@ async fn path_parameter_has_the_wrong_type() {
     assert_eq!(response.status(), 400);
     let text = response.text().await.expect("Failed to get response body");
     assert_eq!(
-        "Invalid URL.\n`home_id` is set to `abc`, which we can't parse as a `u32`",
+        "Invalid URL. `home_id` is set to `abc`, which we can't parse as a `u32`",
         text
     );
 }
@@ -96,7 +96,7 @@ async fn path_parameter_is_invalid_ut8() {
     assert_eq!(response.status(), 400);
     let text = response.text().await.expect("Failed to get response body");
     assert_eq!(
-        "Invalid URL.\n`%DE~%C7%1FY` cannot be used as `home_id` since it is not a well-formed UTF8 string when percent-decoded",
+        "Invalid URL. `%DE~%C7%1FY` cannot be used as `home_id` since it is not a well-formed UTF8 string when percent-decoded",
         text
     );
 }
@@ -107,11 +107,10 @@ async fn path_parameter_is_invalid_type() {
     let response = reqwest::get(&format!("http://localhost:{}/home/123/room/123", port))
         .await
         .expect("Failed to make request");
-    // This is a programmer error, so we expect a 500 and an opaque error message.
     assert_eq!(response.status(), 500);
     let text = response.text().await.expect("Failed to get response body");
     assert_eq!(
-        "Something went wrong when trying to process the request",
+        "Invalid URL.",
         text
     );
 }

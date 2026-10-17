@@ -1,0 +1,15 @@
+error: `#[derive(FromRequest)]` can't be applied to structs with generic type parameters, such as `One`.
+
+       help: Consider using concrete types instead. Alternatively, define your own constructor for `One`.
+ --> tests/from_request/fail/generic_type_params.rs:4:16
+  |
+4 | pub struct One<T> {
+  |                ^
+
+error: `#[derive(FromRequest)]` can't be applied to structs with generic type parameters, such as `Three`.
+
+       help: Consider using concrete types instead. Alternatively, define your own constructor for `Three`.
+  --> tests/from_request/fail/generic_type_params.rs:10:18
+   |
+10 | pub struct Three<T, S, R> {
+   |                  ^

@@ -1,0 +1,81 @@
+error[E0277]: the trait bound `NotDeserializable: serde::Deserialize<'de>` is not satisfied
+ --> tests/from_request/fail/missing_deser_impl.rs:6:8
+  |
+6 |     a: NotDeserializable,
+  |        ^^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `NotDeserializable`
+  |
+  = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `NotDeserializable` type
+  = note: for types from other crates check whether the crate offers a `serde` feature flag
+  = help: the following other types implement trait `Deserialize<'de>`:
+            &'a [u8]
+            &'a ron::value::raw::RawValue
+            &'a std::path::Path
+            &'a str
+            ()
+            (T,)
+            (T0, T1)
+            (T0, T1, T2)
+          and $N others
+note: required by a bound in `next_element`
+ --> $CARGO/serde_core-$VERSION/src/de/mod.rs
+  |
+  |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
+  |        ------------ required by a bound in this associated function
+  |     where
+  |         T: Deserialize<'de>,
+  |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
+
+error[E0277]: the trait bound `NotDeserializable: serde::Deserialize<'de>` is not satisfied
+ --> tests/from_request/fail/missing_deser_impl.rs:6:8
+  |
+6 |     a: NotDeserializable,
+  |        ^^^^^^^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `NotDeserializable`
+  |
+  = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `NotDeserializable` type
+  = note: for types from other crates check whether the crate offers a `serde` feature flag
+  = help: the following other types implement trait `Deserialize<'de>`:
+            &'a [u8]
+            &'a ron::value::raw::RawValue
+            &'a std::path::Path
+            &'a str
+            ()
+            (T,)
+            (T0, T1)
+            (T0, T1, T2)
+          and $N others
+note: required by a bound in `next_value`
+ --> $CARGO/serde_core-$VERSION/src/de/mod.rs
+  |
+  |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
+  |        ---------- required by a bound in this associated function
+  |     where
+  |         V: Deserialize<'de>,
+  |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
+
+error[E0277]: the trait bound `NotDeserializable: serde::Deserialize<'de>` is not satisfied
+ --> tests/from_request/fail/missing_deser_impl.rs:3:10
+  |
+3 | #[derive(FromRequest)]
+  |          ^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `NotDeserializable`
+  |
+  = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `NotDeserializable` type
+  = note: for types from other crates check whether the crate offers a `serde` feature flag
+  = help: the following other types implement trait `Deserialize<'de>`:
+            &'a [u8]
+            &'a ron::value::raw::RawValue
+            &'a std::path::Path
+            &'a str
+            ()
+            (T,)
+            (T0, T1)
+            (T0, T1, T2)
+          and $N others
+note: required by a bound in `_serde::__private228::de::missing_field`
+ --> $CARGO/serde-$VERSION/src/private/de.rs
+  |
+  | pub fn missing_field<'de, V, E>(field: &'static str) -> Result<V, E>
+  |        ------------- required by a bound in this function
+  | where
+  |     V: Deserialize<'de>,
+  |        ^^^^^^^^^^^^^^^^ required by this bound in `missing_field`
+  = note: this error originates in the derive macro `FromRequest` (in Nightly builds, run with -Z macro-backtrace for more info)
